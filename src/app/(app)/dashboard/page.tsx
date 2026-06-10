@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface DashData {
-  alertas: { sinStock: {nombre:string;bodega:string}[]; stockBajo: {nombre:string;bodega:string;stock:number;stock_minimo:number}[] }
+  alertas: { sinStock: {nombre:string;bodega:string}[]; stockBajo: {nombre:string;bodega:string;stock:number;stock_minimo:number}[]; vencidos: {id:string;numero:string;cliente_nombre:string;total:number;created_at:string}[]; pedidosPendientes: number }
   ventasHoy: { total: number; cantidad: number }
   ventasMes: { total: number; cantidad: number }
   caja: { ingresos: number; egresos: number; saldo: number }
@@ -84,6 +84,35 @@ export default function DashboardPage() {
             )}
           </div>
           <button onClick={() => router.push('/productos')} className="mt-3 text-xs text-amber-700 underline">Ver todos los productos →</button>
+        </div>
+      )}
+
+      {/* Alertas de vencimiento */}
+      {data.alertas.vencidos.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">🔴</span>
+            <h2 className="font-medium text-red-800">Comprobantes vencidos +30 días sin pago ({data.alertas.vencidos.length})</h2>
+          </div>
+          <div className="space-y-1">
+            {data.alertas.vencidos.map((v,i) => (
+              <div key={i} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg flex justify-between">
+                <span><strong>{v.numero}</strong> — {v.cliente_nombre}</span>
+                <span className="font-medium">${v.total.toLocaleString('es-AR')}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => router.push('/ventas')} className="mt-3 text-xs text-red-700 underline">Ver en ventas →</button>
+        </div>
+      )}
+
+      {data.alertas.pedidosPendientes > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>📦</span>
+            <span className="text-sm text-blue-800">{data.alertas.pedidosPendientes} pedido{data.alertas.pedidosPendientes>1?'s':''} pendiente{data.alertas.pedidosPendientes>1?'s':''} de entrega</span>
+          </div>
+          <button onClick={() => router.push('/pedidos')} className="text-xs text-blue-700 underline">Ver pedidos →</button>
         </div>
       )}
 
