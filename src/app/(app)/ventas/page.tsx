@@ -33,6 +33,9 @@ export default function VentasPage() {
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [busquedaVentas, setBusquedaVentas] = useState('')
   const [toast, setToast] = useState('')
+  const [vendedores, setVendedores] = useState<{id:string;nombre:string;tipo:string}[]>([])
+  const [vendedorId, setVendedorId] = useState('')
+  const [vendedorNombre, setVendedorNombre] = useState('')
 
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
@@ -49,6 +52,8 @@ export default function VentasPage() {
     setVentas(await vRes.json().catch(() => []))
     setProductos(await pRes.json().catch(() => []))
     setClientes(await cRes.json().catch(() => []))
+    const vdRes = await fetch('/api/vendedores')
+    setVendedores(await vdRes.json().catch(() => []))
     setLoading(false)
   }
 
@@ -109,6 +114,8 @@ export default function VentasPage() {
     const total = calcTotal()
     const ventaData = {
       empresa, tipo,
+      vendedor_id: vendedorId || null,
+      vendedor_nombre: vendedorNombre || null,
       cliente_id: clienteId || null,
       cliente_nombre: clienteNombre,
       items: items.filter(i => i.nombre).map(i => ({ producto_id: i.producto_id || null, nombre: i.nombre, cantidad: i.cantidad, precio_unitario: i.precio_unitario, descuento: i.descuento, subtotal: calcSubtotal(i) })),
@@ -175,7 +182,7 @@ export default function VentasPage() {
     setEditVentaId(null); setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final')
     setClienteData(null); setBusquedaCliente('')
     setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto([''])
-    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setVendedorId(''); setVendedorNombre('')
     setModal(true)
   }
 
@@ -259,6 +266,17 @@ export default function VentasPage() {
                 <select className="input" value={condVenta} onChange={e=>setCondVenta(e.target.value)}>
                   {CONDICIONES_VENTA.map(c=><option key={c}>{c}</option>)}
                 </select>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="label">Vendedor</label>
+              <div className="flex gap-2">
+                {vendedores.map(v=>(
+                  <button key={v.id} onClick={()=>{setVendedorId(v.id);setVendedorNombre(v.nombre)}}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${vendedorId===v.id?'bg-gray-800 text-white border-gray-800':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {v.tipo==='calle'?'🚗 ':''}{v.nombre}
+                  </button>
+                ))}
               </div>
             </div>
 
