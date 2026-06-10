@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { wooUpdateStockAndPrice } from '@/lib/woocommerce'
 
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
     .from('ventas')
     .select('*')
     .eq('empresa', empresa)
+    .neq('estado', 'cancelado')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -27,8 +29,7 @@ export async function POST(req: NextRequest) {
     .eq('empresa', venta.empresa)
     .eq('tipo', venta.tipo)
 
-  const numero = `${tipo}-${String((count || 0) + 1).padStart(6, '0')}`
-  venta.numero = numero
+  venta.numero = `${tipo}-${String((count || 0) + 1).padStart(6, '0')}`
 
   const { data, error } = await supabase
     .from('ventas')
@@ -38,13 +39,13 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Descontar stock si se pidió
+  // Descontar stock si es remito
   if (descontarStock && venta.items) {
     for (const item of venta.items) {
       if (item.producto_id) {
         const { data: prod } = await supabase
           .from('productos')
-          .select('stock')
+          .select('stock, woo_product_id, precio_venta')
           .eq('id', item.producto_id)
           .single()
 
@@ -54,38 +55,36 @@ export async function POST(req: NextRequest) {
             .from('productos')
             .update({ stock: nuevoStock })
             .eq('id', item.producto_id)
+
+          // Sync WooCommerce si tiene ID
+          if (prod.woo_product_id && process.env.WOOCOMMERCE_CONSUMER_KEY && venta.empresa === 'aroma') {
+            try {
+              await wooUpdateStockAndPrice(prod.woo_product_id, prod.precio_venta, nuevoStock)
+            } catch (e) {
+              console.error('WooCommerce sync error:', e)
+            }
+          }
         }
       }
     }
   }
 
-  // Registrar en caja si es remito
-  if (venta.tipo === 'remito' && venta.total > 0) {
+  // Registrar en caja (tanto presupuesto como remito)
+  if (venta.total > 0) {
+    const tipoLabel = venta.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'
+    const condicion = venta.condicion_venta || 'Contado'
     await supabase.from('movimientos_caja').insert([{
       empresa: venta.empresa,
       tipo: 'ingreso',
-      concepto: `Remito ${numero} - ${venta.cliente_nombre}`,
+      concepto: `${tipoLabel} ${venta.numero} - ${venta.cliente_nombre}`,
       monto: venta.total,
       fecha: new Date().toISOString().split('T')[0],
-      categoria: 'Ventas',
+      categoria: `Ventas - ${condicion}`,
       referencia_id: data.id,
     }])
   }
 
   return NextResponse.json(data)
-}
-
-export async function DELETE(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-
-  const { error } = await supabase
-    .from('ventas')
-    .update({ estado: 'cancelado' })
-    .eq('id', id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
 }
 
 export async function PUT(req: NextRequest) {
@@ -101,4 +100,17 @@ export async function PUT(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
+}
+
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('ventas')
+    .update({ estado: 'cancelado' })
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
 }
