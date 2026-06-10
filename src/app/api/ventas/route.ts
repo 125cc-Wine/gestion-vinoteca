@@ -87,3 +87,18 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
+
+export async function PUT(req: NextRequest) {
+  const body = await req.json()
+  const { id, descontarStock: _ds, ...rest } = body
+
+  const { data, error } = await supabase
+    .from('ventas')
+    .update(rest)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
