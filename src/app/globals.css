@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --aroma-brown: #3D1F0D;
+  --aroma-red: #8B1A2A;
+  --aroma-cream: #F9F5F0;
+  --lavid-dark: #1E2227;
+  --lavid-blue: #00B4D8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: #F4F4F5;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer border;
+  }
+  .btn-primary {
+    @apply bg-white border-gray-200 text-gray-700 hover:bg-gray-50;
+  }
+  .btn-danger {
+    @apply border-red-200 text-red-600 hover:bg-red-50;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 p-5;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-green { @apply bg-green-50 text-green-700; }
+  .badge-yellow { @apply bg-yellow-50 text-yellow-700; }
+  .badge-red { @apply bg-red-50 text-red-600; }
+  .badge-blue { @apply bg-blue-50 text-blue-700; }
+  .input {
+    @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 bg-white;
+  }
+  .label {
+    @apply block text-xs font-medium text-gray-500 mb-1;
+  }
+}
