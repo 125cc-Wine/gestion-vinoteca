@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Clientes son compartidos entre empresas - no se filtra por empresa
 export async function GET(req: NextRequest) {
-  const empresa = req.nextUrl.searchParams.get('empresa')
-  if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
-
   const { data, error } = await supabase
     .from('clientes')
     .select('*')
-    .eq('empresa', empresa)
     .eq('activo', true)
     .order('nombre')
 
@@ -20,7 +17,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { data, error } = await supabase
     .from('clientes')
-    .insert([body])
+    .insert([{ ...body, empresa: null }])
     .select()
     .single()
 
