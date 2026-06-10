@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Registrar en caja (tanto presupuesto como remito)
-  if (venta.total > 0) {
+  if (venta.total > 0 && venta.estado_pago !== 'pendiente') {
     const tipoLabel = venta.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'
     const condicion = venta.condicion_venta || 'Contado'
     await supabase.from('movimientos_caja').insert([{
@@ -80,6 +80,31 @@ export async function POST(req: NextRequest) {
       monto: venta.total,
       fecha: new Date().toISOString().split('T')[0],
       categoria: `Ventas - ${condicion}`,
+      referencia_id: data.id,
+    }])
+  }
+
+  // Si es cuenta corriente, sumar al saldo del cliente
+  if (venta.estado_pago === 'cuenta_corriente' && venta.cliente_id && venta.total > 0) {
+    const { data: cliente } = await supabase
+      .from('clientes')
+      .select('saldo')
+      .eq('id', venta.cliente_id)
+      .single()
+
+    const saldoAnterior = cliente?.saldo || 0
+    const saldoNuevo = saldoAnterior + venta.total
+
+    await supabase.from('clientes').update({ saldo: saldoNuevo }).eq('id', venta.cliente_id)
+
+    await supabase.from('movimientos_cta_cte').insert([{
+      cliente_id: venta.cliente_id,
+      empresa: venta.empresa,
+      tipo: 'cargo',
+      concepto: `${venta.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${venta.numero}`,
+      monto: venta.total,
+      saldo_anterior: saldoAnterior,
+      saldo_nuevo: saldoNuevo,
       referencia_id: data.id,
     }])
   }
