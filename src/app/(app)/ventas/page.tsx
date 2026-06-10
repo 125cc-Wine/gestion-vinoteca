@@ -40,7 +40,7 @@ export default function VentasPage() {
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
-  const [condVenta, setCondVenta] = useState('Contado')
+  const condVenta = (venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [toast, setToast] = useState('')
 
