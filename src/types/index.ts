@@ -67,6 +67,7 @@ export interface Venta {
   total: number
   estado: 'borrador' | 'emitido' | 'pagado' | 'cancelado'
   notas?: string
+  condicion_venta?: string
   created_at?: string
 }
 
