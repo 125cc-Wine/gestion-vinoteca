@@ -8,18 +8,26 @@ export async function GET(req: NextRequest) {
   const hoy = new Date().toISOString().split('T')[0]
   const inicioMes = hoy.substring(0, 7) + '-01'
 
+  const hace30dias = new Date()
+  hace30dias.setDate(hace30dias.getDate() - 30)
+  const hace30diasStr = hace30dias.toISOString().split('T')[0]
+
   const [
     { data: productos },
     { data: ventasHoy },
     { data: ventasMes },
     { data: cajaHoy },
     { data: clientes },
+    { data: vencidos },
+    { data: pedidosPendientes },
   ] = await Promise.all([
     supabase.from('productos').select('id,nombre,bodega,stock,stock_minimo,precio_venta').eq('empresa', empresa).eq('activo', true),
     supabase.from('ventas').select('*').eq('empresa', empresa).gte('created_at', hoy).neq('estado', 'cancelado'),
     supabase.from('ventas').select('*').eq('empresa', empresa).gte('created_at', inicioMes).neq('estado', 'cancelado'),
     supabase.from('movimientos_caja').select('*').eq('empresa', empresa).eq('fecha', hoy),
     supabase.from('clientes').select('id,nombre,saldo').eq('activo', true),
+    supabase.from('ventas').select('id,numero,cliente_nombre,total,created_at').eq('empresa', empresa).eq('estado_pago', 'pendiente').lte('created_at', hace30diasStr + 'T00:00:00'),
+    supabase.from('pedidos').select('id,numero,cliente_nombre').eq('empresa', empresa).eq('estado', 'pendiente'),
   ])
 
   // Stock alerts
@@ -67,6 +75,8 @@ export async function GET(req: NextRequest) {
     alertas: {
       sinStock: sinStock.slice(0, 10),
       stockBajo: stockBajo.slice(0, 10),
+      vencidos: (vencidos || []).slice(0, 5),
+      pedidosPendientes: (pedidosPendientes || []).length,
     },
     ventasHoy: { total: totalVentasHoy, cantidad: cantVentasHoy },
     ventasMes: { total: totalVentasMes, cantidad: (ventasMes || []).length },
