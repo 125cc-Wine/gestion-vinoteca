@@ -86,7 +86,7 @@ export default function VentasPage() {
 
   function updateItem(idx: number, field: string, value: number | string) {
     const newItems = [...items]
-    ;(newItems[idx] as Record<string, number | string>)[field] = value
+    ;(newItems[idx] as unknown as Record<string, number | string>)[field] = value
     newItems[idx].subtotal = calcSubtotal(newItems[idx])
     setItems(newItems)
   }
