@@ -19,6 +19,8 @@ const EMPRESAS_DATA = {
   },
 }
 
+const CONDICIONES_VENTA = ['Contado','Cta. Cte.','Transferencia','Cheque','Tarjeta Débito','Tarjeta Crédito','QR','Billetera Virtual MercadoPago','CtaDni']
+
 interface ItemForm extends VentaItem {
   producto_id: string
   descuento: number
@@ -43,6 +45,7 @@ export default function VentasPage() {
   const [condVenta, setCondVenta] = useState('Contado')
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [toast, setToast] = useState('')
+  const [busquedaProducto, setBusquedaProducto] = useState<string[]>([])
 
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
@@ -75,6 +78,14 @@ export default function VentasPage() {
     return sub - (sub * (descuentoGlobal / 100))
   }
 
+  function productosFiltrados(idx: number) {
+    const q = (busquedaProducto[idx] || '').toLowerCase()
+    if (!q) return productos.slice(0, 50)
+    return productos.filter(p =>
+      `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q)
+    ).slice(0, 50)
+  }
+
   function seleccionarProducto(idx: number, prodId: string) {
     const prod = productos.find(p => p.id === prodId)
     if (!prod) return
@@ -82,6 +93,12 @@ export default function VentasPage() {
     newItems[idx] = { ...newItems[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: prod.precio_venta, subtotal: 0 }
     newItems[idx].subtotal = calcSubtotal(newItems[idx])
     setItems(newItems)
+  }
+
+  function updateBusqueda(idx: number, val: string) {
+    const arr = [...busquedaProducto]
+    arr[idx] = val
+    setBusquedaProducto(arr)
   }
 
   function updateItem(idx: number, field: string, value: number | string) {
@@ -139,7 +156,7 @@ export default function VentasPage() {
 
   function abrirNuevo(t: 'presupuesto' | 'remito') {
     setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null)
-    setItems([{ ...ITEM_EMPTY }]); setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
+    setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto(['']); setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
     setModal(true)
   }
 
@@ -206,7 +223,7 @@ export default function VentasPage() {
               </div>
               <div><label className="label">Condición de venta</label>
                 <select className="input" value={condVenta} onChange={e=>setCondVenta(e.target.value)}>
-                  <option>Contado</option><option>Cta. Cte.</option><option>Transferencia</option><option>Cheque</option>
+                  {CONDICIONES_VENTA.map(c=><option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -215,12 +232,12 @@ export default function VentasPage() {
             <div className="mb-4">
               <div className="flex justify-between mb-2">
                 <label className="label mb-0">Productos</label>
-                <button onClick={()=>setItems([...items,{...ITEM_EMPTY}])} className="text-xs text-blue-600 hover:underline">+ agregar línea</button>
+                <button onClick={()=>{setItems([...items,{...ITEM_EMPTY}]);setBusquedaProducto([...busquedaProducto,''])}} className="text-xs text-blue-600 hover:underline">+ agregar línea</button>
               </div>
               <div className="border border-gray-100 rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-3 py-2 text-gray-400 w-2/5">Producto</th>
+                    <th className="text-left px-3 py-2 text-gray-400 w-2/5">Buscar producto</th>
                     <th className="text-center px-2 py-2 text-gray-400 w-14">Cant.</th>
                     <th className="text-right px-2 py-2 text-gray-400">P.Unit.</th>
                     <th className="text-center px-2 py-2 text-gray-400 w-14">Dto%</th>
@@ -231,9 +248,16 @@ export default function VentasPage() {
                     {items.map((item,idx)=>(
                       <tr key={idx} className="border-b border-gray-50">
                         <td className="px-2 py-1">
+                          <input
+                            type="text"
+                            className="input text-xs py-1 mb-1"
+                            placeholder="Buscar por nombre, bodega..."
+                            value={busquedaProducto[idx] || ''}
+                            onChange={e=>updateBusqueda(idx, e.target.value)}
+                          />
                           <select className="input text-xs py-1" value={item.producto_id} onChange={e=>seleccionarProducto(idx,e.target.value)}>
                             <option value="">— Seleccionar —</option>
-                            {productos.map(p=><option key={p.id} value={p.id}>{p.nombre}{p.bodega?` · ${p.bodega}`:''} (Stock:{p.stock})</option>)}
+                            {productosFiltrados(idx).map(p=><option key={p.id} value={p.id}>{p.nombre}{p.bodega?` · ${p.bodega}`:''} (Stock:{p.stock})</option>)}
                           </select>
                         </td>
                         <td className="px-1 py-1"><input type="number" min="1" className="input text-xs py-1 text-center" value={item.cantidad} onChange={e=>updateItem(idx,'cantidad',parseInt(e.target.value)||1)}/></td>
