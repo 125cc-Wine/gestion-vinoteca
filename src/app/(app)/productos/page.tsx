@@ -1,180 +1,243 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Producto } from '@/types'
+import type { Producto, Cliente, Venta, VentaItem } from '@/types'
+import SearchSelect from '@/components/SearchSelect'
 
-const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro']
-
-const EMPTY = {
-  empresa: 'aroma' as 'aroma' | 'lavid',
-  nombre: '', bodega: '', varietal: '', categoria: 'Tinto' as Producto['categoria'],
-  region: '', sku: '', proveedor_nombre: '',
-  precio_venta: 0, precio_costo: 0, stock: 0, stock_minimo: 3,
-  woo_product_id: undefined as number | undefined, activo: true,
+const EMPRESAS_DATA = {
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
+  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png' },
 }
 
-export default function ProductosPage() {
-  const [empresa, setEmpresa] = useState<string>('aroma')
+const CONDICIONES_VENTA = ['Contado','Cta. Cte.','Transferencia','Cheque','Tarjeta Débito','Tarjeta Crédito','QR','Billetera Virtual MercadoPago','CtaDni']
+const ESTADOS_PAGO = ['pagado','pendiente','cuenta_corriente']
+
+interface ItemForm extends VentaItem { producto_id: string; descuento: number }
+const ITEM_EMPTY: ItemForm = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0 }
+
+export default function VentasPage() {
+  const [empresa, setEmpresa] = useState<'aroma' | 'lavid'>('aroma')
+  const [ventas, setVentas] = useState<Venta[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
-  const [editId, setEditId] = useState<string | null>(null)
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroCategoria, setFiltroCategoria] = useState('')
-  const [syncing, setSyncing] = useState(false)
+  const [tipo, setTipo] = useState<'presupuesto' | 'remito'>('presupuesto')
+  const [editVentaId, setEditVentaId] = useState<string | null>(null)
+  const [clienteId, setClienteId] = useState('')
+  const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
+  const [clienteData, setClienteData] = useState<Cliente | null>(null)
+  const [busquedaCliente, setBusquedaCliente] = useState('')
+  const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
+  const [busquedaProducto, setBusquedaProducto] = useState<string[]>([''])
+  const [descuentoGlobal, setDescuentoGlobal] = useState(0)
+  const [notas, setNotas] = useState('')
+  const [condVenta, setCondVenta] = useState('Contado')
+  const [estadoPago, setEstadoPago] = useState('pagado')
+  const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
+  const [busquedaVentas, setBusquedaVentas] = useState('')
   const [toast, setToast] = useState('')
+  const [vendedores, setVendedores] = useState<{id:string;nombre:string;tipo:string}[]>([])
+  const [vendedorId, setVendedorId] = useState('')
+  const [vendedorNombre, setVendedorNombre] = useState('')
 
   useEffect(() => {
-    const e = localStorage.getItem('empresa') || 'aroma'
-    setEmpresa(e)
-    cargar(e)
+    const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
+    setEmpresa(e); cargarTodo(e)
   }, [])
 
-  async function cargar(emp: string) {
+  async function cargarTodo(emp: string) {
     setLoading(true)
-    const res = await fetch(`/api/productos?empresa=${emp}`)
-    const data = await res.json()
-    setProductos(Array.isArray(data) ? data : [])
+    const [vRes, pRes, cRes] = await Promise.all([
+      fetch(`/api/ventas?empresa=${emp}`),
+      fetch(`/api/productos?empresa=${emp}`),
+      fetch(`/api/clientes?empresa=${emp}`),
+    ])
+    setVentas(await vRes.json().catch(() => []))
+    setProductos(await pRes.json().catch(() => []))
+    setClientes(await cRes.json().catch(() => []))
+    const vdRes = await fetch('/api/vendedores')
+    setVendedores(await vdRes.json().catch(() => []))
     setLoading(false)
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
-  function abrirNuevo() {
-    setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
-    setEditId(null)
-    setModal(true)
+  function calcSubtotal(item: ItemForm) {
+    const base = item.cantidad * item.precio_unitario
+    return base - (base * ((item.descuento || 0) / 100))
   }
 
-  function abrirEditar(p: Producto) {
-    setForm({
-      empresa: p.empresa,
-      nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria, region: p.region || '', sku: p.sku || '',
-      proveedor_nombre: (p as unknown as Record<string,string>).proveedor_nombre || '',
-      precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
-      stock: p.stock, stock_minimo: p.stock_minimo,
-      woo_product_id: p.woo_product_id, activo: p.activo,
-    })
-    setEditId(p.id!)
-    setModal(true)
+  function calcTotal() {
+    const sub = items.reduce((a, i) => a + calcSubtotal(i), 0)
+    return sub - (sub * (descuentoGlobal / 100))
+  }
+
+  function productosFiltrados(idx: number) {
+    const q = (busquedaProducto[idx] || '').toLowerCase()
+    if (!q) return productos.slice(0, 50)
+    return productos.filter(p => `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q)).slice(0, 50)
+  }
+
+  function clientesFiltrados() {
+    const q = busquedaCliente.toLowerCase()
+    if (!q) return clientes.slice(0, 100)
+    return clientes.filter(c => `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q))
+  }
+
+  function seleccionarProducto(idx: number, prodId: string) {
+    const prod = productos.find(p => p.id === prodId)
+    if (!prod) return
+    const newItems = [...items]
+    newItems[idx] = { ...newItems[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: prod.precio_venta, subtotal: 0 }
+    newItems[idx].subtotal = calcSubtotal(newItems[idx])
+    setItems(newItems)
+  }
+
+  function updateBusqueda(idx: number, val: string) {
+    const arr = [...busquedaProducto]; arr[idx] = val; setBusquedaProducto(arr)
+  }
+
+  function updateItem(idx: number, field: string, value: number | string) {
+    const newItems = [...items]
+    ;(newItems[idx] as unknown as Record<string, number | string>)[field] = value
+    newItems[idx].subtotal = calcSubtotal(newItems[idx])
+    setItems(newItems)
+  }
+
+  function seleccionarCliente(id: string) {
+    setClienteId(id)
+    if (!id) { setClienteNombre('Consumidor Final'); setClienteData(null); return }
+    const c = clientes.find(c => c.id === id)
+    if (c) { setClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()); setClienteData(c) }
   }
 
   async function guardar() {
-    if (!form.nombre.trim()) { showToast('El nombre es obligatorio'); return }
-    const method = editId ? 'PUT' : 'POST'
-    const body = editId ? { id: editId, ...form } : form
-    const res = await fetch('/api/productos', {
-      method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    })
+    if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
+    const subtotal = items.reduce((a, i) => a + calcSubtotal(i), 0)
+    const total = calcTotal()
+    const ventaData = {
+      empresa, tipo,
+      vendedor_id: vendedorId || null,
+      vendedor_nombre: vendedorNombre || null,
+      cliente_id: clienteId || null,
+      cliente_nombre: clienteNombre,
+      items: items.filter(i => i.nombre).map(i => ({ producto_id: i.producto_id || null, nombre: i.nombre, cantidad: i.cantidad, precio_unitario: i.precio_unitario, descuento: i.descuento, subtotal: calcSubtotal(i) })),
+      subtotal, descuento: descuentoGlobal, total,
+      estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
+      descontarStock: tipo === 'remito' && !editVentaId,
+    }
+
+    let res
+    if (editVentaId) {
+      res = await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
+    } else {
+      res = await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
+    }
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false)
-    cargar(empresa)
-    showToast(editId ? 'Producto actualizado' : 'Producto guardado')
+    await cargarTodo(empresa)
+    showToast(editVentaId ? 'Comprobante actualizado' : `${tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${data.numero} generado`)
+    if (!editVentaId) setTimeout(() => { setVentaParaImprimir(data); setTimeout(() => imprimirDoc(), 400) }, 200)
   }
 
-  async function eliminar(id: string) {
-    if (!confirm('¿Eliminar este producto?')) return
-    await fetch(`/api/productos?id=${id}`, { method: 'DELETE' })
-    cargar(empresa)
-    showToast('Producto eliminado')
+  async function eliminarVenta(id: string) {
+    if (!confirm('¿Eliminar este comprobante?')) return
+    await fetch(`/api/ventas?id=${id}`, { method: 'DELETE' })
+    cargarTodo(empresa); showToast('Comprobante eliminado')
   }
 
-  async function syncWoo() {
-    setSyncing(true)
-    const res = await fetch('/api/woo/sync', { method: 'POST' })
-    const data = await res.json()
-    setSyncing(false)
-    showToast(`Sync WooCommerce: ${data.ok ?? 0} ok, ${data.errors ?? 0} errores`)
+  function editarVenta(v: Venta) {
+    setEditVentaId(v.id!)
+    setTipo(v.tipo as 'presupuesto' | 'remito')
+    setClienteId(v.cliente_id || '')
+    setClienteNombre(v.cliente_nombre)
+    const c = clientes.find(c => c.id === v.cliente_id)
+    setClienteData(c || null)
+    setBusquedaCliente('')
+    const ventaItems = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
+      producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
+    }))
+    setItems(ventaItems)
+    setBusquedaProducto(ventaItems.map(() => ''))
+    setDescuentoGlobal(v.descuento)
+    setNotas(v.notas || '')
+    setCondVenta((v as unknown as Record<string,string>).condicion_venta || 'Contado')
+    setModal(true)
   }
 
-  const filtrados = productos.filter(p => {
-    const q = busqueda.toLowerCase()
-    const matchQ = !q || `${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)
-    const matchC = !filtroCategoria || p.categoria === filtroCategoria
-    return matchQ && matchC
+  function imprimirDoc() {
+    const el = document.getElementById('print-area')
+    if (!el) return
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
+    w.document.close(); w.focus()
+    setTimeout(() => { w.print() }, 500)
+  }
+
+  function imprimirVenta(v: Venta) {
+    setVentaParaImprimir(v); setTimeout(() => imprimirDoc(), 400)
+  }
+
+  function abrirNuevo(t: 'presupuesto' | 'remito') {
+    setEditVentaId(null); setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final')
+    setClienteData(null); setBusquedaCliente('')
+    setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto([''])
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado'); setVendedorId(''); setVendedorNombre('')
+    setModal(true)
+  }
+
+  const emp = EMPRESAS_DATA[empresa]
+  const totalRemitos = ventas.filter(v => v.tipo === 'remito' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
+
+  const ventasFiltradas = ventas.filter(v => {
+    const q = busquedaVentas.toLowerCase()
+    return !q || `${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)
   })
-
-  const sinStock = productos.filter(p => p.stock === 0).length
-  const stockBajo = productos.filter(p => p.stock > 0 && p.stock <= p.stock_minimo).length
-  const totalUnidades = productos.reduce((a, p) => a + p.stock, 0)
-
-  function badgeStock(p: Producto) {
-    if (p.stock === 0) return <span className="badge badge-red">Sin stock</span>
-    if (p.stock <= p.stock_minimo) return <span className="badge badge-yellow">Stock bajo</span>
-    return <span className="badge badge-green">OK</span>
-  }
 
   return (
     <div>
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total productos', value: productos.length },
-          { label: 'Unidades en stock', value: totalUnidades },
-          { label: 'Stock bajo', value: stockBajo, color: 'text-yellow-600' },
-          { label: 'Sin stock', value: sinStock, color: 'text-red-500' },
-        ].map(m => (
-          <div key={m.label} className="card">
-            <div className="text-xs text-gray-400 mb-1">{m.label}</div>
-            <div className={`text-2xl font-medium ${m.color || 'text-gray-800'}`}>{m.value}</div>
-          </div>
-        ))}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="card"><div className="text-xs text-gray-400 mb-1">Total comprobantes</div><div className="text-2xl font-medium text-gray-800">{ventas.length}</div></div>
+        <div className="card"><div className="text-xs text-gray-400 mb-1">Presupuestos</div><div className="text-2xl font-medium text-gray-800">{ventas.filter(v => v.tipo === 'presupuesto').length}</div></div>
+        <div className="card"><div className="text-xs text-gray-400 mb-1">Total remitos</div><div className="text-2xl font-medium text-green-600">${totalRemitos.toLocaleString('es-AR')}</div></div>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-medium text-gray-800">Productos</h1>
+        <h1 className="text-lg font-medium text-gray-800">Ventas y comprobantes</h1>
         <div className="flex gap-2">
-          {empresa === 'aroma' && (
-            <button onClick={syncWoo} disabled={syncing} className="btn btn-primary text-xs">
-              {syncing ? 'Sincronizando...' : '🔄 Sync WooCommerce'}
-            </button>
-          )}
-          <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo producto</button>
+          <button onClick={() => abrirNuevo('presupuesto')} className="btn btn-primary">+ Presupuesto</button>
+          <button onClick={() => abrirNuevo('remito')} className="btn btn-primary">+ Remito</button>
         </div>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <input className="input flex-1" placeholder="Buscar por nombre, bodega, varietal..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-        <select className="input w-48" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
-          <option value="">Todas las categorías</option>
-          {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-        </select>
-      </div>
+      <input className="input mb-4" placeholder="Buscar por número o cliente..." value={busquedaVentas} onChange={e => setBusquedaVentas(e.target.value)} />
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              {['Producto','Bodega','Varietal','Categoría','Proveedor','Precio venta','Costo','Stock','Estado','WooID',''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
+          <thead><tr className="border-b border-gray-100">
+            {['Número','Tipo','Cliente','Fecha','Items','Total','Pago',''].map(h => (
+              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
+            ))}
+          </tr></thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan={11} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            ) : filtrados.length === 0 ? (
-              <tr><td colSpan={11} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
-            ) : filtrados.map(p => (
-              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+            {loading ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            : ventasFiltradas.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes{busquedaVentas ? ' con ese criterio' : ' todavía'}</td></tr>
+            : ventasFiltradas.map(v => (
+              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
+                <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
+                <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
+                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
+                <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-800">{p.nombre}</div>
-                  {p.region && <div className="text-xs text-gray-400">{p.region}</div>}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{p.bodega || '—'}</td>
-                <td className="px-4 py-3 text-gray-600">{p.varietal || '—'}</td>
-                <td className="px-4 py-3 text-gray-600">{p.categoria}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{(p as unknown as Record<string,string>).proveedor_nombre || '—'}</td>
-                <td className="px-4 py-3 text-gray-800 font-medium">${p.precio_venta.toLocaleString('es-AR')}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">${(p.precio_costo || 0).toLocaleString('es-AR')}</td>
-                <td className="px-4 py-3 text-gray-700">{p.stock}</td>
-                <td className="px-4 py-3">{badgeStock(p)}</td>
-                <td className="px-4 py-3 text-xs text-gray-400">{p.woo_product_id || '—'}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => abrirEditar(p)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                    <button onClick={() => eliminar(p.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                  <div className="flex gap-1">
+                    <button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️</button>
+                    <button onClick={() => editarVenta(v)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
+                    <button onClick={() => eliminarVenta(v.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -184,72 +247,202 @@ export default function ProductosPage() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-medium text-gray-800 mb-5">{editId ? 'Editar producto' : 'Nuevo producto'}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="label">Nombre del vino *</label>
-                <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Gran Reserva Malbec" />
-              </div>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={e=>e.target===e.currentTarget&&setModal(false)}>
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4">
+            <h2 className="text-base font-medium text-gray-800 mb-4">
+              {editVentaId ? 'Editar' : 'Nuevo'} {tipo==='presupuesto'?'presupuesto':'remito'}
+              {tipo==='remito'&&!editVentaId&&<span className="ml-2 text-xs text-green-600 font-normal">· descuenta stock automáticamente</span>}
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="label">Bodega</label>
-                <input className="input" value={form.bodega} onChange={e => setForm(f => ({ ...f, bodega: e.target.value }))} placeholder="Ej: Catena Zapata" />
+                <label className="label">Cliente</label>
+                <SearchSelect
+                  options={clientes.map(c=>({value:c.id,label:c.razon_social||`${c.nombre} ${c.apellido||''}`.trim(),sublabel:c.cuit||''}))}
+                  value={clienteId}
+                  onChange={(v,l)=>seleccionarCliente(v)}
+                  placeholder="Consumidor Final"
+                  searchPlaceholder="Nombre, CUIT, teléfono..."
+                />
               </div>
-              <div>
-                <label className="label">Varietal</label>
-                <input className="input" value={form.varietal} onChange={e => setForm(f => ({ ...f, varietal: e.target.value }))} placeholder="Ej: Malbec" />
-              </div>
-              <div>
-                <label className="label">Categoría</label>
-                <select className="input" value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
-                  {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+              <div><label className="label">Condición de venta</label>
+                <select className="input" value={condVenta} onChange={e=>setCondVenta(e.target.value)}>
+                  {CONDICIONES_VENTA.map(c=><option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="label">Región</label>
-                <input className="input" value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))} placeholder="Ej: Mendoza" />
+              <div><label className="label">Estado de pago</label>
+                <select className="input" value={estadoPago} onChange={e=>setEstadoPago(e.target.value)}>
+                  <option value="pagado">✅ Pagado</option>
+                  <option value="pendiente">⏳ Pendiente</option>
+                  <option value="cuenta_corriente">📋 Cuenta corriente</option>
+                </select>
               </div>
-              <div>
-                <label className="label">Proveedor</label>
-                <input className="input" value={form.proveedor_nombre} onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))} placeholder="Ej: Distribuidora XYZ" />
-              </div>
-              <div>
-                <label className="label">SKU / Código</label>
-                <input className="input" value={form.sku} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))} placeholder="Ej: MAL-CAT-21" />
-              </div>
-              <div>
-                <label className="label">Precio de venta ($)</label>
-                <input className="input" type="number" min="0" value={form.precio_venta} onChange={e => setForm(f => ({ ...f, precio_venta: parseFloat(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Precio de costo ($)</label>
-                <input className="input" type="number" min="0" value={form.precio_costo} onChange={e => setForm(f => ({ ...f, precio_costo: parseFloat(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Stock actual</label>
-                <input className="input" type="number" min="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: parseInt(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Stock mínimo (alerta)</label>
-                <input className="input" type="number" min="0" value={form.stock_minimo} onChange={e => setForm(f => ({ ...f, stock_minimo: parseInt(e.target.value) || 0 }))} />
-              </div>
-              {empresa === 'aroma' && (
-                <div className="col-span-2">
-                  <label className="label">ID producto en WooCommerce</label>
-                  <input className="input" type="number" value={form.woo_product_id || ''} onChange={e => setForm(f => ({ ...f, woo_product_id: parseInt(e.target.value) || undefined }))} placeholder="Dejar vacío si no está en la web" />
-                </div>
-              )}
             </div>
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">Guardar</button>
+            <div className="mb-4">
+              <label className="label">Vendedor</label>
+              <div className="flex gap-2">
+                {vendedores.map(v=>(
+                  <button key={v.id} onClick={()=>{setVendedorId(v.id);setVendedorNombre(v.nombre)}}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${vendedorId===v.id?'bg-gray-800 text-white border-gray-800':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {v.tipo==='calle'?'🚗 ':''}{v.nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {clienteData && <div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500">CUIT: {clienteData.cuit||'—'} · {clienteData.direccion||'—'} · {clienteData.telefono||'—'}</div>}
+
+            <div className="mb-4">
+              <div className="flex justify-between mb-2">
+                <label className="label mb-0">Productos</label>
+                <button onClick={()=>{setItems([...items,{...ITEM_EMPTY}]);setBusquedaProducto([...busquedaProducto,''])}} className="text-xs text-blue-600 hover:underline">+ agregar línea</button>
+              </div>
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-3 py-2 text-gray-400 w-2/5">Buscar producto</th>
+                    <th className="text-center px-2 py-2 text-gray-400 w-14">Cant.</th>
+                    <th className="text-right px-2 py-2 text-gray-400">P.Unit.</th>
+                    <th className="text-center px-2 py-2 text-gray-400 w-14">Dto%</th>
+                    <th className="text-right px-2 py-2 text-gray-400">Total</th>
+                    <th className="w-6"></th>
+                  </tr></thead>
+                  <tbody>
+                    {items.map((item,idx)=>(
+                      <tr key={idx} className="border-b border-gray-50">
+                        <td className="px-2 py-1">
+                          <input type="text" className="input text-xs py-1 mb-1" placeholder="Buscar por nombre, bodega..." value={busquedaProducto[idx]||''} onChange={e=>updateBusqueda(idx,e.target.value)}/>
+                          <select className="input text-xs py-1" value={item.producto_id} onChange={e=>seleccionarProducto(idx,e.target.value)}>
+                            <option value="">— Seleccionar —</option>
+                            {productosFiltrados(idx).map(p=><option key={p.id} value={p.id}>{p.nombre}{p.bodega?` · ${p.bodega}`:''} (Stock:{p.stock})</option>)}
+                          </select>
+                        </td>
+                        <td className="px-1 py-1"><input type="number" min="1" className="input text-xs py-1 text-center" value={item.cantidad} onChange={e=>updateItem(idx,'cantidad',parseInt(e.target.value)||1)}/></td>
+                        <td className="px-1 py-1"><input type="number" min="0" className="input text-xs py-1 text-right" value={item.precio_unitario} onChange={e=>updateItem(idx,'precio_unitario',parseFloat(e.target.value)||0)}/></td>
+                        <td className="px-1 py-1"><input type="number" min="0" max="100" className="input text-xs py-1 text-center" value={item.descuento} onChange={e=>updateItem(idx,'descuento',parseFloat(e.target.value)||0)}/></td>
+                        <td className="px-2 py-1 text-right font-medium">${calcSubtotal(item).toLocaleString('es-AR')}</td>
+                        <td className="px-1 py-1">{items.length>1&&<button onClick={()=>{setItems(items.filter((_,i)=>i!==idx));setBusquedaProducto(busquedaProducto.filter((_,i)=>i!==idx))}} className="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-start gap-4 mb-4">
+              <div className="flex-1"><label className="label">Notas</label><textarea className="input h-16 resize-none text-xs" value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Observaciones..."/></div>
+              <div className="w-48">
+                <label className="label">Descuento global (%)</label>
+                <input type="number" min="0" max="100" className="input" value={descuentoGlobal} onChange={e=>setDescuentoGlobal(parseFloat(e.target.value)||0)}/>
+                <div className="mt-3 text-right">
+                  <div className="text-xs text-gray-400">Subtotal: ${items.reduce((a,i)=>a+calcSubtotal(i),0).toLocaleString('es-AR')}</div>
+                  {descuentoGlobal>0&&<div className="text-xs text-red-400">Dto: -{descuentoGlobal}%</div>}
+                  <div className="text-base font-medium text-gray-800 mt-1">TOTAL: ${calcTotal().toLocaleString('es-AR')}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={()=>setModal(false)} className="btn btn-primary">Cancelar</button>
+              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">
+                {editVentaId ? 'Guardar cambios' : `Generar ${tipo==='presupuesto'?'presupuesto':'remito'}`}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      <div id="print-area" style={{display:'none'}}>
+        {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
+      </div>
+
+      {toast&&<div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+    </div>
+  )
+}
+
+function PrintDoc({ venta, empresa }: { venta: Venta; empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string } }) {
+  const items = venta.items as (VentaItem & { descuento?: number })[]
+  const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
+  const cv = (venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'
+
+  return (
+    <div style={{fontFamily:'Arial,sans-serif',fontSize:'11px',color:'#000',maxWidth:'800px',margin:'0 auto'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'16px',paddingBottom:'12px',borderBottom:'1px solid #ccc'}}>
+        <img src={empresa.logoPath} alt={empresa.nombre} style={{height:'60px',objectFit:'contain'}}/>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:'16px',fontWeight:'bold',marginBottom:'4px'}}>NOTA PEDIDO</div>
+          <div style={{fontWeight:'bold'}}>{venta.numero}</div>
+        </div>
+      </div>
+      <div style={{marginBottom:'12px'}}>
+        <div style={{fontWeight:'bold',fontSize:'13px',marginBottom:'6px'}}>{empresa.nombre}</div>
+        <table style={{width:'100%',fontSize:'11px',borderCollapse:'collapse'}}>
+          <tbody>
+            <tr>
+              <td style={{paddingRight:'16px',paddingBottom:'3px'}}><strong>Responsable Inscripto</strong>&nbsp;&nbsp;<strong>C.U.I.T.</strong> {empresa.cuit}</td>
+              <td style={{textAlign:'right'}}><strong>Fecha Movimiento</strong>&nbsp;&nbsp;{fecha}</td>
+            </tr>
+            <tr>
+              <td style={{paddingBottom:'3px'}}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>
+              <td style={{textAlign:'right'}}><strong>Fecha Vencimiento</strong>&nbsp;&nbsp;{fecha}</td>
+            </tr>
+            <tr><td><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
+      <div style={{marginBottom:'12px'}}>
+        <div><strong>Razón Social:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
+        <div style={{marginTop:'4px'}}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {cv}</div>
+      </div>
+      <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
+      <table style={{width:'100%',borderCollapse:'collapse',marginBottom:'24px',fontSize:'11px'}}>
+        <thead>
+          <tr style={{borderBottom:'1px solid #000',borderTop:'1px solid #000'}}>
+            <th style={{padding:'6px 8px',textAlign:'center',width:'60px'}}>Cant.</th>
+            <th style={{padding:'6px 8px',textAlign:'left'}}>Descripción</th>
+            <th style={{padding:'6px 8px',textAlign:'center',width:'60px'}}>Des(%)</th>
+            <th style={{padding:'6px 8px',textAlign:'right',width:'110px'}}>P.UFin</th>
+            <th style={{padding:'6px 8px',textAlign:'right',width:'110px'}}>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item,i)=>(
+            <tr key={i} style={{borderBottom:'0.5px solid #eee'}}>
+              <td style={{padding:'5px 8px',textAlign:'center'}}>{item.cantidad.toFixed(3)}</td>
+              <td style={{padding:'5px 8px'}}>{item.nombre}</td>
+              <td style={{padding:'5px 8px',textAlign:'center'}}>{item.descuento||0}</td>
+              <td style={{padding:'5px 8px',textAlign:'right'}}>{item.precio_unitario.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+              <td style={{padding:'5px 8px',textAlign:'right'}}>{item.subtotal.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div style={{marginTop:'40px',borderTop:'1px solid #ccc',paddingTop:'8px'}}>
+        <table style={{width:'100%',fontSize:'11px',borderCollapse:'collapse'}}>
+          <tbody>
+            <tr>
+              <td style={{width:'35%'}}></td>
+              <td style={{textAlign:'center',width:'13%'}}><strong>Des(%)</strong></td>
+              <td style={{textAlign:'center',width:'13%'}}><strong>Imp. Int.</strong></td>
+              <td style={{textAlign:'center',width:'13%'}}><strong>Otros Con.</strong></td>
+              <td style={{textAlign:'center',width:'13%'}}><strong>Per. IIBB</strong></td>
+              <td style={{textAlign:'right',width:'13%'}}><strong>TOTAL</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Usuario:</strong> {empresa.nombre}</td>
+              <td style={{textAlign:'center'}}>{venta.descuento>0?`${venta.descuento}%`:'-'}</td>
+              <td style={{textAlign:'center'}}>-</td>
+              <td style={{textAlign:'center'}}>-</td>
+              <td style={{textAlign:'center'}}>-</td>
+              <td style={{textAlign:'right',fontWeight:'bold'}}>{venta.total.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+            </tr>
+            <tr><td colSpan={6} style={{paddingTop:'8px'}}><strong>Peso (kg):</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>C.A.E.</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Vto. C.A.E.</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      {venta.notas&&<div style={{marginTop:'12px',fontSize:'10px',color:'#666'}}><strong>Notas:</strong> {venta.notas}</div>}
     </div>
   )
 }
