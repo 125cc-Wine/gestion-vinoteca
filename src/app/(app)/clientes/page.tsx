@@ -6,22 +6,14 @@ const TIPOS = [
   { value: 'consumidor_final', label: 'Consumidor final' },
   { value: 'revendedor', label: 'Revendedor' },
   { value: 'mayorista', label: 'Mayorista' },
+  { value: 'gastronomia', label: 'Gastronomía' },
+  { value: 'otro', label: 'Otro' },
 ]
 
 const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
-  empresa: 'aroma',
-  nombre: '',
-  apellido: '',
-  razon_social: '',
-  cuit: '',
-  email: '',
-  telefono: '',
-  direccion: '',
-  tipo: 'consumidor_final',
-  saldo: 0,
-  limite_credito: 0,
-  notas: '',
-  activo: true,
+  empresa: 'aroma', nombre: '', apellido: '', razon_social: '', cuit: '',
+  email: '', telefono: '', direccion: '', tipo: 'consumidor_final',
+  saldo: 0, limite_credito: 0, notas: '', activo: true,
 }
 
 export default function ClientesPage() {
@@ -36,8 +28,7 @@ export default function ClientesPage() {
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
-    setEmpresa(e)
-    cargar(e)
+    setEmpresa(e); cargar(e)
   }, [])
 
   async function cargar(emp: string) {
@@ -52,14 +43,17 @@ export default function ClientesPage() {
 
   function abrirNuevo() {
     setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
-    setEditId(null)
-    setModal(true)
+    setEditId(null); setModal(true)
   }
 
   function abrirEditar(c: Cliente) {
-    setForm({ empresa: c.empresa, nombre: c.nombre, apellido: c.apellido || '', razon_social: c.razon_social || '', cuit: c.cuit || '', email: c.email || '', telefono: c.telefono || '', direccion: c.direccion || '', tipo: c.tipo, saldo: c.saldo, limite_credito: c.limite_credito || 0, notas: c.notas || '', activo: c.activo })
-    setEditId(c.id!)
-    setModal(true)
+    setForm({
+      empresa: c.empresa, nombre: c.nombre, apellido: c.apellido || '',
+      razon_social: c.razon_social || '', cuit: c.cuit || '', email: c.email || '',
+      telefono: c.telefono || '', direccion: c.direccion || '', tipo: c.tipo,
+      saldo: c.saldo, limite_credito: c.limite_credito || 0, notas: c.notas || '', activo: c.activo,
+    })
+    setEditId(c.id!); setModal(true)
   }
 
   async function guardar() {
@@ -69,21 +63,19 @@ export default function ClientesPage() {
     const res = await fetch('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
-    setModal(false)
-    cargar(empresa)
+    setModal(false); cargar(empresa)
     showToast(editId ? 'Cliente actualizado' : 'Cliente guardado')
   }
 
   async function eliminar(id: string) {
     if (!confirm('¿Eliminar este cliente?')) return
     await fetch(`/api/clientes?id=${id}`, { method: 'DELETE' })
-    cargar(empresa)
-    showToast('Cliente eliminado')
+    cargar(empresa); showToast('Cliente eliminado')
   }
 
   const filtrados = clientes.filter(c => {
     const q = busqueda.toLowerCase()
-    return !q || `${c.nombre}${c.apellido || ''}${c.razon_social || ''}${c.cuit || ''}`.toLowerCase().includes(q)
+    return !q || `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q)
   })
 
   const conSaldo = clientes.filter(c => c.saldo !== 0).length
@@ -94,7 +86,9 @@ export default function ClientesPage() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="card"><div className="text-xs text-gray-400 mb-1">Total clientes</div><div className="text-2xl font-medium text-gray-800">{clientes.length}</div></div>
         <div className="card"><div className="text-xs text-gray-400 mb-1">Con saldo pendiente</div><div className="text-2xl font-medium text-yellow-600">{conSaldo}</div></div>
-        <div className="card col-span-2"><div className="text-xs text-gray-400 mb-1">Saldo total cuentas corrientes</div><div className={`text-2xl font-medium ${saldoTotal > 0 ? 'text-green-600' : saldoTotal < 0 ? 'text-red-500' : 'text-gray-800'}`}>${saldoTotal.toLocaleString('es-AR')}</div></div>
+        <div className="card col-span-2"><div className="text-xs text-gray-400 mb-1">Saldo total cuentas corrientes</div>
+          <div className={`text-2xl font-medium ${saldoTotal > 0 ? 'text-green-600' : saldoTotal < 0 ? 'text-red-500' : 'text-gray-800'}`}>${saldoTotal.toLocaleString('es-AR')}</div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mb-4">
@@ -102,25 +96,19 @@ export default function ClientesPage() {
         <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo cliente</button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <input className="input flex-1" placeholder="Buscar por nombre, CUIT, razón social..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-      </div>
+      <input className="input mb-4" placeholder="Buscar por nombre, CUIT, teléfono, razón social..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              {['Cliente', 'CUIT', 'Contacto', 'Tipo', 'Saldo', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
+          <thead><tr className="border-b border-gray-100">
+            {['Cliente','CUIT','Contacto','Tipo','Saldo',''].map(h => (
+              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
+            ))}
+          </tr></thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            ) : filtrados.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No hay clientes todavía</td></tr>
-            ) : filtrados.map(c => (
+            {loading ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            : filtrados.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">No hay clientes{busqueda ? ' con ese criterio' : ' todavía'}</td></tr>
+            : filtrados.map(c => (
               <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="font-medium text-gray-800">{c.nombre} {c.apellido || ''}</div>
@@ -132,19 +120,17 @@ export default function ClientesPage() {
                   {c.email && <div>{c.email}</div>}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="badge badge-blue">{TIPOS.find(t => t.value === c.tipo)?.label}</span>
+                  <span className="badge badge-blue">{TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}</span>
                 </td>
                 <td className="px-4 py-3 font-medium">
                   <span className={c.saldo > 0 ? 'text-green-600' : c.saldo < 0 ? 'text-red-500' : 'text-gray-400'}>
                     ${c.saldo.toLocaleString('es-AR')}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                    <button onClick={() => eliminar(c.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
-                  </div>
-                </td>
+                <td className="px-4 py-3"><div className="flex gap-2">
+                  <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
+                  <button onClick={() => eliminar(c.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                </div></td>
               </tr>
             ))}
           </tbody>
