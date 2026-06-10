@@ -4,21 +4,12 @@ import type { Producto } from '@/types'
 
 const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro']
 
-const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
-  empresa: 'aroma',
-  nombre: '',
-  bodega: '',
-  varietal: '',
-  categoria: 'Tinto',
-  añada: '',
-  region: '',
-  sku: '',
-  precio_venta: 0,
-  precio_costo: 0,
-  stock: 0,
-  stock_minimo: 3,
-  woo_product_id: undefined,
-  activo: true,
+const EMPTY = {
+  empresa: 'aroma' as 'aroma' | 'lavid',
+  nombre: '', bodega: '', varietal: '', categoria: 'Tinto' as Producto['categoria'],
+  region: '', sku: '', proveedor_nombre: '',
+  precio_venta: 0, precio_costo: 0, stock: 0, stock_minimo: 3,
+  woo_product_id: undefined as number | undefined, activo: true,
 }
 
 export default function ProductosPage() {
@@ -47,10 +38,7 @@ export default function ProductosPage() {
     setLoading(false)
   }
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(''), 3000)
-  }
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   function abrirNuevo() {
     setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
@@ -61,19 +49,12 @@ export default function ProductosPage() {
   function abrirEditar(p: Producto) {
     setForm({
       empresa: p.empresa,
-      nombre: p.nombre,
-      bodega: p.bodega || '',
-      varietal: p.varietal || '',
-      categoria: p.categoria,
-      añada: p.añada || '',
-      region: p.region || '',
-      sku: p.sku || '',
-      precio_venta: p.precio_venta,
-      precio_costo: p.precio_costo || 0,
-      stock: p.stock,
-      stock_minimo: p.stock_minimo,
-      woo_product_id: p.woo_product_id,
-      activo: p.activo,
+      nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+      categoria: p.categoria, region: p.region || '', sku: p.sku || '',
+      proveedor_nombre: (p as unknown as Record<string,string>).proveedor_nombre || '',
+      precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+      stock: p.stock, stock_minimo: p.stock_minimo,
+      woo_product_id: p.woo_product_id, activo: p.activo,
     })
     setEditId(p.id!)
     setModal(true)
@@ -84,16 +65,13 @@ export default function ProductosPage() {
     const method = editId ? 'PUT' : 'POST'
     const body = editId ? { id: editId, ...form } : form
     const res = await fetch('/api/productos', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false)
     cargar(empresa)
-    const wooMsg = data.woo_sync === 'ok' ? ' · WooCommerce actualizado ✓' : ''
-    showToast(editId ? `Producto actualizado${wooMsg}` : 'Producto guardado')
+    showToast(editId ? 'Producto actualizado' : 'Producto guardado')
   }
 
   async function eliminar(id: string) {
@@ -108,7 +86,7 @@ export default function ProductosPage() {
     const res = await fetch('/api/woo/sync', { method: 'POST' })
     const data = await res.json()
     setSyncing(false)
-    showToast(`Sync WooCommerce: ${data.ok} ok, ${data.errors} errores`)
+    showToast(`Sync WooCommerce: ${data.ok ?? 0} ok, ${data.errors ?? 0} errores`)
   }
 
   const filtrados = productos.filter(p => {
@@ -130,7 +108,6 @@ export default function ProductosPage() {
 
   return (
     <div>
-      {/* Métricas */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total productos', value: productos.length },
@@ -145,7 +122,6 @@ export default function ProductosPage() {
         ))}
       </div>
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-medium text-gray-800">Productos</h1>
         <div className="flex gap-2">
@@ -154,60 +130,44 @@ export default function ProductosPage() {
               {syncing ? 'Sincronizando...' : '🔄 Sync WooCommerce'}
             </button>
           )}
-          <button onClick={abrirNuevo} className="btn btn-primary">
-            + Nuevo producto
-          </button>
+          <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo producto</button>
         </div>
       </div>
 
-      {/* Filtros */}
       <div className="flex gap-3 mb-4">
-        <input
-          className="input flex-1"
-          placeholder="Buscar por nombre, bodega, varietal..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-        <select
-          className="input w-48"
-          value={filtroCategoria}
-          onChange={e => setFiltroCategoria(e.target.value)}
-        >
+        <input className="input flex-1" placeholder="Buscar por nombre, bodega, varietal..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+        <select className="input w-48" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
           <option value="">Todas las categorías</option>
           {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
-      {/* Tabla */}
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
-              {['Producto', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Costo', 'Stock', 'Estado', 'WooID', ''].map(h => (
+              {['Producto','Bodega','Varietal','Categoría','Proveedor','Precio venta','Costo','Stock','Estado','WooID',''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={11} className="text-center py-12 text-gray-400">Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
+              <tr><td colSpan={11} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
             ) : filtrados.map(p => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="font-medium text-gray-800">{p.nombre}</div>
-                  {p.añada && <div className="text-xs text-gray-400">{p.añada}{p.region ? ` · ${p.region}` : ''}</div>}
+                  {p.region && <div className="text-xs text-gray-400">{p.region}</div>}
                 </td>
                 <td className="px-4 py-3 text-gray-600">{p.bodega || '—'}</td>
                 <td className="px-4 py-3 text-gray-600">{p.varietal || '—'}</td>
                 <td className="px-4 py-3 text-gray-600">{p.categoria}</td>
-                <td className="px-4 py-3 text-gray-800 font-medium">
-                  ${p.precio_venta.toLocaleString('es-AR')}
-                </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
-                  ${(p.precio_costo || 0).toLocaleString('es-AR')}
-                </td>
+                <td className="px-4 py-3 text-gray-500 text-xs">{(p as unknown as Record<string,string>).proveedor_nombre || '—'}</td>
+                <td className="px-4 py-3 text-gray-800 font-medium">${p.precio_venta.toLocaleString('es-AR')}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs">${(p.precio_costo || 0).toLocaleString('es-AR')}</td>
                 <td className="px-4 py-3 text-gray-700">{p.stock}</td>
                 <td className="px-4 py-3">{badgeStock(p)}</td>
                 <td className="px-4 py-3 text-xs text-gray-400">{p.woo_product_id || '—'}</td>
@@ -223,13 +183,10 @@ export default function ProductosPage() {
         </table>
       </div>
 
-      {/* Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-medium text-gray-800 mb-5">
-              {editId ? 'Editar producto' : 'Nuevo producto'}
-            </h2>
+            <h2 className="text-base font-medium text-gray-800 mb-5">{editId ? 'Editar producto' : 'Nuevo producto'}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="label">Nombre del vino *</label>
@@ -250,12 +207,12 @@ export default function ProductosPage() {
                 </select>
               </div>
               <div>
-                <label className="label">Añada</label>
-                <input className="input" value={form.añada} onChange={e => setForm(f => ({ ...f, añada: e.target.value }))} placeholder="Ej: 2021" />
-              </div>
-              <div>
                 <label className="label">Región</label>
                 <input className="input" value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))} placeholder="Ej: Mendoza" />
+              </div>
+              <div>
+                <label className="label">Proveedor</label>
+                <input className="input" value={form.proveedor_nombre} onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))} placeholder="Ej: Distribuidora XYZ" />
               </div>
               <div>
                 <label className="label">SKU / Código</label>
@@ -279,27 +236,20 @@ export default function ProductosPage() {
               </div>
               {empresa === 'aroma' && (
                 <div className="col-span-2">
-                  <label className="label">ID producto en WooCommerce (para sincronización)</label>
+                  <label className="label">ID producto en WooCommerce</label>
                   <input className="input" type="number" value={form.woo_product_id || ''} onChange={e => setForm(f => ({ ...f, woo_product_id: parseInt(e.target.value) || undefined }))} placeholder="Dejar vacío si no está en la web" />
                 </div>
               )}
             </div>
             <div className="flex justify-end gap-3 mt-5">
               <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">
-                Guardar
-              </button>
+              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">Guardar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
     </div>
   )
 }
