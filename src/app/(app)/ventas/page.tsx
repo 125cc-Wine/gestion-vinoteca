@@ -223,8 +223,8 @@ export default function VentasPage() {
             ))}
           </tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : ventasFiltradas.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes{busquedaVentas ? ' con ese criterio' : ' todavía'}</td></tr>
+            {loading ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            : ventasFiltradas.length === 0 ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">No hay comprobantes{busquedaVentas ? ' con ese criterio' : ' todavía'}</td></tr>
             : ventasFiltradas.map(v => (
               <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
@@ -258,7 +258,7 @@ export default function VentasPage() {
               <div>
                 <label className="label">Cliente</label>
                 <SearchSelect
-                  options={clientes.map(c=>({value:c.id,label:c.razon_social||`${c.nombre} ${c.apellido||''}`.trim(),sublabel:c.cuit||''}))}
+                  options={clientes.map(c=>({value:c.id||'',label:c.razon_social||`${c.nombre} ${c.apellido||''}`.trim(),sublabel:c.cuit||''}))}
                   value={clienteId}
                   onChange={(v,l)=>seleccionarCliente(v)}
                   placeholder="Consumidor Final"
