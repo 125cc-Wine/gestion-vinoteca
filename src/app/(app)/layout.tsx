@@ -5,7 +5,9 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 
 const NAV = [
+  { href: '/dashboard', label: 'Inicio', icon: '📊' },
   { href: '/productos', label: 'Productos', icon: '🍷' },
+  { href: '/bodegas', label: 'Bodegas', icon: '🏭' },
   { href: '/clientes', label: 'Clientes', icon: '👥' },
   { href: '/proveedores', label: 'Proveedores', icon: '🚛' },
   { href: '/ventas', label: 'Ventas', icon: '🧾' },
@@ -35,15 +37,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Image
               src={esAroma ? '/logos/aroma.jpg' : '/logos/lavid.png'}
               alt={esAroma ? 'Aroma de Vid' : 'La Vid Consultora'}
-              width={100}
-              height={32}
+              width={100} height={32}
               style={{ objectFit: 'contain', height: '32px', width: 'auto' }}
-              className={!esAroma ? 'brightness-110' : ''}
             />
             <span className={`text-xs px-2 py-0.5 rounded-full border ${
-              esAroma
-                ? 'text-amber-700 border-amber-200 bg-amber-50'
-                : 'text-cyan-400 border-cyan-800 bg-cyan-950'
+              esAroma ? 'text-amber-700 border-amber-200 bg-amber-50' : 'text-cyan-400 border-cyan-800 bg-cyan-950'
             }`}>
               {esAroma ? 'Consumidor final' : 'Reventa'}
             </span>
@@ -51,36 +49,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           <nav className="flex gap-1">
             {NAV.map(n => (
-              <Link
-                key={n.href}
-                href={n.href}
+              <Link key={n.href} href={n.href}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   pathname.startsWith(n.href)
-                    ? esAroma
-                      ? 'bg-gray-100 text-gray-800'
-                      : 'bg-gray-700 text-white'
-                    : esAroma
-                    ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                }`}
-              >
+                    ? esAroma ? 'bg-gray-100 text-gray-800' : 'bg-gray-700 text-white'
+                    : esAroma ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                }`}>
                 <span className="mr-1">{n.icon}</span>{n.label}
               </Link>
             ))}
           </nav>
 
-          <button
-            onClick={() => { localStorage.removeItem('empresa'); router.push('/') }}
-            className={`text-xs ${esAroma ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'}`}
-          >
+          <button onClick={() => { localStorage.removeItem('empresa'); router.push('/') }}
+            className={`text-xs ${esAroma ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'}`}>
             cambiar empresa
           </button>
         </div>
       </header>
 
-      <main className="flex-1 p-6">
-        {children}
-      </main>
+      <main className="flex-1 p-6">{children}</main>
     </div>
   )
 }
