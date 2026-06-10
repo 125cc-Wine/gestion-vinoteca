@@ -3,29 +3,13 @@ import { useEffect, useState } from 'react'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 
 const EMPRESAS_DATA = {
-  aroma: {
-    nombre: 'Aroma de Vid',
-    cuit: '20-26600984-5',
-    domicilio: 'Roca 2787, Mar del Plata',
-    telefono: '(0223) 491-1705',
-    logoPath: '/logos/aroma.jpg',
-  },
-  lavid: {
-    nombre: 'MDP La Vid Consultora S.R.L.',
-    cuit: '30-71762144-8',
-    domicilio: 'Roca 2787, Mar del Plata',
-    telefono: '(0223) 685-0870',
-    logoPath: '/logos/lavid.png',
-  },
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
+  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png' },
 }
 
 const CONDICIONES_VENTA = ['Contado','Cta. Cte.','Transferencia','Cheque','Tarjeta Débito','Tarjeta Crédito','QR','Billetera Virtual MercadoPago','CtaDni']
 
-interface ItemForm extends VentaItem {
-  producto_id: string
-  descuento: number
-}
-
+interface ItemForm extends VentaItem { producto_id: string; descuento: number }
 const ITEM_EMPTY: ItemForm = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0 }
 
 export default function VentasPage() {
@@ -36,21 +20,23 @@ export default function VentasPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
   const [tipo, setTipo] = useState<'presupuesto' | 'remito'>('presupuesto')
+  const [editVentaId, setEditVentaId] = useState<string | null>(null)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
   const [clienteData, setClienteData] = useState<Cliente | null>(null)
+  const [busquedaCliente, setBusquedaCliente] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
+  const [busquedaProducto, setBusquedaProducto] = useState<string[]>([''])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
   const [condVenta, setCondVenta] = useState('Contado')
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
+  const [busquedaVentas, setBusquedaVentas] = useState('')
   const [toast, setToast] = useState('')
-  const [busquedaProducto, setBusquedaProducto] = useState<string[]>([])
 
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
-    setEmpresa(e)
-    cargarTodo(e)
+    setEmpresa(e); cargarTodo(e)
   }, [])
 
   async function cargarTodo(emp: string) {
@@ -81,9 +67,13 @@ export default function VentasPage() {
   function productosFiltrados(idx: number) {
     const q = (busquedaProducto[idx] || '').toLowerCase()
     if (!q) return productos.slice(0, 50)
-    return productos.filter(p =>
-      `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q)
-    ).slice(0, 50)
+    return productos.filter(p => `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q)).slice(0, 50)
+  }
+
+  function clientesFiltrados() {
+    const q = busquedaCliente.toLowerCase()
+    if (!q) return clientes.slice(0, 100)
+    return clientes.filter(c => `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q))
   }
 
   function seleccionarProducto(idx: number, prodId: string) {
@@ -96,9 +86,7 @@ export default function VentasPage() {
   }
 
   function updateBusqueda(idx: number, val: string) {
-    const arr = [...busquedaProducto]
-    arr[idx] = val
-    setBusquedaProducto(arr)
+    const arr = [...busquedaProducto]; arr[idx] = val; setBusquedaProducto(arr)
   }
 
   function updateItem(idx: number, field: string, value: number | string) {
@@ -125,17 +113,48 @@ export default function VentasPage() {
       cliente_nombre: clienteNombre,
       items: items.filter(i => i.nombre).map(i => ({ producto_id: i.producto_id || null, nombre: i.nombre, cantidad: i.cantidad, precio_unitario: i.precio_unitario, descuento: i.descuento, subtotal: calcSubtotal(i) })),
       subtotal, descuento: descuentoGlobal, total,
-      estado: 'emitido', notas,
-      condicion_venta: condVenta,
-      descontarStock: tipo === 'remito',
+      estado: 'emitido', notas, condicion_venta: condVenta,
+      descontarStock: tipo === 'remito' && !editVentaId,
     }
-    const res = await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
+
+    let res
+    if (editVentaId) {
+      res = await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
+    } else {
+      res = await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
+    }
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false)
     await cargarTodo(empresa)
-    showToast(`${tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${data.numero} generado`)
-    setTimeout(() => { setVentaParaImprimir(data); setTimeout(() => imprimirDoc(), 400) }, 200)
+    showToast(editVentaId ? 'Comprobante actualizado' : `${tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${data.numero} generado`)
+    if (!editVentaId) setTimeout(() => { setVentaParaImprimir(data); setTimeout(() => imprimirDoc(), 400) }, 200)
+  }
+
+  async function eliminarVenta(id: string) {
+    if (!confirm('¿Eliminar este comprobante?')) return
+    await fetch(`/api/ventas?id=${id}`, { method: 'DELETE' })
+    cargarTodo(empresa); showToast('Comprobante eliminado')
+  }
+
+  function editarVenta(v: Venta) {
+    setEditVentaId(v.id!)
+    setTipo(v.tipo as 'presupuesto' | 'remito')
+    setClienteId(v.cliente_id || '')
+    setClienteNombre(v.cliente_nombre)
+    const c = clientes.find(c => c.id === v.cliente_id)
+    setClienteData(c || null)
+    setBusquedaCliente('')
+    const ventaItems = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
+      producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
+    }))
+    setItems(ventaItems)
+    setBusquedaProducto(ventaItems.map(() => ''))
+    setDescuentoGlobal(v.descuento)
+    setNotas(v.notas || '')
+    setCondVenta((v as unknown as Record<string,string>).condicion_venta || 'Contado')
+    setModal(true)
   }
 
   function imprimirDoc() {
@@ -144,24 +163,29 @@ export default function VentasPage() {
     const w = window.open('', '_blank', 'width=900,height=700')
     if (!w) return
     w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
-    w.document.close()
-    w.focus()
+    w.document.close(); w.focus()
     setTimeout(() => { w.print() }, 500)
   }
 
   function imprimirVenta(v: Venta) {
-    setVentaParaImprimir(v)
-    setTimeout(() => imprimirDoc(), 400)
+    setVentaParaImprimir(v); setTimeout(() => imprimirDoc(), 400)
   }
 
   function abrirNuevo(t: 'presupuesto' | 'remito') {
-    setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null)
-    setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto(['']); setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
+    setEditVentaId(null); setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final')
+    setClienteData(null); setBusquedaCliente('')
+    setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto([''])
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
     setModal(true)
   }
 
   const emp = EMPRESAS_DATA[empresa]
   const totalRemitos = ventas.filter(v => v.tipo === 'remito' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
+
+  const ventasFiltradas = ventas.filter(v => {
+    const q = busquedaVentas.toLowerCase()
+    return !q || `${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)
+  })
 
   return (
     <div>
@@ -179,30 +203,35 @@ export default function VentasPage() {
         </div>
       </div>
 
+      <input className="input mb-4" placeholder="Buscar por número o cliente..." value={busquedaVentas} onChange={e => setBusquedaVentas(e.target.value)} />
+
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-gray-100">
-            {['Número','Tipo','Cliente','Fecha','Productos','Total',''].map(h=>(
+            {['Número','Tipo','Cliente','Fecha','Items','Total',''].map(h => (
               <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
             ))}
           </tr></thead>
           <tbody>
-            {loading
-              ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-              : ventas.length === 0
-              ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes todavía</td></tr>
-              : ventas.map(v => (
-                <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
-                  <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
-                  <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
-                  <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
-                  <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
-                  <td className="px-4 py-3"><button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️ Imprimir</button></td>
-                </tr>
-              ))
-            }
+            {loading ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            : ventasFiltradas.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes{busquedaVentas ? ' con ese criterio' : ' todavía'}</td></tr>
+            : ventasFiltradas.map(v => (
+              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
+                <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
+                <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
+                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
+                <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1">
+                    <button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️</button>
+                    <button onClick={() => editarVenta(v)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
+                    <button onClick={() => eliminarVenta(v.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -211,14 +240,19 @@ export default function VentasPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={e=>e.target===e.currentTarget&&setModal(false)}>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4">
             <h2 className="text-base font-medium text-gray-800 mb-4">
-              Nuevo {tipo==='presupuesto'?'presupuesto':'remito'}
-              {tipo==='remito'&&<span className="ml-2 text-xs text-green-600 font-normal">· descuenta stock automáticamente</span>}
+              {editVentaId ? 'Editar' : 'Nuevo'} {tipo==='presupuesto'?'presupuesto':'remito'}
+              {tipo==='remito'&&!editVentaId&&<span className="ml-2 text-xs text-green-600 font-normal">· descuenta stock automáticamente</span>}
             </h2>
+
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div><label className="label">Cliente</label>
-                <select className="input" value={clienteId} onChange={e=>seleccionarCliente(e.target.value)}>
+              <div>
+                <label className="label">Buscar cliente</label>
+                <input className="input mb-1 text-xs" placeholder="Nombre, CUIT, teléfono..." value={busquedaCliente} onChange={e => setBusquedaCliente(e.target.value)} />
+                <select className="input" value={clienteId} onChange={e => seleccionarCliente(e.target.value)}>
                   <option value="">Consumidor Final</option>
-                  {clientes.map(c=><option key={c.id} value={c.id}>{c.razon_social||`${c.nombre} ${c.apellido||''}`.trim()}</option>)}
+                  {clientesFiltrados().map(c => (
+                    <option key={c.id} value={c.id}>{c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()}{c.cuit ? ` · ${c.cuit}` : ''}</option>
+                  ))}
                 </select>
               </div>
               <div><label className="label">Condición de venta</label>
@@ -227,7 +261,8 @@ export default function VentasPage() {
                 </select>
               </div>
             </div>
-            {clienteData&&<div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500">CUIT: {clienteData.cuit||'—'} · {clienteData.direccion||'—'} · {clienteData.telefono||'—'}</div>}
+
+            {clienteData && <div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500">CUIT: {clienteData.cuit||'—'} · {clienteData.direccion||'—'} · {clienteData.telefono||'—'}</div>}
 
             <div className="mb-4">
               <div className="flex justify-between mb-2">
@@ -248,13 +283,7 @@ export default function VentasPage() {
                     {items.map((item,idx)=>(
                       <tr key={idx} className="border-b border-gray-50">
                         <td className="px-2 py-1">
-                          <input
-                            type="text"
-                            className="input text-xs py-1 mb-1"
-                            placeholder="Buscar por nombre, bodega..."
-                            value={busquedaProducto[idx] || ''}
-                            onChange={e=>updateBusqueda(idx, e.target.value)}
-                          />
+                          <input type="text" className="input text-xs py-1 mb-1" placeholder="Buscar por nombre, bodega..." value={busquedaProducto[idx]||''} onChange={e=>updateBusqueda(idx,e.target.value)}/>
                           <select className="input text-xs py-1" value={item.producto_id} onChange={e=>seleccionarProducto(idx,e.target.value)}>
                             <option value="">— Seleccionar —</option>
                             {productosFiltrados(idx).map(p=><option key={p.id} value={p.id}>{p.nombre}{p.bodega?` · ${p.bodega}`:''} (Stock:{p.stock})</option>)}
@@ -264,7 +293,7 @@ export default function VentasPage() {
                         <td className="px-1 py-1"><input type="number" min="0" className="input text-xs py-1 text-right" value={item.precio_unitario} onChange={e=>updateItem(idx,'precio_unitario',parseFloat(e.target.value)||0)}/></td>
                         <td className="px-1 py-1"><input type="number" min="0" max="100" className="input text-xs py-1 text-center" value={item.descuento} onChange={e=>updateItem(idx,'descuento',parseFloat(e.target.value)||0)}/></td>
                         <td className="px-2 py-1 text-right font-medium">${calcSubtotal(item).toLocaleString('es-AR')}</td>
-                        <td className="px-1 py-1">{items.length>1&&<button onClick={()=>setItems(items.filter((_,i)=>i!==idx))} className="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>}</td>
+                        <td className="px-1 py-1">{items.length>1&&<button onClick={()=>{setItems(items.filter((_,i)=>i!==idx));setBusquedaProducto(busquedaProducto.filter((_,i)=>i!==idx))}} className="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -288,7 +317,7 @@ export default function VentasPage() {
             <div className="flex justify-end gap-3">
               <button onClick={()=>setModal(false)} className="btn btn-primary">Cancelar</button>
               <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">
-                Generar {tipo==='presupuesto'?'presupuesto':'remito'}
+                {editVentaId ? 'Guardar cambios' : `Generar ${tipo==='presupuesto'?'presupuesto':'remito'}`}
               </button>
             </div>
           </div>
