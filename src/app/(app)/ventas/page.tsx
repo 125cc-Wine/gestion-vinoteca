@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
+import SearchSelect from '@/components/SearchSelect'
 
 const EMPRESAS_DATA = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
@@ -8,6 +9,7 @@ const EMPRESAS_DATA = {
 }
 
 const CONDICIONES_VENTA = ['Contado','Cta. Cte.','Transferencia','Cheque','Tarjeta Débito','Tarjeta Crédito','QR','Billetera Virtual MercadoPago','CtaDni']
+const ESTADOS_PAGO = ['pagado','pendiente','cuenta_corriente']
 
 interface ItemForm extends VentaItem { producto_id: string; descuento: number }
 const ITEM_EMPTY: ItemForm = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0 }
@@ -30,6 +32,7 @@ export default function VentasPage() {
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
   const [condVenta, setCondVenta] = useState('Contado')
+  const [estadoPago, setEstadoPago] = useState('pagado')
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [busquedaVentas, setBusquedaVentas] = useState('')
   const [toast, setToast] = useState('')
@@ -120,7 +123,7 @@ export default function VentasPage() {
       cliente_nombre: clienteNombre,
       items: items.filter(i => i.nombre).map(i => ({ producto_id: i.producto_id || null, nombre: i.nombre, cantidad: i.cantidad, precio_unitario: i.precio_unitario, descuento: i.descuento, subtotal: calcSubtotal(i) })),
       subtotal, descuento: descuentoGlobal, total,
-      estado: 'emitido', notas, condicion_venta: condVenta,
+      estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
       descontarStock: tipo === 'remito' && !editVentaId,
     }
 
@@ -182,7 +185,7 @@ export default function VentasPage() {
     setEditVentaId(null); setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final')
     setClienteData(null); setBusquedaCliente('')
     setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto([''])
-    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setVendedorId(''); setVendedorNombre('')
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado'); setVendedorId(''); setVendedorNombre('')
     setModal(true)
   }
 
@@ -215,7 +218,7 @@ export default function VentasPage() {
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-gray-100">
-            {['Número','Tipo','Cliente','Fecha','Items','Total',''].map(h => (
+            {['Número','Tipo','Cliente','Fecha','Items','Total','Pago',''].map(h => (
               <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
             ))}
           </tr></thead>
@@ -253,18 +256,25 @@ export default function VentasPage() {
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="label">Buscar cliente</label>
-                <input className="input mb-1 text-xs" placeholder="Nombre, CUIT, teléfono..." value={busquedaCliente} onChange={e => setBusquedaCliente(e.target.value)} />
-                <select className="input" value={clienteId} onChange={e => seleccionarCliente(e.target.value)}>
-                  <option value="">Consumidor Final</option>
-                  {clientesFiltrados().map(c => (
-                    <option key={c.id} value={c.id}>{c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()}{c.cuit ? ` · ${c.cuit}` : ''}</option>
-                  ))}
-                </select>
+                <label className="label">Cliente</label>
+                <SearchSelect
+                  options={clientes.map(c=>({value:c.id,label:c.razon_social||`${c.nombre} ${c.apellido||''}`.trim(),sublabel:c.cuit||''}))}
+                  value={clienteId}
+                  onChange={(v,l)=>seleccionarCliente(v)}
+                  placeholder="Consumidor Final"
+                  searchPlaceholder="Nombre, CUIT, teléfono..."
+                />
               </div>
               <div><label className="label">Condición de venta</label>
                 <select className="input" value={condVenta} onChange={e=>setCondVenta(e.target.value)}>
                   {CONDICIONES_VENTA.map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div><label className="label">Estado de pago</label>
+                <select className="input" value={estadoPago} onChange={e=>setEstadoPago(e.target.value)}>
+                  <option value="pagado">✅ Pagado</option>
+                  <option value="pendiente">⏳ Pendiente</option>
+                  <option value="cuenta_corriente">📋 Cuenta corriente</option>
                 </select>
               </div>
             </div>
