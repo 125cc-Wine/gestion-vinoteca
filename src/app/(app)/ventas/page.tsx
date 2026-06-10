@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 
 const EMPRESAS_DATA = {
@@ -40,6 +40,7 @@ export default function VentasPage() {
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
+  const [condVenta, setCondVenta] = useState('Contado')
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [toast, setToast] = useState('')
 
@@ -101,7 +102,7 @@ export default function VentasPage() {
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
     const subtotal = items.reduce((a, i) => a + calcSubtotal(i), 0)
     const total = calcTotal()
-    const venta = {
+    const ventaData = {
       empresa, tipo,
       cliente_id: clienteId || null,
       cliente_nombre: clienteNombre,
@@ -111,7 +112,7 @@ export default function VentasPage() {
       condicion_venta: condVenta,
       descontarStock: tipo === 'remito',
     }
-    const res = await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(venta) })
+    const res = await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false)
@@ -128,7 +129,7 @@ export default function VentasPage() {
     w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
     w.document.close()
     w.focus()
-    setTimeout(() => { w.print(); }, 500)
+    setTimeout(() => { w.print() }, 500)
   }
 
   function imprimirVenta(v: Venta) {
@@ -169,24 +170,26 @@ export default function VentasPage() {
             ))}
           </tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : ventas.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes todavía</td></tr>
-            : ventas.map(v => (
-              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
-                <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
-                <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
-                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
-                <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
-                <td className="px-4 py-3"><button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️ Imprimir</button></td>
-              </tr>
-            ))}
+            {loading
+              ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              : ventas.length === 0
+              ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay comprobantes todavía</td></tr>
+              : ventas.map(v => (
+                <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
+                  <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
+                  <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
+                  <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
+                  <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
+                  <td className="px-4 py-3"><button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️ Imprimir</button></td>
+                </tr>
+              ))
+            }
           </tbody>
         </table>
       </div>
 
-      {/* Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={e=>e.target===e.currentTarget&&setModal(false)}>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4">
@@ -268,7 +271,6 @@ export default function VentasPage() {
         </div>
       )}
 
-      {/* Área de impresión oculta */}
       <div id="print-area" style={{display:'none'}}>
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
       </div>
@@ -281,7 +283,7 @@ export default function VentasPage() {
 function PrintDoc({ venta, empresa }: { venta: Venta; empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string } }) {
   const items = venta.items as (VentaItem & { descuento?: number })[]
   const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
-  const condVenta = (venta as Record<string,unknown>).condicion_venta as string || 'Contado'
+  const cv = (venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'
 
   return (
     <div style={{fontFamily:'Arial,sans-serif',fontSize:'11px',color:'#000',maxWidth:'800px',margin:'0 auto'}}>
@@ -311,7 +313,7 @@ function PrintDoc({ venta, empresa }: { venta: Venta; empresa: { nombre: string;
       <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
       <div style={{marginBottom:'12px'}}>
         <div><strong>Razón Social:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
-        <div style={{marginTop:'4px'}}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {condVenta}</div>
+        <div style={{marginTop:'4px'}}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {cv}</div>
       </div>
       <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
       <table style={{width:'100%',borderCollapse:'collapse',marginBottom:'24px',fontSize:'11px'}}>
