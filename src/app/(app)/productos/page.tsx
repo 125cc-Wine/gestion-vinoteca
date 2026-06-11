@@ -199,6 +199,15 @@ export default function ProductosPage() {
   const stockBajo = productos.filter(p => p.stock > 0 && p.stock <= p.stock_minimo).length
   const totalUnidades = productos.reduce((a, p) => a + p.stock, 0)
 
+  const valorPotencial = productos.reduce((a, p) => a + p.stock * p.precio_venta, 0)
+  const capitalInmovilizado = productos.reduce((a, p) => {
+    const costo = p.precio_costo && p.precio_costo > 0 ? p.precio_costo : p.precio_venta * 0.5
+    return a + p.stock * costo
+  }, 0)
+  const prodsSinCosto = productos.filter(p => !p.precio_costo || p.precio_costo === 0).length
+  const margenBruto = valorPotencial - capitalInmovilizado
+  const margenPct = valorPotencial > 0 ? Math.round((margenBruto / valorPotencial) * 100) : 0
+
   function badgeStock(p: Producto) {
     if (p.stock === 0) return <span className="badge badge-red">Sin stock</span>
     if (p.stock <= p.stock_minimo) return <span className="badge badge-yellow">Stock bajo</span>
@@ -207,8 +216,8 @@ export default function ProductosPage() {
 
   return (
     <div>
-      {/* Métricas */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* Métricas stock */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
         {[
           { label: 'Total productos', value: productos.length },
           { label: 'Unidades en stock', value: totalUnidades },
@@ -220,6 +229,29 @@ export default function ProductosPage() {
             <div className={`text-2xl font-bold ${m.color || 'text-gray-900'}`}>{m.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Valuación del stock */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="card border-l-4 border-l-blue-300">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Valor potencial</div>
+          <div className="text-2xl font-bold text-blue-600">${valorPotencial.toLocaleString('es-AR')}</div>
+          <div className="text-xs text-gray-400 mt-1">Si se vende todo a precio lista</div>
+        </div>
+        <div className="card border-l-4 border-l-amber-300">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Capital inmovilizado</div>
+          <div className="text-2xl font-bold text-amber-600">${capitalInmovilizado.toLocaleString('es-AR')}</div>
+          <div className="text-xs text-gray-400 mt-1">
+            {prodsSinCosto > 0
+              ? `${prodsSinCosto} prod. usan estimado 50% (sin costo cargado)`
+              : 'Basado en precio costo cargado'}
+          </div>
+        </div>
+        <div className="card border-l-4 border-l-emerald-300">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Margen bruto estimado</div>
+          <div className="text-2xl font-bold text-emerald-600">${margenBruto.toLocaleString('es-AR')}</div>
+          <div className="text-xs text-gray-400 mt-1">{margenPct}% sobre el valor potencial</div>
+        </div>
       </div>
 
       {/* Header */}
@@ -263,7 +295,7 @@ export default function ProductosPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
-              {['Producto', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio mayor.', 'Costo', 'Stock', 'Estado', 'WooID', ''].map(h => (
+              {['Producto', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio mayor.', 'Costo', 'Stock', 'Val. stock', 'Estado', 'WooID', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -272,7 +304,7 @@ export default function ProductosPage() {
             {loading ? (
               <tr><td colSpan={11} className="text-center py-12 text-gray-400">Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={11} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
+              <tr><td colSpan={12} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
             ) : filtrados.map(p => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
                 <td className="px-4 py-3">
@@ -292,6 +324,10 @@ export default function ProductosPage() {
                   ${(p.precio_costo || 0).toLocaleString('es-AR')}
                 </td>
                 <td className="px-4 py-3 text-gray-700 font-medium">{p.stock}</td>
+                <td className="px-4 py-3 text-xs">
+                  <div className="text-blue-600 font-medium">${(p.stock * p.precio_venta).toLocaleString('es-AR')}</div>
+                  <div className="text-gray-400">${(p.stock * (p.precio_costo && p.precio_costo > 0 ? p.precio_costo : p.precio_venta * 0.5)).toLocaleString('es-AR')} costo</div>
+                </td>
                 <td className="px-4 py-3">{badgeStock(p)}</td>
                 <td className="px-4 py-3 text-xs text-gray-400">{p.woo_product_id || '—'}</td>
                 <td className="px-4 py-3">
