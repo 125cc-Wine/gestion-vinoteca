@@ -19,7 +19,7 @@ const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
   empresa: 'aroma',
   nombre: '', bodega: '', varietal: '',
   categoria: 'Tinto',
-  añada: '', region: '', sku: '',
+  region: '', sku: '',
   precio_venta: 0,
   precio_mayorista: 0,
   precio_costo: 0,
@@ -71,7 +71,7 @@ export default function ProductosPage() {
   function abrirEditar(p: Producto) {
     setForm({
       empresa: p.empresa, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria, añada: p.añada || '', region: p.region || '', sku: p.sku || '',
+      categoria: p.categoria, region: p.region || '', sku: p.sku || '',
       precio_venta: p.precio_venta,
       precio_mayorista: p.precio_mayorista || 0,
       precio_costo: p.precio_costo || 0,
@@ -199,11 +199,7 @@ export default function ProductosPage() {
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-gray-800">{p.nombre}</div>
-                  {p.añada && (
-                    <div className="text-xs text-gray-400">
-                      {p.añada}{p.region ? ` · ${p.region}` : ''}
-                    </div>
-                  )}
+                  {p.region && <div className="text-xs text-gray-400">{p.region}</div>}
                 </td>
                 <td className="px-4 py-3 text-gray-600">{p.bodega || '—'}</td>
                 <td className="px-4 py-3 text-gray-600">{p.varietal || '—'}</td>
@@ -273,12 +269,6 @@ export default function ProductosPage() {
                   onChange={e => setForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
                   {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="label">Añada</label>
-                <input className="input" value={form.añada}
-                  onChange={e => setForm(f => ({ ...f, añada: e.target.value }))}
-                  placeholder="Ej: 2021" />
               </div>
               <div>
                 <label className="label">Región</label>

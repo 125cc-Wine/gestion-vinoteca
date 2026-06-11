@@ -7,7 +7,6 @@ export interface Producto {
   bodega: string
   varietal: string
   categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro'
-  añada?: string
   region?: string
   sku?: string
   precio_venta: number
