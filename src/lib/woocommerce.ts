@@ -17,6 +17,63 @@ export async function wooGetProducts(page = 1, perPage = 100) {
   return res.json()
 }
 
+export async function wooGetAllProducts(): Promise<WooProduct[]> {
+  const all: WooProduct[] = []
+  let page = 1
+  while (page <= 20) {
+    const batch: WooProduct[] = await wooGetProducts(page, 100)
+    all.push(...batch)
+    if (batch.length < 100) break
+    page++
+  }
+  return all
+}
+
+export interface WooProduct {
+  id: number
+  name: string
+  sku: string
+  regular_price: string
+  price: string
+  stock_quantity: number | null
+  manage_stock: boolean
+  status: string
+  categories: { id: number; name: string; slug: string }[]
+  attributes: { id: number; name: string; options: string[] }[]
+  images: { src: string }[]
+}
+
+export function mapWooToProducto(woo: WooProduct) {
+  const attr = (names: string[]) => {
+    for (const name of names) {
+      const found = woo.attributes.find(
+        a => a.name.toLowerCase() === name.toLowerCase()
+      )
+      if (found?.options?.[0]) return found.options[0]
+    }
+    return ''
+  }
+
+  const cats = woo.categories.map(c => c.name.toLowerCase())
+  let categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro' = 'Otro'
+  if (cats.some(c => c.includes('tinto'))) categoria = 'Tinto'
+  else if (cats.some(c => c.includes('blanco'))) categoria = 'Blanco'
+  else if (cats.some(c => c.includes('rosado'))) categoria = 'Rosado'
+  else if (cats.some(c => c.includes('espumante') || c.includes('espumoso'))) categoria = 'Espumante'
+
+  return {
+    woo_product_id: woo.id,
+    nombre: woo.name,
+    sku: woo.sku || '',
+    bodega: attr(['bodega', 'winery', 'productor', 'producer']),
+    varietal: attr(['varietal', 'cepa', 'uva', 'grape', 'tipo']),
+    region: attr(['región', 'region', 'origen', 'procedencia']),
+    categoria,
+    precio_venta: parseFloat(woo.regular_price || woo.price || '0') || 0,
+    stock: woo.stock_quantity ?? 0,
+  }
+}
+
 export async function wooUpdateProduct(
   wooId: number,
   data: { regular_price?: string; stock_quantity?: number; manage_stock?: boolean }

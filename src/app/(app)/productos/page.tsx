@@ -30,6 +30,19 @@ const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
 
 interface Bodega { id: string; nombre: string; empresa?: string }
 
+interface WooPreview {
+  woo_product_id: number
+  nombre: string
+  sku: string
+  bodega: string
+  varietal: string
+  region: string
+  categoria: string
+  precio_venta: number
+  stock: number
+  ya_importado: boolean
+}
+
 export default function ProductosPage() {
   const [empresa, setEmpresa] = useState<string>('aroma')
   const [productos, setProductos] = useState<Producto[]>([])
@@ -41,6 +54,12 @@ export default function ProductosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [importModal, setImportModal] = useState(false)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importProductos, setImportProductos] = useState<WooPreview[]>([])
+  const [importSeleccionados, setImportSeleccionados] = useState<Set<number>>(new Set())
+  const [importando, setImportando] = useState(false)
+  const [soloNuevos, setSoloNuevos] = useState(true)
   const [toast, setToast] = useState('')
 
   useEffect(() => {
@@ -115,6 +134,50 @@ export default function ProductosPage() {
     showToast(`Sync WooCommerce: ${data.ok} ok, ${data.errors} errores`)
   }
 
+  async function abrirImport() {
+    setImportModal(true)
+    setImportLoading(true)
+    setImportProductos([])
+    setImportSeleccionados(new Set())
+    const res = await fetch('/api/woo/sync')
+    const data = await res.json()
+    if (data.error) { showToast('Error: ' + data.error); setImportModal(false); return }
+    const lista: WooPreview[] = data.productos || []
+    setImportProductos(lista)
+    // Pre-seleccionar los nuevos
+    setImportSeleccionados(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
+    setImportLoading(false)
+  }
+
+  function toggleSeleccion(id: number) {
+    setImportSeleccionados(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function seleccionarTodosNuevos() {
+    setImportSeleccionados(new Set(importProductos.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
+  }
+
+  async function importarSeleccionados() {
+    const aImportar = importProductos.filter(p => importSeleccionados.has(p.woo_product_id) && !p.ya_importado)
+    if (!aImportar.length) { showToast('No hay productos nuevos seleccionados'); return }
+    setImportando(true)
+    const res = await fetch('/api/woo/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productos: aImportar }),
+    })
+    const data = await res.json()
+    setImportando(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setImportModal(false)
+    cargar(empresa)
+    showToast(`${data.imported} producto${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} correctamente`)
+  }
+
   const filtrados = productos.filter(p => {
     const q = busqueda.toLowerCase()
     const matchQ = !q || `${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)
@@ -154,9 +217,14 @@ export default function ProductosPage() {
         <h1 className="text-lg font-bold text-gray-900">Productos</h1>
         <div className="flex gap-2">
           {empresa === 'aroma' && (
-            <button onClick={syncWoo} disabled={syncing} className="btn btn-primary text-xs">
-              {syncing ? 'Sincronizando...' : '🔄 Sync WooCommerce'}
-            </button>
+            <>
+              <button onClick={abrirImport} className="btn btn-primary text-xs">
+                ⬇️ Importar desde web
+              </button>
+              <button onClick={syncWoo} disabled={syncing} className="btn btn-primary text-xs">
+                {syncing ? 'Sincronizando...' : '🔄 Sync precio/stock → web'}
+              </button>
+            </>
           )}
           <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo producto</button>
         </div>
@@ -327,6 +395,126 @@ export default function ProductosPage() {
                 Guardar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal importar desde WooCommerce */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
+
+            <div className="flex items-start justify-between mb-4 flex-shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Importar desde WooCommerce</h2>
+                {!importLoading && (
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {importProductos.length} productos en la web ·{' '}
+                    <span className="text-emerald-600 font-medium">
+                      {importProductos.filter(p => !p.ya_importado).length} nuevos
+                    </span>
+                    {' · '}
+                    <span className="text-gray-400">
+                      {importProductos.filter(p => p.ya_importado).length} ya importados
+                    </span>
+                  </p>
+                )}
+              </div>
+              <button onClick={() => setImportModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+
+            {importLoading ? (
+              <div className="flex-1 flex items-center justify-center py-16 text-gray-400">
+                Cargando productos desde la web...
+              </div>
+            ) : (
+              <>
+                {/* Controles */}
+                <div className="flex gap-4 mb-3 flex-shrink-0 items-center">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} className="rounded" />
+                    Solo mostrar nuevos
+                  </label>
+                  <button onClick={seleccionarTodosNuevos} className="text-xs text-blue-600 hover:underline">
+                    Seleccionar todos los nuevos
+                  </button>
+                  <button
+                    onClick={() => setImportSeleccionados(new Set())}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Deseleccionar todo
+                  </button>
+                </div>
+
+                {/* Tabla */}
+                <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-white border-b border-gray-100">
+                      <tr>
+                        {['', 'Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio', 'Stock', 'Estado'].map(h => (
+                          <th key={h} className="text-left px-3 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importProductos
+                        .filter(p => !soloNuevos || !p.ya_importado)
+                        .map(p => (
+                          <tr
+                            key={p.woo_product_id}
+                            className={`border-b border-gray-50 hover:bg-gray-50/70 transition-colors ${p.ya_importado ? 'opacity-50' : ''}`}
+                          >
+                            <td className="px-3 py-2.5">
+                              <input
+                                type="checkbox"
+                                disabled={p.ya_importado}
+                                checked={importSeleccionados.has(p.woo_product_id)}
+                                onChange={() => toggleSeleccion(p.woo_product_id)}
+                                className="rounded"
+                              />
+                            </td>
+                            <td className="px-3 py-2.5 font-medium text-gray-800 max-w-[200px]">
+                              <div className="truncate">{p.nombre}</div>
+                              {p.sku && <div className="text-xs text-gray-400">{p.sku}</div>}
+                            </td>
+                            <td className="px-3 py-2.5 text-gray-600 text-xs">{p.bodega || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-3 py-2.5 text-gray-600 text-xs">{p.varietal || <span className="text-gray-300">—</span>}</td>
+                            <td className="px-3 py-2.5">
+                              <span className="badge badge-gray text-xs">{p.categoria}</span>
+                            </td>
+                            <td className="px-3 py-2.5 font-semibold text-gray-800 text-xs">
+                              {p.precio_venta > 0 ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-3 py-2.5 text-gray-500 text-xs">{p.stock}</td>
+                            <td className="px-3 py-2.5">
+                              {p.ya_importado
+                                ? <span className="badge badge-gray text-xs">Ya importado</span>
+                                : <span className="badge badge-green text-xs">Nuevo</span>}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-between items-center mt-4 flex-shrink-0">
+                  <span className="text-sm text-gray-500">
+                    {importSeleccionados.size} producto{importSeleccionados.size !== 1 ? 's' : ''} seleccionado{importSeleccionados.size !== 1 ? 's' : ''}
+                  </span>
+                  <div className="flex gap-3">
+                    <button onClick={() => setImportModal(false)} className="btn btn-primary">Cancelar</button>
+                    <button
+                      onClick={importarSeleccionados}
+                      disabled={importando || importSeleccionados.size === 0}
+                      className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm disabled:opacity-50"
+                    >
+                      {importando ? 'Importando...' : `Importar ${importSeleccionados.size} productos`}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
