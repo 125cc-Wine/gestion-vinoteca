@@ -139,13 +139,23 @@ export default function ProductosPage() {
     setImportLoading(true)
     setImportProductos([])
     setImportSeleccionados(new Set())
-    const res = await fetch('/api/woo/sync')
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); setImportModal(false); return }
-    const lista: WooPreview[] = data.productos || []
-    setImportProductos(lista)
-    // Pre-seleccionar los nuevos
-    setImportSeleccionados(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
+    try {
+      const res = await fetch('/api/woo/sync')
+      const text = await res.text()
+      let data: { error?: string; productos?: WooPreview[] }
+      try { data = JSON.parse(text) } catch { data = { error: `Respuesta inesperada del servidor (${res.status})` } }
+      if (!res.ok || data.error) {
+        showToast('Error: ' + (data.error ?? `HTTP ${res.status}`))
+        setImportModal(false)
+        return
+      }
+      const lista: WooPreview[] = data.productos || []
+      setImportProductos(lista)
+      setImportSeleccionados(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
+    } catch (e) {
+      showToast('Error de red al conectar con WooCommerce')
+      setImportModal(false)
+    }
     setImportLoading(false)
   }
 

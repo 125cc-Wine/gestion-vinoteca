@@ -5,23 +5,31 @@ import { wooUpdateStockAndPrice, wooGetAllProducts, mapWooToProducto } from '@/l
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
-  if (!process.env.WOOCOMMERCE_CONSUMER_KEY) {
-    return NextResponse.json({ error: 'WooCommerce no configurado' }, { status: 400 })
+  if (!process.env.WOOCOMMERCE_CONSUMER_KEY || !process.env.WOOCOMMERCE_URL) {
+    return NextResponse.json(
+      { error: 'WooCommerce no configurado. Faltan WOOCOMMERCE_URL y/o WOOCOMMERCE_CONSUMER_KEY en las variables de entorno.' },
+      { status: 400 }
+    )
   }
 
-  const [wooProducts, { data: existing }] = await Promise.all([
-    wooGetAllProducts(),
-    supabase.from('productos').select('woo_product_id').eq('empresa', 'aroma').not('woo_product_id', 'is', null),
-  ])
+  try {
+    const [wooProducts, { data: existing }] = await Promise.all([
+      wooGetAllProducts(),
+      supabase.from('productos').select('woo_product_id').eq('empresa', 'aroma').not('woo_product_id', 'is', null),
+    ])
 
-  const existingIds = new Set((existing ?? []).map(p => p.woo_product_id))
+    const existingIds = new Set((existing ?? []).map(p => p.woo_product_id))
 
-  const preview = wooProducts.map(woo => ({
-    ...mapWooToProducto(woo),
-    ya_importado: existingIds.has(woo.id),
-  }))
+    const preview = wooProducts.map(woo => ({
+      ...mapWooToProducto(woo),
+      ya_importado: existingIds.has(woo.id),
+    }))
 
-  return NextResponse.json({ total: preview.length, productos: preview })
+    return NextResponse.json({ total: preview.length, productos: preview })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error desconocido'
+    return NextResponse.json({ error: `Error al conectar con WooCommerce: ${msg}` }, { status: 500 })
+  }
 }
 
 // POST /api/woo/sync - sincroniza todos los productos de Aroma con WooCommerce
