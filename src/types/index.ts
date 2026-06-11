@@ -11,6 +11,7 @@ export interface Producto {
   region?: string
   sku?: string
   precio_venta: number
+  precio_mayorista?: number
   precio_costo?: number
   stock: number
   stock_minimo: number
@@ -18,6 +19,14 @@ export interface Producto {
   activo: boolean
   created_at?: string
   updated_at?: string
+}
+
+export interface Vendedor {
+  id?: string
+  empresa: Empresa
+  nombre: string
+  activo: boolean
+  created_at?: string
 }
 
 export interface Cliente {
@@ -54,6 +63,15 @@ export interface Proveedor {
   created_at?: string
 }
 
+export interface VentaItem {
+  producto_id?: string
+  nombre: string
+  cantidad: number
+  precio_unitario: number
+  descuento?: number
+  subtotal: number
+}
+
 export interface Venta {
   id?: string
   empresa: Empresa
@@ -61,6 +79,7 @@ export interface Venta {
   tipo: 'presupuesto' | 'remito' | 'factura'
   cliente_id?: string
   cliente_nombre: string
+  vendedor_nombre?: string
   items: VentaItem[]
   subtotal: number
   descuento: number
@@ -71,13 +90,32 @@ export interface Venta {
   created_at?: string
 }
 
-export interface VentaItem {
-  producto_id?: string
-  nombre: string
-  cantidad: number
-  precio_unitario: number
+export interface Pedido {
+  id?: string
+  empresa: Empresa
+  numero?: string
+  cliente_id?: string
+  cliente_nombre: string
+  vendedor_nombre?: string
+  items: VentaItem[]
   subtotal: number
+  descuento: number
+  total: number
+  estado: 'pendiente' | 'confirmado' | 'entregado' | 'cancelado'
+  notas?: string
+  condicion_venta?: string
+  venta_id?: string
+  created_at?: string
 }
+
+export type MedioPago =
+  | 'Efectivo'
+  | 'Tarjeta Débito'
+  | 'Tarjeta Crédito'
+  | 'QR'
+  | 'MercadoPago'
+  | 'Transferencia'
+  | 'Cta.Cte.'
 
 export interface MovimientoCaja {
   id?: string
@@ -87,6 +125,19 @@ export interface MovimientoCaja {
   monto: number
   fecha: string
   categoria?: string
+  medio_pago?: MedioPago
   referencia_id?: string
+  created_at?: string
+}
+
+export interface MovimientoCtaCte {
+  id?: string
+  empresa: Empresa
+  cliente_id: string
+  cliente_nombre?: string
+  tipo: 'cobro' | 'cargo'
+  concepto: string
+  monto: number
+  fecha: string
   created_at?: string
 }

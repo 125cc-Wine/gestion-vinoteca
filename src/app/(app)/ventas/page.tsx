@@ -1,15 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
-import SearchSelect from '@/components/SearchSelect'
 
 const EMPRESAS_DATA = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
   lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png' },
 }
 
-const CONDICIONES_VENTA = ['Contado','Cta. Cte.','Transferencia','Cheque','Tarjeta Débito','Tarjeta Crédito','QR','Billetera Virtual MercadoPago','CtaDni']
-const ESTADOS_PAGO = ['pagado','pendiente','cuenta_corriente']
+const CONDICIONES_VENTA = ['Contado', 'Cta. Cte.', 'Transferencia', 'Cheque', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'Billetera Virtual MercadoPago', 'CtaDni']
 
 interface ItemForm extends VentaItem { producto_id: string; descuento: number }
 const ITEM_EMPTY: ItemForm = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0 }
@@ -19,6 +17,7 @@ export default function VentasPage() {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [vendedores, setVendedores] = useState<{ id: string; nombre: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
   const [tipo, setTipo] = useState<'presupuesto' | 'remito'>('presupuesto')
@@ -26,7 +25,8 @@ export default function VentasPage() {
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
   const [clienteData, setClienteData] = useState<Cliente | null>(null)
-  const [busquedaCliente, setBusquedaCliente] = useState('')
+  const [clienteTipo, setClienteTipo] = useState('')
+  const [vendedorNombre, setVendedorNombre] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
   const [busquedaProducto, setBusquedaProducto] = useState<string[]>([''])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
@@ -36,9 +36,6 @@ export default function VentasPage() {
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [busquedaVentas, setBusquedaVentas] = useState('')
   const [toast, setToast] = useState('')
-  const [vendedores, setVendedores] = useState<{id:string;nombre:string;tipo:string}[]>([])
-  const [vendedorId, setVendedorId] = useState('')
-  const [vendedorNombre, setVendedorNombre] = useState('')
 
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
@@ -47,16 +44,16 @@ export default function VentasPage() {
 
   async function cargarTodo(emp: string) {
     setLoading(true)
-    const [vRes, pRes, cRes] = await Promise.all([
+    const [vRes, pRes, cRes, vendRes] = await Promise.all([
       fetch(`/api/ventas?empresa=${emp}`),
       fetch(`/api/productos?empresa=${emp}`),
       fetch(`/api/clientes?empresa=${emp}`),
+      fetch(`/api/vendedores?empresa=${emp}`),
     ])
     setVentas(await vRes.json().catch(() => []))
     setProductos(await pRes.json().catch(() => []))
     setClientes(await cRes.json().catch(() => []))
-    const vdRes = await fetch('/api/vendedores')
-    setVendedores(await vdRes.json().catch(() => []))
+    setVendedores(await vendRes.json().catch(() => []))
     setLoading(false)
   }
 
@@ -64,12 +61,12 @@ export default function VentasPage() {
 
   function calcSubtotal(item: ItemForm) {
     const base = item.cantidad * item.precio_unitario
-    return base - (base * ((item.descuento || 0) / 100))
+    return base - base * ((item.descuento || 0) / 100)
   }
 
   function calcTotal() {
     const sub = items.reduce((a, i) => a + calcSubtotal(i), 0)
-    return sub - (sub * (descuentoGlobal / 100))
+    return sub - sub * (descuentoGlobal / 100)
   }
 
   function productosFiltrados(idx: number) {
@@ -78,17 +75,18 @@ export default function VentasPage() {
     return productos.filter(p => `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q)).slice(0, 50)
   }
 
-  function clientesFiltrados() {
-    const q = busquedaCliente.toLowerCase()
-    if (!q) return clientes.slice(0, 100)
-    return clientes.filter(c => `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q))
-  }
-
   function seleccionarProducto(idx: number, prodId: string) {
     const prod = productos.find(p => p.id === prodId)
     if (!prod) return
+    const esMayorista = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
+    const precio = esMayorista && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
     const newItems = [...items]
-    newItems[idx] = { ...newItems[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: prod.precio_venta, subtotal: 0 }
+    newItems[idx] = {
+      ...newItems[idx],
+      producto_id: prod.id!,
+      nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`,
+      precio_unitario: precio,
+    }
     newItems[idx].subtotal = calcSubtotal(newItems[idx])
     setItems(newItems)
   }
@@ -106,9 +104,18 @@ export default function VentasPage() {
 
   function seleccionarCliente(id: string) {
     setClienteId(id)
-    if (!id) { setClienteNombre('Consumidor Final'); setClienteData(null); return }
+    if (!id) {
+      setClienteNombre('Consumidor Final')
+      setClienteData(null)
+      setClienteTipo('')
+      return
+    }
     const c = clientes.find(c => c.id === id)
-    if (c) { setClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()); setClienteData(c) }
+    if (c) {
+      setClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim())
+      setClienteData(c)
+      setClienteTipo(c.tipo)
+    }
   }
 
   async function guardar() {
@@ -117,11 +124,17 @@ export default function VentasPage() {
     const total = calcTotal()
     const ventaData = {
       empresa, tipo,
-      vendedor_id: vendedorId || null,
       vendedor_nombre: vendedorNombre || null,
       cliente_id: clienteId || null,
       cliente_nombre: clienteNombre,
-      items: items.filter(i => i.nombre).map(i => ({ producto_id: i.producto_id || null, nombre: i.nombre, cantidad: i.cantidad, precio_unitario: i.precio_unitario, descuento: i.descuento, subtotal: calcSubtotal(i) })),
+      items: items.filter(i => i.nombre).map(i => ({
+        producto_id: i.producto_id || null,
+        nombre: i.nombre,
+        cantidad: i.cantidad,
+        precio_unitario: i.precio_unitario,
+        descuento: i.descuento,
+        subtotal: calcSubtotal(i),
+      })),
       subtotal, descuento: descuentoGlobal, total,
       estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
       descontarStock: tipo === 'remito' && !editVentaId,
@@ -154,7 +167,8 @@ export default function VentasPage() {
     setClienteNombre(v.cliente_nombre)
     const c = clientes.find(c => c.id === v.cliente_id)
     setClienteData(c || null)
-    setBusquedaCliente('')
+    setClienteTipo(c?.tipo || '')
+    setVendedorNombre((v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '')
     const ventaItems = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
       producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
       precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
@@ -163,7 +177,8 @@ export default function VentasPage() {
     setBusquedaProducto(ventaItems.map(() => ''))
     setDescuentoGlobal(v.descuento)
     setNotas(v.notas || '')
-    setCondVenta((v as unknown as Record<string,string>).condicion_venta || 'Contado')
+    setCondVenta((v as unknown as Record<string, string>).condicion_venta || 'Contado')
+    setEstadoPago(v.estado_pago || 'pagado')
     setModal(true)
   }
 
@@ -172,25 +187,33 @@ export default function VentasPage() {
     if (!el) return
     const w = window.open('', '_blank', 'width=900,height=700')
     if (!w) return
-    w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
-    w.document.close(); w.focus()
-    setTimeout(() => { w.print() }, 500)
+    w.document.write(
+      `<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`,
+    )
+    w.document.close()
+    w.focus()
+    setTimeout(() => w.print(), 500)
   }
 
   function imprimirVenta(v: Venta) {
-    setVentaParaImprimir(v); setTimeout(() => imprimirDoc(), 400)
+    setVentaParaImprimir(v)
+    setTimeout(imprimirDoc, 400)
   }
 
   function abrirNuevo(t: 'presupuesto' | 'remito') {
-    setEditVentaId(null); setTipo(t); setClienteId(''); setClienteNombre('Consumidor Final')
-    setClienteData(null); setBusquedaCliente('')
+    setEditVentaId(null)
+    setTipo(t)
+    setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
+    setVendedorNombre('')
     setItems([{ ...ITEM_EMPTY }]); setBusquedaProducto([''])
-    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado'); setVendedorId(''); setVendedorNombre('')
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado')
     setModal(true)
   }
 
   const emp = EMPRESAS_DATA[empresa]
-  const totalRemitos = ventas.filter(v => v.tipo === 'remito' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
+  const totalRemitos = ventas
+    .filter(v => v.tipo === 'remito' && v.estado !== 'cancelado')
+    .reduce((a, v) => a + v.total, 0)
 
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
@@ -200,13 +223,24 @@ export default function VentasPage() {
   return (
     <div>
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Total comprobantes</div><div className="text-2xl font-medium text-gray-800">{ventas.length}</div></div>
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Presupuestos</div><div className="text-2xl font-medium text-gray-800">{ventas.filter(v => v.tipo === 'presupuesto').length}</div></div>
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Total remitos</div><div className="text-2xl font-medium text-green-600">${totalRemitos.toLocaleString('es-AR')}</div></div>
+        <div className="card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total comprobantes</div>
+          <div className="text-2xl font-bold text-gray-900">{ventas.length}</div>
+        </div>
+        <div className="card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Presupuestos</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {ventas.filter(v => v.tipo === 'presupuesto').length}
+          </div>
+        </div>
+        <div className="card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total remitos</div>
+          <div className="text-2xl font-bold text-emerald-600">${totalRemitos.toLocaleString('es-AR')}</div>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-medium text-gray-800">Ventas y comprobantes</h1>
+        <h1 className="text-lg font-bold text-gray-900">Ventas y comprobantes</h1>
         <div className="flex gap-2">
           <button onClick={() => abrirNuevo('presupuesto')} className="btn btn-primary">+ Presupuesto</button>
           <button onClick={() => abrirNuevo('remito')} className="btn btn-primary">+ Remito</button>
@@ -217,24 +251,35 @@ export default function VentasPage() {
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-100">
-            {['Número','Tipo','Cliente','Fecha','Items','Total','Pago',''].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-            ))}
-          </tr></thead>
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/50">
+              {['Número', 'Tipo', 'Cliente', 'Vendedor', 'Fecha', 'Productos', 'Total', ''].map(h => (
+                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : ventasFiltradas.length === 0 ? <tr><td colSpan={8} className="text-center py-12 text-gray-400">No hay comprobantes{busquedaVentas ? ' con ese criterio' : ' todavía'}</td></tr>
-            : ventasFiltradas.map(v => (
-              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{v.numero}</td>
-                <td className="px-4 py-3"><span className={`badge ${v.tipo==='presupuesto'?'badge-blue':'badge-green'}`}>{v.tipo==='presupuesto'?'Presupuesto':'Remito'}</span></td>
-                <td className="px-4 py-3 text-gray-600">{v.cliente_nombre}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
-                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
-                <td className="px-4 py-3 font-medium">${v.total.toLocaleString('es-AR')}</td>
+            {loading ? (
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            ) : ventasFiltradas.length === 0 ? (
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No hay comprobantes todavía</td></tr>
+            ) : ventasFiltradas.map(v => (
+              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
+                <td className="px-4 py-3 font-semibold text-gray-800">{v.numero}</td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1">
+                  <span className={`badge ${v.tipo === 'presupuesto' ? 'badge-blue' : 'badge-green'}`}>
+                    {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-700">{v.cliente_nombre}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs">{(v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '—'}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs">
+                  {new Date(v.created_at!).toLocaleDateString('es-AR')}
+                </td>
+                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
+                <td className="px-4 py-3 font-semibold text-gray-800">${v.total.toLocaleString('es-AR')}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1.5">
                     <button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️</button>
                     <button onClick={() => editarVenta(v)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
                     <button onClick={() => eliminarVenta(v.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
@@ -246,82 +291,123 @@ export default function VentasPage() {
         </table>
       </div>
 
+      {/* Modal nueva/editar venta */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={e=>e.target===e.currentTarget&&setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4">
-            <h2 className="text-base font-medium text-gray-800 mb-4">
-              {editVentaId ? 'Editar' : 'Nuevo'} {tipo==='presupuesto'?'presupuesto':'remito'}
-              {tipo==='remito'&&!editVentaId&&<span className="ml-2 text-xs text-green-600 font-normal">· descuenta stock automáticamente</span>}
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto"
+          onClick={e => e.target === e.currentTarget && setModal(false)}
+        >
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4 shadow-xl">
+            <h2 className="text-base font-bold text-gray-900 mb-4">
+              {editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : 'remito'}
+              {tipo === 'remito' && !editVentaId && (
+                <span className="ml-2 text-xs text-emerald-600 font-normal">· descuenta stock automáticamente</span>
+              )}
             </h2>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="label">Cliente</label>
+                <select className="input" value={clienteId} onChange={e => seleccionarCliente(e.target.value)}>
+                  <option value="">Consumidor Final</option>
+                  {clientes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Vendedor</label>
+                <select className="input" value={vendedorNombre} onChange={e => setVendedorNombre(e.target.value)}>
+                  <option value="">— Sin asignar —</option>
+                  {vendedores.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Condición de venta</label>
+                <select className="input" value={condVenta} onChange={e => setCondVenta(e.target.value)}>
+                  {CONDICIONES_VENTA.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
-                <label className="label">Cliente</label>
-                <SearchSelect
-                  options={clientes.map(c=>({value:c.id||'',label:c.razon_social||`${c.nombre} ${c.apellido||''}`.trim(),sublabel:c.cuit||''}))}
-                  value={clienteId}
-                  onChange={(v,l)=>seleccionarCliente(v)}
-                  placeholder="Consumidor Final"
-                  searchPlaceholder="Nombre, CUIT, teléfono..."
-                />
-              </div>
-              <div><label className="label">Condición de venta</label>
-                <select className="input" value={condVenta} onChange={e=>setCondVenta(e.target.value)}>
-                  {CONDICIONES_VENTA.map(c=><option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div><label className="label">Estado de pago</label>
-                <select className="input" value={estadoPago} onChange={e=>setEstadoPago(e.target.value)}>
+                <label className="label">Estado de pago</label>
+                <select className="input" value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
                   <option value="pagado">✅ Pagado</option>
                   <option value="pendiente">⏳ Pendiente</option>
                   <option value="cuenta_corriente">📋 Cuenta corriente</option>
                 </select>
               </div>
             </div>
-            <div className="mb-4">
-              <label className="label">Vendedor</label>
-              <div className="flex gap-2">
-                {vendedores.map(v=>(
-                  <button key={v.id} onClick={()=>{setVendedorId(v.id);setVendedorNombre(v.nombre)}}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${vendedorId===v.id?'bg-gray-800 text-white border-gray-800':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                    {v.tipo==='calle'?'🚗 ':''}{v.nombre}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {clienteData && <div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500">CUIT: {clienteData.cuit||'—'} · {clienteData.direccion||'—'} · {clienteData.telefono||'—'}</div>}
+            {clienteData && (
+              <div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500 flex gap-4 flex-wrap">
+                <span>CUIT: {clienteData.cuit || '—'}</span>
+                <span>{clienteData.direccion || '—'}</span>
+                <span>{clienteData.telefono || '—'}</span>
+                {(clienteTipo === 'mayorista' || clienteTipo === 'revendedor') && (
+                  <span className="text-blue-600 font-semibold">⭐ Precio mayorista activo</span>
+                )}
+              </div>
+            )}
 
             <div className="mb-4">
               <div className="flex justify-between mb-2">
                 <label className="label mb-0">Productos</label>
-                <button onClick={()=>{setItems([...items,{...ITEM_EMPTY}]);setBusquedaProducto([...busquedaProducto,''])}} className="text-xs text-blue-600 hover:underline">+ agregar línea</button>
+                <button
+                  onClick={() => { setItems([...items, { ...ITEM_EMPTY }]); setBusquedaProducto([...busquedaProducto, '']) }}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  + agregar línea
+                </button>
               </div>
               <div className="border border-gray-100 rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
-                  <thead><tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-3 py-2 text-gray-400 w-2/5">Buscar producto</th>
-                    <th className="text-center px-2 py-2 text-gray-400 w-14">Cant.</th>
-                    <th className="text-right px-2 py-2 text-gray-400">P.Unit.</th>
-                    <th className="text-center px-2 py-2 text-gray-400 w-14">Dto%</th>
-                    <th className="text-right px-2 py-2 text-gray-400">Total</th>
-                    <th className="w-6"></th>
-                  </tr></thead>
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-3 py-2 text-gray-400 w-2/5">Buscar producto</th>
+                      <th className="text-center px-2 py-2 text-gray-400 w-14">Cant.</th>
+                      <th className="text-right px-2 py-2 text-gray-400">P.Unit.</th>
+                      <th className="text-center px-2 py-2 text-gray-400 w-14">Dto%</th>
+                      <th className="text-right px-2 py-2 text-gray-400">Total</th>
+                      <th className="w-6"></th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {items.map((item,idx)=>(
+                    {items.map((item, idx) => (
                       <tr key={idx} className="border-b border-gray-50">
                         <td className="px-2 py-1">
-                          <input type="text" className="input text-xs py-1 mb-1" placeholder="Buscar por nombre, bodega..." value={busquedaProducto[idx]||''} onChange={e=>updateBusqueda(idx,e.target.value)}/>
-                          <select className="input text-xs py-1" value={item.producto_id} onChange={e=>seleccionarProducto(idx,e.target.value)}>
+                          <input type="text" className="input text-xs py-1 mb-1" placeholder="Buscar por nombre, bodega..." value={busquedaProducto[idx] || ''} onChange={e => updateBusqueda(idx, e.target.value)} />
+                          <select className="input text-xs py-1" value={item.producto_id} onChange={e => seleccionarProducto(idx, e.target.value)}>
                             <option value="">— Seleccionar —</option>
-                            {productosFiltrados(idx).map(p=><option key={p.id} value={p.id}>{p.nombre}{p.bodega?` · ${p.bodega}`:''} (Stock:{p.stock})</option>)}
+                            {productosFiltrados(idx).map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} (Stock:{p.stock})
+                              </option>
+                            ))}
                           </select>
                         </td>
-                        <td className="px-1 py-1"><input type="number" min="1" className="input text-xs py-1 text-center" value={item.cantidad} onChange={e=>updateItem(idx,'cantidad',parseInt(e.target.value)||1)}/></td>
-                        <td className="px-1 py-1"><input type="number" min="0" className="input text-xs py-1 text-right" value={item.precio_unitario} onChange={e=>updateItem(idx,'precio_unitario',parseFloat(e.target.value)||0)}/></td>
-                        <td className="px-1 py-1"><input type="number" min="0" max="100" className="input text-xs py-1 text-center" value={item.descuento} onChange={e=>updateItem(idx,'descuento',parseFloat(e.target.value)||0)}/></td>
-                        <td className="px-2 py-1 text-right font-medium">${calcSubtotal(item).toLocaleString('es-AR')}</td>
-                        <td className="px-1 py-1">{items.length>1&&<button onClick={()=>{setItems(items.filter((_,i)=>i!==idx));setBusquedaProducto(busquedaProducto.filter((_,i)=>i!==idx))}} className="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>}</td>
+                        <td className="px-1 py-1">
+                          <input type="number" min="1" className="input text-xs py-1 text-center" value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                        </td>
+                        <td className="px-1 py-1">
+                          <input type="number" min="0" className="input text-xs py-1 text-right" value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                        </td>
+                        <td className="px-1 py-1">
+                          <input type="number" min="0" max="100" className="input text-xs py-1 text-center" value={item.descuento} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
+                        </td>
+                        <td className="px-2 py-1 text-right font-semibold">${calcSubtotal(item).toLocaleString('es-AR')}</td>
+                        <td className="px-1 py-1">
+                          {items.length > 1 && (
+                            <button
+                              onClick={() => { setItems(items.filter((_, i) => i !== idx)); setBusquedaProducto(busquedaProducto.filter((_, i) => i !== idx)) }}
+                              className="text-gray-300 hover:text-red-400 text-lg leading-none"
+                            >×</button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -330,119 +416,163 @@ export default function VentasPage() {
             </div>
 
             <div className="flex justify-between items-start gap-4 mb-4">
-              <div className="flex-1"><label className="label">Notas</label><textarea className="input h-16 resize-none text-xs" value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Observaciones..."/></div>
+              <div className="flex-1">
+                <label className="label">Notas</label>
+                <textarea
+                  className="input h-16 resize-none text-xs"
+                  value={notas}
+                  onChange={e => setNotas(e.target.value)}
+                  placeholder="Observaciones..."
+                />
+              </div>
               <div className="w-48">
                 <label className="label">Descuento global (%)</label>
-                <input type="number" min="0" max="100" className="input" value={descuentoGlobal} onChange={e=>setDescuentoGlobal(parseFloat(e.target.value)||0)}/>
+                <input
+                  type="number" min="0" max="100" className="input"
+                  value={descuentoGlobal}
+                  onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
+                />
                 <div className="mt-3 text-right">
-                  <div className="text-xs text-gray-400">Subtotal: ${items.reduce((a,i)=>a+calcSubtotal(i),0).toLocaleString('es-AR')}</div>
-                  {descuentoGlobal>0&&<div className="text-xs text-red-400">Dto: -{descuentoGlobal}%</div>}
-                  <div className="text-base font-medium text-gray-800 mt-1">TOTAL: ${calcTotal().toLocaleString('es-AR')}</div>
+                  <div className="text-xs text-gray-400">
+                    Subtotal: ${items.reduce((a, i) => a + calcSubtotal(i), 0).toLocaleString('es-AR')}
+                  </div>
+                  {descuentoGlobal > 0 && (
+                    <div className="text-xs text-red-400">Dto: -{descuentoGlobal}%</div>
+                  )}
+                  <div className="text-base font-bold text-gray-900 mt-1">
+                    TOTAL: ${calcTotal().toLocaleString('es-AR')}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-3">
-              <button onClick={()=>setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">
-                {editVentaId ? 'Guardar cambios' : `Generar ${tipo==='presupuesto'?'presupuesto':'remito'}`}
+              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
+              <button
+                onClick={guardar}
+                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm"
+              >
+                {editVentaId ? 'Guardar cambios' : `Generar ${tipo === 'presupuesto' ? 'presupuesto' : 'remito'}`}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div id="print-area" style={{display:'none'}}>
+      {/* Área de impresión oculta */}
+      <div id="print-area" style={{ display: 'none' }}>
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
       </div>
 
-      {toast&&<div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50">
+          {toast}
+        </div>
+      )}
     </div>
   )
 }
 
-function PrintDoc({ venta, empresa }: { venta: Venta; empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string } }) {
+function PrintDoc({
+  venta,
+  empresa,
+}: {
+  venta: Venta
+  empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
+}) {
   const items = venta.items as (VentaItem & { descuento?: number })[]
   const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
-  const cv = (venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'
+  const condVenta = (venta as unknown as Record<string, unknown>).condicion_venta as string || 'Contado'
 
   return (
-    <div style={{fontFamily:'Arial,sans-serif',fontSize:'11px',color:'#000',maxWidth:'800px',margin:'0 auto'}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'16px',paddingBottom:'12px',borderBottom:'1px solid #ccc'}}>
-        <img src={empresa.logoPath} alt={empresa.nombre} style={{height:'60px',objectFit:'contain'}}/>
-        <div style={{textAlign:'right'}}>
-          <div style={{fontSize:'16px',fontWeight:'bold',marginBottom:'4px'}}>NOTA PEDIDO</div>
-          <div style={{fontWeight:'bold'}}>{venta.numero}</div>
+    <div style={{ fontFamily: 'Arial,sans-serif', fontSize: '11px', color: '#000', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #ccc' }}>
+        <img src={empresa.logoPath} alt={empresa.nombre} style={{ height: '60px', objectFit: 'contain' }} />
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>NOTA PEDIDO</div>
+          <div style={{ fontWeight: 'bold' }}>{venta.numero}</div>
         </div>
       </div>
-      <div style={{marginBottom:'12px'}}>
-        <div style={{fontWeight:'bold',fontSize:'13px',marginBottom:'6px'}}>{empresa.nombre}</div>
-        <table style={{width:'100%',fontSize:'11px',borderCollapse:'collapse'}}>
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' }}>{empresa.nombre}</div>
+        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
           <tbody>
             <tr>
-              <td style={{paddingRight:'16px',paddingBottom:'3px'}}><strong>Responsable Inscripto</strong>&nbsp;&nbsp;<strong>C.U.I.T.</strong> {empresa.cuit}</td>
-              <td style={{textAlign:'right'}}><strong>Fecha Movimiento</strong>&nbsp;&nbsp;{fecha}</td>
+              <td style={{ paddingRight: '16px', paddingBottom: '3px' }}><strong>Responsable Inscripto</strong>&nbsp;&nbsp;<strong>C.U.I.T.</strong> {empresa.cuit}</td>
+              <td style={{ textAlign: 'right' }}><strong>Fecha Movimiento</strong>&nbsp;&nbsp;{fecha}</td>
             </tr>
             <tr>
-              <td style={{paddingBottom:'3px'}}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>
-              <td style={{textAlign:'right'}}><strong>Fecha Vencimiento</strong>&nbsp;&nbsp;{fecha}</td>
+              <td style={{ paddingBottom: '3px' }}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>
+              <td style={{ textAlign: 'right' }}><strong>Fecha Vencimiento</strong>&nbsp;&nbsp;{fecha}</td>
             </tr>
             <tr><td><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</td><td></td></tr>
           </tbody>
         </table>
       </div>
-      <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
-      <div style={{marginBottom:'12px'}}>
+      <hr style={{ borderColor: '#ccc', marginBottom: '12px' }} />
+      <div style={{ marginBottom: '12px' }}>
         <div><strong>Razón Social:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
-        <div style={{marginTop:'4px'}}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {cv}</div>
+        <div style={{ marginTop: '4px' }}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {condVenta}</div>
       </div>
-      <hr style={{borderColor:'#ccc',marginBottom:'12px'}}/>
-      <table style={{width:'100%',borderCollapse:'collapse',marginBottom:'24px',fontSize:'11px'}}>
+      <hr style={{ borderColor: '#ccc', marginBottom: '12px' }} />
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', fontSize: '11px' }}>
         <thead>
-          <tr style={{borderBottom:'1px solid #000',borderTop:'1px solid #000'}}>
-            <th style={{padding:'6px 8px',textAlign:'center',width:'60px'}}>Cant.</th>
-            <th style={{padding:'6px 8px',textAlign:'left'}}>Descripción</th>
-            <th style={{padding:'6px 8px',textAlign:'center',width:'60px'}}>Des(%)</th>
-            <th style={{padding:'6px 8px',textAlign:'right',width:'110px'}}>P.UFin</th>
-            <th style={{padding:'6px 8px',textAlign:'right',width:'110px'}}>Total</th>
+          <tr style={{ borderBottom: '1px solid #000', borderTop: '1px solid #000' }}>
+            <th style={{ padding: '6px 8px', textAlign: 'center', width: '60px' }}>Cant.</th>
+            <th style={{ padding: '6px 8px', textAlign: 'left' }}>Descripción</th>
+            <th style={{ padding: '6px 8px', textAlign: 'center', width: '60px' }}>Des(%)</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', width: '110px' }}>P.UFin</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', width: '110px' }}>Total</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((item,i)=>(
-            <tr key={i} style={{borderBottom:'0.5px solid #eee'}}>
-              <td style={{padding:'5px 8px',textAlign:'center'}}>{item.cantidad.toFixed(3)}</td>
-              <td style={{padding:'5px 8px'}}>{item.nombre}</td>
-              <td style={{padding:'5px 8px',textAlign:'center'}}>{item.descuento||0}</td>
-              <td style={{padding:'5px 8px',textAlign:'right'}}>{item.precio_unitario.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
-              <td style={{padding:'5px 8px',textAlign:'right'}}>{item.subtotal.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+          {items.map((item, i) => (
+            <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
+              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad.toFixed(3)}</td>
+              <td style={{ padding: '5px 8px' }}>{item.nombre}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento || 0}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div style={{marginTop:'40px',borderTop:'1px solid #ccc',paddingTop:'8px'}}>
-        <table style={{width:'100%',fontSize:'11px',borderCollapse:'collapse'}}>
+      <div style={{ marginTop: '40px', borderTop: '1px solid #ccc', paddingTop: '8px' }}>
+        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
           <tbody>
             <tr>
-              <td style={{width:'35%'}}></td>
-              <td style={{textAlign:'center',width:'13%'}}><strong>Des(%)</strong></td>
-              <td style={{textAlign:'center',width:'13%'}}><strong>Imp. Int.</strong></td>
-              <td style={{textAlign:'center',width:'13%'}}><strong>Otros Con.</strong></td>
-              <td style={{textAlign:'center',width:'13%'}}><strong>Per. IIBB</strong></td>
-              <td style={{textAlign:'right',width:'13%'}}><strong>TOTAL</strong></td>
+              <td style={{ width: '35%' }}></td>
+              <td style={{ textAlign: 'center', width: '13%' }}><strong>Des(%)</strong></td>
+              <td style={{ textAlign: 'center', width: '13%' }}><strong>Imp. Int.</strong></td>
+              <td style={{ textAlign: 'center', width: '13%' }}><strong>Otros Con.</strong></td>
+              <td style={{ textAlign: 'center', width: '13%' }}><strong>Per. IIBB</strong></td>
+              <td style={{ textAlign: 'right', width: '13%' }}><strong>TOTAL</strong></td>
             </tr>
             <tr>
               <td><strong>Usuario:</strong> {empresa.nombre}</td>
-              <td style={{textAlign:'center'}}>{venta.descuento>0?`${venta.descuento}%`:'-'}</td>
-              <td style={{textAlign:'center'}}>-</td>
-              <td style={{textAlign:'center'}}>-</td>
-              <td style={{textAlign:'center'}}>-</td>
-              <td style={{textAlign:'right',fontWeight:'bold'}}>{venta.total.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+              <td style={{ textAlign: 'center' }}>{venta.descuento > 0 ? `${venta.descuento}%` : '-'}</td>
+              <td style={{ textAlign: 'center' }}>-</td>
+              <td style={{ textAlign: 'center' }}>-</td>
+              <td style={{ textAlign: 'center' }}>-</td>
+              <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                {venta.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </td>
             </tr>
-            <tr><td colSpan={6} style={{paddingTop:'8px'}}><strong>Peso (kg):</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>C.A.E.</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Vto. C.A.E.</strong></td></tr>
+            <tr>
+              <td colSpan={6} style={{ paddingTop: '8px' }}>
+                <strong>Peso (kg):</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>C.A.E.</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>Vto. C.A.E.</strong>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
-      {venta.notas&&<div style={{marginTop:'12px',fontSize:'10px',color:'#666'}}><strong>Notas:</strong> {venta.notas}</div>}
+      {venta.notas && (
+        <div style={{ marginTop: '12px', fontSize: '10px', color: '#666' }}>
+          <strong>Notas:</strong> {venta.notas}
+        </div>
+      )}
     </div>
   )
 }

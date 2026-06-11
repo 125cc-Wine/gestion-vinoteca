@@ -4,25 +4,33 @@ import type { Cliente } from '@/types'
 
 const TIPOS = [
   { value: 'consumidor_final', label: 'Consumidor final' },
-  { value: 'revendedor', label: 'Revendedor' },
-  { value: 'mayorista', label: 'Mayorista' },
-  { value: 'gastronomia', label: 'Gastronomía' },
-  { value: 'otro', label: 'Otro' },
+  { value: 'revendedor',       label: 'Revendedor' },
+  { value: 'mayorista',        label: 'Mayorista' },
+  { value: 'gastronomia',      label: 'Gastronomía' },
+  { value: 'otro',             label: 'Otro' },
 ]
 
 const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
-  empresa: 'aroma', nombre: '', apellido: '', razon_social: '', cuit: '',
-  email: '', telefono: '', direccion: '', tipo: 'consumidor_final',
-  saldo: 0, limite_credito: 0, notas: '', activo: true,
+  empresa: 'aroma',
+  nombre: '', apellido: '', razon_social: '', cuit: '', email: '', telefono: '',
+  direccion: '', tipo: 'consumidor_final', saldo: 0, limite_credito: 0, notas: '', activo: true,
 }
 
 export default function ClientesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
   const [editId, setEditId] = useState<string | null>(null)
+
+  const [cobroModal, setCobroModal] = useState(false)
+  const [cobroCliente, setCobroCliente] = useState<Cliente | null>(null)
+  const [cobroMonto, setCobroMonto] = useState(0)
+  const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
+  const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
+
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
 
@@ -39,7 +47,7 @@ export default function ClientesPage() {
     setLoading(false)
   }
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
 
   function abrirNuevo() {
     setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
@@ -53,14 +61,19 @@ export default function ClientesPage() {
       telefono: c.telefono || '', direccion: c.direccion || '', tipo: c.tipo,
       saldo: c.saldo, limite_credito: c.limite_credito || 0, notas: c.notas || '', activo: c.activo,
     })
-    setEditId(c.id!); setModal(true)
+    setEditId(c.id!)
+    setModal(true)
   }
 
   async function guardar() {
     if (!form.nombre.trim()) { showToast('El nombre es obligatorio'); return }
     const method = editId ? 'PUT' : 'POST'
     const body = editId ? { id: editId, ...form } : form
-    const res = await fetch('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const res = await fetch('/api/clientes', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false); cargar(empresa)
@@ -71,6 +84,60 @@ export default function ClientesPage() {
     if (!confirm('¿Eliminar este cliente?')) return
     await fetch(`/api/clientes?id=${id}`, { method: 'DELETE' })
     cargar(empresa); showToast('Cliente eliminado')
+  }
+
+  function abrirCobro(c: Cliente) {
+    setCobroCliente(c)
+    setCobroMonto(0)
+    setCobroConcepto('Cobro cuenta corriente')
+    setCobroFecha(new Date().toISOString().split('T')[0])
+    setCobroModal(true)
+  }
+
+  async function guardarCobro() {
+    if (!cobroCliente) return
+    if (!cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
+    const nombreCliente = cobroCliente.razon_social ||
+      `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
+    const res = await fetch('/api/cta-cte', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa,
+        cliente_id: cobroCliente.id,
+        cliente_nombre: nombreCliente,
+        tipo: 'cobro',
+        concepto: cobroConcepto,
+        monto: cobroMonto,
+        fecha: cobroFecha,
+      }),
+    })
+    const data = await res.json()
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setCobroModal(false)
+    cargar(empresa)
+    showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
+  }
+
+  function copiarMensajeWhatsApp(c: Cliente) {
+    const nombre = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
+    const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
+    const mensaje =
+      `Hola ${nombre}, le escribimos desde ${empNombre}.\n` +
+      `Su saldo pendiente es de $${c.saldo.toLocaleString('es-AR')}.\n` +
+      `Por favor comuníquese con nosotros para coordinar el pago.\n` +
+      `¡Muchas gracias!`
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(mensaje).then(() => {
+        showToast('Mensaje copiado al portapapeles ✓')
+      })
+    } else {
+      const url = c.telefono
+        ? `https://wa.me/549${c.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
+        : `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+      window.open(url, '_blank')
+    }
   }
 
   const filtrados = clientes.filter(c => {
@@ -84,34 +151,54 @@ export default function ClientesPage() {
   return (
     <div>
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Total clientes</div><div className="text-2xl font-medium text-gray-800">{clientes.length}</div></div>
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Con saldo pendiente</div><div className="text-2xl font-medium text-yellow-600">{conSaldo}</div></div>
-        <div className="card col-span-2"><div className="text-xs text-gray-400 mb-1">Saldo total cuentas corrientes</div>
-          <div className={`text-2xl font-medium ${saldoTotal > 0 ? 'text-green-600' : saldoTotal < 0 ? 'text-red-500' : 'text-gray-800'}`}>${saldoTotal.toLocaleString('es-AR')}</div>
+        <div className="card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total clientes</div>
+          <div className="text-2xl font-bold text-gray-900">{clientes.length}</div>
+        </div>
+        <div className="card">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Con saldo pendiente</div>
+          <div className="text-2xl font-bold text-amber-600">{conSaldo}</div>
+        </div>
+        <div className={`card col-span-2 ${saldoTotal > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Saldo total cuentas corrientes</div>
+          <div className={`text-2xl font-bold ${saldoTotal > 0 ? 'text-amber-600' : saldoTotal < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+            ${saldoTotal.toLocaleString('es-AR')}
+          </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-medium text-gray-800">Clientes</h1>
+        <h1 className="text-lg font-bold text-gray-900">Clientes</h1>
         <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo cliente</button>
       </div>
 
-      <input className="input mb-4" placeholder="Buscar por nombre, CUIT, teléfono, razón social..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+      <div className="flex gap-3 mb-4">
+        <input
+          className="input flex-1"
+          placeholder="Buscar por nombre, CUIT, razón social..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
+      </div>
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-100">
-            {['Cliente','CUIT','Contacto','Tipo','Saldo',''].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-            ))}
-          </tr></thead>
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/50">
+              {['Cliente', 'CUIT', 'Contacto', 'Tipo', 'Saldo', ''].map(h => (
+                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : filtrados.length === 0 ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">No hay clientes{busqueda ? ' con ese criterio' : ' todavía'}</td></tr>
-            : filtrados.map(c => (
-              <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
+            {loading ? (
+              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+            ) : filtrados.length === 0 ? (
+              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No hay clientes todavía</td></tr>
+            ) : filtrados.map(c => (
+              <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-gray-800">{c.nombre} {c.apellido || ''}</div>
+                  <div className="font-semibold text-gray-800">{c.nombre} {c.apellido || ''}</div>
                   {c.razon_social && <div className="text-xs text-gray-400">{c.razon_social}</div>}
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">{c.cuit || '—'}</td>
@@ -120,53 +207,155 @@ export default function ClientesPage() {
                   {c.email && <div>{c.email}</div>}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="badge badge-blue">{TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}</span>
+                  <span className="badge badge-blue">
+                    {TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}
+                  </span>
                 </td>
-                <td className="px-4 py-3 font-medium">
-                  <span className={c.saldo > 0 ? 'text-green-600' : c.saldo < 0 ? 'text-red-500' : 'text-gray-400'}>
+                <td className="px-4 py-3 font-semibold">
+                  <span className={c.saldo > 0 ? 'text-amber-600' : c.saldo < 0 ? 'text-red-500' : 'text-gray-400'}>
                     ${c.saldo.toLocaleString('es-AR')}
                   </span>
                 </td>
-                <td className="px-4 py-3"><div className="flex gap-2">
-                  <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                  <button onClick={() => eliminar(c.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
-                </div></td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1.5 flex-wrap">
+                    <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
+                    {c.saldo > 0 && (
+                      <>
+                        <button
+                          onClick={() => abrirCobro(c)}
+                          className="btn btn-success text-xs py-1 px-2"
+                          title="Registrar cobro"
+                        >
+                          💰 Cobrar
+                        </button>
+                        <button
+                          onClick={() => copiarMensajeWhatsApp(c)}
+                          className="btn btn-whatsapp text-xs py-1 px-2"
+                          title="Copiar mensaje de cobro para WhatsApp"
+                        >
+                          📱 WA
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => eliminar(c.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Modal edición cliente */}
       {modal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-base font-medium text-gray-800 mb-5">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+        <div
+          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+          onClick={e => e.target === e.currentTarget && setModal(false)}
+        >
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <h2 className="text-base font-bold text-gray-900 mb-5">
+              {editId ? 'Editar cliente' : 'Nuevo cliente'}
+            </h2>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Nombre *</label><input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
-              <div><label className="label">Apellido</label><input className="input" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></div>
-              <div className="col-span-2"><label className="label">Razón social</label><input className="input" value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
-              <div><label className="label">CUIT</label><input className="input" value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" /></div>
+              <div><label className="label">Nombre *</label>
+                <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
+              <div><label className="label">Apellido</label>
+                <input className="input" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></div>
+              <div className="col-span-2"><label className="label">Razón social</label>
+                <input className="input" value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
+              <div><label className="label">CUIT</label>
+                <input className="input" value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" /></div>
               <div><label className="label">Tipo</label>
                 <select className="input" value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
                   {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div><label className="label">Teléfono</label><input className="input" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
-              <div><label className="label">Email</label><input className="input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div className="col-span-2"><label className="label">Dirección</label><input className="input" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
-              <div><label className="label">Saldo cuenta corriente ($)</label><input className="input" type="number" value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
-              <div><label className="label">Límite de crédito ($)</label><input className="input" type="number" value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} /></div>
-              <div className="col-span-2"><label className="label">Notas</label><textarea className="input h-20 resize-none" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
+                </select></div>
+              <div><label className="label">Teléfono</label>
+                <input className="input" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
+              <div><label className="label">Email</label>
+                <input className="input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div className="col-span-2"><label className="label">Dirección</label>
+                <input className="input" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
+              <div><label className="label">Saldo cuenta corriente ($)</label>
+                <input className="input" type="number" value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
+              <div><label className="label">Límite de crédito ($)</label>
+                <input className="input" type="number" value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} /></div>
+              <div className="col-span-2"><label className="label">Notas</label>
+                <textarea className="input h-20 resize-none" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
             </div>
             <div className="flex justify-end gap-3 mt-5">
               <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">Guardar</button>
+              <button
+                onClick={guardar}
+                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm"
+              >
+                Guardar
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {/* Modal cobro */}
+      {cobroModal && cobroCliente && (
+        <div
+          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
+          onClick={e => e.target === e.currentTarget && setCobroModal(false)}
+        >
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-sm shadow-xl">
+            <h2 className="text-base font-bold text-gray-900 mb-1">Registrar cobro</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              {cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()}
+              {' — '}
+              <span className="font-semibold text-amber-600">
+                Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}
+              </span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="label">Monto a cobrar ($) *</label>
+                <input
+                  type="number" min="0" className="input"
+                  value={cobroMonto || ''}
+                  onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label">Concepto</label>
+                <input
+                  className="input"
+                  value={cobroConcepto}
+                  onChange={e => setCobroConcepto(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Fecha</label>
+                <input
+                  type="date" className="input"
+                  value={cobroFecha}
+                  onChange={e => setCobroFecha(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-5">
+              <button onClick={() => setCobroModal(false)} className="btn btn-primary">Cancelar</button>
+              <button
+                onClick={guardarCobro}
+                className="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-sm"
+              >
+                Registrar cobro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50 max-w-sm">
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

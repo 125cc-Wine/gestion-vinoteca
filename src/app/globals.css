@@ -3,44 +3,56 @@
 @tailwind utilities;
 
 :root {
-  --aroma-brown: #3D1F0D;
-  --aroma-red: #8B1A2A;
-  --aroma-cream: #F9F5F0;
-  --lavid-dark: #1E2227;
-  --lavid-blue: #00B4D8;
+  --aroma-primary: #7C2D12;
+  --aroma-accent: #B45309;
+  --lavid-primary: #0F172A;
+  --lavid-accent: #0EA5E9;
 }
 
 * { box-sizing: border-box; }
 
 body {
-  background: #F4F4F5;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: #F1F5F9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #1E293B;
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer border;
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer border
+           inline-flex items-center gap-1.5 whitespace-nowrap;
   }
   .btn-primary {
-    @apply bg-white border-gray-200 text-gray-700 hover:bg-gray-50;
+    @apply bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm;
   }
   .btn-danger {
-    @apply border-red-200 text-red-600 hover:bg-red-50;
+    @apply border-red-100 text-red-500 hover:bg-red-50 bg-white shadow-sm;
+  }
+  .btn-success {
+    @apply border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-white shadow-sm;
+  }
+  .btn-whatsapp {
+    @apply border-green-300 text-green-700 hover:bg-green-50 bg-white shadow-sm;
   }
   .card {
-    @apply bg-white rounded-xl border border-gray-100 p-5;
+    @apply bg-white rounded-2xl border border-gray-100 p-5 shadow-sm;
   }
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
-  .badge-green { @apply bg-green-50 text-green-700; }
-  .badge-yellow { @apply bg-yellow-50 text-yellow-700; }
-  .badge-red { @apply bg-red-50 text-red-600; }
-  .badge-blue { @apply bg-blue-50 text-blue-700; }
+  .badge-green  { @apply bg-emerald-50  text-emerald-700; }
+  .badge-yellow { @apply bg-amber-50    text-amber-700;   }
+  .badge-red    { @apply bg-red-50      text-red-600;     }
+  .badge-blue   { @apply bg-blue-50     text-blue-700;    }
+  .badge-purple { @apply bg-purple-50   text-purple-700;  }
+  .badge-gray   { @apply bg-gray-100    text-gray-600;    }
   .input {
-    @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 bg-white;
+    @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm
+           focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300
+           bg-white transition-colors;
   }
   .label {
-    @apply block text-xs font-medium text-gray-500 mb-1;
+    @apply block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide;
   }
 }
