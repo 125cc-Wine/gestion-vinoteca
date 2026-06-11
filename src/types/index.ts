@@ -39,7 +39,7 @@ export interface Cliente {
   email?: string
   telefono?: string
   direccion?: string
-  tipo: 'consumidor_final' | 'revendedor' | 'mayorista'
+  tipo: 'consumidor_final' | 'revendedor' | 'mayorista' | 'gastronomia' | 'otro'
   saldo: number
   limite_credito?: number
   notas?: string
@@ -85,6 +85,7 @@ export interface Venta {
   descuento: number
   total: number
   estado: 'borrador' | 'emitido' | 'pagado' | 'cancelado'
+  estado_pago?: 'pagado' | 'pendiente' | 'cuenta_corriente'
   notas?: string
   condicion_venta?: string
   created_at?: string
