@@ -1,8 +1,19 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { Producto } from '@/types'
+import ComboInput from '@/components/ComboInput'
 
 const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro']
+
+const VARIETALES = [
+  'Malbec', 'Cabernet Sauvignon', 'Merlot', 'Syrah', 'Bonarda', 'Tempranillo',
+  'Pinot Noir', 'Cabernet Franc', 'Petit Verdot', 'Tannat', 'Sangiovese',
+  'Chardonnay', 'Torrontés', 'Sauvignon Blanc', 'Viognier', 'Riesling',
+  'Pinot Gris', 'Semillón', 'Gewürztraminer', 'Moscatel',
+  'Blend Tinto', 'Blend Blanco', 'Corte',
+  'Vermouth', 'Gin', 'Whisky', 'Licor', 'Cerveza', 'Vodka', 'Pisco',
+  'Fernet', 'Bitter', 'Espumoso',
+]
 
 const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
   empresa: 'aroma',
@@ -240,23 +251,21 @@ export default function ProductosPage() {
               </div>
               <div>
                 <label className="label">Bodega</label>
-                <input
-                  className="input"
-                  list="bodegas-datalist"
+                <ComboInput
                   value={form.bodega}
-                  onChange={e => setForm(f => ({ ...f, bodega: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, bodega: v }))}
+                  options={bodegas.map(b => b.nombre)}
                   placeholder="Escribir o elegir bodega..."
-                  autoComplete="off"
                 />
-                <datalist id="bodegas-datalist">
-                  {bodegas.map(b => <option key={b.id} value={b.nombre} />)}
-                </datalist>
               </div>
               <div>
-                <label className="label">Varietal</label>
-                <input className="input" value={form.varietal}
-                  onChange={e => setForm(f => ({ ...f, varietal: e.target.value }))}
-                  placeholder="Ej: Malbec" />
+                <label className="label">Varietal / Tipo</label>
+                <ComboInput
+                  value={form.varietal}
+                  onChange={v => setForm(f => ({ ...f, varietal: v }))}
+                  options={VARIETALES}
+                  placeholder="Ej: Malbec, Gin, Fernet..."
+                />
               </div>
               <div>
                 <label className="label">Categoría</label>

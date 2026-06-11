@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import ComboInput from '@/components/ComboInput'
 
 interface Bodega {
   id: string
@@ -121,17 +122,12 @@ export default function BodegasPage() {
                 <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Alta Vista" />
               </div>
               <div><label className="label">Proveedor / Distribuidor</label>
-                <input
-                  className="input"
-                  list="proveedores-datalist"
+                <ComboInput
                   value={form.proveedor_nombre}
-                  onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, proveedor_nombre: v }))}
+                  options={proveedores.map(p => p.nombre)}
                   placeholder="Escribir o elegir proveedor..."
-                  autoComplete="off"
                 />
-                <datalist id="proveedores-datalist">
-                  {proveedores.map(p => <option key={p.id} value={p.nombre} />)}
-                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Región</label>
