@@ -10,6 +10,17 @@ const TIPOS = [
   { value: 'otro',             label: 'Otro' },
 ]
 
+interface MovCtaCte {
+  id: string
+  tipo: string
+  concepto: string
+  monto: number
+  saldo_anterior?: number
+  saldo_nuevo?: number
+  fecha?: string
+  created_at: string
+}
+
 const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
   empresa: 'aroma',
   nombre: '', apellido: '', razon_social: '', cuit: '', email: '', telefono: '',
@@ -30,6 +41,13 @@ export default function ClientesPage() {
   const [cobroMonto, setCobroMonto] = useState(0)
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
+
+  const [histModal, setHistModal] = useState(false)
+  const [histCliente, setHistCliente] = useState<Cliente | null>(null)
+  const [histMovs, setHistMovs] = useState<MovCtaCte[]>([])
+  const [histCargando, setHistCargando] = useState(false)
+  const [histDesde, setHistDesde] = useState('')
+  const [histHasta, setHistHasta] = useState(new Date().toISOString().split('T')[0])
 
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
@@ -119,6 +137,25 @@ export default function ClientesPage() {
     showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
   }
 
+  async function abrirHistorial(c: Cliente) {
+    setHistCliente(c)
+    setHistDesde('')
+    setHistHasta(new Date().toISOString().split('T')[0])
+    setHistModal(true)
+    await fetchHistorial(c.id!, '', new Date().toISOString().split('T')[0])
+  }
+
+  async function fetchHistorial(clienteId: string, desde: string, hasta: string) {
+    setHistCargando(true)
+    let url = `/api/cta-cte?cliente_id=${clienteId}`
+    if (desde) url += `&desde=${desde}`
+    if (hasta) url += `&hasta=${hasta}`
+    const res = await fetch(url)
+    const data = await res.json()
+    setHistMovs(Array.isArray(data) ? data : [])
+    setHistCargando(false)
+  }
+
   function copiarMensajeWhatsApp(c: Cliente) {
     const nombre = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
     const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
@@ -129,9 +166,7 @@ export default function ClientesPage() {
       `¡Muchas gracias!`
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(mensaje).then(() => {
-        showToast('Mensaje copiado al portapapeles ✓')
-      })
+      navigator.clipboard.writeText(mensaje).then(() => showToast('Mensaje copiado al portapapeles ✓'))
     } else {
       const url = c.telefono
         ? `https://wa.me/549${c.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
@@ -147,6 +182,9 @@ export default function ClientesPage() {
 
   const conSaldo = clientes.filter(c => c.saldo !== 0).length
   const saldoTotal = clientes.reduce((a, c) => a + c.saldo, 0)
+
+  const totalCobradoHist = histMovs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
+  const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0)
 
   return (
     <div>
@@ -172,14 +210,12 @@ export default function ClientesPage() {
         <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo cliente</button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <input
-          className="input flex-1"
-          placeholder="Buscar por nombre, CUIT, razón social..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-      </div>
+      <input
+        className="input mb-4"
+        placeholder="Buscar por nombre, CUIT, razón social..."
+        value={busqueda}
+        onChange={e => setBusqueda(e.target.value)}
+      />
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
@@ -219,20 +255,15 @@ export default function ClientesPage() {
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5 flex-wrap">
                     <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
+                    <button onClick={() => abrirHistorial(c)} className="btn btn-primary text-xs py-1 px-2" title="Ver historial de cuenta corriente">
+                      📋 Historial
+                    </button>
                     {c.saldo > 0 && (
                       <>
-                        <button
-                          onClick={() => abrirCobro(c)}
-                          className="btn btn-success text-xs py-1 px-2"
-                          title="Registrar cobro"
-                        >
+                        <button onClick={() => abrirCobro(c)} className="btn btn-success text-xs py-1 px-2">
                           💰 Cobrar
                         </button>
-                        <button
-                          onClick={() => copiarMensajeWhatsApp(c)}
-                          className="btn btn-whatsapp text-xs py-1 px-2"
-                          title="Copiar mensaje de cobro para WhatsApp"
-                        >
+                        <button onClick={() => copiarMensajeWhatsApp(c)} className="btn btn-whatsapp text-xs py-1 px-2">
                           📱 WA
                         </button>
                       </>
@@ -248,14 +279,9 @@ export default function ClientesPage() {
 
       {/* Modal edición cliente */}
       {modal && (
-        <div
-          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
-          onClick={e => e.target === e.currentTarget && setModal(false)}
-        >
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
-            <h2 className="text-base font-bold text-gray-900 mb-5">
-              {editId ? 'Editar cliente' : 'Nuevo cliente'}
-            </h2>
+            <h2 className="text-base font-bold text-gray-900 mb-5">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Nombre *</label>
                 <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
@@ -284,12 +310,7 @@ export default function ClientesPage() {
             </div>
             <div className="flex justify-end gap-3 mt-5">
               <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button
-                onClick={guardar}
-                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm"
-              >
-                Guardar
-              </button>
+              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm">Guardar</button>
             </div>
           </div>
         </div>
@@ -297,56 +318,148 @@ export default function ClientesPage() {
 
       {/* Modal cobro */}
       {cobroModal && cobroCliente && (
-        <div
-          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
-          onClick={e => e.target === e.currentTarget && setCobroModal(false)}
-        >
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-sm shadow-xl">
             <h2 className="text-base font-bold text-gray-900 mb-1">Registrar cobro</h2>
             <p className="text-sm text-gray-500 mb-5">
               {cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()}
               {' — '}
-              <span className="font-semibold text-amber-600">
-                Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}
-              </span>
+              <span className="font-semibold text-amber-600">Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
             </p>
             <div className="space-y-3">
               <div>
                 <label className="label">Monto a cobrar ($) *</label>
-                <input
-                  type="number" min="0" className="input"
-                  value={cobroMonto || ''}
-                  onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                  autoFocus
-                />
+                <input type="number" min="0" className="input" value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
               </div>
               <div>
                 <label className="label">Concepto</label>
-                <input
-                  className="input"
-                  value={cobroConcepto}
-                  onChange={e => setCobroConcepto(e.target.value)}
-                />
+                <input className="input" value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} />
               </div>
               <div>
                 <label className="label">Fecha</label>
-                <input
-                  type="date" className="input"
-                  value={cobroFecha}
-                  onChange={e => setCobroFecha(e.target.value)}
-                />
+                <input type="date" className="input" value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-5">
               <button onClick={() => setCobroModal(false)} className="btn btn-primary">Cancelar</button>
+              <button onClick={guardarCobro} className="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-sm">Registrar cobro</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal historial cuenta corriente */}
+      {histModal && histCliente && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setHistModal(false)}>
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">
+                  Historial — {histCliente.razon_social || `${histCliente.nombre} ${histCliente.apellido || ''}`.trim()}
+                </h2>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-sm text-gray-500">Saldo actual:</span>
+                  <span className={`text-sm font-bold ${histCliente.saldo > 0 ? 'text-amber-600' : histCliente.saldo < 0 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                    ${histCliente.saldo.toLocaleString('es-AR')}
+                  </span>
+                  {histCliente.saldo > 0 && (
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                      Deuda pendiente
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setHistModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+
+            {/* Filtros por fecha */}
+            <div className="flex gap-3 mb-4 items-end">
+              <div>
+                <label className="label">Desde</label>
+                <input type="date" className="input w-40" value={histDesde} onChange={e => setHistDesde(e.target.value)} />
+              </div>
+              <div>
+                <label className="label">Hasta</label>
+                <input type="date" className="input w-40" value={histHasta} onChange={e => setHistHasta(e.target.value)} />
+              </div>
               <button
-                onClick={guardarCobro}
-                className="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-sm"
+                onClick={() => fetchHistorial(histCliente.id!, histDesde, histHasta)}
+                className="btn btn-primary px-4"
               >
-                Registrar cobro
+                Filtrar
+              </button>
+              <button
+                onClick={() => { setHistDesde(''); setHistHasta(new Date().toISOString().split('T')[0]); fetchHistorial(histCliente.id!, '', new Date().toISOString().split('T')[0]) }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Ver todo
               </button>
             </div>
+
+            {/* Resumen del período */}
+            {histMovs.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-red-50 rounded-xl p-3">
+                  <div className="text-xs text-red-500 font-semibold uppercase tracking-wide mb-0.5">Total cargado</div>
+                  <div className="text-lg font-bold text-red-600">${totalCargadoHist.toLocaleString('es-AR')}</div>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3">
+                  <div className="text-xs text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Total cobrado</div>
+                  <div className="text-lg font-bold text-emerald-600">${totalCobradoHist.toLocaleString('es-AR')}</div>
+                </div>
+                <div className={`rounded-xl p-3 ${totalCargadoHist - totalCobradoHist > 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-0.5">Neto período</div>
+                  <div className={`text-lg font-bold ${totalCargadoHist - totalCobradoHist > 0 ? 'text-amber-600' : 'text-gray-700'}`}>
+                    ${(totalCargadoHist - totalCobradoHist).toLocaleString('es-AR')}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tabla de movimientos */}
+            {histCargando ? (
+              <div className="text-center py-10 text-gray-400">Cargando...</div>
+            ) : histMovs.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">No hay movimientos en este período</div>
+            ) : (
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Fecha</th>
+                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Tipo</th>
+                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Concepto</th>
+                      <th className="text-right px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Monto</th>
+                      <th className="text-right px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {histMovs.map(m => {
+                      const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
+                      return (
+                        <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/70">
+                          <td className="px-4 py-2.5 text-gray-400 text-xs">
+                            {new Date(m.created_at).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className={`badge ${esCobro ? 'badge-green' : 'badge-red'}`}>
+                              {esCobro ? 'Cobro' : 'Cargo'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-700">{m.concepto}</td>
+                          <td className={`px-4 py-2.5 text-right font-semibold ${esCobro ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-gray-500 text-xs">
+                            {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -121,10 +121,17 @@ export default function BodegasPage() {
                 <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Alta Vista" />
               </div>
               <div><label className="label">Proveedor / Distribuidor</label>
-                <select className="input" value={form.proveedor_nombre} onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))}>
-                  <option value="">— Sin proveedor asignado —</option>
-                  {proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-                </select>
+                <input
+                  className="input"
+                  list="proveedores-datalist"
+                  value={form.proveedor_nombre}
+                  onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))}
+                  placeholder="Escribir o elegir proveedor..."
+                  autoComplete="off"
+                />
+                <datalist id="proveedores-datalist">
+                  {proveedores.map(p => <option key={p.id} value={p.nombre} />)}
+                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Región</label>

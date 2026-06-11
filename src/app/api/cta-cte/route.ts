@@ -6,12 +6,19 @@ export async function GET(req: NextRequest) {
   const clienteId = req.nextUrl.searchParams.get('cliente_id')
   if (!clienteId) return NextResponse.json({ error: 'cliente_id requerido' }, { status: 400 })
 
-  const { data, error } = await supabase
+  const desde = req.nextUrl.searchParams.get('desde')
+  const hasta = req.nextUrl.searchParams.get('hasta')
+
+  let query = supabase
     .from('movimientos_cta_cte')
     .select('*')
     .eq('cliente_id', clienteId)
     .order('created_at', { ascending: false })
 
+  if (desde) query = query.gte('created_at', desde + 'T00:00:00')
+  if (hasta) query = query.lte('created_at', hasta + 'T23:59:59')
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }

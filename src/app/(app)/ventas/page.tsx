@@ -35,6 +35,11 @@ export default function VentasPage() {
   const [estadoPago, setEstadoPago] = useState('pagado')
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [busquedaVentas, setBusquedaVentas] = useState('')
+  const [filtroDesde, setFiltroDesde] = useState('')
+  const [filtroHasta, setFiltroHasta] = useState('')
+  const [filtroVendedor, setFiltroVendedor] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroEstadoPago, setFiltroEstadoPago] = useState('')
   const [toast, setToast] = useState('')
 
   useEffect(() => {
@@ -217,7 +222,13 @@ export default function VentasPage() {
 
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
-    return !q || `${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)
+    if (q && !`${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)) return false
+    if (filtroTipo && v.tipo !== filtroTipo) return false
+    if (filtroEstadoPago && v.estado_pago !== filtroEstadoPago) return false
+    if (filtroVendedor && (v as Venta & { vendedor_nombre?: string }).vendedor_nombre !== filtroVendedor) return false
+    if (filtroDesde && v.created_at && v.created_at < filtroDesde) return false
+    if (filtroHasta && v.created_at && v.created_at.split('T')[0] > filtroHasta) return false
+    return true
   })
 
   return (
@@ -247,13 +258,54 @@ export default function VentasPage() {
         </div>
       </div>
 
-      <input className="input mb-4" placeholder="Buscar por número o cliente..." value={busquedaVentas} onChange={e => setBusquedaVentas(e.target.value)} />
+      {/* Filtros */}
+      <div className="card mb-4 p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <input
+            className="input"
+            placeholder="Buscar número, cliente..."
+            value={busquedaVentas}
+            onChange={e => setBusquedaVentas(e.target.value)}
+          />
+          <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+            <option value="">Todos los tipos</option>
+            <option value="presupuesto">Presupuesto</option>
+            <option value="remito">Remito</option>
+          </select>
+          <select className="input" value={filtroEstadoPago} onChange={e => setFiltroEstadoPago(e.target.value)}>
+            <option value="">Todos los estados</option>
+            <option value="pagado">Pagado</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="cuenta_corriente">Cta. Corriente</option>
+          </select>
+          <select className="input" value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
+            <option value="">Todos los vendedores</option>
+            {vendedores.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
+          </select>
+          <div>
+            <input type="date" className="input" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} title="Desde" />
+          </div>
+          <div className="flex gap-1.5 items-center">
+            <input type="date" className="input flex-1" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} title="Hasta" />
+            {(filtroDesde || filtroHasta || filtroTipo || filtroEstadoPago || filtroVendedor || busquedaVentas) && (
+              <button
+                onClick={() => { setFiltroDesde(''); setFiltroHasta(''); setFiltroTipo(''); setFiltroEstadoPago(''); setFiltroVendedor(''); setBusquedaVentas('') }}
+                className="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0"
+                title="Limpiar filtros"
+              >×</button>
+            )}
+          </div>
+        </div>
+        {ventasFiltradas.length !== ventas.length && (
+          <div className="text-xs text-gray-400 mt-2">Mostrando {ventasFiltradas.length} de {ventas.length} comprobantes</div>
+        )}
+      </div>
 
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
-              {['Número', 'Tipo', 'Cliente', 'Vendedor', 'Fecha', 'Productos', 'Total', ''].map(h => (
+              {['Número', 'Tipo', 'Cliente', 'Vendedor', 'Fecha', 'Estado pago', 'Total', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -276,7 +328,12 @@ export default function VentasPage() {
                 <td className="px-4 py-3 text-gray-400 text-xs">
                   {new Date(v.created_at!).toLocaleDateString('es-AR')}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{(v.items as VentaItem[]).length} items</td>
+                <td className="px-4 py-3">
+                  {v.estado_pago === 'pagado' && <span className="badge badge-green">Pagado</span>}
+                  {v.estado_pago === 'pendiente' && <span className="badge badge-yellow">Pendiente</span>}
+                  {v.estado_pago === 'cuenta_corriente' && <span className="badge badge-blue">Cta. Cte.</span>}
+                  {!v.estado_pago && <span className="text-gray-300 text-xs">—</span>}
+                </td>
                 <td className="px-4 py-3 font-semibold text-gray-800">${v.total.toLocaleString('es-AR')}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5">

@@ -17,9 +17,12 @@ const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
   activo: true,
 }
 
+interface Bodega { id: string; nombre: string; empresa?: string }
+
 export default function ProductosPage() {
   const [empresa, setEmpresa] = useState<string>('aroma')
   const [productos, setProductos] = useState<Producto[]>([])
+  const [bodegas, setBodegas] = useState<Bodega[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
@@ -37,9 +40,12 @@ export default function ProductosPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const res = await fetch(`/api/productos?empresa=${emp}`)
-    const data = await res.json()
-    setProductos(Array.isArray(data) ? data : [])
+    const [pRes, bRes] = await Promise.all([
+      fetch(`/api/productos?empresa=${emp}`),
+      fetch('/api/bodegas'),
+    ])
+    setProductos(await pRes.json().catch(() => []))
+    setBodegas(await bRes.json().catch(() => []))
     setLoading(false)
   }
 
@@ -234,9 +240,17 @@ export default function ProductosPage() {
               </div>
               <div>
                 <label className="label">Bodega</label>
-                <input className="input" value={form.bodega}
+                <input
+                  className="input"
+                  list="bodegas-datalist"
+                  value={form.bodega}
                   onChange={e => setForm(f => ({ ...f, bodega: e.target.value }))}
-                  placeholder="Ej: Catena Zapata" />
+                  placeholder="Escribir o elegir bodega..."
+                  autoComplete="off"
+                />
+                <datalist id="bodegas-datalist">
+                  {bodegas.map(b => <option key={b.id} value={b.nombre} />)}
+                </datalist>
               </div>
               <div>
                 <label className="label">Varietal</label>
