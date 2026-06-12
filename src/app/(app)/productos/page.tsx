@@ -29,6 +29,7 @@ const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
 }
 
 interface Bodega { id: string; nombre: string; empresa?: string }
+interface Proveedor { id: string; nombre: string }
 
 interface WooPreview {
   woo_product_id: number
@@ -47,6 +48,7 @@ export default function ProductosPage() {
   const [empresa, setEmpresa] = useState<string>('aroma')
   const [productos, setProductos] = useState<Producto[]>([])
   const [bodegas, setBodegas] = useState<Bodega[]>([])
+  const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
@@ -62,6 +64,15 @@ export default function ProductosPage() {
   const [soloNuevos, setSoloNuevos] = useState(true)
   const [toast, setToast] = useState('')
 
+  // Selección masiva
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
+  const [bulkCargando, setBulkCargando] = useState(false)
+  const [bulkBodega, setBulkBodega] = useState('')
+  const [bulkProveedor, setBulkProveedor] = useState('')
+  const [bulkVarietal, setBulkVarietal] = useState('')
+  const [bulkPct, setBulkPct] = useState('')
+  const [bulkPrecio, setBulkPrecio] = useState('')
+
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
@@ -70,16 +81,18 @@ export default function ProductosPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const [pRes, bRes] = await Promise.all([
+    const [pRes, bRes, prvRes] = await Promise.all([
       fetch(`/api/productos?empresa=${emp}`),
       fetch('/api/bodegas'),
+      fetch(`/api/proveedores?empresa=${emp}`),
     ])
     setProductos(await pRes.json().catch(() => []))
     setBodegas(await bRes.json().catch(() => []))
+    setProveedores(await prvRes.json().catch(() => []))
     setLoading(false)
   }
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 4000) }
 
   function abrirNuevo() {
     setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
@@ -152,14 +165,14 @@ export default function ProductosPage() {
       const lista: WooPreview[] = data.productos || []
       setImportProductos(lista)
       setImportSeleccionados(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
-    } catch (e) {
+    } catch {
       showToast('Error de red al conectar con WooCommerce')
       setImportModal(false)
     }
     setImportLoading(false)
   }
 
-  function toggleSeleccion(id: number) {
+  function toggleSeleccionWoo(id: number) {
     setImportSeleccionados(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -188,12 +201,50 @@ export default function ProductosPage() {
     showToast(`${data.imported} producto${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} correctamente`)
   }
 
+  // ── Selección masiva ──────────────────────────────────────────────────────
+
+  function toggleSeleccionado(id: string) {
+    setSeleccionados(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    const todosIds = filtrados.map(p => p.id!)
+    const todosChecked = todosIds.length > 0 && todosIds.every(id => seleccionados.has(id))
+    setSeleccionados(todosChecked ? new Set() : new Set(todosIds))
+  }
+
+  async function ejecutarBulk(accion: string, valor: string | number) {
+    if (!seleccionados.size) return
+    if (accion === 'eliminar' && !confirm(`¿Eliminar ${seleccionados.size} producto${seleccionados.size !== 1 ? 's' : ''} en ambas empresas?`)) return
+    setBulkCargando(true)
+    const res = await fetch('/api/productos/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(seleccionados), accion, valor }),
+    })
+    const data = await res.json()
+    setBulkCargando(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setSeleccionados(new Set())
+    cargar(empresa)
+    showToast(`${data.afectados} producto${data.afectados !== 1 ? 's' : ''} actualizados en ambas empresas`)
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   const filtrados = productos.filter(p => {
     const q = busqueda.toLowerCase()
     const matchQ = !q || `${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)
     const matchC = !filtroCategoria || p.categoria === filtroCategoria
     return matchQ && matchC
   })
+
+  const todosSeleccionados = filtrados.length > 0 && filtrados.every(p => seleccionados.has(p.id!))
+  const algunoSeleccionado = filtrados.some(p => seleccionados.has(p.id!))
 
   const sinStock = productos.filter(p => p.stock === 0).length
   const stockBajo = productos.filter(p => p.stock > 0 && p.stock <= p.stock_minimo).length
@@ -291,11 +342,148 @@ export default function ProductosPage() {
         </select>
       </div>
 
+      {/* Barra de acciones masivas */}
+      {seleccionados.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Contador */}
+            <span className="text-sm font-semibold text-blue-800 shrink-0">
+              ✓ {seleccionados.size} seleccionado{seleccionados.size !== 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={() => setSeleccionados(new Set())}
+              className="text-xs text-blue-400 hover:text-blue-600 shrink-0 mr-2"
+            >
+              Limpiar
+            </button>
+
+            <div className="w-px h-5 bg-blue-200 shrink-0" />
+
+            {/* Bodega */}
+            <div className="flex items-center gap-1 shrink-0">
+              <select
+                className="input text-xs py-1 px-2 h-8 max-w-[160px]"
+                value={bulkBodega}
+                onChange={e => setBulkBodega(e.target.value)}
+              >
+                <option value="">Bodega...</option>
+                {bodegas.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
+              </select>
+              <button
+                disabled={!bulkBodega || bulkCargando}
+                onClick={() => ejecutarBulk('bodega', bulkBodega)}
+                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
+              >
+                Asignar
+              </button>
+            </div>
+
+            {/* Proveedor */}
+            <div className="flex items-center gap-1 shrink-0">
+              <select
+                className="input text-xs py-1 px-2 h-8 max-w-[160px]"
+                value={bulkProveedor}
+                onChange={e => setBulkProveedor(e.target.value)}
+              >
+                <option value="">Proveedor...</option>
+                {proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
+              <button
+                disabled={!bulkProveedor || bulkCargando}
+                onClick={() => ejecutarBulk('proveedor', bulkProveedor)}
+                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
+              >
+                Asignar
+              </button>
+            </div>
+
+            {/* Varietal */}
+            <div className="flex items-center gap-1 shrink-0">
+              <input
+                className="input text-xs py-1 px-2 h-8 w-32"
+                placeholder="Varietal..."
+                value={bulkVarietal}
+                onChange={e => setBulkVarietal(e.target.value)}
+              />
+              <button
+                disabled={!bulkVarietal.trim() || bulkCargando}
+                onClick={() => { ejecutarBulk('varietal', bulkVarietal); setBulkVarietal('') }}
+                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
+              >
+                Asignar
+              </button>
+            </div>
+
+            <div className="w-px h-5 bg-blue-200 shrink-0" />
+
+            {/* Aumento % */}
+            <div className="flex items-center gap-1 shrink-0">
+              <input
+                className="input text-xs py-1 px-2 h-8 w-20"
+                type="number"
+                placeholder="% aum."
+                value={bulkPct}
+                onChange={e => setBulkPct(e.target.value)}
+              />
+              <button
+                disabled={!bulkPct || bulkCargando}
+                onClick={() => { ejecutarBulk('aumento_precio', Number(bulkPct)); setBulkPct('') }}
+                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
+              >
+                Aumentar %
+              </button>
+            </div>
+
+            {/* Precio fijo */}
+            <div className="flex items-center gap-1 shrink-0">
+              <input
+                className="input text-xs py-1 px-2 h-8 w-24"
+                type="number"
+                placeholder="$ precio"
+                value={bulkPrecio}
+                onChange={e => setBulkPrecio(e.target.value)}
+              />
+              <button
+                disabled={!bulkPrecio || bulkCargando}
+                onClick={() => { ejecutarBulk('precio_fijo', Number(bulkPrecio)); setBulkPrecio('') }}
+                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
+              >
+                Fijar precio
+              </button>
+            </div>
+
+            <div className="w-px h-5 bg-blue-200 shrink-0" />
+
+            {/* Eliminar */}
+            <button
+              disabled={bulkCargando}
+              onClick={() => ejecutarBulk('eliminar', '')}
+              className="btn btn-danger text-xs py-1 px-3 h-8 disabled:opacity-40 shrink-0"
+            >
+              🗑 Eliminar seleccionados
+            </button>
+
+            {bulkCargando && (
+              <span className="text-xs text-blue-500 italic">Aplicando...</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tabla */}
       <div className="card p-0 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50">
+              <th className="px-4 py-3 w-8">
+                <input
+                  type="checkbox"
+                  checked={todosSeleccionados}
+                  ref={el => { if (el) el.indeterminate = !todosSeleccionados && algunoSeleccionado }}
+                  onChange={toggleTodos}
+                  className="rounded cursor-pointer"
+                />
+              </th>
               {['Producto', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio mayor.', 'Costo', 'Stock', 'Val. stock', 'Estado', 'WooID', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
               ))}
@@ -303,11 +491,22 @@ export default function ProductosPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={11} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={13} className="text-center py-12 text-gray-400">Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={12} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
+              <tr><td colSpan={13} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
             ) : filtrados.map(p => (
-              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
+              <tr
+                key={p.id}
+                className={`border-b border-gray-50 hover:bg-gray-50/70 transition-colors ${seleccionados.has(p.id!) ? 'bg-blue-50/50' : ''}`}
+              >
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={seleccionados.has(p.id!)}
+                    onChange={() => toggleSeleccionado(p.id!)}
+                    className="rounded cursor-pointer"
+                  />
+                </td>
                 <td className="px-4 py-3">
                   <div className="font-semibold text-gray-800">{p.nombre}</div>
                   {p.region && <div className="text-xs text-gray-400">{p.region}</div>}
@@ -476,7 +675,6 @@ export default function ProductosPage() {
               </div>
             ) : (
               <>
-                {/* Controles */}
                 <div className="flex gap-4 mb-3 flex-shrink-0 items-center">
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} className="rounded" />
@@ -493,7 +691,6 @@ export default function ProductosPage() {
                   </button>
                 </div>
 
-                {/* Tabla */}
                 <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl">
                   <table className="w-full text-sm">
                     <thead className="sticky top-0 bg-white border-b border-gray-100">
@@ -516,7 +713,7 @@ export default function ProductosPage() {
                                 type="checkbox"
                                 disabled={p.ya_importado}
                                 checked={importSeleccionados.has(p.woo_product_id)}
-                                onChange={() => toggleSeleccion(p.woo_product_id)}
+                                onChange={() => toggleSeleccionWoo(p.woo_product_id)}
                                 className="rounded"
                               />
                             </td>
@@ -544,7 +741,6 @@ export default function ProductosPage() {
                   </table>
                 </div>
 
-                {/* Footer */}
                 <div className="flex justify-between items-center mt-4 flex-shrink-0">
                   <span className="text-sm text-gray-500">
                     {importSeleccionados.size} producto{importSeleccionados.size !== 1 ? 's' : ''} seleccionado{importSeleccionados.size !== 1 ? 's' : ''}
