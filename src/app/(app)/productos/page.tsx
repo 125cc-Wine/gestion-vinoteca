@@ -1,78 +1,142 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
-import ComboInput from '@/components/ComboInput'
 
-const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro']
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:          '#0F0F0F',
+  surface:     '#141414',
+  card:        '#1A1A1A',
+  border:      '#2A2A2A',
+  accent:      '#8B1A2A',
+  text:        '#E8E8E8',
+  muted:       '#888888',
+  dim:         '#555555',
+  selBg:       'rgba(139,26,42,0.13)',
+  selBorder:   '#8B1A2A',
+  dangerBg:    '#3A1010',
+  dangerBorder:'#8B2020',
+  green:       '#4CAF7D',
+  amber:       '#D4820A',
+  red:         '#E05555',
+}
 
-const VARIETALES = [
-  'Malbec', 'Cabernet Sauvignon', 'Merlot', 'Syrah', 'Bonarda', 'Tempranillo',
-  'Pinot Noir', 'Cabernet Franc', 'Petit Verdot', 'Tannat', 'Sangiovese',
-  'Chardonnay', 'Torrontés', 'Sauvignon Blanc', 'Viognier', 'Riesling',
-  'Pinot Gris', 'Semillón', 'Gewürztraminer', 'Moscatel',
-  'Blend Tinto', 'Blend Blanco', 'Corte',
-  'Vermouth', 'Gin', 'Whisky', 'Licor', 'Cerveza', 'Vodka', 'Pisco',
-  'Fernet', 'Bitter', 'Espumoso',
+const CATS = ['Tinto','Blanco','Rosado','Espumante','Otro'] as const
+
+const KB = [
+  ['E / Enter',  'Editar fila activa'],
+  ['↑ / ↓',      'Navegar filas'],
+  ['Space',      'Seleccionar fila'],
+  ['Ctrl+A',     'Seleccionar todos'],
+  ['Ctrl+F',     'Ir al buscador'],
+  ['Ctrl+N',     'Nuevo producto'],
+  ['Shift+Click','Seleccionar rango'],
+  ['Ctrl+Click', 'Suma/resta selección'],
+  ['Delete',     'Eliminar seleccionados'],
+  ['Escape',     'Cerrar / Deseleccionar'],
+  ['?',          'Mostrar atajos'],
 ]
 
-const EMPTY: Omit<Producto, 'id' | 'created_at' | 'updated_at'> = {
-  empresa: 'aroma',
+const EMPTY_EDIT = {
   nombre: '', bodega: '', varietal: '',
-  categoria: 'Tinto',
+  categoria: 'Tinto' as Producto['categoria'],
   region: '', sku: '',
-  precio_venta: 0,
-  precio_mayorista: 0,
-  precio_costo: 0,
+  precio_venta: 0, precio_mayorista: 0, precio_costo: 0,
   stock: 0, stock_minimo: 3,
-  woo_product_id: undefined,
-  activo: true,
+  woo_product_id: undefined as number | undefined,
 }
-
-interface Bodega { id: string; nombre: string; empresa?: string }
-interface Proveedor { id: string; nombre: string }
 
 interface WooPreview {
-  woo_product_id: number
-  nombre: string
-  sku: string
-  bodega: string
-  varietal: string
-  region: string
-  categoria: string
-  precio_venta: number
-  stock: number
-  ya_importado: boolean
+  woo_product_id: number; nombre: string; sku: string
+  bodega: string; varietal: string; region: string
+  categoria: string; precio_venta: number; stock: number; ya_importado: boolean
 }
 
+// ─── Tiny style helpers ───────────────────────────────────────────────────────
+const INP: React.CSSProperties = {
+  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
+  color: C.text, padding: '5px 8px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box',
+}
+function btn(v: 'default'|'accent'|'ghost'|'danger' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
+  const bases = {
+    default: { background: '#222', border: `1px solid ${C.border}` },
+    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
+    ghost:   { background: 'transparent', border: '1px solid transparent' },
+    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
+  }
+  return { ...bases[v], color: C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function ProductosPage() {
-  const [empresa, setEmpresa] = useState<string>('aroma')
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [bodegas, setBodegas] = useState<Bodega[]>([])
-  const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(false)
-  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
-  const [editId, setEditId] = useState<string | null>(null)
-  const [busqueda, setBusqueda] = useState('')
+  // Data
+  const [empresa, setEmpresa]       = useState('aroma')
+  const [productos, setProductos]   = useState<Producto[]>([])
+  const [bodegas, setBodegas]       = useState<{id:string;nombre:string}[]>([])
+  const [loading, setLoading]       = useState(true)
+
+  // Filters
+  const [busqueda, setBusqueda]             = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
-  const [syncing, setSyncing] = useState(false)
-  const [importModal, setImportModal] = useState(false)
-  const [importLoading, setImportLoading] = useState(false)
-  const [importProductos, setImportProductos] = useState<WooPreview[]>([])
-  const [importSeleccionados, setImportSeleccionados] = useState<Set<number>>(new Set())
-  const [importando, setImportando] = useState(false)
-  const [soloNuevos, setSoloNuevos] = useState(true)
-  const [toast, setToast] = useState('')
+  const [filtroBodega, setFiltroBodega]     = useState('')
+  const [filtroSinPrecio, setFiltroSinPrecio] = useState(false)
 
-  // Selección masiva
+  // Selection
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
-  const [bulkCargando, setBulkCargando] = useState(false)
-  const [bulkBodega, setBulkBodega] = useState('')
-  const [bulkProveedor, setBulkProveedor] = useState('')
-  const [bulkVarietal, setBulkVarietal] = useState('')
-  const [bulkPct, setBulkPct] = useState('')
-  const [bulkPrecio, setBulkPrecio] = useState('')
+  const [activeRow, setActiveRow]         = useState<string|null>(null)
+  const lastClickedIdx = useRef(-1)
 
+  // Drag-to-select
+  const isDragging     = useRef(false)
+  const dragAnchorIdx  = useRef(-1)
+  const dragInitSel    = useRef<Set<string>>(new Set())
+
+  // Inline editor
+  const [editingId, setEditingId] = useState<string|null>(null)
+  const [editForm, setEditForm]   = useState<typeof EMPTY_EDIT>({ ...EMPTY_EDIT })
+  const editFirstRef              = useRef<HTMLInputElement>(null)
+
+  // UI state
+  const [showKb, setShowKb]         = useState(false)
+  const [activeBulk, setActiveBulk] = useState<string|null>(null)
+  const [bulkVal, setBulkVal]       = useState('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [toast, setToast]           = useState('')
+  const [saving, setSaving]         = useState(false)
+  const [syncing, setSyncing]       = useState(false)
+
+  // New-product modal
+  const [newModal, setNewModal] = useState(false)
+  const [newForm, setNewForm]   = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
+
+  // WooCommerce import modal
+  const [importModal, setImportModal]       = useState(false)
+  const [importLoading, setImportLoading]   = useState(false)
+  const [wooList, setWooList]               = useState<WooPreview[]>([])
+  const [wooSel, setWooSel]                 = useState<Set<number>>(new Set())
+  const [soloNuevos, setSoloNuevos]         = useState(true)
+  const [importando, setImportando]         = useState(false)
+
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // ── Computed (declared before effects so closures capture them) ───────────
+  const filtrados = productos.filter(p => {
+    const q = busqueda.toLowerCase()
+    if (q && !`${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)) return false
+    if (filtroCategoria && p.categoria !== filtroCategoria) return false
+    if (filtroBodega && p.bodega !== filtroBodega) return false
+    if (filtroSinPrecio && (p.precio_venta || 0) > 0) return false
+    return true
+  })
+  const allCheck      = filtrados.length > 0 && filtrados.every(p => seleccionados.has(p.id!))
+  const someCheck     = filtrados.some(p => seleccionados.has(p.id!))
+  const totalStock    = productos.reduce((a, p) => a + p.stock, 0)
+  const conStock      = productos.filter(p => p.stock > 0).length
+  const sinPrecio     = productos.filter(p => !p.precio_venta).length
+  const valorStock    = productos.reduce((a, p) => a + p.stock * (p.precio_venta || 0), 0)
+  const bodegasUnicas = Array.from(new Set(productos.map(p => p.bodega).filter(Boolean))).sort()
+
+  // ── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
@@ -81,689 +145,590 @@ export default function ProductosPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const [pRes, bRes, prvRes] = await Promise.all([
+    const [pRes, bRes] = await Promise.all([
       fetch(`/api/productos?empresa=${emp}`),
       fetch('/api/bodegas'),
-      fetch(`/api/proveedores?empresa=${emp}`),
     ])
     setProductos(await pRes.json().catch(() => []))
     setBodegas(await bRes.json().catch(() => []))
-    setProveedores(await prvRes.json().catch(() => []))
     setLoading(false)
   }
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 4000) }
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName.toLowerCase()
+      const inInput = tag === 'input' || tag === 'select' || tag === 'textarea'
 
-  function abrirNuevo() {
-    setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
-    setEditId(null)
-    setModal(true)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); searchRef.current?.focus(); return }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !inInput) { e.preventDefault(); setSeleccionados(new Set(filtrados.map(p => p.id!))); return }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !inInput) { e.preventDefault(); openNew(); return }
+      if (e.key === '?' && !inInput) { setShowKb(v => !v); return }
+      if (inInput) return
+
+      if (e.key === 'Escape') {
+        if (editingId) { setEditingId(null); return }
+        if (showKb) { setShowKb(false); return }
+        if (activeBulk) { setActiveBulk(null); return }
+        setSeleccionados(new Set()); return
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const i = filtrados.findIndex(p => p.id === activeRow)
+        const ni = e.key === 'ArrowDown' ? Math.min(i + 1, filtrados.length - 1) : Math.max(i - 1, 0)
+        if (filtrados[ni]) setActiveRow(filtrados[ni].id!)
+        return
+      }
+      if (e.key === ' ' && activeRow) { e.preventDefault(); toggleSel(activeRow); return }
+      if ((e.key === 'Enter' || e.key.toLowerCase() === 'e') && activeRow && !editingId) {
+        const p = filtrados.find(q => q.id === activeRow); if (p) openEdit(p); return
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && seleccionados.size > 0) {
+        e.preventDefault(); eliminarSel(); return
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtrados, activeRow, editingId, seleccionados, showKb, activeBulk])
+
+  // Drag mouseup
+  useEffect(() => {
+    const up = () => { isDragging.current = false }
+    document.addEventListener('mouseup', up)
+    return () => document.removeEventListener('mouseup', up)
+  }, [])
+
+  // Focus first field on edit open
+  useEffect(() => { if (editingId) setTimeout(() => editFirstRef.current?.focus(), 40) }, [editingId])
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function toast_(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
+  function toggleSel(id: string) {
+    setSeleccionados(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
-  function abrirEditar(p: Producto) {
-    setForm({
-      empresa: p.empresa, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria, region: p.region || '', sku: p.sku || '',
-      precio_venta: p.precio_venta,
-      precio_mayorista: p.precio_mayorista || 0,
-      precio_costo: p.precio_costo || 0,
-      stock: p.stock, stock_minimo: p.stock_minimo,
-      woo_product_id: p.woo_product_id,
-      activo: p.activo,
-    })
-    setEditId(p.id!)
-    setModal(true)
+  function openEdit(p: Producto) {
+    setEditingId(p.id!)
+    setEditForm({ nombre: p.nombre, bodega: p.bodega, varietal: p.varietal, categoria: p.categoria,
+      region: p.region||'', sku: p.sku||'',
+      precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
+      precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
+      woo_product_id: p.woo_product_id })
+    setActiveRow(p.id!)
   }
 
-  async function guardar() {
-    if (!form.nombre.trim()) { showToast('El nombre es obligatorio'); return }
-    const method = editId ? 'PUT' : 'POST'
-    const body = editId ? { id: editId, ...form } : form
-    const res = await fetch('/api/productos', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setModal(false)
-    cargar(empresa)
-    const wooMsg = data.woo_sync === 'ok' ? ' · WooCommerce actualizado ✓' : ''
-    showToast(editId ? `Producto actualizado${wooMsg}` : 'Producto guardado')
+  function openNew() {
+    setNewForm({ ...EMPTY_EDIT, empresa })
+    setNewModal(true)
   }
 
-  async function eliminar(id: string) {
-    if (!confirm('¿Eliminar este producto?')) return
+  async function saveEdit() {
+    if (!editingId) return
+    setSaving(true)
+    const res = await fetch('/api/productos', { method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: editingId, ...editForm }) })
+    const d = await res.json(); setSaving(false)
+    if (d.error) { toast_('Error: ' + d.error); return }
+    setEditingId(null); cargar(empresa); toast_('Guardado')
+  }
+
+  async function saveNew() {
+    if (!newForm.nombre.trim()) { toast_('El nombre es obligatorio'); return }
+    setSaving(true)
+    const { empresa: emp, ...rest } = newForm
+    const res = await fetch('/api/productos', { method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ...rest, empresa: emp, activo: true }) })
+    const d = await res.json(); setSaving(false)
+    if (d.error) { toast_('Error: ' + d.error); return }
+    setNewModal(false); cargar(empresa); toast_('Producto creado')
+  }
+
+  async function eliminarUno(id: string) {
+    if (!confirm('¿Eliminar este producto en ambas empresas?')) return
     await fetch(`/api/productos?id=${id}`, { method: 'DELETE' })
-    cargar(empresa)
-    showToast('Producto eliminado')
+    cargar(empresa); toast_('Eliminado')
+  }
+
+  async function eliminarSel() {
+    if (!confirm(`¿Eliminar ${seleccionados.size} producto${seleccionados.size!==1?'s':''} en ambas empresas?`)) return
+    await bulkRequest('eliminar', '')
+  }
+
+  async function bulkRequest(accion: string, valor: string|number) {
+    setBulkLoading(true)
+    const res = await fetch('/api/productos/bulk', { method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ids: Array.from(seleccionados), accion, valor }) })
+    const d = await res.json(); setBulkLoading(false)
+    if (d.error) { toast_('Error: ' + d.error); return }
+    setActiveBulk(null); setBulkVal(''); setSeleccionados(new Set())
+    cargar(empresa); toast_(`${d.afectados} productos actualizados en ambas empresas`)
   }
 
   async function syncWoo() {
     setSyncing(true)
     const res = await fetch('/api/woo/sync', { method: 'POST' })
-    const data = await res.json()
-    setSyncing(false)
-    showToast(`Sync WooCommerce: ${data.ok} ok, ${data.errors} errores`)
+    const d = await res.json(); setSyncing(false)
+    toast_(`Sync: ${d.ok} ok, ${d.errors} errores`)
   }
 
-  async function abrirImport() {
-    setImportModal(true)
-    setImportLoading(true)
-    setImportProductos([])
-    setImportSeleccionados(new Set())
+  async function openWooImport() {
+    setImportModal(true); setImportLoading(true); setWooList([]); setWooSel(new Set())
     try {
       const res = await fetch('/api/woo/sync')
       const text = await res.text()
-      let data: { error?: string; productos?: WooPreview[] }
-      try { data = JSON.parse(text) } catch { data = { error: `Respuesta inesperada del servidor (${res.status})` } }
-      if (!res.ok || data.error) {
-        showToast('Error: ' + (data.error ?? `HTTP ${res.status}`))
-        setImportModal(false)
-        return
-      }
-      const lista: WooPreview[] = data.productos || []
-      setImportProductos(lista)
-      setImportSeleccionados(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
-    } catch {
-      showToast('Error de red al conectar con WooCommerce')
-      setImportModal(false)
-    }
+      let data: {error?:string; productos?:WooPreview[]}
+      try { data = JSON.parse(text) } catch { data = { error: `Error ${res.status}` } }
+      if (!res.ok || data.error) { toast_('Error: ' + (data.error ?? `HTTP ${res.status}`)); setImportModal(false); return }
+      const lista = data.productos || []
+      setWooList(lista)
+      setWooSel(new Set(lista.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
+    } catch { toast_('Error de red'); setImportModal(false) }
     setImportLoading(false)
   }
 
-  function toggleSeleccionWoo(id: number) {
-    setImportSeleccionados(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  function seleccionarTodosNuevos() {
-    setImportSeleccionados(new Set(importProductos.filter(p => !p.ya_importado).map(p => p.woo_product_id)))
-  }
-
-  async function importarSeleccionados() {
-    const aImportar = importProductos.filter(p => importSeleccionados.has(p.woo_product_id) && !p.ya_importado)
-    if (!aImportar.length) { showToast('No hay productos nuevos seleccionados'); return }
+  async function importarWoo() {
+    const aImportar = wooList.filter(p => wooSel.has(p.woo_product_id) && !p.ya_importado)
+    if (!aImportar.length) { toast_('Nada seleccionado'); return }
     setImportando(true)
-    const res = await fetch('/api/woo/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productos: aImportar }),
-    })
-    const data = await res.json()
-    setImportando(false)
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setImportModal(false)
-    cargar(empresa)
-    showToast(`${data.imported} producto${data.imported !== 1 ? 's' : ''} importado${data.imported !== 1 ? 's' : ''} correctamente`)
+    const res = await fetch('/api/woo/import', { method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ productos: aImportar }) })
+    const d = await res.json(); setImportando(false)
+    if (d.error) { toast_('Error: ' + d.error); return }
+    setImportModal(false); cargar(empresa)
+    toast_(`${d.imported} productos importados`)
   }
 
-  // ── Selección masiva ──────────────────────────────────────────────────────
+  // ── Drag-to-select ────────────────────────────────────────────────────────
+  function onRowMouseDown(e: React.MouseEvent, idx: number, id: string) {
+    if (e.button !== 0) return
+    const t = e.target as HTMLElement
+    if (t.tagName === 'INPUT' || t.tagName === 'BUTTON' || t.closest('button')) return
+    e.preventDefault()
+    isDragging.current = true; dragAnchorIdx.current = idx
 
-  function toggleSeleccionado(id: string) {
-    setSeleccionados(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+    if (e.ctrlKey || e.metaKey) {
+      dragInitSel.current = new Set(seleccionados)
+      toggleSel(id)
+    } else if (e.shiftKey && lastClickedIdx.current >= 0) {
+      dragInitSel.current = new Set()
+      const [a, b] = [Math.min(lastClickedIdx.current, idx), Math.max(lastClickedIdx.current, idx)]
+      setSeleccionados(new Set(filtrados.slice(a, b + 1).map(p => p.id!)))
+    } else {
+      dragInitSel.current = new Set([id])
+      setSeleccionados(new Set([id]))
+      lastClickedIdx.current = idx
+    }
+    setActiveRow(id)
   }
 
-  function toggleTodos() {
-    const todosIds = filtrados.map(p => p.id!)
-    const todosChecked = todosIds.length > 0 && todosIds.every(id => seleccionados.has(id))
-    setSeleccionados(todosChecked ? new Set() : new Set(todosIds))
+  function onRowMouseEnter(idx: number) {
+    if (!isDragging.current || dragAnchorIdx.current < 0) return
+    const [a, b] = [Math.min(dragAnchorIdx.current, idx), Math.max(dragAnchorIdx.current, idx)]
+    setSeleccionados(new Set([...Array.from(dragInitSel.current), ...filtrados.slice(a, b + 1).map(p => p.id!)]))
   }
 
-  async function ejecutarBulk(accion: string, valor: string | number) {
-    if (!seleccionados.size) return
-    if (accion === 'eliminar' && !confirm(`¿Eliminar ${seleccionados.size} producto${seleccionados.size !== 1 ? 's' : ''} en ambas empresas?`)) return
-    setBulkCargando(true)
-    const res = await fetch('/api/productos/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: Array.from(seleccionados), accion, valor }),
-    })
-    const data = await res.json()
-    setBulkCargando(false)
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setSeleccionados(new Set())
-    cargar(empresa)
-    showToast(`${data.afectados} producto${data.afectados !== 1 ? 's' : ''} actualizados en ambas empresas`)
-  }
+  // ── Bulk popover config ───────────────────────────────────────────────────
+  const BULK_ACTIONS = [
+    { key: 'bodega',         label: 'Bodega',     kind: 'select' as const },
+    { key: 'varietal',       label: 'Varietal',   kind: 'text'   as const },
+    { key: 'aumento_precio', label: '+ %',        kind: 'number' as const, placeholder: 'Ej: 10' },
+    { key: 'precio_fijo',    label: 'Precio $',   kind: 'number' as const, placeholder: 'Ej: 15000' },
+  ]
 
-  // ─────────────────────────────────────────────────────────────────────────
-
-  const filtrados = productos.filter(p => {
-    const q = busqueda.toLowerCase()
-    const matchQ = !q || `${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)
-    const matchC = !filtroCategoria || p.categoria === filtroCategoria
-    return matchQ && matchC
-  })
-
-  const todosSeleccionados = filtrados.length > 0 && filtrados.every(p => seleccionados.has(p.id!))
-  const algunoSeleccionado = filtrados.some(p => seleccionados.has(p.id!))
-
-  const sinStock = productos.filter(p => p.stock === 0).length
-  const stockBajo = productos.filter(p => p.stock > 0 && p.stock <= p.stock_minimo).length
-  const totalUnidades = productos.reduce((a, p) => a + p.stock, 0)
-
-  const valorPotencial = productos.reduce((a, p) => a + p.stock * (p.precio_venta || 0), 0)
-  const capitalInmovilizado = productos.reduce((a, p) => {
-    const pv = p.precio_venta || 0
-    const costo = p.precio_costo && p.precio_costo > 0 ? p.precio_costo : pv * 0.5
-    return a + p.stock * costo
-  }, 0)
-  const prodsSinCosto = productos.filter(p => !p.precio_costo || p.precio_costo === 0).length
-  const margenBruto = valorPotencial - capitalInmovilizado
-  const margenPct = valorPotencial > 0 ? Math.round((margenBruto / valorPotencial) * 100) : 0
-
-  function badgeStock(p: Producto) {
-    if (p.stock === 0) return <span className="badge badge-red">Sin stock</span>
-    if (p.stock <= p.stock_minimo) return <span className="badge badge-yellow">Stock bajo</span>
-    return <span className="badge badge-green">OK</span>
-  }
-
+  // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div>
-      {/* Métricas stock */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'Inter, system-ui, -apple-system, sans-serif', padding: '0 0 48px' }}>
+      <style>{`
+        .pr:hover { background: rgba(255,255,255,0.025) !important; }
+        .pr.sel  { background: ${C.selBg} !important; }
+        .pr.sel td:first-child { border-left: 2px solid ${C.selBorder}; }
+        .pr      td:first-child { border-left: 2px solid transparent; }
+        .pr.act  { outline: 1px solid #3A3A3A; outline-offset: -1px; }
+        .dark-inp:focus { border-color: #555 !important; box-shadow: 0 0 0 2px rgba(139,26,42,0.2); }
+        .dark-inp::placeholder { color: ${C.dim}; }
+        .pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 100ms; background: transparent; color: ${C.muted}; }
+        .pill:hover { border-color: #3A3A3A; color: ${C.text}; }
+        .pill.on { background: rgba(139,26,42,0.18); border-color: ${C.accent}; color: ${C.text}; }
+        .kbd-tag { display:inline-block; background:#222; border:1px solid #444; border-radius:4px; padding:1px 6px; font-size:11px; font-family:monospace; color:#CCC; }
+        .bar-in { animation: barIn 140ms ease; }
+        @keyframes barIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+        .pop-in { animation: popIn 100ms ease; }
+        @keyframes popIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
+        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+        select option { background:${C.card}; color:${C.text}; }
+      `}</style>
+
+      {/* ── Stats ─────────────────────────────────────────────────── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
         {[
-          { label: 'Total productos', value: productos.length },
-          { label: 'Unidades en stock', value: totalUnidades },
-          { label: 'Stock bajo', value: stockBajo, color: 'text-amber-600' },
-          { label: 'Sin stock', value: sinStock, color: 'text-red-500' },
-        ].map(m => (
-          <div key={m.label} className="card">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{m.label}</div>
-            <div className={`text-2xl font-bold ${m.color || 'text-gray-900'}`}>{m.value}</div>
+          { l:'Total',         v: productos.length },
+          { l:'Unidades stock',v: totalStock },
+          { l:'Con stock',     v: conStock },
+          { l:'Sin precio',    v: sinPrecio, warn: sinPrecio > 0 },
+        ].map(s => (
+          <div key={s.l} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'12px 16px' }}>
+            <div style={{ fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{s.l}</div>
+            <div style={{ fontSize:22, fontWeight:700, color:s.warn ? C.red : C.text }}>{s.v}</div>
           </div>
         ))}
       </div>
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 16px', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <div style={{ fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Valor en stock</div>
+          <div style={{ fontSize:20, fontWeight:700 }}>${valorStock.toLocaleString('es-AR')}</div>
+        </div>
+        <div style={{ fontSize:12, color:C.dim }}>a precio lista</div>
+      </div>
 
-      {/* Valuación del stock */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card border-l-4 border-l-blue-300">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Valor potencial</div>
-          <div className="text-2xl font-bold text-blue-600">${valorPotencial.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">Si se vende todo a precio lista</div>
+      {/* ── Header ────────────────────────────────────────────────── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+        <div>
+          <h1 style={{ margin:0, fontSize:18, fontWeight:700, letterSpacing:'-0.02em' }}>Productos</h1>
+          <span style={{ fontSize:11, color:C.muted, textTransform:'capitalize' }}>{empresa}</span>
         </div>
-        <div className="card border-l-4 border-l-amber-300">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Capital inmovilizado</div>
-          <div className="text-2xl font-bold text-amber-600">${capitalInmovilizado.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            {prodsSinCosto > 0
-              ? `${prodsSinCosto} prod. usan estimado 50% (sin costo cargado)`
-              : 'Basado en precio costo cargado'}
-          </div>
-        </div>
-        <div className="card border-l-4 border-l-emerald-300">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Margen bruto estimado</div>
-          <div className="text-2xl font-bold text-emerald-600">${margenBruto.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">{margenPct}% sobre el valor potencial</div>
+        <div style={{ display:'flex', gap:6 }}>
+          <button onClick={() => setShowKb(true)} style={btn('ghost',{padding:'5px 10px',fontSize:15})} title="Atajos de teclado">?</button>
+          {empresa === 'aroma' && <>
+            <button onClick={openWooImport} style={btn()}>⬇ Importar web</button>
+            <button onClick={syncWoo} disabled={syncing} style={btn()}>{syncing ? '...' : '↻ Sync Woo'}</button>
+          </>}
+          <button onClick={openNew} style={btn('accent',{padding:'6px 14px',fontSize:13})}>+ Nuevo</button>
         </div>
       </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-900">Productos</h1>
-        <div className="flex gap-2">
-          {empresa === 'aroma' && (
-            <>
-              <button onClick={abrirImport} className="btn btn-primary text-xs">
-                ⬇️ Importar desde web
-              </button>
-              <button onClick={syncWoo} disabled={syncing} className="btn btn-primary text-xs">
-                {syncing ? 'Sincronizando...' : '🔄 Sync precio/stock → web'}
-              </button>
-            </>
-          )}
-          <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo producto</button>
+      {/* ── Filters ───────────────────────────────────────────────── */}
+      <div style={{ display:'flex', gap:8, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
+        <div style={{ position:'relative', flex:'1 1 200px', maxWidth:340 }}>
+          <span style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:C.dim, fontSize:14, pointerEvents:'none' }}>⌕</span>
+          <input ref={searchRef} className="dark-inp" style={{ ...INP, paddingLeft:28 }}
+            placeholder="Buscar producto... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex gap-3 mb-4">
-        <input
-          className="input flex-1"
-          placeholder="Buscar por nombre, bodega, varietal..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
-        <select
-          className="input w-48"
-          value={filtroCategoria}
-          onChange={e => setFiltroCategoria(e.target.value)}
-        >
-          <option value="">Todas las categorías</option>
-          {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+          <button className={`pill${!filtroCategoria?' on':''}`} onClick={() => setFiltroCategoria('')}>Todos</button>
+          {CATS.map(c => (
+            <button key={c} className={`pill${filtroCategoria===c?' on':''}`} onClick={() => setFiltroCategoria(filtroCategoria===c?'':c)}>{c}</button>
+          ))}
+        </div>
+        <select className="dark-inp" style={{ ...INP, width:'auto', minWidth:150 }} value={filtroBodega} onChange={e => setFiltroBodega(e.target.value)}>
+          <option value="">Todas las bodegas</option>
+          {bodegasUnicas.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
+        <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:C.muted, cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
+          <input type="checkbox" checked={filtroSinPrecio} onChange={e => setFiltroSinPrecio(e.target.checked)} style={{ accentColor:C.accent }} />
+          Sin precio
+        </label>
       </div>
 
-      {/* Barra de acciones masivas */}
+      {/* Counter */}
+      <div style={{ fontSize:12, color:C.dim, marginBottom:8 }}>
+        Mostrando <b style={{ color:C.muted }}>{filtrados.length}</b> de {productos.length} productos
+        {seleccionados.size > 0 && <span style={{ marginLeft:8, color:C.accent }}>· {seleccionados.size} seleccionado{seleccionados.size!==1?'s':''}</span>}
+      </div>
+
+      {/* ── Bulk action bar ───────────────────────────────────────── */}
       {seleccionados.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
-          <div className="flex flex-wrap gap-2 items-center">
-            {/* Contador */}
-            <span className="text-sm font-semibold text-blue-800 shrink-0">
-              ✓ {seleccionados.size} seleccionado{seleccionados.size !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={() => setSeleccionados(new Set())}
-              className="text-xs text-blue-400 hover:text-blue-600 shrink-0 mr-2"
-            >
-              Limpiar
-            </button>
+        <div className="bar-in" style={{ background:'#161616', border:`1px solid ${C.border}`, borderRadius:8, padding:'8px 12px', marginBottom:8, display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+          <span style={{ fontSize:12, fontWeight:600, color:C.accent, marginRight:4 }}>
+            {seleccionados.size} sel.
+          </span>
+          <button onClick={() => setSeleccionados(new Set())} style={btn('ghost',{padding:'3px 8px',fontSize:11})}>✕</button>
+          <div style={{ width:1, height:18, background:C.border, margin:'0 4px' }}/>
 
-            <div className="w-px h-5 bg-blue-200 shrink-0" />
-
-            {/* Bodega */}
-            <div className="flex items-center gap-1 shrink-0">
-              <select
-                className="input text-xs py-1 px-2 h-8 max-w-[160px]"
-                value={bulkBodega}
-                onChange={e => setBulkBodega(e.target.value)}
-              >
-                <option value="">Bodega...</option>
-                {bodegas.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
-              </select>
+          {BULK_ACTIONS.map(a => (
+            <div key={a.key} style={{ position:'relative' }}>
               <button
-                disabled={!bulkBodega || bulkCargando}
-                onClick={() => ejecutarBulk('bodega', bulkBodega)}
-                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
-              >
-                Asignar
-              </button>
+                onClick={() => { setActiveBulk(activeBulk===a.key?null:a.key); setBulkVal('') }}
+                style={btn(activeBulk===a.key?'accent':'default')}
+              >{a.label}</button>
+              {activeBulk === a.key && (
+                <div className="pop-in" style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:100, background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:10, minWidth:200, boxShadow:'0 12px 32px rgba(0,0,0,0.7)' }}>
+                  <div style={{ fontSize:11, color:C.muted, fontWeight:600, marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' }}>
+                    {a.key==='aumento_precio'?'Aumentar precio (%)':a.key==='precio_fijo'?'Precio fijo ($)':`Asignar ${a.label}`}
+                  </div>
+                  {a.kind === 'select' ? (
+                    <select className="dark-inp" style={INP} value={bulkVal} onChange={e => setBulkVal(e.target.value)}>
+                      <option value="">Elegir bodega...</option>
+                      {bodegas.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
+                    </select>
+                  ) : (
+                    <input autoFocus className="dark-inp" type={a.kind} style={INP}
+                      placeholder={a.placeholder || a.label}
+                      value={bulkVal} onChange={e => setBulkVal(e.target.value)}
+                      onKeyDown={e => { if(e.key==='Enter') bulkRequest(a.key, a.kind==='number'?Number(bulkVal):bulkVal); if(e.key==='Escape') setActiveBulk(null) }}
+                    />
+                  )}
+                  <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                    <button disabled={!bulkVal||bulkLoading} onClick={() => bulkRequest(a.key, a.kind==='number'?Number(bulkVal):bulkVal)}
+                      style={{ ...btn('accent',{flex:1}), opacity:(!bulkVal||bulkLoading)?0.5:1 }}>
+                      {bulkLoading?'...':'Aplicar'}
+                    </button>
+                    <button onClick={() => setActiveBulk(null)} style={btn()}>✕</button>
+                  </div>
+                </div>
+              )}
             </div>
+          ))}
 
-            {/* Proveedor */}
-            <div className="flex items-center gap-1 shrink-0">
-              <select
-                className="input text-xs py-1 px-2 h-8 max-w-[160px]"
-                value={bulkProveedor}
-                onChange={e => setBulkProveedor(e.target.value)}
-              >
-                <option value="">Proveedor...</option>
-                {proveedores.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-              </select>
-              <button
-                disabled={!bulkProveedor || bulkCargando}
-                onClick={() => ejecutarBulk('proveedor', bulkProveedor)}
-                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
-              >
-                Asignar
-              </button>
-            </div>
-
-            {/* Varietal */}
-            <div className="flex items-center gap-1 shrink-0">
-              <input
-                className="input text-xs py-1 px-2 h-8 w-32"
-                placeholder="Varietal..."
-                value={bulkVarietal}
-                onChange={e => setBulkVarietal(e.target.value)}
-              />
-              <button
-                disabled={!bulkVarietal.trim() || bulkCargando}
-                onClick={() => { ejecutarBulk('varietal', bulkVarietal); setBulkVarietal('') }}
-                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
-              >
-                Asignar
-              </button>
-            </div>
-
-            <div className="w-px h-5 bg-blue-200 shrink-0" />
-
-            {/* Aumento % */}
-            <div className="flex items-center gap-1 shrink-0">
-              <input
-                className="input text-xs py-1 px-2 h-8 w-20"
-                type="number"
-                placeholder="% aum."
-                value={bulkPct}
-                onChange={e => setBulkPct(e.target.value)}
-              />
-              <button
-                disabled={!bulkPct || bulkCargando}
-                onClick={() => { ejecutarBulk('aumento_precio', Number(bulkPct)); setBulkPct('') }}
-                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
-              >
-                Aumentar %
-              </button>
-            </div>
-
-            {/* Precio fijo */}
-            <div className="flex items-center gap-1 shrink-0">
-              <input
-                className="input text-xs py-1 px-2 h-8 w-24"
-                type="number"
-                placeholder="$ precio"
-                value={bulkPrecio}
-                onChange={e => setBulkPrecio(e.target.value)}
-              />
-              <button
-                disabled={!bulkPrecio || bulkCargando}
-                onClick={() => { ejecutarBulk('precio_fijo', Number(bulkPrecio)); setBulkPrecio('') }}
-                className="btn btn-primary text-xs py-1 px-2 h-8 disabled:opacity-40"
-              >
-                Fijar precio
-              </button>
-            </div>
-
-            <div className="w-px h-5 bg-blue-200 shrink-0" />
-
-            {/* Eliminar */}
-            <button
-              disabled={bulkCargando}
-              onClick={() => ejecutarBulk('eliminar', '')}
-              className="btn btn-danger text-xs py-1 px-3 h-8 disabled:opacity-40 shrink-0"
-            >
-              🗑 Eliminar seleccionados
-            </button>
-
-            {bulkCargando && (
-              <span className="text-xs text-blue-500 italic">Aplicando...</span>
-            )}
-          </div>
+          <div style={{ width:1, height:18, background:C.border, margin:'0 4px' }}/>
+          <button onClick={eliminarSel} disabled={bulkLoading} style={{ ...btn('danger'), opacity:bulkLoading?.5:1 }}>
+            🗑 Eliminar
+          </button>
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+      {/* ── Table ─────────────────────────────────────────────────── */}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 w-8">
-                <input
-                  type="checkbox"
-                  checked={todosSeleccionados}
-                  ref={el => { if (el) el.indeterminate = !todosSeleccionados && algunoSeleccionado }}
-                  onChange={toggleTodos}
-                  className="rounded cursor-pointer"
-                />
+            <tr style={{ borderBottom:`1px solid ${C.border}`, background:C.surface }}>
+              <th style={{ width:40, padding:'9px 12px', textAlign:'center' }}>
+                <input type="checkbox" checked={allCheck}
+                  ref={el => { if(el) el.indeterminate = !allCheck && someCheck }}
+                  onChange={() => setSeleccionados(allCheck ? new Set() : new Set(filtrados.map(p => p.id!)))}
+                  style={{ accentColor:C.accent, cursor:'pointer' }} />
               </th>
-              {['Producto', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio mayor.', 'Costo', 'Stock', 'Val. stock', 'Estado', 'WooID', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+              {['Nombre','Bodega','Varietal','Precio venta','Precio costo','Stock',''].map(h => (
+                <th key={h} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:600, color:C.muted, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={13} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={8} style={{ textAlign:'center', padding:'56px 0', color:C.dim }}>Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={13} className="text-center py-12 text-gray-400">No hay productos todavía</td></tr>
-            ) : filtrados.map(p => (
-              <tr
-                key={p.id}
-                className={`border-b border-gray-50 hover:bg-gray-50/70 transition-colors ${seleccionados.has(p.id!) ? 'bg-blue-50/50' : ''}`}
-              >
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={seleccionados.has(p.id!)}
-                    onChange={() => toggleSeleccionado(p.id!)}
-                    className="rounded cursor-pointer"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="font-semibold text-gray-800">{p.nombre}</div>
-                  {p.region && <div className="text-xs text-gray-400">{p.region}</div>}
-                </td>
-                <td className="px-4 py-3 text-gray-600">{p.bodega || '—'}</td>
-                <td className="px-4 py-3 text-gray-600">{p.varietal || '—'}</td>
-                <td className="px-4 py-3 text-gray-600">{p.categoria}</td>
-                <td className="px-4 py-3 font-semibold text-gray-800">
-                  ${(p.precio_venta || 0).toLocaleString('es-AR')}
-                </td>
-                <td className="px-4 py-3 text-blue-600 text-xs font-medium">
-                  {p.precio_mayorista ? `$${p.precio_mayorista.toLocaleString('es-AR')}` : '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
-                  ${(p.precio_costo || 0).toLocaleString('es-AR')}
-                </td>
-                <td className="px-4 py-3 text-gray-700 font-medium">{p.stock}</td>
-                <td className="px-4 py-3 text-xs">
-                  <div className="text-blue-600 font-medium">${(p.stock * (p.precio_venta || 0)).toLocaleString('es-AR')}</div>
-                  <div className="text-gray-400">${(p.stock * (p.precio_costo && p.precio_costo > 0 ? p.precio_costo : (p.precio_venta || 0) * 0.5)).toLocaleString('es-AR')} costo</div>
-                </td>
-                <td className="px-4 py-3">{badgeStock(p)}</td>
-                <td className="px-4 py-3 text-xs text-gray-400">{p.woo_product_id || '—'}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
-                    <button onClick={() => abrirEditar(p)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                    <button onClick={() => eliminar(p.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={8} style={{ textAlign:'center', padding:'56px 0', color:C.dim }}>Sin resultados</td></tr>
+            ) : filtrados.map((p, idx) => {
+              const isSel = seleccionados.has(p.id!)
+              const isAct = activeRow === p.id
+              const isEdit = editingId === p.id
+
+              if (isEdit) return (
+                <tr key={p.id + 'e'} style={{ background:'#16161E', borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.accent}` }}>
+                  <td colSpan={8} style={{ padding:'10px 12px' }}>
+                    <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 80px 70px auto', gap:6, alignItems:'center' }}>
+                      <input ref={editFirstRef} className="dark-inp" style={INP}
+                        value={editForm.nombre} onChange={e => setEditForm(f=>({...f,nombre:e.target.value}))}
+                        placeholder="Nombre"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" style={INP} list="bod-dl"
+                        value={editForm.bodega} onChange={e => setEditForm(f=>({...f,bodega:e.target.value}))}
+                        placeholder="Bodega"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" style={INP}
+                        value={editForm.varietal} onChange={e => setEditForm(f=>({...f,varietal:e.target.value}))}
+                        placeholder="Varietal"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" type="number" style={INP}
+                        value={editForm.precio_venta} onChange={e => setEditForm(f=>({...f,precio_venta:+e.target.value}))}
+                        placeholder="$ venta"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" type="number" style={INP}
+                        value={editForm.precio_costo} onChange={e => setEditForm(f=>({...f,precio_costo:+e.target.value}))}
+                        placeholder="$ costo"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" type="number" style={INP}
+                        value={editForm.stock} onChange={e => setEditForm(f=>({...f,stock:+e.target.value}))}
+                        placeholder="Stock"
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <input className="dark-inp" type="number" style={INP}
+                        value={editForm.stock_minimo} onChange={e => setEditForm(f=>({...f,stock_minimo:+e.target.value}))}
+                        placeholder="Mín."
+                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <div style={{ display:'flex', gap:4 }}>
+                        <button onClick={saveEdit} disabled={saving} style={{ ...btn('accent',{padding:'5px 10px'}), opacity:saving?.7:1 }}>✓</button>
+                        <button onClick={() => setEditingId(null)} style={btn('default',{padding:'5px 10px'})}>✕</button>
+                      </div>
+                    </div>
+                    <datalist id="bod-dl">{bodegas.map(b => <option key={b.id} value={b.nombre}/>)}</datalist>
+                  </td>
+                </tr>
+              )
+
+              return (
+                <tr key={p.id} className={`pr${isSel?' sel':''}${isAct?' act':''}`}
+                  style={{ borderBottom:`1px solid ${C.border}`, cursor:'default' }}
+                  onMouseDown={e => onRowMouseDown(e, idx, p.id!)}
+                  onMouseEnter={() => onRowMouseEnter(idx)}
+                  onDoubleClick={() => openEdit(p)}>
+                  <td style={{ padding:'7px 12px', textAlign:'center' }} onMouseDown={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={isSel} onChange={() => toggleSel(p.id!)} style={{ accentColor:C.accent, cursor:'pointer' }} />
+                  </td>
+                  <td style={{ padding:'7px 12px', maxWidth:260 }}>
+                    <div style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nombre}</div>
+                    {p.sku && <div style={{ fontSize:11, color:C.dim }}>{p.sku}</div>}
+                  </td>
+                  <td style={{ padding:'7px 12px', color:C.muted, fontSize:12 }}>{p.bodega || <span style={{color:C.dim}}>—</span>}</td>
+                  <td style={{ padding:'7px 12px', color:C.muted, fontSize:12 }}>{p.varietal || <span style={{color:C.dim}}>—</span>}</td>
+                  <td style={{ padding:'7px 12px', fontWeight:600 }}>
+                    {p.precio_venta ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{color:C.red,fontSize:12}}>Sin precio</span>}
+                  </td>
+                  <td style={{ padding:'7px 12px', color:C.dim, fontSize:12 }}>
+                    {p.precio_costo ? `$${p.precio_costo.toLocaleString('es-AR')}` : '—'}
+                  </td>
+                  <td style={{ padding:'7px 12px' }}>
+                    <span style={{ fontWeight:600, color: p.stock===0 ? C.red : p.stock<=p.stock_minimo ? C.amber : C.green }}>
+                      {p.stock}
+                    </span>
+                  </td>
+                  <td style={{ padding:'7px 8px' }} onMouseDown={e => e.stopPropagation()}>
+                    <div style={{ display:'flex', gap:2 }}>
+                      <button onClick={() => openEdit(p)} style={btn('ghost',{padding:'3px 7px',color:C.muted})} title="Editar (E)">✏</button>
+                      <button onClick={() => eliminarUno(p.id!)} style={btn('ghost',{padding:'3px 7px',color:C.red})} title="Eliminar">✕</button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Modal edición */}
-      {modal && (
-        <div
-          className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4"
-          onClick={e => e.target === e.currentTarget && setModal(false)}
-        >
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
-            <h2 className="text-base font-bold text-gray-900 mb-5">
-              {editId ? 'Editar producto' : 'Nuevo producto'}
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="label">Nombre del vino *</label>
-                <input className="input" value={form.nombre}
-                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  placeholder="Ej: Gran Reserva Malbec" />
+      {/* ── Keyboard shortcuts modal ──────────────────────────────── */}
+      {showKb && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setShowKb(false)}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, minWidth:300, boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <h3 style={{ margin:0, fontSize:14, fontWeight:600 }}>Atajos de teclado</h3>
+              <button onClick={() => setShowKb(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+              {KB.map(([k, d]) => (
+                <div key={k} style={{ display:'flex', justifyContent:'space-between', gap:16 }}>
+                  <span className="kbd-tag">{k}</span>
+                  <span style={{ fontSize:12, color:C.muted }}>{d}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── New product modal ─────────────────────────────────────── */}
+      {newModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setNewModal(false)}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:520, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
+              <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Nuevo producto</h2>
+              <button onClick={() => setNewModal(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div style={{ gridColumn:'1/-1' }}>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Nombre *</label>
+                <input autoFocus className="dark-inp" style={INP} value={newForm.nombre} onChange={e => setNewForm(f=>({...f,nombre:e.target.value}))} placeholder="Ej: Gran Reserva Malbec" />
               </div>
-              <div>
-                <label className="label">Bodega</label>
-                <ComboInput
-                  value={form.bodega}
-                  onChange={v => setForm(f => ({ ...f, bodega: v }))}
-                  options={bodegas.map(b => b.nombre)}
-                  placeholder="Escribir o elegir bodega..."
-                />
-              </div>
-              <div>
-                <label className="label">Varietal / Tipo</label>
-                <ComboInput
-                  value={form.varietal}
-                  onChange={v => setForm(f => ({ ...f, varietal: v }))}
-                  options={VARIETALES}
-                  placeholder="Ej: Malbec, Gin, Fernet..."
-                />
-              </div>
-              <div>
-                <label className="label">Categoría</label>
-                <select className="input" value={form.categoria}
-                  onChange={e => setForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
-                  {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+              {([['bodega','Bodega','new-bod'],['varietal','Varietal',''],['region','Región',''],['sku','SKU','']] as [string,string,string][]).map(([k,l,dl]) => (
+                <div key={k}>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
+                  <input className="dark-inp" style={INP} list={dl||undefined}
+                    value={(newForm as Record<string,unknown>)[k] as string}
+                    onChange={e => setNewForm(f=>({...f,[k]:e.target.value}))} />
+                  {dl && <datalist id={dl}>{bodegas.map(b=><option key={b.id} value={b.nombre}/>)}</datalist>}
+                </div>
+              ))}
+              <div style={{ gridColumn:'1/-1' }}>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Categoría</label>
+                <select className="dark-inp" style={INP} value={newForm.categoria} onChange={e => setNewForm(f=>({...f,categoria:e.target.value as Producto['categoria']}))}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="label">Región</label>
-                <input className="input" value={form.region}
-                  onChange={e => setForm(f => ({ ...f, region: e.target.value }))}
-                  placeholder="Ej: Mendoza" />
-              </div>
-              <div>
-                <label className="label">SKU / Código</label>
-                <input className="input" value={form.sku}
-                  onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
-                  placeholder="Ej: MAL-CAT-21" />
-              </div>
-              <div>
-                <label className="label">Precio de venta ($)</label>
-                <input className="input" type="number" min="0" value={form.precio_venta}
-                  onChange={e => setForm(f => ({ ...f, precio_venta: parseFloat(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Precio mayorista ($)</label>
-                <input className="input" type="number" min="0" value={form.precio_mayorista || ''}
-                  onChange={e => setForm(f => ({ ...f, precio_mayorista: parseFloat(e.target.value) || 0 }))}
-                  placeholder="Dejar en 0 si no aplica" />
-              </div>
-              <div>
-                <label className="label">Precio de costo ($)</label>
-                <input className="input" type="number" min="0" value={form.precio_costo}
-                  onChange={e => setForm(f => ({ ...f, precio_costo: parseFloat(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Stock actual</label>
-                <input className="input" type="number" min="0" value={form.stock}
-                  onChange={e => setForm(f => ({ ...f, stock: parseInt(e.target.value) || 0 }))} />
-              </div>
-              <div>
-                <label className="label">Stock mínimo (alerta)</label>
-                <input className="input" type="number" min="0" value={form.stock_minimo}
-                  onChange={e => setForm(f => ({ ...f, stock_minimo: parseInt(e.target.value) || 0 }))} />
-              </div>
-              {empresa === 'aroma' && (
-                <div className="col-span-2">
-                  <label className="label">ID producto en WooCommerce</label>
-                  <input className="input" type="number"
-                    value={form.woo_product_id || ''}
-                    onChange={e => setForm(f => ({ ...f, woo_product_id: parseInt(e.target.value) || undefined }))}
-                    placeholder="Dejar vacío si no está en la web" />
+              {([['precio_venta','Precio venta ($)'],['precio_costo','Precio costo ($)'],['precio_mayorista','Precio mayorista ($)'],['stock','Stock'],['stock_minimo','Stock mínimo']] as [string,string][]).map(([k,l]) => (
+                <div key={k}>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
+                  <input className="dark-inp" type="number" min="0" style={INP}
+                    value={(newForm as Record<string,unknown>)[k] as number}
+                    onChange={e => setNewForm(f=>({...f,[k]:+e.target.value}))} />
+                </div>
+              ))}
+              {empresa==='aroma' && (
+                <div style={{ gridColumn:'1/-1' }}>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>WooCommerce ID</label>
+                  <input className="dark-inp" type="number" style={INP}
+                    value={newForm.woo_product_id||''} onChange={e => setNewForm(f=>({...f,woo_product_id:+e.target.value||undefined}))}
+                    placeholder="Dejar vacío si no aplica" />
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button
-                onClick={guardar}
-                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm"
-              >
-                Guardar
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:20 }}>
+              <button onClick={() => setNewModal(false)} style={btn()}>Cancelar</button>
+              <button onClick={saveNew} disabled={saving} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:saving?.7:1 }}>
+                {saving?'Guardando...':'Crear producto'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal importar desde WooCommerce */}
+      {/* ── WooCommerce import modal ───────────────────────────────── */}
       {importModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setImportModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-
-            <div className="flex items-start justify-between mb-4 flex-shrink-0">
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setImportModal(false)}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:860, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14, flexShrink:0 }}>
               <div>
-                <h2 className="text-base font-bold text-gray-900">Importar desde WooCommerce</h2>
-                {!importLoading && (
-                  <p className="text-sm text-gray-400 mt-0.5">
-                    {importProductos.length} productos en la web ·{' '}
-                    <span className="text-emerald-600 font-medium">
-                      {importProductos.filter(p => !p.ya_importado).length} nuevos
-                    </span>
-                    {' · '}
-                    <span className="text-gray-400">
-                      {importProductos.filter(p => p.ya_importado).length} ya importados
-                    </span>
-                  </p>
-                )}
+                <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Importar desde WooCommerce</h2>
+                {!importLoading && <p style={{ margin:'3px 0 0', fontSize:12, color:C.muted }}>
+                  {wooList.length} productos · <span style={{color:C.green}}>{wooList.filter(p=>!p.ya_importado).length} nuevos</span>
+                </p>}
               </div>
-              <button onClick={() => setImportModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              <button onClick={() => setImportModal(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
             </div>
-
             {importLoading ? (
-              <div className="flex-1 flex items-center justify-center py-16 text-gray-400">
-                Cargando productos desde la web...
+              <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:C.dim }}>Cargando desde la web...</div>
+            ) : <>
+              <div style={{ display:'flex', gap:12, marginBottom:10, flexShrink:0, alignItems:'center' }}>
+                <label style={{ display:'flex', gap:5, fontSize:12, color:C.muted, cursor:'pointer' }}>
+                  <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} style={{accentColor:C.accent}} />
+                  Solo nuevos
+                </label>
+                <button onClick={() => setWooSel(new Set(wooList.filter(p=>!p.ya_importado).map(p=>p.woo_product_id)))} style={btn('ghost',{padding:'3px 8px',fontSize:11})}>Sel. todos</button>
+                <button onClick={() => setWooSel(new Set())} style={btn('ghost',{padding:'3px 8px',fontSize:11,color:C.dim})}>Limpiar</button>
               </div>
-            ) : (
-              <>
-                <div className="flex gap-4 mb-3 flex-shrink-0 items-center">
-                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                    <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} className="rounded" />
-                    Solo mostrar nuevos
-                  </label>
-                  <button onClick={seleccionarTodosNuevos} className="text-xs text-blue-600 hover:underline">
-                    Seleccionar todos los nuevos
-                  </button>
-                  <button
-                    onClick={() => setImportSeleccionados(new Set())}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    Deseleccionar todo
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl">
-                  <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-white border-b border-gray-100">
-                      <tr>
-                        {['', 'Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio', 'Stock', 'Estado'].map(h => (
-                          <th key={h} className="text-left px-3 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
-                        ))}
+              <div style={{ flex:1, overflowY:'auto', border:`1px solid ${C.border}`, borderRadius:8 }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                  <thead style={{ position:'sticky', top:0, background:C.surface, borderBottom:`1px solid ${C.border}` }}>
+                    <tr>{['','Nombre','Bodega','Varietal','Categoría','Precio','Stock','Estado'].map(h=>(
+                      <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                    ))}</tr>
+                  </thead>
+                  <tbody>
+                    {wooList.filter(p => !soloNuevos || !p.ya_importado).map(p => (
+                      <tr key={p.woo_product_id} style={{ borderBottom:`1px solid ${C.border}`, opacity:p.ya_importado?.5:1 }}>
+                        <td style={{ padding:'6px 10px' }}><input type="checkbox" disabled={p.ya_importado} checked={wooSel.has(p.woo_product_id)} onChange={() => setWooSel(s => { const n=new Set(s); n.has(p.woo_product_id)?n.delete(p.woo_product_id):n.add(p.woo_product_id); return n })} style={{accentColor:C.accent}} /></td>
+                        <td style={{ padding:'6px 10px', maxWidth:220 }}><div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nombre}</div></td>
+                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.bodega||'—'}</td>
+                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.varietal||'—'}</td>
+                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.categoria}</td>
+                        <td style={{ padding:'6px 10px', fontWeight:600 }}>{p.precio_venta>0?`$${p.precio_venta.toLocaleString('es-AR')}`:'-'}</td>
+                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.stock}</td>
+                        <td style={{ padding:'6px 10px' }}><span style={{ fontSize:10, padding:'2px 7px', borderRadius:10, background:p.ya_importado?'#222':'rgba(76,175,125,0.15)', color:p.ya_importado?C.dim:C.green, border:`1px solid ${p.ya_importado?C.border:'rgba(76,175,125,0.3)'}` }}>{p.ya_importado?'Importado':'Nuevo'}</span></td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {importProductos
-                        .filter(p => !soloNuevos || !p.ya_importado)
-                        .map(p => (
-                          <tr
-                            key={p.woo_product_id}
-                            className={`border-b border-gray-50 hover:bg-gray-50/70 transition-colors ${p.ya_importado ? 'opacity-50' : ''}`}
-                          >
-                            <td className="px-3 py-2.5">
-                              <input
-                                type="checkbox"
-                                disabled={p.ya_importado}
-                                checked={importSeleccionados.has(p.woo_product_id)}
-                                onChange={() => toggleSeleccionWoo(p.woo_product_id)}
-                                className="rounded"
-                              />
-                            </td>
-                            <td className="px-3 py-2.5 font-medium text-gray-800 max-w-[200px]">
-                              <div className="truncate">{p.nombre}</div>
-                              {p.sku && <div className="text-xs text-gray-400">{p.sku}</div>}
-                            </td>
-                            <td className="px-3 py-2.5 text-gray-600 text-xs">{p.bodega || <span className="text-gray-300">—</span>}</td>
-                            <td className="px-3 py-2.5 text-gray-600 text-xs">{p.varietal || <span className="text-gray-300">—</span>}</td>
-                            <td className="px-3 py-2.5">
-                              <span className="badge badge-gray text-xs">{p.categoria}</span>
-                            </td>
-                            <td className="px-3 py-2.5 font-semibold text-gray-800 text-xs">
-                              {p.precio_venta > 0 ? `$${(p.precio_venta || 0).toLocaleString('es-AR')}` : <span className="text-gray-300">—</span>}
-                            </td>
-                            <td className="px-3 py-2.5 text-gray-500 text-xs">{p.stock}</td>
-                            <td className="px-3 py-2.5">
-                              {p.ya_importado
-                                ? <span className="badge badge-gray text-xs">Ya importado</span>
-                                : <span className="badge badge-green text-xs">Nuevo</span>}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14, flexShrink:0 }}>
+                <span style={{ fontSize:12, color:C.muted }}>{wooSel.size} seleccionados</span>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={() => setImportModal(false)} style={btn()}>Cancelar</button>
+                  <button onClick={importarWoo} disabled={importando||wooSel.size===0} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:(importando||wooSel.size===0)?.5:1 }}>
+                    {importando?'Importando...':`Importar ${wooSel.size}`}
+                  </button>
                 </div>
-
-                <div className="flex justify-between items-center mt-4 flex-shrink-0">
-                  <span className="text-sm text-gray-500">
-                    {importSeleccionados.size} producto{importSeleccionados.size !== 1 ? 's' : ''} seleccionado{importSeleccionados.size !== 1 ? 's' : ''}
-                  </span>
-                  <div className="flex gap-3">
-                    <button onClick={() => setImportModal(false)} className="btn btn-primary">Cancelar</button>
-                    <button
-                      onClick={importarSeleccionados}
-                      disabled={importando || importSeleccionados.size === 0}
-                      className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm disabled:opacity-50"
-                    >
-                      {importando ? 'Importando...' : `Importar ${importSeleccionados.size} productos`}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+              </div>
+            </>}
           </div>
         </div>
       )}
 
+      {/* ── Toast ─────────────────────────────────────────────────── */}
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50">
+        <div style={{ position:'fixed', bottom:24, right:24, background:'#222', border:`1px solid ${C.border}`, color:C.text, fontSize:13, padding:'10px 16px', borderRadius:8, boxShadow:'0 8px 32px rgba(0,0,0,0.7)', zIndex:300, animation:'popIn 150ms ease' }}>
           {toast}
         </div>
       )}
