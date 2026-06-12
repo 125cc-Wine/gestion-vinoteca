@@ -199,9 +199,10 @@ export default function ProductosPage() {
   const stockBajo = productos.filter(p => p.stock > 0 && p.stock <= p.stock_minimo).length
   const totalUnidades = productos.reduce((a, p) => a + p.stock, 0)
 
-  const valorPotencial = productos.reduce((a, p) => a + p.stock * p.precio_venta, 0)
+  const valorPotencial = productos.reduce((a, p) => a + p.stock * (p.precio_venta || 0), 0)
   const capitalInmovilizado = productos.reduce((a, p) => {
-    const costo = p.precio_costo && p.precio_costo > 0 ? p.precio_costo : p.precio_venta * 0.5
+    const pv = p.precio_venta || 0
+    const costo = p.precio_costo && p.precio_costo > 0 ? p.precio_costo : pv * 0.5
     return a + p.stock * costo
   }, 0)
   const prodsSinCosto = productos.filter(p => !p.precio_costo || p.precio_costo === 0).length
@@ -315,7 +316,7 @@ export default function ProductosPage() {
                 <td className="px-4 py-3 text-gray-600">{p.varietal || '—'}</td>
                 <td className="px-4 py-3 text-gray-600">{p.categoria}</td>
                 <td className="px-4 py-3 font-semibold text-gray-800">
-                  ${p.precio_venta.toLocaleString('es-AR')}
+                  ${(p.precio_venta || 0).toLocaleString('es-AR')}
                 </td>
                 <td className="px-4 py-3 text-blue-600 text-xs font-medium">
                   {p.precio_mayorista ? `$${p.precio_mayorista.toLocaleString('es-AR')}` : '—'}
@@ -325,8 +326,8 @@ export default function ProductosPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-700 font-medium">{p.stock}</td>
                 <td className="px-4 py-3 text-xs">
-                  <div className="text-blue-600 font-medium">${(p.stock * p.precio_venta).toLocaleString('es-AR')}</div>
-                  <div className="text-gray-400">${(p.stock * (p.precio_costo && p.precio_costo > 0 ? p.precio_costo : p.precio_venta * 0.5)).toLocaleString('es-AR')} costo</div>
+                  <div className="text-blue-600 font-medium">${(p.stock * (p.precio_venta || 0)).toLocaleString('es-AR')}</div>
+                  <div className="text-gray-400">${(p.stock * (p.precio_costo && p.precio_costo > 0 ? p.precio_costo : (p.precio_venta || 0) * 0.5)).toLocaleString('es-AR')} costo</div>
                 </td>
                 <td className="px-4 py-3">{badgeStock(p)}</td>
                 <td className="px-4 py-3 text-xs text-gray-400">{p.woo_product_id || '—'}</td>
@@ -529,7 +530,7 @@ export default function ProductosPage() {
                               <span className="badge badge-gray text-xs">{p.categoria}</span>
                             </td>
                             <td className="px-3 py-2.5 font-semibold text-gray-800 text-xs">
-                              {p.precio_venta > 0 ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span className="text-gray-300">—</span>}
+                              {p.precio_venta > 0 ? `$${(p.precio_venta || 0).toLocaleString('es-AR')}` : <span className="text-gray-300">—</span>}
                             </td>
                             <td className="px-3 py-2.5 text-gray-500 text-xs">{p.stock}</td>
                             <td className="px-3 py-2.5">

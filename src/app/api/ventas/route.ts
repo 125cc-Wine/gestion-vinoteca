@@ -40,29 +40,42 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Descontar stock si es remito
+  // Descontar stock si es remito (en ambas empresas — depósito compartido)
   if (descontarStock && venta.items) {
     for (const item of venta.items) {
       if (item.producto_id) {
         const { data: prod } = await supabase
           .from('productos')
-          .select('stock, woo_product_id, precio_venta')
+          .select('id, nombre, empresa, stock, woo_product_id, precio_venta')
           .eq('id', item.producto_id)
           .single()
 
         if (prod) {
           const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad)
-          await supabase
-            .from('productos')
-            .update({ stock: nuevoStock })
-            .eq('id', item.producto_id)
+          await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
 
-          // Sync WooCommerce si tiene ID
-          if (prod.woo_product_id && process.env.WOOCOMMERCE_CONSUMER_KEY && venta.empresa === 'aroma') {
-            try {
-              await wooUpdateStockAndPrice(prod.woo_product_id, prod.precio_venta, nuevoStock)
-            } catch (e) {
-              console.error('WooCommerce sync error:', e)
+          // Descontar mismo stock en la otra empresa
+          const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+          const { data: contra } = await supabase
+            .from('productos')
+            .select('id, woo_product_id, precio_venta')
+            .eq('nombre', prod.nombre)
+            .eq('empresa', otraEmpresa)
+            .single()
+
+          if (contra) {
+            await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+          }
+
+          // Sync WooCommerce con el producto de aroma (sea el principal o la contraparte)
+          if (process.env.WOOCOMMERCE_CONSUMER_KEY) {
+            const aromaProd = prod.empresa === 'aroma' ? prod : contra
+            if (aromaProd?.woo_product_id) {
+              try {
+                await wooUpdateStockAndPrice(aromaProd.woo_product_id, aromaProd.precio_venta, nuevoStock)
+              } catch (e) {
+                console.error('WooCommerce sync error:', e)
+              }
             }
           }
         }
