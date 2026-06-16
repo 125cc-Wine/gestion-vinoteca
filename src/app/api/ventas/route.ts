@@ -50,12 +50,13 @@ export async function POST(req: NextRequest) {
       if (item.producto_id) {
         const { data: prod } = await supabase
           .from('productos')
-          .select('id, nombre, empresa, stock, woo_product_id, precio_venta')
+          .select('id, nombre, empresa, stock, woo_product_id, precio_venta, unidad_medida')
           .eq('id', item.producto_id)
           .single()
 
         if (prod) {
-          const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad)
+          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : 1
+          const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad * factor)
           await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
 
           // Descontar mismo stock en la otra empresa

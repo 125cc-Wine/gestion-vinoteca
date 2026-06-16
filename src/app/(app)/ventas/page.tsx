@@ -435,6 +435,22 @@ export default function VentasPage() {
     setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
   }
 
+  function duplicarVenta(v: Venta) {
+    setEditVentaId(null); setTipo(v.tipo as 'presupuesto' | 'remito')
+    setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
+    const c = clientes.find(cl => cl.id === v.cliente_id)
+    setClienteData(c || null); setClienteTipo(c?.tipo || '')
+    setAplicarMayorista(c?.tipo === 'mayorista' || c?.tipo === 'revendedor')
+    setVendedorNombre((v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '')
+    const vi = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
+      producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
+    }))
+    setItems(vi); setDescuentoGlobal(v.descuento); setNotas(v.notas || '')
+    setCondVenta((v as unknown as Record<string, string>).condicion_venta || 'Contado')
+    setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
+  }
+
   function abrirNuevo(t: 'presupuesto' | 'remito') {
     setEditVentaId(null); setTipo(t)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
@@ -673,6 +689,7 @@ export default function VentasPage() {
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => { setVentaParaImprimir(v); setTimeout(imprimirDoc, 400) }}>Imprimir</button>
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
+                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
                             <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
                           </div>
                         </td>
@@ -1062,82 +1079,120 @@ function PrintDoc({ venta, empresa }: {
   const items = venta.items as (VentaItem & { descuento?: number })[]
   const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
   const condVenta = (venta as unknown as Record<string, unknown>).condicion_venta as string || 'Contado'
+  const esCuentaCorriente = venta.estado_pago === 'cuenta_corriente'
+  const esPendiente = venta.estado_pago === 'pendiente'
+  const docLabel = venta.tipo === 'presupuesto' ? 'PRESUPUESTO' : 'REMITO'
+
   return (
     <div style={{ fontFamily: 'Arial,sans-serif', fontSize: '11px', color: '#000', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #ccc' }}>
+      {/* Encabezado */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #000' }}>
         <img src={empresa.logoPath} alt={empresa.nombre} style={{ height: '60px', objectFit: 'contain' }} />
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>NOTA PEDIDO</div>
-          <div style={{ fontWeight: 'bold' }}>{venta.numero}</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px', letterSpacing: '0.05em' }}>{docLabel}</div>
+          <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{venta.numero}</div>
+          <div style={{ marginTop: '6px', fontSize: '10px', color: '#555' }}>Fecha: {fecha}</div>
         </div>
       </div>
+
+      {/* Datos empresa */}
       <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' }}>{empresa.nombre}</div>
+        <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '4px' }}>{empresa.nombre}</div>
         <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
           <tbody>
             <tr>
-              <td style={{ paddingRight: '16px', paddingBottom: '3px' }}><strong>Responsable Inscripto</strong>&nbsp;&nbsp;<strong>C.U.I.T.</strong> {empresa.cuit}</td>
-              <td style={{ textAlign: 'right' }}><strong>Fecha Movimiento</strong>&nbsp;&nbsp;{fecha}</td>
+              <td style={{ paddingBottom: '2px' }}><strong>C.U.I.T.</strong> {empresa.cuit}&nbsp;&nbsp;&nbsp;<strong>Resp. Inscripto</strong></td>
+              <td style={{ textAlign: 'right' }}><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</td>
             </tr>
             <tr>
-              <td style={{ paddingBottom: '3px' }}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>
-              <td style={{ textAlign: 'right' }}><strong>Fecha Vencimiento</strong>&nbsp;&nbsp;{fecha}</td>
+              <td colSpan={2} style={{ paddingBottom: '2px' }}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>
             </tr>
-            <tr><td><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</td><td></td></tr>
           </tbody>
         </table>
       </div>
-      <hr style={{ borderColor: '#ccc', marginBottom: '12px' }} />
-      <div style={{ marginBottom: '12px' }}>
-        <div><strong>Razón Social:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
-        <div style={{ marginTop: '4px' }}><strong>Cond. Fiscal:</strong> Responsable Inscripto&nbsp;&nbsp;&nbsp;&nbsp;<strong>C. Venta:</strong> {condVenta}</div>
+
+      <hr style={{ borderColor: '#ccc', marginBottom: '10px' }} />
+
+      {/* Datos cliente */}
+      <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div><strong>Cliente:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
+          <div style={{ marginTop: '3px' }}>
+            <strong>Condición de venta:</strong>&nbsp;&nbsp;
+            {esCuentaCorriente ? 'Cuenta Corriente' : esPendiente ? 'Pendiente de pago' : condVenta}
+          </div>
+          {venta.vendedor_nombre && (
+            <div style={{ marginTop: '3px' }}><strong>Vendedor:</strong>&nbsp;&nbsp;{venta.vendedor_nombre}</div>
+          )}
+        </div>
+        {esCuentaCorriente && (
+          <div style={{ border: '2px solid #000', padding: '6px 14px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', letterSpacing: '0.04em' }}>
+            QUEDA EN<br />CTA. CORRIENTE
+          </div>
+        )}
+        {esPendiente && (
+          <div style={{ border: '2px dashed #888', padding: '6px 14px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', color: '#555' }}>
+            PAGO<br />PENDIENTE
+          </div>
+        )}
       </div>
-      <hr style={{ borderColor: '#ccc', marginBottom: '12px' }} />
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', fontSize: '11px' }}>
+
+      <hr style={{ borderColor: '#ccc', marginBottom: '10px' }} />
+
+      {/* Tabla productos */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '11px' }}>
         <thead>
-          <tr style={{ borderBottom: '1px solid #000', borderTop: '1px solid #000' }}>
-            <th style={{ padding: '6px 8px', textAlign: 'center', width: '60px' }}>Cant.</th>
+          <tr style={{ borderBottom: '1.5px solid #000', borderTop: '1.5px solid #000' }}>
+            <th style={{ padding: '6px 8px', textAlign: 'center', width: '55px' }}>Cant.</th>
             <th style={{ padding: '6px 8px', textAlign: 'left' }}>Descripción</th>
-            <th style={{ padding: '6px 8px', textAlign: 'center', width: '60px' }}>Des(%)</th>
-            <th style={{ padding: '6px 8px', textAlign: 'right', width: '110px' }}>P.UFin</th>
+            <th style={{ padding: '6px 8px', textAlign: 'center', width: '55px' }}>Desc.%</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', width: '110px' }}>P. Unitario</th>
             <th style={{ padding: '6px 8px', textAlign: 'right', width: '110px' }}>Total</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, i) => (
             <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad.toFixed(3)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad}</td>
               <td style={{ padding: '5px 8px' }}>{item.nombre}</td>
-              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento || 0}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento ? `${item.descuento}%` : '—'}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div style={{ marginTop: '40px', borderTop: '1px solid #ccc', paddingTop: '8px' }}>
-        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+
+      {/* Totales */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 220 }}>
           <tbody>
-            <tr>
-              <td style={{ width: '35%' }}></td>
-              <td style={{ textAlign: 'center', width: '13%' }}><strong>Des(%)</strong></td>
-              <td style={{ textAlign: 'center', width: '13%' }}><strong>Imp. Int.</strong></td>
-              <td style={{ textAlign: 'center', width: '13%' }}><strong>Otros Con.</strong></td>
-              <td style={{ textAlign: 'center', width: '13%' }}><strong>Per. IIBB</strong></td>
-              <td style={{ textAlign: 'right', width: '13%' }}><strong>TOTAL</strong></td>
-            </tr>
-            <tr>
-              <td></td>
-              <td style={{ textAlign: 'center' }}>{venta.descuento > 0 ? `${venta.descuento}%` : '-'}</td>
-              <td style={{ textAlign: 'center' }}>-</td>
-              <td style={{ textAlign: 'center' }}>-</td>
-              <td style={{ textAlign: 'center' }}>-</td>
-              <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{venta.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            {venta.descuento > 0 && (
+              <tr>
+                <td style={{ padding: '3px 10px', color: '#555' }}>Descuento global:</td>
+                <td style={{ padding: '3px 10px', textAlign: 'right' }}>{venta.descuento}%</td>
+              </tr>
+            )}
+            <tr style={{ borderTop: '1.5px solid #000' }}>
+              <td style={{ padding: '5px 10px', fontWeight: 'bold', fontSize: '13px' }}>TOTAL:</td>
+              <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>
+                ${venta.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-      {venta.notas && <div style={{ marginTop: '12px', fontSize: '10px', color: '#666' }}><strong>Notas:</strong> {venta.notas}</div>}
+
+      {venta.notas && (
+        <div style={{ marginTop: '8px', padding: '8px', background: '#f9f9f9', border: '1px solid #eee', fontSize: '10px', color: '#555' }}>
+          <strong>Notas:</strong> {venta.notas}
+        </div>
+      )}
+
+      <div style={{ marginTop: '32px', paddingTop: '10px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999' }}>
+        <span>{empresa.nombre} — {empresa.cuit}</span>
+        <span>Emitido: {fecha}</span>
+      </div>
     </div>
   )
 }

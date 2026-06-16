@@ -43,6 +43,7 @@ const EMPTY_EDIT = {
   region: '', sku: '',
   precio_venta: 0, precio_mayorista: 0, precio_costo: 0,
   stock: 0, stock_minimo: 3,
+  unidad_medida: 'botella' as 'botella' | 'caja6' | 'caja12',
   woo_product_id: undefined as number | undefined,
 }
 
@@ -221,6 +222,7 @@ export default function ProductosPage() {
       region: p.region||'', sku: p.sku||'',
       precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
       precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
+      unidad_medida: (p.unidad_medida || 'botella') as 'botella'|'caja6'|'caja12',
       woo_product_id: p.woo_product_id })
     setActiveRow(p.id!)
   }
@@ -598,6 +600,11 @@ export default function ProductosPage() {
                         value={editForm.stock_minimo || ''} onChange={e => setEditForm(f=>({...f,stock_minimo:+e.target.value}))}
                         placeholder="Mín."
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
+                      <select className="dark-inp" style={{...INP}} value={editForm.unidad_medida || 'botella'} onChange={e => setEditForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
+                        <option value="botella">Botella</option>
+                        <option value="caja6">Caja ×6</option>
+                        <option value="caja12">Caja ×12</option>
+                      </select>
                       <div style={{ display:'flex', gap:4 }}>
                         <button onClick={saveEdit} disabled={saving} style={{ ...btn('accent',{padding:'5px 10px'}), opacity:saving?.7:1 }}>✓</button>
                         <button onClick={() => setEditingId(null)} style={btn('default',{padding:'5px 10px'})}>✕</button>
@@ -703,8 +710,16 @@ export default function ProductosPage() {
                     onChange={e => setNewForm(f=>({...f,[k]:+e.target.value}))} />
                 </div>
               ))}
+              <div>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Unidad de medida</label>
+                <select className="dark-inp" style={INP} value={newForm.unidad_medida || 'botella'} onChange={e => setNewForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
+                  <option value="botella">Botella (×1)</option>
+                  <option value="caja6">Caja ×6</option>
+                  <option value="caja12">Caja ×12</option>
+                </select>
+              </div>
               {empresa==='aroma' && (
-                <div style={{ gridColumn:'1/-1' }}>
+                <div>
                   <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>WooCommerce ID</label>
                   <input className="dark-inp" type="number" style={INP}
                     value={newForm.woo_product_id||''} onChange={e => setNewForm(f=>({...f,woo_product_id:+e.target.value||undefined}))}
