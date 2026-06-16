@@ -385,7 +385,7 @@ export default function VentasPage() {
       })),
       subtotal, descuento: descuentoGlobal, total: calcTotal(),
       estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
-      descontarStock: tipo === 'remito' && !editVentaId,
+      descontarStock: (tipo === 'remito' || tipo === 'presupuesto') && !editVentaId,
     }
     const res = editVentaId
       ? await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
@@ -424,7 +424,8 @@ export default function VentasPage() {
     setEditVentaId(null); setTipo(t)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
-    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado')
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
+    setEstadoPago(empresa === 'lavid' && t === 'presupuesto' ? 'cuenta_corriente' : 'pagado')
     setModal(true)
   }
 
@@ -803,13 +804,13 @@ export default function VentasPage() {
                           />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
-                          <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                          <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
-                          <input type="number" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                          <input type="number" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
-                          <input type="number" min="0" max="100" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.descuento} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
+                          <input type="number" min="0" max="100" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.descuento || ''} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
                         </td>
                         <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: C.text, whiteSpace: 'nowrap' }}>
                           ${calcSub(item).toLocaleString('es-AR')}
@@ -1083,7 +1084,7 @@ function PrintDoc({ venta, empresa }: {
               <td style={{ textAlign: 'right', width: '13%' }}><strong>TOTAL</strong></td>
             </tr>
             <tr>
-              <td><strong>Usuario:</strong> {empresa.nombre}</td>
+              <td></td>
               <td style={{ textAlign: 'center' }}>{venta.descuento > 0 ? `${venta.descuento}%` : '-'}</td>
               <td style={{ textAlign: 'center' }}>-</td>
               <td style={{ textAlign: 'center' }}>-</td>

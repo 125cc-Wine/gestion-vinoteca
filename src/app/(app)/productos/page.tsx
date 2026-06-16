@@ -526,19 +526,19 @@ export default function ProductosPage() {
                         placeholder="Varietal"
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
                       <input className="dark-inp" type="number" style={INP}
-                        value={editForm.precio_venta} onChange={e => setEditForm(f=>({...f,precio_venta:+e.target.value}))}
+                        value={editForm.precio_venta || ''} onChange={e => { const pv = +e.target.value; setEditForm(f=>({...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
                         placeholder="$ venta"
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
                       <input className="dark-inp" type="number" style={INP}
-                        value={editForm.precio_costo} onChange={e => setEditForm(f=>({...f,precio_costo:+e.target.value}))}
-                        placeholder="$ costo"
+                        value={editForm.precio_costo || ''} onChange={e => setEditForm(f=>({...f,precio_costo:+e.target.value}))}
+                        placeholder="$ costo (auto 50%)"
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
                       <input className="dark-inp" type="number" style={INP}
-                        value={editForm.stock} onChange={e => setEditForm(f=>({...f,stock:+e.target.value}))}
+                        value={editForm.stock || ''} onChange={e => setEditForm(f=>({...f,stock:+e.target.value}))}
                         placeholder="Stock"
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
                       <input className="dark-inp" type="number" style={INP}
-                        value={editForm.stock_minimo} onChange={e => setEditForm(f=>({...f,stock_minimo:+e.target.value}))}
+                        value={editForm.stock_minimo || ''} onChange={e => setEditForm(f=>({...f,stock_minimo:+e.target.value}))}
                         placeholder="Mín."
                         onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
                       <div style={{ display:'flex', gap:4 }}>
