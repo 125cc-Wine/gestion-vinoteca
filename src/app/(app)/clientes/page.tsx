@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import type { Cliente } from '@/types'
+import type { Cliente, Venta } from '@/types'
 
 const TIPOS = [
   { value: 'consumidor_final', label: 'Consumidor final' },
@@ -21,7 +21,7 @@ const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
   saldo: 0, limite_credito: 0, notas: '', activo: true,
 }
 
-// ─── Design tokens ─────────────────────────────────────────────────────────
+// ─── Design tokens ──────────────────────────────────────────────────────────
 const C = {
   bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
   accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
@@ -50,25 +50,50 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 4 }}>{children}</div>
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
+function Badge({ color, bg, border, children }: { color: string; bg: string; border: string; children: React.ReactNode }) {
+  return (
+    <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 600, color, background: bg, border: `1px solid ${border}` }}>
+      {children}
+    </span>
+  )
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
 export default function ClientesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Modal edición
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
   const [editId, setEditId] = useState<string | null>(null)
+
+  // Modal cobro manual
   const [cobroModal, setCobroModal] = useState(false)
   const [cobroCliente, setCobroCliente] = useState<Cliente | null>(null)
   const [cobroMonto, setCobroMonto] = useState(0)
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
+
+  // Modal historial (con tabs)
   const [histModal, setHistModal] = useState(false)
   const [histCliente, setHistCliente] = useState<Cliente | null>(null)
+  const [histTab, setHistTab] = useState<'ctacte' | 'comprobantes'>('comprobantes')
   const [histMovs, setHistMovs] = useState<MovCtaCte[]>([])
   const [histCargando, setHistCargando] = useState(false)
   const [histDesde, setHistDesde] = useState('')
   const [histHasta, setHistHasta] = useState(new Date().toISOString().split('T')[0])
+  const [histVentas, setHistVentas] = useState<Venta[]>([])
+  const [histVentasCargando, setHistVentasCargando] = useState(false)
+
+  // Modal pago desde comprobante
+  const [pagoModal, setPagoModal] = useState(false)
+  const [pagoVenta, setPagoVenta] = useState<Venta | null>(null)
+  const [pagoConcepto, setPagoConcepto] = useState('')
+  const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
+  const [pagoGuardando, setPagoGuardando] = useState(false)
+
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
 
@@ -86,6 +111,8 @@ export default function ClientesPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
+
+  // ── CRUD cliente ──────────────────────────────────────────────────────────
 
   function abrirNuevo() {
     setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' })
@@ -119,6 +146,8 @@ export default function ClientesPage() {
     cargar(empresa); showToast('Cliente eliminado')
   }
 
+  // ── Cobro manual ──────────────────────────────────────────────────────────
+
   function abrirCobro(c: Cliente) {
     setCobroCliente(c); setCobroMonto(0)
     setCobroConcepto('Cobro cuenta corriente')
@@ -127,8 +156,7 @@ export default function ClientesPage() {
   }
 
   async function guardarCobro() {
-    if (!cobroCliente) return
-    if (!cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
+    if (!cobroCliente || !cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
     const nombreCliente = cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
     const res = await fetch('/api/cta-cte', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -140,14 +168,22 @@ export default function ClientesPage() {
     showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
   }
 
-  async function abrirHistorial(c: Cliente) {
-    setHistCliente(c); setHistDesde('')
+  // ── Historial ─────────────────────────────────────────────────────────────
+
+  async function abrirHistorial(c: Cliente, tab: 'ctacte' | 'comprobantes' = 'comprobantes') {
+    setHistCliente(c)
+    setHistTab(tab)
+    setHistDesde('')
     setHistHasta(new Date().toISOString().split('T')[0])
     setHistModal(true)
-    await fetchHistorial(c.id!, '', new Date().toISOString().split('T')[0])
+    if (tab === 'ctacte') {
+      fetchMovimientos(c.id!, '', new Date().toISOString().split('T')[0])
+    } else {
+      fetchVentas(c.id!)
+    }
   }
 
-  async function fetchHistorial(clienteId: string, desde: string, hasta: string) {
+  async function fetchMovimientos(clienteId: string, desde: string, hasta: string) {
     setHistCargando(true)
     let url = `/api/cta-cte?cliente_id=${clienteId}`
     if (desde) url += `&desde=${desde}`
@@ -156,6 +192,49 @@ export default function ClientesPage() {
     const data = await res.json()
     setHistMovs(Array.isArray(data) ? data : [])
     setHistCargando(false)
+  }
+
+  async function fetchVentas(clienteId: string) {
+    setHistVentasCargando(true)
+    const res = await fetch(`/api/ventas?empresa=${empresa}&cliente_id=${clienteId}`)
+    const data = await res.json()
+    setHistVentas(Array.isArray(data) ? data : [])
+    setHistVentasCargando(false)
+  }
+
+  function cambiarTab(tab: 'ctacte' | 'comprobantes') {
+    setHistTab(tab)
+    if (!histCliente) return
+    if (tab === 'ctacte' && histMovs.length === 0) fetchMovimientos(histCliente.id!, histDesde, histHasta)
+    if (tab === 'comprobantes' && histVentas.length === 0) fetchVentas(histCliente.id!)
+  }
+
+  // ── Pago desde comprobante ────────────────────────────────────────────────
+
+  function abrirPagoVenta(v: Venta) {
+    setPagoVenta(v)
+    setPagoConcepto(`Cobro ${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`)
+    setPagoFecha(new Date().toISOString().split('T')[0])
+    setPagoModal(true)
+  }
+
+  async function confirmarPagoVenta() {
+    if (!pagoVenta) return
+    setPagoGuardando(true)
+    const res = await fetch('/api/ventas/cobrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha }),
+    })
+    const data = await res.json()
+    setPagoGuardando(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setPagoModal(false)
+    showToast(`${pagoVenta.numero} marcado como pagado`)
+    // Refrescar ventas y clientes
+    if (histCliente) fetchVentas(histCliente.id!)
+    cargar(empresa)
+    // Actualizar saldo mostrado en el header del modal
+    setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - pagoVenta.total) } : prev)
   }
 
   function copiarMensajeWhatsApp(c: Cliente) {
@@ -172,18 +251,28 @@ export default function ClientesPage() {
     }
   }
 
+  // ── Computed ──────────────────────────────────────────────────────────────
+
   const filtrados = clientes.filter(c => {
     const q = busqueda.toLowerCase()
     return !q || `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q)
   })
 
-  const conSaldo = clientes.filter(c => c.saldo !== 0).length
+  const conSaldo = clientes.filter(c => c.saldo > 0).length
   const saldoTotal = clientes.reduce((a, c) => a + c.saldo, 0)
   const totalCobradoHist = histMovs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
   const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0)
 
-  const OVERLAY: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
-  const PANEL = (w = 480): React.CSSProperties => ({ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: w, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', maxHeight: '90vh', overflowY: 'auto' })
+  const OVERLAY: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }
+  const PANEL = (w = 480): React.CSSProperties => ({ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: w, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', margin: 'auto' })
+
+  // Badge estado_pago
+  function BadgePago({ estado }: { estado: string }) {
+    if (estado === 'pagado') return <Badge color={C.green} bg="rgba(76,175,125,0.15)" border="rgba(76,175,125,0.3)">Pagado</Badge>
+    if (estado === 'pendiente') return <Badge color={C.amber} bg="rgba(212,130,10,0.15)" border="rgba(212,130,10,0.3)">Pendiente</Badge>
+    if (estado === 'cuenta_corriente') return <Badge color="#7AADFF" bg="rgba(122,173,255,0.12)" border="rgba(122,173,255,0.3)">Cta. Cte.</Badge>
+    return <span style={{ color: C.dim }}>—</span>
+  }
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', padding: 24, color: C.text }}>
@@ -196,24 +285,22 @@ export default function ClientesPage() {
         select.cinp option { background: #1a1a1a; color: ${C.text}; }
         .hist-row:hover { background: rgba(255,255,255,0.03) !important; }
         .hist-row td { border-bottom: 1px solid ${C.border}; }
+        .venta-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .venta-row td { border-bottom: 1px solid ${C.border}; }
       `}</style>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 24 }}>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Total clientes</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{clientes.length}</div>
-        </div>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Con saldo pendiente</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: C.amber }}>{conSaldo}</div>
-        </div>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', borderLeft: saldoTotal > 0 ? `3px solid ${C.amber}` : `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Saldo total cuentas corrientes</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: saldoTotal > 0 ? C.amber : saldoTotal < 0 ? C.red : C.text }}>
-            ${saldoTotal.toLocaleString('es-AR')}
+        {[
+          { label: 'Total clientes', value: String(clientes.length), color: C.text },
+          { label: 'Con saldo pendiente', value: String(conSaldo), color: C.amber },
+          { label: 'Saldo total cuentas corrientes', value: `$${saldoTotal.toLocaleString('es-AR')}`, color: saldoTotal > 0 ? C.amber : C.text, accent: saldoTotal > 0 },
+        ].map(s => (
+          <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', ...(s.accent ? { borderLeft: `3px solid ${C.amber}` } : {}) }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* Header */}
@@ -225,16 +312,9 @@ export default function ClientesPage() {
         <button className="cbtn" style={btn('accent', { padding: '6px 14px', fontSize: 13 })} onClick={abrirNuevo}>+ Nuevo cliente</button>
       </div>
 
-      {/* Search */}
-      <input
-        className="cinp"
-        style={{ ...INP, marginBottom: 14 }}
-        placeholder="Buscar por nombre, CUIT, razón social, teléfono..."
-        value={busqueda}
-        onChange={e => setBusqueda(e.target.value)}
-      />
+      <input className="cinp" style={{ ...INP, marginBottom: 14 }} placeholder="Buscar por nombre, CUIT, razón social, teléfono..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
 
-      {/* Table */}
+      {/* Tabla */}
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
@@ -261,9 +341,9 @@ export default function ClientesPage() {
                   {c.email && <div style={{ color: C.dim }}>{c.email}</div>}
                 </td>
                 <td style={{ padding: '11px 14px' }}>
-                  <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(122,173,255,0.1)', color: '#7AADFF', border: '1px solid rgba(122,173,255,0.25)' }}>
+                  <Badge color="#7AADFF" bg="rgba(122,173,255,0.1)" border="rgba(122,173,255,0.25)">
                     {TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}
-                  </span>
+                  </Badge>
                 </td>
                 <td style={{ padding: '11px 14px', fontWeight: 700 }}>
                   <span style={{ color: c.saldo > 0 ? C.amber : c.saldo < 0 ? C.red : C.dim }}>
@@ -273,7 +353,8 @@ export default function ClientesPage() {
                 <td style={{ padding: '11px 14px' }}>
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirEditar(c)}>Editar</button>
-                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c)}>Historial</button>
+                    <button className="cbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c, 'comprobantes')}>Comprobantes</button>
+                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c, 'ctacte')}>Cta. Cte.</button>
                     {c.saldo > 0 && <>
                       <button className="cbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => abrirCobro(c)}>Cobrar</button>
                       <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => copiarMensajeWhatsApp(c)}>WA</button>
@@ -320,7 +401,7 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* ── Modal cobro ──────────────────────────────────────────────────── */}
+      {/* ── Modal cobro manual ───────────────────────────────────────────── */}
       {cobroModal && cobroCliente && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
           <div style={PANEL(380)}>
@@ -334,9 +415,7 @@ export default function ClientesPage() {
               <span style={{ fontWeight: 700, color: C.amber }}>Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div><Label>Monto a cobrar ($) *</Label>
-                <input type="number" min="0" className="cinp" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
-              </div>
+              <div><Label>Monto a cobrar ($) *</Label><input type="number" min="0" className="cinp" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus /></div>
               <div><Label>Concepto</Label><input className="cinp" style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} /></div>
               <div><Label>Fecha</Label><input type="date" className="cinp" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} /></div>
             </div>
@@ -348,19 +427,20 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* ── Modal historial ──────────────────────────────────────────────── */}
+      {/* ── Modal historial + comprobantes ──────────────────────────────── */}
       {histModal && histCliente && (
-        <div style={{ ...OVERLAY, alignItems: 'flex-start', overflowY: 'auto', paddingTop: 24 }} onClick={e => e.target === e.currentTarget && setHistModal(false)}>
-          <div style={{ ...PANEL(680), maxHeight: 'none' }}>
-            {/* Header */}
+        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setHistModal(false)}>
+          <div style={{ ...PANEL(740), maxHeight: 'none', marginTop: 0 }}>
+
+            {/* Header del modal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>
-                  Historial — {histCliente.razon_social || `${histCliente.nombre} ${histCliente.apellido || ''}`.trim()}
+                  {histCliente.razon_social || `${histCliente.nombre} ${histCliente.apellido || ''}`.trim()}
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                  <span style={{ fontSize: 12, color: C.muted }}>Saldo actual:</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: histCliente.saldo > 0 ? C.amber : histCliente.saldo < 0 ? C.green : C.dim }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>Saldo:</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: histCliente.saldo > 0 ? C.amber : C.dim }}>
                     ${histCliente.saldo.toLocaleString('es-AR')}
                   </span>
                   {histCliente.saldo > 0 && (
@@ -373,70 +453,182 @@ export default function ClientesPage() {
               <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setHistModal(false)}>×</button>
             </div>
 
-            {/* Filtros */}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
-              <div><Label>Desde</Label><input type="date" className="cinp" style={{ ...INP, width: 150 }} value={histDesde} onChange={e => setHistDesde(e.target.value)} /></div>
-              <div><Label>Hasta</Label><input type="date" className="cinp" style={{ ...INP, width: 150 }} value={histHasta} onChange={e => setHistHasta(e.target.value)} /></div>
-              <button className="cbtn" style={btn('default', { padding: '6px 14px' })} onClick={() => fetchHistorial(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
-              <button className="cbtn" style={btn('ghost', { fontSize: 12, color: C.dim })} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchHistorial(histCliente.id!, '', h) }}>Ver todo</button>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 2, background: C.surface, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, marginBottom: 18, width: 'fit-content' }}>
+              {([['comprobantes', 'Comprobantes'], ['ctacte', 'Cuenta corriente']] as const).map(([t, label]) => (
+                <button
+                  key={t}
+                  className="cbtn"
+                  onClick={() => cambiarTab(t)}
+                  style={{ ...btn(histTab === t ? 'accent' : 'ghost', { padding: '5px 16px', fontSize: 12, borderRadius: 6 }), border: 'none' }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* Resumen */}
-            {histMovs.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
-                {[
-                  { label: 'Total cargado', value: totalCargadoHist, color: C.red, bg: 'rgba(224,85,85,0.08)', border: 'rgba(224,85,85,0.2)' },
-                  { label: 'Total cobrado', value: totalCobradoHist, color: C.green, bg: 'rgba(76,175,125,0.08)', border: 'rgba(76,175,125,0.2)' },
-                  { label: 'Neto período', value: totalCargadoHist - totalCobradoHist, color: totalCargadoHist - totalCobradoHist > 0 ? C.amber : C.dim, bg: 'rgba(212,130,10,0.07)', border: 'rgba(212,130,10,0.2)' },
-                ].map(s => (
-                  <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 8, padding: '12px 14px' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: s.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{s.label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>${s.value.toLocaleString('es-AR')}</div>
+            {/* ── Tab: Comprobantes ─────────────────────────────────────── */}
+            {histTab === 'comprobantes' && (
+              <>
+                {histVentasCargando ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
+                ) : histVentas.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay comprobantes para este cliente</div>
+                ) : (
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+                          {['Número', 'Tipo', 'Fecha', 'Total', 'Estado pago', ''].map(h => (
+                            <th key={h} style={{ textAlign: h === 'Total' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {histVentas.map(v => (
+                          <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
+                            <td style={{ padding: '9px 12px', fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 11 }}>{v.numero}</td>
+                            <td style={{ padding: '9px 12px' }}>
+                              <Badge
+                                color={v.tipo === 'presupuesto' ? '#D08090' : C.green}
+                                bg={v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.18)' : 'rgba(76,175,125,0.15)'}
+                                border={v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.4)' : 'rgba(76,175,125,0.3)'}
+                              >
+                                {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
+                              </Badge>
+                            </td>
+                            <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
+                            <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
+                            <td style={{ padding: '9px 12px' }}><BadgePago estado={v.estado_pago || ''} /></td>
+                            <td style={{ padding: '9px 12px' }}>
+                              {v.estado_pago !== 'pagado' && (
+                                <button
+                                  className="cbtn"
+                                  style={btn('green', { padding: '4px 10px', fontSize: 11, color: C.green })}
+                                  onClick={() => abrirPagoVenta(v)}
+                                >
+                                  Marcar pagado
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
 
-            {/* Tabla movimientos */}
-            {histCargando ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
-            ) : histMovs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay movimientos en este período</div>
-            ) : (
-              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-                      {['Fecha', 'Tipo', 'Concepto', 'Monto', 'Saldo'].map(h => (
-                        <th key={h} style={{ textAlign: h === 'Monto' || h === 'Saldo' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {histMovs.map(m => {
-                      const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
-                      return (
-                        <tr key={m.id} className="hist-row" style={{ background: 'transparent' }}>
-                          <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
-                          <td style={{ padding: '9px 12px' }}>
-                            <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: esCobro ? 'rgba(76,175,125,0.15)' : 'rgba(224,85,85,0.12)', color: esCobro ? C.green : C.red, border: `1px solid ${esCobro ? 'rgba(76,175,125,0.3)' : 'rgba(224,85,85,0.3)'}` }}>
-                              {esCobro ? 'Cobro' : 'Cargo'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '9px 12px', color: C.text }}>{m.concepto}</td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: esCobro ? C.green : C.red }}>
-                            {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
-                          </td>
-                          <td style={{ padding: '9px 12px', textAlign: 'right', color: C.muted, fontSize: 11 }}>
-                            {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
-                          </td>
+            {/* ── Tab: Cuenta corriente ─────────────────────────────────── */}
+            {histTab === 'ctacte' && (
+              <>
+                {/* Filtros */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 14 }}>
+                  <div><Label>Desde</Label><input type="date" className="cinp" style={{ ...INP, width: 148 }} value={histDesde} onChange={e => setHistDesde(e.target.value)} /></div>
+                  <div><Label>Hasta</Label><input type="date" className="cinp" style={{ ...INP, width: 148 }} value={histHasta} onChange={e => setHistHasta(e.target.value)} /></div>
+                  <button className="cbtn" style={btn('default', { padding: '6px 14px' })} onClick={() => fetchMovimientos(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
+                  <button className="cbtn" style={btn('ghost', { fontSize: 12, color: C.dim })} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchMovimientos(histCliente.id!, '', h) }}>Ver todo</button>
+                </div>
+
+                {/* Resumen */}
+                {histMovs.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 14 }}>
+                    {[
+                      { label: 'Total cargado', value: totalCargadoHist, color: C.red, bg: 'rgba(224,85,85,0.08)', border: 'rgba(224,85,85,0.2)' },
+                      { label: 'Total cobrado', value: totalCobradoHist, color: C.green, bg: 'rgba(76,175,125,0.08)', border: 'rgba(76,175,125,0.2)' },
+                      { label: 'Neto período', value: totalCargadoHist - totalCobradoHist, color: totalCargadoHist - totalCobradoHist > 0 ? C.amber : C.dim, bg: 'rgba(212,130,10,0.07)', border: 'rgba(212,130,10,0.2)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 8, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: s.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
+                        <div style={{ fontSize: 17, fontWeight: 700, color: s.color }}>${s.value.toLocaleString('es-AR')}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {histCargando ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
+                ) : histMovs.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay movimientos en este período</div>
+                ) : (
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+                          {['Fecha', 'Tipo', 'Concepto', 'Monto', 'Saldo'].map(h => (
+                            <th key={h} style={{ textAlign: h === 'Monto' || h === 'Saldo' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                          ))}
                         </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {histMovs.map(m => {
+                          const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
+                          return (
+                            <tr key={m.id} className="hist-row" style={{ background: 'transparent' }}>
+                              <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
+                              <td style={{ padding: '9px 12px' }}>
+                                <Badge color={esCobro ? C.green : C.red} bg={esCobro ? 'rgba(76,175,125,0.15)' : 'rgba(224,85,85,0.12)'} border={esCobro ? 'rgba(76,175,125,0.3)' : 'rgba(224,85,85,0.3)'}>
+                                  {esCobro ? 'Cobro' : 'Cargo'}
+                                </Badge>
+                              </td>
+                              <td style={{ padding: '9px 12px', color: C.text }}>{m.concepto}</td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: esCobro ? C.green : C.red }}>
+                                {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
+                              </td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', color: C.muted, fontSize: 11 }}>
+                                {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal confirmar pago de comprobante ──────────────────────────── */}
+      {pagoModal && pagoVenta && (
+        <div style={{ ...OVERLAY, zIndex: 60 }} onClick={e => e.target === e.currentTarget && setPagoModal(false)}>
+          <div style={PANEL(400)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Confirmar cobro</h2>
+              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setPagoModal(false)}>×</button>
+            </div>
+
+            {/* Resumen del comprobante */}
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 13 }}>{pagoVenta.numero}</span>
+                <span style={{ fontSize: 13, color: C.muted }}>{new Date(pagoVenta.created_at!).toLocaleDateString('es-AR')}</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: C.green }}>${pagoVenta.total.toLocaleString('es-AR')}</div>
+              {pagoVenta.estado_pago === 'cuenta_corriente' && (
+                <div style={{ fontSize: 11, color: C.amber, marginTop: 6 }}>Se descontará del saldo en cuenta corriente del cliente</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div><Label>Concepto</Label><input className="cinp" style={INP} value={pagoConcepto} onChange={e => setPagoConcepto(e.target.value)} /></div>
+              <div><Label>Fecha de cobro</Label><input type="date" className="cinp" style={INP} value={pagoFecha} onChange={e => setPagoFecha(e.target.value)} /></div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <button className="cbtn" style={btn('default')} onClick={() => setPagoModal(false)}>Cancelar</button>
+              <button
+                className="cbtn"
+                style={btn('green', { padding: '6px 18px', fontSize: 13, fontWeight: 600, color: C.green, opacity: pagoGuardando ? 0.6 : 1 })}
+                onClick={confirmarPagoVenta}
+                disabled={pagoGuardando}
+              >
+                {pagoGuardando ? 'Guardando...' : 'Confirmar cobro'}
+              </button>
+            </div>
           </div>
         </div>
       )}

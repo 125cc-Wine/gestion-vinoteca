@@ -6,14 +6,18 @@ import { wooUpdateStockAndPrice } from '@/lib/woocommerce'
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
+  const clienteId = req.nextUrl.searchParams.get('cliente_id')
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('ventas')
     .select('*')
     .eq('empresa', empresa)
     .neq('estado', 'cancelado')
     .order('created_at', { ascending: false })
 
+  if (clienteId) query = query.eq('cliente_id', clienteId)
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
