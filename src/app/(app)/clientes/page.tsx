@@ -11,44 +11,64 @@ const TIPOS = [
 ]
 
 interface MovCtaCte {
-  id: string
-  tipo: string
-  concepto: string
-  monto: number
-  saldo_anterior?: number
-  saldo_nuevo?: number
-  fecha?: string
-  created_at: string
+  id: string; tipo: string; concepto: string; monto: number
+  saldo_anterior?: number; saldo_nuevo?: number; fecha?: string; created_at: string
 }
 
 const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
-  empresa: 'aroma',
-  nombre: '', apellido: '', razon_social: '', cuit: '', email: '', telefono: '',
-  direccion: '', tipo: 'consumidor_final', saldo: 0, limite_credito: 0, notas: '', activo: true,
+  empresa: 'aroma', nombre: '', apellido: '', razon_social: '', cuit: '',
+  email: '', telefono: '', direccion: '', tipo: 'consumidor_final',
+  saldo: 0, limite_credito: 0, notas: '', activo: true,
 }
 
+// ─── Design tokens ─────────────────────────────────────────────────────────
+const C = {
+  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
+  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
+  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
+  dangerBg: '#3A1010', dangerBorder: '#8B2020',
+}
+
+const INP: React.CSSProperties = {
+  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
+  color: C.text, padding: '6px 9px', fontSize: 13, outline: 'none',
+  width: '100%', boxSizing: 'border-box',
+}
+
+function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
+  const bases: Record<string, React.CSSProperties> = {
+    default: { background: '#222', border: `1px solid ${C.border}` },
+    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
+    ghost:   { background: 'transparent', border: '1px solid transparent' },
+    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
+    green:   { background: 'rgba(76,175,125,0.15)', border: '1px solid rgba(76,175,125,0.35)' },
+  }
+  return { ...bases[v], color: C.text, borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 4 }}>{children}</div>
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────
 export default function ClientesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
-
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
   const [editId, setEditId] = useState<string | null>(null)
-
   const [cobroModal, setCobroModal] = useState(false)
   const [cobroCliente, setCobroCliente] = useState<Cliente | null>(null)
   const [cobroMonto, setCobroMonto] = useState(0)
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
-
   const [histModal, setHistModal] = useState(false)
   const [histCliente, setHistCliente] = useState<Cliente | null>(null)
   const [histMovs, setHistMovs] = useState<MovCtaCte[]>([])
   const [histCargando, setHistCargando] = useState(false)
   const [histDesde, setHistDesde] = useState('')
   const [histHasta, setHistHasta] = useState(new Date().toISOString().split('T')[0])
-
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
 
@@ -79,19 +99,14 @@ export default function ClientesPage() {
       telefono: c.telefono || '', direccion: c.direccion || '', tipo: c.tipo,
       saldo: c.saldo, limite_credito: c.limite_credito || 0, notas: c.notas || '', activo: c.activo,
     })
-    setEditId(c.id!)
-    setModal(true)
+    setEditId(c.id!); setModal(true)
   }
 
   async function guardar() {
     if (!form.nombre.trim()) { showToast('El nombre es obligatorio'); return }
     const method = editId ? 'PUT' : 'POST'
     const body = editId ? { id: editId, ...form } : form
-    const res = await fetch('/api/clientes', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    const res = await fetch('/api/clientes', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false); cargar(empresa)
@@ -105,8 +120,7 @@ export default function ClientesPage() {
   }
 
   function abrirCobro(c: Cliente) {
-    setCobroCliente(c)
-    setCobroMonto(0)
+    setCobroCliente(c); setCobroMonto(0)
     setCobroConcepto('Cobro cuenta corriente')
     setCobroFecha(new Date().toISOString().split('T')[0])
     setCobroModal(true)
@@ -115,31 +129,19 @@ export default function ClientesPage() {
   async function guardarCobro() {
     if (!cobroCliente) return
     if (!cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
-    const nombreCliente = cobroCliente.razon_social ||
-      `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
+    const nombreCliente = cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
     const res = await fetch('/api/cta-cte', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresa,
-        cliente_id: cobroCliente.id,
-        cliente_nombre: nombreCliente,
-        tipo: 'cobro',
-        concepto: cobroConcepto,
-        monto: cobroMonto,
-        fecha: cobroFecha,
-      }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha }),
     })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
-    setCobroModal(false)
-    cargar(empresa)
+    setCobroModal(false); cargar(empresa)
     showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
   }
 
   async function abrirHistorial(c: Cliente) {
-    setHistCliente(c)
-    setHistDesde('')
+    setHistCliente(c); setHistDesde('')
     setHistHasta(new Date().toISOString().split('T')[0])
     setHistModal(true)
     await fetchHistorial(c.id!, '', new Date().toISOString().split('T')[0])
@@ -159,14 +161,9 @@ export default function ClientesPage() {
   function copiarMensajeWhatsApp(c: Cliente) {
     const nombre = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
     const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
-    const mensaje =
-      `Hola ${nombre}, le escribimos desde ${empNombre}.\n` +
-      `Su saldo pendiente es de $${c.saldo.toLocaleString('es-AR')}.\n` +
-      `Por favor comuníquese con nosotros para coordinar el pago.\n` +
-      `¡Muchas gracias!`
-
+    const mensaje = `Hola ${nombre}, le escribimos desde ${empNombre}.\nSu saldo pendiente es de $${c.saldo.toLocaleString('es-AR')}.\nPor favor comuníquese con nosotros para coordinar el pago.\n¡Muchas gracias!`
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(mensaje).then(() => showToast('Mensaje copiado al portapapeles ✓'))
+      navigator.clipboard.writeText(mensaje).then(() => showToast('Mensaje copiado al portapapeles'))
     } else {
       const url = c.telefono
         ? `https://wa.me/549${c.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
@@ -182,93 +179,106 @@ export default function ClientesPage() {
 
   const conSaldo = clientes.filter(c => c.saldo !== 0).length
   const saldoTotal = clientes.reduce((a, c) => a + c.saldo, 0)
-
   const totalCobradoHist = histMovs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
   const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0)
 
+  const OVERLAY: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
+  const PANEL = (w = 480): React.CSSProperties => ({ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: w, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', maxHeight: '90vh', overflowY: 'auto' })
+
   return (
-    <div>
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="card">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total clientes</div>
-          <div className="text-2xl font-bold text-gray-900">{clientes.length}</div>
+    <div style={{ background: C.bg, minHeight: '100vh', padding: 24, color: C.text }}>
+      <style>{`
+        .cl-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .cl-row td { border-bottom: 1px solid ${C.border}; }
+        .cbtn:hover { opacity: 0.8; } .cbtn:active { opacity: 0.6; }
+        .cinp:focus { border-color: ${C.accent} !important; outline: none; }
+        .cinp::placeholder { color: ${C.dim}; }
+        select.cinp option { background: #1a1a1a; color: ${C.text}; }
+        .hist-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .hist-row td { border-bottom: 1px solid ${C.border}; }
+      `}</style>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 24 }}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Total clientes</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{clientes.length}</div>
         </div>
-        <div className="card">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Con saldo pendiente</div>
-          <div className="text-2xl font-bold text-amber-600">{conSaldo}</div>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Con saldo pendiente</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.amber }}>{conSaldo}</div>
         </div>
-        <div className={`card col-span-2 ${saldoTotal > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Saldo total cuentas corrientes</div>
-          <div className={`text-2xl font-bold ${saldoTotal > 0 ? 'text-amber-600' : saldoTotal < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', borderLeft: saldoTotal > 0 ? `3px solid ${C.amber}` : `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Saldo total cuentas corrientes</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: saldoTotal > 0 ? C.amber : saldoTotal < 0 ? C.red : C.text }}>
             ${saldoTotal.toLocaleString('es-AR')}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-900">Clientes</h1>
-        <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo cliente</button>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>Clientes</h1>
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{filtrados.length} clientes</div>
+        </div>
+        <button className="cbtn" style={btn('accent', { padding: '6px 14px', fontSize: 13 })} onClick={abrirNuevo}>+ Nuevo cliente</button>
       </div>
 
+      {/* Search */}
       <input
-        className="input mb-4"
-        placeholder="Buscar por nombre, CUIT, razón social..."
+        className="cinp"
+        style={{ ...INP, marginBottom: 14 }}
+        placeholder="Buscar por nombre, CUIT, razón social, teléfono..."
         value={busqueda}
         onChange={e => setBusqueda(e.target.value)}
       />
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+      {/* Table */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
+            <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
               {['Cliente', 'CUIT', 'Contacto', 'Tipo', 'Saldo', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+                <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-400">No hay clientes todavía</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay clientes todavía</td></tr>
             ) : filtrados.map(c => (
-              <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="font-semibold text-gray-800">{c.nombre} {c.apellido || ''}</div>
-                  {c.razon_social && <div className="text-xs text-gray-400">{c.razon_social}</div>}
+              <tr key={c.id} className="cl-row" style={{ background: 'transparent' }}>
+                <td style={{ padding: '11px 14px' }}>
+                  <div style={{ fontWeight: 600, color: C.text }}>{c.nombre} {c.apellido || ''}</div>
+                  {c.razon_social && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{c.razon_social}</div>}
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{c.cuit || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{c.cuit || '—'}</td>
+                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>
                   {c.telefono && <div>{c.telefono}</div>}
-                  {c.email && <div>{c.email}</div>}
+                  {c.email && <div style={{ color: C.dim }}>{c.email}</div>}
                 </td>
-                <td className="px-4 py-3">
-                  <span className="badge badge-blue">
+                <td style={{ padding: '11px 14px' }}>
+                  <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(122,173,255,0.1)', color: '#7AADFF', border: '1px solid rgba(122,173,255,0.25)' }}>
                     {TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-semibold">
-                  <span className={c.saldo > 0 ? 'text-amber-600' : c.saldo < 0 ? 'text-red-500' : 'text-gray-400'}>
+                <td style={{ padding: '11px 14px', fontWeight: 700 }}>
+                  <span style={{ color: c.saldo > 0 ? C.amber : c.saldo < 0 ? C.red : C.dim }}>
                     ${c.saldo.toLocaleString('es-AR')}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1.5 flex-wrap">
-                    <button onClick={() => abrirEditar(c)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                    <button onClick={() => abrirHistorial(c)} className="btn btn-primary text-xs py-1 px-2" title="Ver historial de cuenta corriente">
-                      📋 Historial
-                    </button>
-                    {c.saldo > 0 && (
-                      <>
-                        <button onClick={() => abrirCobro(c)} className="btn btn-success text-xs py-1 px-2">
-                          💰 Cobrar
-                        </button>
-                        <button onClick={() => copiarMensajeWhatsApp(c)} className="btn btn-whatsapp text-xs py-1 px-2">
-                          📱 WA
-                        </button>
-                      </>
-                    )}
-                    <button onClick={() => eliminar(c.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                <td style={{ padding: '11px 14px' }}>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirEditar(c)}>Editar</button>
+                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c)}>Historial</button>
+                    {c.saldo > 0 && <>
+                      <button className="cbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => abrirCobro(c)}>Cobrar</button>
+                      <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => copiarMensajeWhatsApp(c)}>WA</button>
+                    </>}
+                    <button className="cbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminar(c.id!)}>Eliminar</button>
                   </div>
                 </td>
               </tr>
@@ -277,180 +287,147 @@ export default function ClientesPage() {
         </table>
       </div>
 
-      {/* Modal edición cliente */}
+      {/* ── Modal edición cliente ─────────────────────────────────────────── */}
       {modal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
-            <h2 className="text-base font-bold text-gray-900 mb-5">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Nombre *</label>
-                <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
-              <div><label className="label">Apellido</label>
-                <input className="input" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></div>
-              <div className="col-span-2"><label className="label">Razón social</label>
-                <input className="input" value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
-              <div><label className="label">CUIT</label>
-                <input className="input" value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" /></div>
-              <div><label className="label">Tipo</label>
-                <select className="input" value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
-                  {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select></div>
-              <div><label className="label">Teléfono</label>
-                <input className="input" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
-              <div><label className="label">Email</label>
-                <input className="input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div className="col-span-2"><label className="label">Dirección</label>
-                <input className="input" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
-              <div><label className="label">Saldo cuenta corriente ($)</label>
-                <input className="input" type="number" value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
-              <div><label className="label">Límite de crédito ($)</label>
-                <input className="input" type="number" value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} /></div>
-              <div className="col-span-2"><label className="label">Notas</label>
-                <textarea className="input h-20 resize-none" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
+        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div style={PANEL(500)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setModal(false)}>×</button>
             </div>
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm">Guardar</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div><Label>Nombre *</Label><input className="cinp" style={INP} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
+              <div><Label>Apellido</Label><input className="cinp" style={INP} value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></div>
+              <div style={{ gridColumn: '1/-1' }}><Label>Razón social</Label><input className="cinp" style={INP} value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
+              <div><Label>CUIT</Label><input className="cinp" style={INP} value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" /></div>
+              <div><Label>Tipo</Label>
+                <select className="cinp" style={INP} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
+                  {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div><Label>Teléfono</Label><input className="cinp" style={INP} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
+              <div><Label>Email</Label><input className="cinp" style={INP} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div style={{ gridColumn: '1/-1' }}><Label>Dirección</Label><input className="cinp" style={INP} value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
+              <div><Label>Saldo cta. corriente ($)</Label><input type="number" className="cinp" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
+              <div><Label>Límite de crédito ($)</Label><input type="number" className="cinp" style={INP} value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} /></div>
+              <div style={{ gridColumn: '1/-1' }}><Label>Notas</Label><textarea className="cinp" style={{ ...INP, height: 68, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <button className="cbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
+              <button className="cbtn" style={btn('accent', { padding: '6px 18px', fontSize: 13, fontWeight: 600 })} onClick={guardar}>Guardar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal cobro */}
+      {/* ── Modal cobro ──────────────────────────────────────────────────── */}
       {cobroModal && cobroCliente && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-sm shadow-xl">
-            <h2 className="text-base font-bold text-gray-900 mb-1">Registrar cobro</h2>
-            <p className="text-sm text-gray-500 mb-5">
+        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
+          <div style={PANEL(380)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Registrar cobro</h2>
+              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setCobroModal(false)}>×</button>
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>
               {cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()}
               {' — '}
-              <span className="font-semibold text-amber-600">Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
-            </p>
-            <div className="space-y-3">
-              <div>
-                <label className="label">Monto a cobrar ($) *</label>
-                <input type="number" min="0" className="input" value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
-              </div>
-              <div>
-                <label className="label">Concepto</label>
-                <input className="input" value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Fecha</label>
-                <input type="date" className="input" value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} />
-              </div>
+              <span style={{ fontWeight: 700, color: C.amber }}>Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
             </div>
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setCobroModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardarCobro} className="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 shadow-sm">Registrar cobro</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div><Label>Monto a cobrar ($) *</Label>
+                <input type="number" min="0" className="cinp" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
+              </div>
+              <div><Label>Concepto</Label><input className="cinp" style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} /></div>
+              <div><Label>Fecha</Label><input type="date" className="cinp" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} /></div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <button className="cbtn" style={btn('default')} onClick={() => setCobroModal(false)}>Cancelar</button>
+              <button className="cbtn" style={btn('green', { padding: '6px 18px', fontSize: 13, fontWeight: 600, color: C.green })} onClick={guardarCobro}>Registrar cobro</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal historial cuenta corriente */}
+      {/* ── Modal historial ──────────────────────────────────────────────── */}
       {histModal && histCliente && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setHistModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-xl">
-            <div className="flex items-start justify-between mb-4">
+        <div style={{ ...OVERLAY, alignItems: 'flex-start', overflowY: 'auto', paddingTop: 24 }} onClick={e => e.target === e.currentTarget && setHistModal(false)}>
+          <div style={{ ...PANEL(680), maxHeight: 'none' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <h2 className="text-base font-bold text-gray-900">
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>
                   Historial — {histCliente.razon_social || `${histCliente.nombre} ${histCliente.apellido || ''}`.trim()}
                 </h2>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-sm text-gray-500">Saldo actual:</span>
-                  <span className={`text-sm font-bold ${histCliente.saldo > 0 ? 'text-amber-600' : histCliente.saldo < 0 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
+                  <span style={{ fontSize: 12, color: C.muted }}>Saldo actual:</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: histCliente.saldo > 0 ? C.amber : histCliente.saldo < 0 ? C.green : C.dim }}>
                     ${histCliente.saldo.toLocaleString('es-AR')}
                   </span>
                   {histCliente.saldo > 0 && (
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                    <span style={{ fontSize: 10, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)', padding: '2px 8px', borderRadius: 99, fontWeight: 600 }}>
                       Deuda pendiente
                     </span>
                   )}
                 </div>
               </div>
-              <button onClick={() => setHistModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setHistModal(false)}>×</button>
             </div>
 
-            {/* Filtros por fecha */}
-            <div className="flex gap-3 mb-4 items-end">
-              <div>
-                <label className="label">Desde</label>
-                <input type="date" className="input w-40" value={histDesde} onChange={e => setHistDesde(e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Hasta</label>
-                <input type="date" className="input w-40" value={histHasta} onChange={e => setHistHasta(e.target.value)} />
-              </div>
-              <button
-                onClick={() => fetchHistorial(histCliente.id!, histDesde, histHasta)}
-                className="btn btn-primary px-4"
-              >
-                Filtrar
-              </button>
-              <button
-                onClick={() => { setHistDesde(''); setHistHasta(new Date().toISOString().split('T')[0]); fetchHistorial(histCliente.id!, '', new Date().toISOString().split('T')[0]) }}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                Ver todo
-              </button>
+            {/* Filtros */}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
+              <div><Label>Desde</Label><input type="date" className="cinp" style={{ ...INP, width: 150 }} value={histDesde} onChange={e => setHistDesde(e.target.value)} /></div>
+              <div><Label>Hasta</Label><input type="date" className="cinp" style={{ ...INP, width: 150 }} value={histHasta} onChange={e => setHistHasta(e.target.value)} /></div>
+              <button className="cbtn" style={btn('default', { padding: '6px 14px' })} onClick={() => fetchHistorial(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
+              <button className="cbtn" style={btn('ghost', { fontSize: 12, color: C.dim })} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchHistorial(histCliente.id!, '', h) }}>Ver todo</button>
             </div>
 
-            {/* Resumen del período */}
+            {/* Resumen */}
             {histMovs.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-red-50 rounded-xl p-3">
-                  <div className="text-xs text-red-500 font-semibold uppercase tracking-wide mb-0.5">Total cargado</div>
-                  <div className="text-lg font-bold text-red-600">${totalCargadoHist.toLocaleString('es-AR')}</div>
-                </div>
-                <div className="bg-emerald-50 rounded-xl p-3">
-                  <div className="text-xs text-emerald-600 font-semibold uppercase tracking-wide mb-0.5">Total cobrado</div>
-                  <div className="text-lg font-bold text-emerald-600">${totalCobradoHist.toLocaleString('es-AR')}</div>
-                </div>
-                <div className={`rounded-xl p-3 ${totalCargadoHist - totalCobradoHist > 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
-                  <div className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-0.5">Neto período</div>
-                  <div className={`text-lg font-bold ${totalCargadoHist - totalCobradoHist > 0 ? 'text-amber-600' : 'text-gray-700'}`}>
-                    ${(totalCargadoHist - totalCobradoHist).toLocaleString('es-AR')}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
+                {[
+                  { label: 'Total cargado', value: totalCargadoHist, color: C.red, bg: 'rgba(224,85,85,0.08)', border: 'rgba(224,85,85,0.2)' },
+                  { label: 'Total cobrado', value: totalCobradoHist, color: C.green, bg: 'rgba(76,175,125,0.08)', border: 'rgba(76,175,125,0.2)' },
+                  { label: 'Neto período', value: totalCargadoHist - totalCobradoHist, color: totalCargadoHist - totalCobradoHist > 0 ? C.amber : C.dim, bg: 'rgba(212,130,10,0.07)', border: 'rgba(212,130,10,0.2)' },
+                ].map(s => (
+                  <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: s.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{s.label}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: s.color }}>${s.value.toLocaleString('es-AR')}</div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
 
-            {/* Tabla de movimientos */}
+            {/* Tabla movimientos */}
             {histCargando ? (
-              <div className="text-center py-10 text-gray-400">Cargando...</div>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
             ) : histMovs.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">No hay movimientos en este período</div>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay movimientos en este período</div>
             ) : (
-              <div className="border border-gray-100 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Fecha</th>
-                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Tipo</th>
-                      <th className="text-left px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Concepto</th>
-                      <th className="text-right px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Monto</th>
-                      <th className="text-right px-4 py-2.5 text-xs text-gray-400 font-semibold uppercase tracking-wide">Saldo</th>
+                    <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+                      {['Fecha', 'Tipo', 'Concepto', 'Monto', 'Saldo'].map(h => (
+                        <th key={h} style={{ textAlign: h === 'Monto' || h === 'Saldo' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {histMovs.map(m => {
                       const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
                       return (
-                        <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/70">
-                          <td className="px-4 py-2.5 text-gray-400 text-xs">
-                            {new Date(m.created_at).toLocaleDateString('es-AR')}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <span className={`badge ${esCobro ? 'badge-green' : 'badge-red'}`}>
+                        <tr key={m.id} className="hist-row" style={{ background: 'transparent' }}>
+                          <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
+                          <td style={{ padding: '9px 12px' }}>
+                            <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: esCobro ? 'rgba(76,175,125,0.15)' : 'rgba(224,85,85,0.12)', color: esCobro ? C.green : C.red, border: `1px solid ${esCobro ? 'rgba(76,175,125,0.3)' : 'rgba(224,85,85,0.3)'}` }}>
                               {esCobro ? 'Cobro' : 'Cargo'}
                             </span>
                           </td>
-                          <td className="px-4 py-2.5 text-gray-700">{m.concepto}</td>
-                          <td className={`px-4 py-2.5 text-right font-semibold ${esCobro ? 'text-emerald-600' : 'text-red-500'}`}>
+                          <td style={{ padding: '9px 12px', color: C.text }}>{m.concepto}</td>
+                          <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: esCobro ? C.green : C.red }}>
                             {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
                           </td>
-                          <td className="px-4 py-2.5 text-right text-gray-500 text-xs">
+                          <td style={{ padding: '9px 12px', textAlign: 'right', color: C.muted, fontSize: 11 }}>
                             {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
                           </td>
                         </tr>
@@ -464,8 +441,9 @@ export default function ClientesPage() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50 max-w-sm">
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
           {toast}
         </div>
       )}
