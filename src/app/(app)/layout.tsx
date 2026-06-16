@@ -21,6 +21,7 @@ const NAV = [
   { href: '/bodegas',     label: 'Bodegas' },
   { href: '/clientes',    label: 'Clientes' },
   { href: '/proveedores', label: 'Proveedores' },
+  { href: '/vendedores',  label: 'Vendedores' },
   { href: '/caja',        label: 'Caja' },
 ]
 
