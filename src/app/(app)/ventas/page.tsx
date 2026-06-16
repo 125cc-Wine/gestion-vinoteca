@@ -12,6 +12,40 @@ const CONDICIONES_VENTA = ['Contado', 'Cta. Cte.', 'Transferencia', 'Cheque', 'T
 interface ItemForm extends VentaItem { producto_id: string; descuento: number }
 const ITEM_EMPTY: ItemForm = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0 }
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:           '#0F0F0F',
+  surface:      '#141414',
+  card:         '#1A1A1A',
+  border:       '#2A2A2A',
+  accent:       '#8B1A2A',
+  text:         '#E8E8E8',
+  muted:        '#888888',
+  dim:          '#555555',
+  green:        '#4CAF7D',
+  amber:        '#D4820A',
+  red:          '#E05555',
+  dangerBg:     '#3A1010',
+  dangerBorder: '#8B2020',
+}
+
+const INP: React.CSSProperties = {
+  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
+  color: C.text, padding: '5px 8px', fontSize: 13, outline: 'none',
+  width: '100%', boxSizing: 'border-box',
+}
+
+function btn(v: 'default' | 'accent' | 'ghost' | 'danger' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
+  const bases = {
+    default: { background: '#222', border: `1px solid ${C.border}` },
+    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
+    ghost:   { background: 'transparent', border: '1px solid transparent' },
+    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
+  }
+  return { ...bases[v], color: C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function VentasPage() {
   const [empresa, setEmpresa] = useState<'aroma' | 'lavid'>('aroma')
   const [ventas, setVentas] = useState<Venta[]>([])
@@ -216,6 +250,7 @@ export default function VentasPage() {
   }
 
   const emp = EMPRESAS_DATA[empresa]
+
   const totalRemitos = ventas
     .filter(v => v.tipo === 'remito' && v.estado !== 'cancelado')
     .reduce((a, v) => a + v.total, 0)
@@ -231,115 +266,144 @@ export default function VentasPage() {
     return true
   })
 
+  const hayFiltros = filtroDesde || filtroHasta || filtroTipo || filtroEstadoPago || filtroVendedor || busquedaVentas
+
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total comprobantes</div>
-          <div className="text-2xl font-bold text-gray-900">{ventas.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Presupuestos</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {ventas.filter(v => v.tipo === 'presupuesto').length}
+    <div style={{ background: C.bg, minHeight: '100vh', padding: '24px', color: C.text }}>
+      <style>{`
+        .venta-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .venta-row td { border-bottom: 1px solid ${C.border}; }
+        .vbtn:hover { opacity: 0.8; }
+        .vbtn:active { opacity: 0.6; }
+        .vinp:focus { border-color: ${C.accent} !important; }
+        .vinp::placeholder { color: ${C.dim}; }
+        select.vinp option { background: #1a1a1a; color: ${C.text}; }
+        .vrow-item:hover { background: rgba(255,255,255,0.02) !important; }
+        .item-row td { border-bottom: 1px solid ${C.border}; }
+      `}</style>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+        {[
+          { label: 'Total comprobantes', value: String(ventas.length), color: C.text },
+          { label: 'Presupuestos', value: String(ventas.filter(v => v.tipo === 'presupuesto').length), color: C.muted },
+          { label: 'Total remitos', value: `$${totalRemitos.toLocaleString('es-AR')}`, color: C.green },
+        ].map(s => (
+          <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
           </div>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>Ventas y comprobantes</h1>
+          <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{ventasFiltradas.length} comprobantes</div>
         </div>
-        <div className="card">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total remitos</div>
-          <div className="text-2xl font-bold text-emerald-600">${totalRemitos.toLocaleString('es-AR')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="vbtn" style={btn('default')} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
+          <button className="vbtn" style={btn('accent')} onClick={() => abrirNuevo('remito')}>+ Remito</button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-900">Ventas y comprobantes</h1>
-        <div className="flex gap-2">
-          <button onClick={() => abrirNuevo('presupuesto')} className="btn btn-primary">+ Presupuesto</button>
-          <button onClick={() => abrirNuevo('remito')} className="btn btn-primary">+ Remito</button>
-        </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="card mb-4 p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Filters */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8 }}>
           <input
-            className="input"
-            placeholder="Buscar número, cliente..."
+            className="vinp"
+            style={INP}
+            placeholder="Número, cliente..."
             value={busquedaVentas}
             onChange={e => setBusquedaVentas(e.target.value)}
           />
-          <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+          <select className="vinp" style={INP} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
             <option value="">Todos los tipos</option>
             <option value="presupuesto">Presupuesto</option>
             <option value="remito">Remito</option>
           </select>
-          <select className="input" value={filtroEstadoPago} onChange={e => setFiltroEstadoPago(e.target.value)}>
+          <select className="vinp" style={INP} value={filtroEstadoPago} onChange={e => setFiltroEstadoPago(e.target.value)}>
             <option value="">Todos los estados</option>
             <option value="pagado">Pagado</option>
             <option value="pendiente">Pendiente</option>
             <option value="cuenta_corriente">Cta. Corriente</option>
           </select>
-          <select className="input" value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
+          <select className="vinp" style={INP} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
             <option value="">Todos los vendedores</option>
             {vendedores.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
           </select>
-          <div>
-            <input type="date" className="input" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} title="Desde" />
-          </div>
-          <div className="flex gap-1.5 items-center">
-            <input type="date" className="input flex-1" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} title="Hasta" />
-            {(filtroDesde || filtroHasta || filtroTipo || filtroEstadoPago || filtroVendedor || busquedaVentas) && (
+          <input type="date" className="vinp" style={INP} value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} title="Desde" />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="date" className="vinp" style={{ ...INP, flex: 1 }} value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} title="Hasta" />
+            {hayFiltros && (
               <button
+                className="vbtn"
+                style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 16 }), color: C.dim, flexShrink: 0 }}
                 onClick={() => { setFiltroDesde(''); setFiltroHasta(''); setFiltroTipo(''); setFiltroEstadoPago(''); setFiltroVendedor(''); setBusquedaVentas('') }}
-                className="text-gray-400 hover:text-gray-600 text-lg leading-none flex-shrink-0"
                 title="Limpiar filtros"
               >×</button>
             )}
           </div>
         </div>
         {ventasFiltradas.length !== ventas.length && (
-          <div className="text-xs text-gray-400 mt-2">Mostrando {ventasFiltradas.length} de {ventas.length} comprobantes</div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 8 }}>
+            Mostrando {ventasFiltradas.length} de {ventas.length} comprobantes
+          </div>
         )}
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+      {/* Table */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
+            <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
               {['Número', 'Tipo', 'Cliente', 'Vendedor', 'Fecha', 'Estado pago', 'Total', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-semibold uppercase tracking-wide">{h}</th>
+                <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>Cargando...</td></tr>
             ) : ventasFiltradas.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">No hay comprobantes todavía</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay comprobantes todavía</td></tr>
             ) : ventasFiltradas.map(v => (
-              <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
-                <td className="px-4 py-3 font-semibold text-gray-800">{v.numero}</td>
-                <td className="px-4 py-3">
-                  <span className={`badge ${v.tipo === 'presupuesto' ? 'badge-blue' : 'badge-green'}`}>
+              <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
+                <td style={{ padding: '11px 14px', fontWeight: 600, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{v.numero}</td>
+                <td style={{ padding: '11px 14px' }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                    background: v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.18)' : 'rgba(76,175,125,0.15)',
+                    color: v.tipo === 'presupuesto' ? '#D08090' : C.green,
+                    border: `1px solid ${v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.4)' : 'rgba(76,175,125,0.3)'}`,
+                  }}>
                     {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-700">{v.cliente_nombre}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{(v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '—'}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
+                <td style={{ padding: '11px 14px', color: C.text }}>{v.cliente_nombre}</td>
+                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{(v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '—'}</td>
+                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>
                   {new Date(v.created_at!).toLocaleDateString('es-AR')}
                 </td>
-                <td className="px-4 py-3">
-                  {v.estado_pago === 'pagado' && <span className="badge badge-green">Pagado</span>}
-                  {v.estado_pago === 'pendiente' && <span className="badge badge-yellow">Pendiente</span>}
-                  {v.estado_pago === 'cuenta_corriente' && <span className="badge badge-blue">Cta. Cte.</span>}
-                  {!v.estado_pago && <span className="text-gray-300 text-xs">—</span>}
+                <td style={{ padding: '11px 14px' }}>
+                  {v.estado_pago === 'pagado' && (
+                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(76,175,125,0.15)', color: C.green, border: '1px solid rgba(76,175,125,0.3)' }}>Pagado</span>
+                  )}
+                  {v.estado_pago === 'pendiente' && (
+                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)' }}>Pendiente</span>
+                  )}
+                  {v.estado_pago === 'cuenta_corriente' && (
+                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(100,140,220,0.15)', color: '#7AADFF', border: '1px solid rgba(100,140,220,0.3)' }}>Cta. Cte.</span>
+                  )}
+                  {!v.estado_pago && <span style={{ color: C.dim }}>—</span>}
                 </td>
-                <td className="px-4 py-3 font-semibold text-gray-800">${v.total.toLocaleString('es-AR')}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
-                    <button onClick={() => imprimirVenta(v)} className="btn btn-primary text-xs py-1 px-2">🖨️</button>
-                    <button onClick={() => editarVenta(v)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                    <button onClick={() => eliminarVenta(v.id!)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                <td style={{ padding: '11px 14px', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
+                <td style={{ padding: '11px 14px' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => imprimirVenta(v)}>Imprimir</button>
+                    <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
+                    <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
                   </div>
                 </td>
               </tr>
@@ -351,21 +415,42 @@ export default function VentasPage() {
       {/* Modal nueva/editar venta */}
       {modal && (
         <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
           onClick={e => e.target === e.currentTarget && setModal(false)}
         >
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-3xl my-4 shadow-xl">
-            <h2 className="text-base font-bold text-gray-900 mb-4">
-              {editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : 'remito'}
-              {tipo === 'remito' && !editVentaId && (
-                <span className="ml-2 text-xs text-emerald-600 font-normal">· descuenta stock automáticamente</span>
-              )}
-            </h2>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+            {/* Modal header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
-                <label className="label">Cliente</label>
-                <select className="input" value={clienteId} onChange={e => seleccionarCliente(e.target.value)}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>
+                  {editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : 'remito'}
+                </h2>
+                {tipo === 'remito' && !editVentaId && (
+                  <div style={{ fontSize: 11, color: C.green, marginTop: 3 }}>Descuenta stock automáticamente al guardar</div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', background: C.surface, borderRadius: 7, padding: 3, border: `1px solid ${C.border}` }}>
+                  {(['presupuesto', 'remito'] as const).map(t => (
+                    <button
+                      key={t}
+                      className="vbtn"
+                      onClick={() => setTipo(t)}
+                      style={{ ...btn(tipo === t ? 'accent' : 'ghost', { padding: '4px 12px', fontSize: 12, borderRadius: 5 }), border: 'none' }}
+                    >
+                      {t === 'presupuesto' ? 'Presupuesto' : 'Remito'}
+                    </button>
+                  ))}
+                </div>
+                <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => setModal(false)}>×</button>
+              </div>
+            </div>
+
+            {/* Cliente / Vendedor / Condición */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Cliente</div>
+                <select className="vinp" style={INP} value={clienteId} onChange={e => seleccionarCliente(e.target.value)}>
                   <option value="">Consumidor Final</option>
                   {clientes.map(c => (
                     <option key={c.id} value={c.id}>
@@ -375,93 +460,110 @@ export default function VentasPage() {
                 </select>
               </div>
               <div>
-                <label className="label">Vendedor</label>
-                <select className="input" value={vendedorNombre} onChange={e => setVendedorNombre(e.target.value)}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Vendedor</div>
+                <select className="vinp" style={INP} value={vendedorNombre} onChange={e => setVendedorNombre(e.target.value)}>
                   <option value="">— Sin asignar —</option>
                   {vendedores.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label">Condición de venta</label>
-                <select className="input" value={condVenta} onChange={e => setCondVenta(e.target.value)}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Condición de venta</div>
+                <select className="vinp" style={INP} value={condVenta} onChange={e => setCondVenta(e.target.value)}>
                   {CONDICIONES_VENTA.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="label">Estado de pago</label>
-                <select className="input" value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
-                  <option value="pagado">✅ Pagado</option>
-                  <option value="pendiente">⏳ Pendiente</option>
-                  <option value="cuenta_corriente">📋 Cuenta corriente</option>
-                </select>
-              </div>
+            {/* Estado pago */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Estado de pago</div>
+              <select className="vinp" style={{ ...INP, maxWidth: 220 }} value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
+                <option value="pagado">Pagado</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="cuenta_corriente">Cuenta corriente</option>
+              </select>
             </div>
 
+            {/* Info cliente */}
             {clienteData && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500 flex gap-4 flex-wrap">
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: C.muted }}>
                 <span>CUIT: {clienteData.cuit || '—'}</span>
                 <span>{clienteData.direccion || '—'}</span>
                 <span>{clienteData.telefono || '—'}</span>
                 {(clienteTipo === 'mayorista' || clienteTipo === 'revendedor') && (
-                  <span className="text-blue-600 font-semibold">⭐ Precio mayorista activo</span>
+                  <span style={{ color: C.amber, fontWeight: 600 }}>Precio mayorista activo</span>
                 )}
               </div>
             )}
 
-            <div className="mb-4">
-              <div className="flex justify-between mb-2">
-                <label className="label mb-0">Productos</label>
+            {/* Items */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Productos</div>
                 <button
+                  className="vbtn"
+                  style={{ ...btn('ghost', { padding: '3px 8px', fontSize: 12 }), color: C.accent }}
                   onClick={() => { setItems([...items, { ...ITEM_EMPTY }]); setBusquedaProducto([...busquedaProducto, '']) }}
-                  className="text-xs text-blue-600 hover:underline"
                 >
                   + agregar línea
                 </button>
               </div>
-              <div className="border border-gray-100 rounded-xl overflow-hidden">
-                <table className="w-full text-xs">
+              <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left px-3 py-2 text-gray-400 w-2/5">Buscar producto</th>
-                      <th className="text-center px-2 py-2 text-gray-400 w-14">Cant.</th>
-                      <th className="text-right px-2 py-2 text-gray-400">P.Unit.</th>
-                      <th className="text-center px-2 py-2 text-gray-400 w-14">Dto%</th>
-                      <th className="text-right px-2 py-2 text-gray-400">Total</th>
-                      <th className="w-6"></th>
+                    <tr style={{ borderBottom: `1px solid ${C.border}`, background: '#111' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: C.dim, fontWeight: 500, width: '40%' }}>Buscar producto</th>
+                      <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 56 }}>Cant.</th>
+                      <th style={{ textAlign: 'right', padding: '8px 6px', color: C.dim, fontWeight: 500 }}>P.Unit.</th>
+                      <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 52 }}>Dto%</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px', color: C.dim, fontWeight: 500 }}>Total</th>
+                      <th style={{ width: 24 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, idx) => (
-                      <tr key={idx} className="border-b border-gray-50">
-                        <td className="px-2 py-1">
-                          <input type="text" className="input text-xs py-1 mb-1" placeholder="Buscar por nombre, bodega..." value={busquedaProducto[idx] || ''} onChange={e => updateBusqueda(idx, e.target.value)} />
-                          <select className="input text-xs py-1" value={item.producto_id} onChange={e => seleccionarProducto(idx, e.target.value)}>
+                      <tr key={idx} className="vrow-item item-row" style={{ background: 'transparent' }}>
+                        <td style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}` }}>
+                          <input
+                            type="text"
+                            className="vinp"
+                            style={{ ...INP, fontSize: 12, padding: '4px 7px', marginBottom: 4 }}
+                            placeholder="Buscar por nombre, bodega..."
+                            value={busquedaProducto[idx] || ''}
+                            onChange={e => updateBusqueda(idx, e.target.value)}
+                          />
+                          <select
+                            className="vinp"
+                            style={{ ...INP, fontSize: 12, padding: '4px 7px' }}
+                            value={item.producto_id}
+                            onChange={e => seleccionarProducto(idx, e.target.value)}
+                          >
                             <option value="">— Seleccionar —</option>
                             {productosFiltrados(idx).map(p => (
                               <option key={p.id} value={p.id}>
-                                {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} (Stock:{p.stock})
+                                {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} (Stock: {p.stock})
                               </option>
                             ))}
                           </select>
                         </td>
-                        <td className="px-1 py-1">
-                          <input type="number" min="1" className="input text-xs py-1 text-center" value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                        <td style={{ padding: '6px 4px', borderBottom: `1px solid ${C.border}` }}>
+                          <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
                         </td>
-                        <td className="px-1 py-1">
-                          <input type="number" min="0" className="input text-xs py-1 text-right" value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                        <td style={{ padding: '6px 4px', borderBottom: `1px solid ${C.border}` }}>
+                          <input type="number" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
                         </td>
-                        <td className="px-1 py-1">
-                          <input type="number" min="0" max="100" className="input text-xs py-1 text-center" value={item.descuento} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
+                        <td style={{ padding: '6px 4px', borderBottom: `1px solid ${C.border}` }}>
+                          <input type="number" min="0" max="100" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.descuento} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
                         </td>
-                        <td className="px-2 py-1 text-right font-semibold">${calcSubtotal(item).toLocaleString('es-AR')}</td>
-                        <td className="px-1 py-1">
+                        <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: C.text, whiteSpace: 'nowrap', borderBottom: `1px solid ${C.border}` }}>
+                          ${calcSubtotal(item).toLocaleString('es-AR')}
+                        </td>
+                        <td style={{ padding: '6px 6px', textAlign: 'center', borderBottom: `1px solid ${C.border}` }}>
                           {items.length > 1 && (
                             <button
+                              className="vbtn"
+                              style={{ background: 'transparent', border: 'none', color: C.dim, fontSize: 16, cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
                               onClick={() => { setItems(items.filter((_, i) => i !== idx)); setBusquedaProducto(busquedaProducto.filter((_, i) => i !== idx)) }}
-                              className="text-gray-300 hover:text-red-400 text-lg leading-none"
                             >×</button>
                           )}
                         </td>
@@ -472,42 +574,48 @@ export default function VentasPage() {
               </div>
             </div>
 
-            <div className="flex justify-between items-start gap-4 mb-4">
-              <div className="flex-1">
-                <label className="label">Notas</label>
+            {/* Notas + Totales */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Notas</div>
                 <textarea
-                  className="input h-16 resize-none text-xs"
+                  className="vinp"
+                  style={{ ...INP, height: 64, resize: 'none', fontSize: 12 }}
                   value={notas}
                   onChange={e => setNotas(e.target.value)}
                   placeholder="Observaciones..."
                 />
               </div>
-              <div className="w-48">
-                <label className="label">Descuento global (%)</label>
+              <div style={{ width: 200 }}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Descuento global (%)</div>
                 <input
-                  type="number" min="0" max="100" className="input"
+                  type="number" min="0" max="100"
+                  className="vinp"
+                  style={INP}
                   value={descuentoGlobal}
                   onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
                 />
-                <div className="mt-3 text-right">
-                  <div className="text-xs text-gray-400">
+                <div style={{ marginTop: 10, textAlign: 'right' }}>
+                  <div style={{ fontSize: 12, color: C.muted }}>
                     Subtotal: ${items.reduce((a, i) => a + calcSubtotal(i), 0).toLocaleString('es-AR')}
                   </div>
                   {descuentoGlobal > 0 && (
-                    <div className="text-xs text-red-400">Dto: -{descuentoGlobal}%</div>
+                    <div style={{ fontSize: 12, color: C.red }}>Dto: -{descuentoGlobal}%</div>
                   )}
-                  <div className="text-base font-bold text-gray-900 mt-1">
+                  <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginTop: 4 }}>
                     TOTAL: ${calcTotal().toLocaleString('es-AR')}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+              <button className="vbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
               <button
+                className="vbtn"
+                style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })}
                 onClick={guardar}
-                className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 shadow-sm"
               >
                 {editVentaId ? 'Guardar cambios' : `Generar ${tipo === 'presupuesto' ? 'presupuesto' : 'remito'}`}
               </button>
@@ -521,8 +629,9 @@ export default function VentasPage() {
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
       </div>
 
+      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50">
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
           {toast}
         </div>
       )}
