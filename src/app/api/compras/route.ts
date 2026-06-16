@@ -6,12 +6,12 @@ export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
 
-  const { data, error } = await supabase
-    .from('compras')
-    .select('*')
-    .eq('empresa', empresa)
-    .order('created_at', { ascending: false })
+  const proveedorId = req.nextUrl.searchParams.get('proveedor_id')
 
+  let q = supabase.from('compras').select('*').eq('empresa', empresa).order('created_at', { ascending: false })
+  if (proveedorId) q = q.eq('proveedor_id', proveedorId)
+
+  const { data, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
