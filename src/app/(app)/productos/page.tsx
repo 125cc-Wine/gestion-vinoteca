@@ -110,6 +110,10 @@ export default function ProductosPage() {
   const [newModal, setNewModal] = useState(false)
   const [newForm, setNewForm]   = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
 
+  // Full edit modal
+  const [fullEditId, setFullEditId] = useState<string|null>(null)
+  const [fullForm, setFullForm]     = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
+
   // Lista de precios modal
   interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_mayorista: number }
   const [listaModal, setListaModal] = useState(false)
@@ -230,6 +234,28 @@ export default function ProductosPage() {
   function openNew() {
     setNewForm({ ...EMPTY_EDIT, empresa })
     setNewModal(true)
+  }
+
+  function openFullEdit(p: Producto) {
+    setFullForm({
+      nombre: p.nombre, bodega: p.bodega, varietal: p.varietal, categoria: p.categoria,
+      region: p.region||'', sku: p.sku||'',
+      precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
+      precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
+      unidad_medida: (p.unidad_medida||'botella') as 'botella'|'caja6'|'caja12',
+      woo_product_id: p.woo_product_id,
+      empresa: p.empresa,
+    })
+    setFullEditId(p.id!)
+  }
+
+  async function saveFullEdit() {
+    if (!fullEditId) return
+    setSaving(true)
+    const res = await fetch('/api/productos', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:fullEditId, ...fullForm }) })
+    const d = await res.json(); setSaving(false)
+    if (d.error) { toast_('Error: '+d.error); return }
+    setFullEditId(null); cargar(empresa); toast_('Guardado')
   }
 
   function abrirListaModal() {
@@ -616,6 +642,7 @@ export default function ProductosPage() {
                       </select>
                       <div style={{ display:'flex', gap:4 }}>
                         <button onClick={saveEdit} disabled={saving} style={{ ...btn('accent',{padding:'5px 10px'}), opacity:saving?.7:1 }}>✓</button>
+                        <button onClick={() => { const p = productos.find(x=>x.id===editingId); if(p) { setEditingId(null); openFullEdit(p) } }} style={btn('default',{padding:'5px 10px',fontSize:11})} title="Ver todos los campos">⋯</button>
                         <button onClick={() => setEditingId(null)} style={btn('default',{padding:'5px 10px'})}>✕</button>
                       </div>
                     </div>
@@ -678,6 +705,70 @@ export default function ProductosPage() {
                   <span style={{ fontSize:12, color:C.muted }}>{d}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Full edit modal ───────────────────────────────────────── */}
+      {fullEditId && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setFullEditId(null)}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:520, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
+              <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Editar producto</h2>
+              <button onClick={() => setFullEditId(null)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div style={{ gridColumn:'1/-1' }}>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Nombre *</label>
+                <input autoFocus className="dark-inp" style={INP} value={fullForm.nombre} onChange={e => setFullForm(f=>({...f,nombre:e.target.value}))} />
+              </div>
+              {([['bodega','Bodega','edit-bod'],['varietal','Varietal',''],['region','Región',''],['sku','SKU','']] as [string,string,string][]).map(([k,l,dl]) => (
+                <div key={k}>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
+                  <input className="dark-inp" style={INP} list={dl||undefined}
+                    value={(fullForm as Record<string,unknown>)[k] as string}
+                    onChange={e => setFullForm(f=>({...f,[k]:e.target.value}))} />
+                  {dl && <datalist id={dl}>{bodegas.map(b=><option key={b.id} value={b.nombre}/>)}</datalist>}
+                </div>
+              ))}
+              <div style={{ gridColumn:'1/-1' }}>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Categoría</label>
+                <select className="dark-inp" style={INP} value={fullForm.categoria} onChange={e => setFullForm(f=>({...f,categoria:e.target.value as Producto['categoria']}))}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              {([['precio_venta','Precio venta ($)'],['precio_costo','Precio costo ($)'],['precio_mayorista','Precio mayorista ($)'],['stock','Stock'],['stock_minimo','Stock mínimo']] as [string,string][]).map(([k,l]) => (
+                <div key={k}>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
+                  <input className="dark-inp" type="number" min="0" style={INP}
+                    value={(fullForm as Record<string,unknown>)[k] as number || ''}
+                    onChange={e => setFullForm(f=>({...f,[k]:+e.target.value}))} />
+                </div>
+              ))}
+              <div>
+                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Unidad de medida</label>
+                <select className="dark-inp" style={INP} value={fullForm.unidad_medida||'botella'} onChange={e => setFullForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
+                  <option value="botella">Botella (×1)</option>
+                  <option value="caja6">Caja ×6</option>
+                  <option value="caja12">Caja ×12</option>
+                </select>
+              </div>
+              {empresa==='aroma' && (
+                <div>
+                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>WooCommerce ID</label>
+                  <input className="dark-inp" type="number" style={INP}
+                    value={fullForm.woo_product_id||''}
+                    onChange={e => setFullForm(f=>({...f,woo_product_id:+e.target.value||undefined}))}
+                    placeholder="Dejar vacío si no aplica" />
+                </div>
+              )}
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:20 }}>
+              <button onClick={() => setFullEditId(null)} style={btn()}>Cancelar</button>
+              <button onClick={saveFullEdit} disabled={saving} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:saving?.7:1 }}>
+                {saving?'Guardando...':'Guardar cambios'}
+              </button>
             </div>
           </div>
         </div>
