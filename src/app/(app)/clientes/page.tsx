@@ -76,6 +76,13 @@ export default function ClientesPage() {
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
 
+  // Modal importar CSV
+  const [importModal, setImportModal] = useState(false)
+  const [importTexto, setImportTexto] = useState('')
+  const [importPreview, setImportPreview] = useState<Record<string, string>[]>([])
+  const [importando, setImportando] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
+
   // Modal historial (con tabs)
   const [histModal, setHistModal] = useState(false)
   const [histCliente, setHistCliente] = useState<Cliente | null>(null)
@@ -111,6 +118,73 @@ export default function ClientesPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
+
+  // ── Importar CSV ──────────────────────────────────────────────────────────
+
+  function parsearCSV(texto: string) {
+    const lineas = texto.trim().split('\n').filter(l => l.trim())
+    if (lineas.length < 2) return []
+    const sep = lineas[0].includes('\t') ? '\t' : ','
+    const headers = lineas[0].split(sep).map(h => h.trim().toLowerCase())
+
+    const col = (row: string[], names: string[]) => {
+      for (const n of names) {
+        const i = headers.findIndex(h => h.includes(n))
+        if (i >= 0) return (row[i] || '').trim()
+      }
+      return ''
+    }
+
+    const tipoMap: Record<string, string> = {
+      'consumidor final': 'consumidor_final',
+      'responsable inscripto': 'otro',
+      'monotributo': 'otro',
+      'revendedor': 'revendedor',
+      'mayorista': 'mayorista',
+      'gastronomia': 'gastronomia',
+      'gastronomía': 'gastronomia',
+    }
+
+    return lineas.slice(1).map(l => {
+      const cols = l.split(sep)
+      const razon = col(cols, ['razón social', 'razon social', 'nombre'])
+      const cuit = col(cols, ['cuit/cuil', 'cuit'])
+      const condFiscal = col(cols, ['cond. fiscal', 'cond fiscal', 'condicion'])
+      const tipo = tipoMap[condFiscal.toLowerCase()] || 'consumidor_final'
+      const cuitLimpio = cuit && cuit !== '0' && cuit !== '1' ? cuit : ''
+      return {
+        razon_social: razon,
+        nombre: razon,
+        cuit: cuitLimpio,
+        direccion: col(cols, ['domicilio', 'direccion', 'dirección']),
+        telefono: col(cols, ['teléfono', 'telefono', 'tel']),
+        email: col(cols, ['e-mail', 'email', 'mail']),
+        tipo,
+      }
+    }).filter(r => r.razon_social)
+  }
+
+  function onImportTexto(txt: string) {
+    setImportTexto(txt)
+    setImportPreview(parsearCSV(txt))
+    setImportMsg('')
+  }
+
+  async function confirmarImport() {
+    if (!importPreview.length) return
+    setImportando(true)
+    const res = await fetch('/api/clientes/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa, clientes: importPreview }),
+    })
+    const data = await res.json()
+    setImportando(false)
+    if (data.error) { setImportMsg('Error: ' + data.error); return }
+    setImportMsg(`✓ ${data.importados} clientes importados${data.errores ? `, ${data.errores} errores` : ''}`)
+    cargar(empresa)
+    setTimeout(() => { setImportModal(false); setImportTexto(''); setImportPreview([]); setImportMsg('') }, 2000)
+  }
 
   // ── CRUD cliente ──────────────────────────────────────────────────────────
 
@@ -309,7 +383,10 @@ export default function ClientesPage() {
           <h1 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>Clientes</h1>
           <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{filtrados.length} clientes</div>
         </div>
-        <button className="cbtn" style={btn('accent', { padding: '6px 14px', fontSize: 13 })} onClick={abrirNuevo}>+ Nuevo cliente</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="cbtn" style={btn('default', { padding: '6px 14px', fontSize: 13 })} onClick={() => setImportModal(true)}>Importar CSV</button>
+          <button className="cbtn" style={btn('accent', { padding: '6px 14px', fontSize: 13 })} onClick={abrirNuevo}>+ Nuevo cliente</button>
+        </div>
       </div>
 
       <input className="cinp" style={{ ...INP, marginBottom: 14 }} placeholder="Buscar por nombre, CUIT, razón social, teléfono..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
@@ -627,6 +704,73 @@ export default function ClientesPage() {
                 disabled={pagoGuardando}
               >
                 {pagoGuardando ? 'Guardando...' : 'Confirmar cobro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal importar CSV */}
+      {importModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 740, maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Importar clientes desde CSV</h2>
+              <button onClick={() => setImportModal(false)} style={btn('ghost', { fontSize: 18, color: C.dim, padding: '2px 8px' })}>×</button>
+            </div>
+
+            <div style={{ fontSize: 12, color: C.muted, background: C.surface, borderRadius: 6, padding: '10px 14px', border: `1px solid ${C.border}` }}>
+              Abrí el CSV en el block de notas, seleccioná todo (<kbd style={{ background: '#333', padding: '1px 5px', borderRadius: 3 }}>Ctrl+A</kbd>) y pegalo acá abajo. Compatible con separación por tabs o comas.
+            </div>
+
+            <textarea
+              style={{ ...INP, height: 140, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 }}
+              placeholder="Pegá el contenido del CSV acá (incluyendo la línea de encabezados)..."
+              value={importTexto}
+              onChange={e => onImportTexto(e.target.value)}
+            />
+
+            {importPreview.length > 0 && (
+              <div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>
+                  Vista previa — <strong style={{ color: C.text }}>{importPreview.length} clientes</strong> detectados
+                </div>
+                <div style={{ maxHeight: 240, overflowY: 'auto', border: `1px solid ${C.border}`, borderRadius: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+                        {['Razón Social', 'CUIT', 'Teléfono', 'Dirección', 'Tipo'].map(h => (
+                          <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.slice(0, 50).map((r, i) => (
+                        <tr key={i} style={{ borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
+                          <td style={{ padding: '6px 10px', fontWeight: 500 }}>{r.razon_social}</td>
+                          <td style={{ padding: '6px 10px', color: C.muted, fontFamily: 'monospace' }}>{r.cuit || '—'}</td>
+                          <td style={{ padding: '6px 10px', color: C.muted }}>{r.telefono || '—'}</td>
+                          <td style={{ padding: '6px 10px', color: C.muted, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.direccion || '—'}</td>
+                          <td style={{ padding: '6px 10px', color: C.muted }}>{r.tipo}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {importPreview.length > 50 && <div style={{ padding: '8px 10px', fontSize: 11, color: C.dim }}>... y {importPreview.length - 50} más</div>}
+                </div>
+              </div>
+            )}
+
+            {importMsg && (
+              <div style={{ fontSize: 13, color: importMsg.startsWith('✓') ? C.green : C.red, fontWeight: 600 }}>{importMsg}</div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setImportModal(false)} style={btn('default', { padding: '7px 16px' })}>Cancelar</button>
+              <button onClick={confirmarImport} disabled={importando || importPreview.length === 0}
+                style={{ ...btn('accent', { padding: '7px 18px', fontSize: 13 }), opacity: importPreview.length === 0 || importando ? 0.5 : 1 }}>
+                {importando ? 'Importando...' : `Importar ${importPreview.length} clientes`}
               </button>
             </div>
           </div>
