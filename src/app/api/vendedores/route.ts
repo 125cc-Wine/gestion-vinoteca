@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
 
   let query = supabase.from('vendedores').select('*').eq('activo', true).order('nombre')
-  if (empresa) query = query.eq('empresa', empresa)
+  if (empresa) query = query.or(`empresa.eq.${empresa},empresa.is.null`)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
