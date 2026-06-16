@@ -246,13 +246,14 @@ export default function ComprasPage() {
                   onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
                 {provSugsOpen && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                    {proveedores.filter(p => !proveedorNombre || (p.razon_social || p.nombre).toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
+                    {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
                       <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
-                        onMouseDown={() => { setProveedorNombre(p.razon_social || p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
-                        {p.razon_social || p.nombre}
+                        onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                        <span style={{ fontWeight: 500 }}>{p.nombre}</span>
+                        {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: C.muted }}> — {p.razon_social}</span>}
                       </div>
                     ))}
-                    {proveedores.filter(p => !proveedorNombre || (p.razon_social || p.nombre).toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
+                    {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
                       <div style={{ padding: '8px 12px', fontSize: 12, color: C.dim }}>Sin resultados — se usará el nombre ingresado</div>
                     )}
                   </div>
