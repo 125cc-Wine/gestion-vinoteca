@@ -88,7 +88,7 @@ export default function ComprasPage() {
 
   function updateItem(idx: number, field: keyof ItemCompra, value: string | number) {
     const ni = [...items]
-    ;(ni[idx] as Record<string, string | number>)[field] = value
+    ;(ni[idx] as unknown as Record<string, string | number>)[field] = value
     ni[idx].subtotal = ni[idx].cantidad * ni[idx].precio_unitario
     setItems(ni)
   }
