@@ -290,12 +290,19 @@ export default function ComprasPage() {
                           onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
                         {prodSugs === idx && (
                           <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 20, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                            {productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase())).slice(0, 10).map(p => (
+                            {(() => {
+                              const porBodega = proveedorNombre
+                                ? productos.filter(p => p.bodega?.toLowerCase().includes(proveedorNombre.toLowerCase()) || proveedorNombre.toLowerCase().includes((p.bodega || '').toLowerCase()))
+                                : productos
+                              const filtrados = porBodega.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+                              const resultado = filtrados.length > 0 ? filtrados : productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+                              return resultado.slice(0, 12).map(p => (
                               <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }} onMouseDown={() => selProducto(idx, p)}>
                                 <span style={{ fontWeight: 500 }}>{p.nombre}</span>
                                 {p.bodega && <span style={{ color: C.muted }}> — {p.bodega}</span>}
                               </div>
-                            ))}
+                              ))
+                            })()}
                           </div>
                         )}
                       </td>
