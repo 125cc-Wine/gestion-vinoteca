@@ -5,8 +5,7 @@ import { supabase } from '@/lib/supabase'
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
 
-  let query = supabase.from('vendedores').select('*').neq('activo', false).order('nombre')
-  if (empresa) query = query.or(`empresa.eq.${empresa},empresa.is.null`)
+  const query = supabase.from('vendedores').select('*').neq('activo', false).order('nombre')
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

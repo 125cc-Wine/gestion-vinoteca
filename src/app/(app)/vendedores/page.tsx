@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 interface Vendedor {
   id: string
   nombre: string
-  empresa: string | null
   activo: boolean | null
 }
 
@@ -20,7 +19,7 @@ const INP: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
 }
 
-const EMPTY: Omit<Vendedor, 'id'> = { nombre: '', empresa: null, activo: true }
+const EMPTY: Omit<Vendedor, 'id'> = { nombre: '', activo: true }
 
 export default function VendedoresPage() {
   const [empresa, setEmpresa] = useState<'aroma' | 'lavid'>('aroma')
@@ -64,7 +63,7 @@ export default function VendedoresPage() {
 
   function abrirEditar(v: Vendedor) {
     setEditId(v.id)
-    setForm({ nombre: v.nombre, empresa: v.empresa, activo: v.activo ?? true })
+    setForm({ nombre: v.nombre, activo: v.activo ?? true })
     setModal(true)
   }
 
@@ -81,7 +80,7 @@ export default function VendedoresPage() {
         : await fetch('/api/vendedores', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...form, empresa: form.empresa || empresa }),
+            body: JSON.stringify({ nombre: form.nombre, activo: true }),
           })
       const data = await res.json()
       if (data.error) { showToast('Error: ' + data.error); return }
@@ -152,7 +151,7 @@ export default function VendedoresPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {['Nombre', 'Empresa', 'Estado', ''].map(h => (
+              {['Nombre', 'Estado', ''].map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 11, color: C.dim, fontWeight: 600, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
@@ -167,9 +166,6 @@ export default function VendedoresPage() {
             ) : activos.map(v => (
               <tr key={v.id} className="vrow" style={{ borderBottom: `1px solid ${C.border}`, transition: 'background 0.1s' }}>
                 <td style={{ padding: '12px 16px', fontSize: 14, color: C.text, fontWeight: 500 }}>{v.nombre}</td>
-                <td style={{ padding: '12px 16px', fontSize: 12, color: C.muted }}>
-                  {v.empresa === 'aroma' ? 'Aroma de Vid' : v.empresa === 'lavid' ? 'La Vid' : '— ambas —'}
-                </td>
                 <td style={{ padding: '12px 16px' }}>
                   <span style={{ fontSize: 11, fontWeight: 600, color: C.green, background: 'rgba(76,175,125,0.12)', border: '1px solid rgba(76,175,125,0.25)', borderRadius: 99, padding: '2px 10px' }}>
                     Activo
@@ -200,9 +196,6 @@ export default function VendedoresPage() {
                 {inactivos.map(v => (
                   <tr key={v.id} style={{ borderBottom: `1px solid ${C.border}`, opacity: 0.5 }}>
                     <td style={{ padding: '10px 16px', fontSize: 13, color: C.muted }}>{v.nombre}</td>
-                    <td style={{ padding: '10px 16px', fontSize: 12, color: C.dim }}>
-                      {v.empresa === 'aroma' ? 'Aroma' : v.empresa === 'lavid' ? 'La Vid' : '—'}
-                    </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right' }}>
                       <button onClick={() => reactivar(v)} style={{ background: 'rgba(76,175,125,0.1)', border: '1px solid rgba(76,175,125,0.2)', color: C.green, borderRadius: 6, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>
                         Reactivar
@@ -238,19 +231,6 @@ export default function VendedoresPage() {
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: 11, color: C.dim, fontWeight: 600, display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Empresa</label>
-                <select
-                  className="vinp"
-                  style={INP}
-                  value={form.empresa ?? ''}
-                  onChange={e => setForm(f => ({ ...f, empresa: e.target.value || null }))}
-                >
-                  <option value="aroma">Aroma de Vid</option>
-                  <option value="lavid">La Vid Consultora</option>
-                  <option value="">Ambas</option>
-                </select>
-              </div>
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
