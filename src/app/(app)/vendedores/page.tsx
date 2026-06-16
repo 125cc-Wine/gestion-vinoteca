@@ -57,7 +57,7 @@ export default function VendedoresPage() {
 
   function abrirNuevo() {
     setEditId(null)
-    setForm({ ...EMPTY, empresa })
+    setForm({ ...EMPTY })
     setModal(true)
   }
 
