@@ -49,6 +49,7 @@ export default function ComprasPage() {
   const [notas, setNotas] = useState('')
   const [fechaEsperada, setFechaEsperada] = useState('')
   const [prodSugs, setProdSugs] = useState<number | null>(null)
+  const [provSugsOpen, setProvSugsOpen] = useState(false)
   const provRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -235,16 +236,26 @@ export default function ComprasPage() {
             <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 700 }}>Nueva orden de compra</h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-              <div style={{ gridColumn: '1/-1' }}>
+              <div style={{ gridColumn: '1/-1', position: 'relative' }}>
                 <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Proveedor</div>
-                <input ref={provRef} className="cinp" style={{ ...INP, width: '100%' }} list="prov-dl"
-                  placeholder="Nombre del proveedor" value={proveedorNombre}
-                  onChange={e => {
-                    setProveedorNombre(e.target.value)
-                    const p = proveedores.find(p => (p.razon_social || p.nombre) === e.target.value)
-                    if (p) setProveedorId(p.id); else setProveedorId('')
-                  }} />
-                <datalist id="prov-dl">{proveedores.map(p => <option key={p.id} value={p.razon_social || p.nombre} />)}</datalist>
+                <input ref={provRef} className="cinp" style={{ ...INP, width: '100%' }}
+                  placeholder="Buscar proveedor..." value={proveedorNombre}
+                  onFocus={() => setProvSugsOpen(true)}
+                  onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
+                  onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
+                {provSugsOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                    {proveedores.filter(p => !proveedorNombre || (p.razon_social || p.nombre).toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
+                      <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
+                        onMouseDown={() => { setProveedorNombre(p.razon_social || p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                        {p.razon_social || p.nombre}
+                      </div>
+                    ))}
+                    {proveedores.filter(p => !proveedorNombre || (p.razon_social || p.nombre).toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
+                      <div style={{ padding: '8px 12px', fontSize: 12, color: C.dim }}>Sin resultados — se usará el nombre ingresado</div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Fecha esperada de entrega</div>
@@ -274,10 +285,10 @@ export default function ComprasPage() {
                         <input className="cinp" style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto..."
                           value={item.nombre}
                           onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
-                          onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 150)} />
-                        {prodSugs === idx && item.nombre.length >= 1 && (
-                          <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 20, maxHeight: 180, overflowY: 'auto' }}>
-                            {productos.filter(p => p.nombre.toLowerCase().includes(item.nombre.toLowerCase())).slice(0, 8).map(p => (
+                          onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
+                        {prodSugs === idx && (
+                          <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 20, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                            {productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase())).slice(0, 10).map(p => (
                               <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }} onMouseDown={() => selProducto(idx, p)}>
                                 <span style={{ fontWeight: 500 }}>{p.nombre}</span>
                                 {p.bodega && <span style={{ color: C.muted }}> — {p.bodega}</span>}
