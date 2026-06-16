@@ -19,18 +19,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { verificarStock, ...pedido } = body
+  const { verificarStock, _dryRun, ...pedido } = body
 
-  // Generar número
-  const { count } = await supabase
-    .from('pedidos')
-    .select('*', { count: 'exact', head: true })
-    .eq('empresa', pedido.empresa)
-
-  pedido.numero = `PED-${String((count || 0) + 1).padStart(6, '0')}`
-
-  // Verificar stock si se pidió
-  let stockStatus: Record<string, { disponible: number; pedido: number; ok: boolean }> = {}
+  // Verificar stock primero (antes de insertar nada)
+  const stockStatus: Record<string, { disponible: number; pedido: number; ok: boolean }> = {}
   if (verificarStock && pedido.items) {
     for (const item of pedido.items) {
       if (item.producto_id) {
@@ -50,6 +42,17 @@ export async function POST(req: NextRequest) {
       }
     }
   }
+
+  // Dry run: solo devolver el stockStatus sin crear el pedido
+  if (_dryRun) return NextResponse.json({ stockStatus })
+
+  // Generar número e insertar
+  const { count } = await supabase
+    .from('pedidos')
+    .select('*', { count: 'exact', head: true })
+    .eq('empresa', pedido.empresa)
+
+  pedido.numero = `PED-${String((count || 0) + 1).padStart(6, '0')}`
 
   const { data, error } = await supabase
     .from('pedidos')

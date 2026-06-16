@@ -17,7 +17,6 @@ const C = {
 const NAV = [
   { href: '/dashboard',   label: 'Inicio' },
   { href: '/ventas',      label: 'Ventas' },
-  { href: '/pedidos',     label: 'Pedidos' },
   { href: '/productos',   label: 'Productos' },
   { href: '/bodegas',     label: 'Bodegas' },
   { href: '/clientes',    label: 'Clientes' },
