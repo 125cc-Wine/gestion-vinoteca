@@ -24,7 +24,7 @@ interface Compra {
   created_at: string
 }
 interface Proveedor { id: string; nombre: string; razon_social?: string }
-interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number }
+interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number }
 
 const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0 }
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
@@ -81,7 +81,8 @@ export default function ComprasPage() {
 
   function selProducto(idx: number, prod: Producto) {
     const ni = [...items]
-    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: prod.precio_costo || 0 }
+    const costo = prod.precio_costo || Math.round((prod.precio_venta || 0) * 0.5)
+    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: costo }
     ni[idx].subtotal = ni[idx].cantidad * ni[idx].precio_unitario
     if (idx === ni.length - 1) ni.push({ ...ITEM_EMPTY })
     setItems(ni); setProdSugs(null)

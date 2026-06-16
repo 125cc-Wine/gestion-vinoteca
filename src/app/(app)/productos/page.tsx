@@ -325,6 +325,14 @@ export default function ProductosPage() {
     cargar(empresa); toast_(`${d.afectados} productos actualizados en ambas empresas`)
   }
 
+  async function calcularCostos() {
+    if (!confirm('¿Calcular precio costo al 50% del precio lista para todos los productos sin costo? Esto no sobreescribe los que ya tienen costo cargado.')) return
+    const res = await fetch('/api/productos/calcular-costos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ empresa }) })
+    const d = await res.json()
+    if (d.error) { toast_('Error: ' + d.error); return }
+    cargar(empresa); toast_(`${d.actualizados} productos actualizados`)
+  }
+
   async function syncWoo() {
     setSyncing(true)
     const res = await fetch('/api/woo/sync', { method: 'POST' })
@@ -457,6 +465,7 @@ export default function ProductosPage() {
             <button onClick={openWooImport} style={btn()}>⬇ Importar web</button>
             <button onClick={syncWoo} disabled={syncing} style={btn()}>{syncing ? '...' : '↻ Sync Woo'}</button>
           </>}
+          <button onClick={calcularCostos} style={btn('default',{padding:'6px 14px',fontSize:13})} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
           <button onClick={abrirListaModal} style={btn('default',{padding:'6px 14px',fontSize:13})}>Lista precios</button>
           <button onClick={openNew} style={btn('accent',{padding:'6px 14px',fontSize:13})}>+ Nuevo</button>
         </div>
