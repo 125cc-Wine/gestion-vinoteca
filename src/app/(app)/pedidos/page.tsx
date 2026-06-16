@@ -42,8 +42,8 @@ export default function PedidosPage() {
     const [pRes, prRes, cRes, vRes] = await Promise.all([
       fetch(`/api/pedidos?empresa=${emp}`),
       fetch(`/api/productos?empresa=${emp}`),
-      fetch('/api/clientes'),
-      fetch('/api/vendedores'),
+      fetch(`/api/clientes?empresa=${emp}`),
+      fetch(`/api/vendedores?empresa=${emp}`),
     ])
     setPedidos(await pRes.json().catch(() => []))
     setProductos(await prRes.json().catch(() => []))
