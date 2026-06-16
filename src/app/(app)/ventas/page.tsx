@@ -52,6 +52,75 @@ function filtrarProductos(productos: Producto[], q: string) {
   ).slice(0, 50)
 }
 
+// ─── ProductoSearch ───────────────────────────────────────────────────────────
+function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
+  productos: Producto[]
+  productoId: string
+  clienteTipo: string
+  onSelect: (prod: Producto | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  const selected = productos.find(p => p.id === productoId)
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = filtrarProductos(productos, query)
+  const esMay = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
+  const display = selected ? `${selected.nombre}${selected.bodega ? ' · ' + selected.bodega : ''}` : ''
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          className="vinp"
+          style={{ ...INP, fontSize: 12, padding: '4px 7px', paddingRight: productoId ? 26 : 7 }}
+          value={open ? query : display}
+          placeholder="Buscar producto..."
+          onFocus={() => { setOpen(true); setQuery('') }}
+          onChange={e => setQuery(e.target.value)}
+        />
+        {productoId && !open && (
+          <button onMouseDown={e => { e.preventDefault(); onSelect(null) }}
+            style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '2px 3px' }}>×</button>
+        )}
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 400, background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, boxShadow: '0 8px 32px rgba(0,0,0,0.7)', maxHeight: 260, overflowY: 'auto' }}>
+          {filtered.length === 0
+            ? <div style={{ padding: '14px', fontSize: 12, color: C.dim, textAlign: 'center' }}>Sin resultados para &ldquo;{query}&rdquo;</div>
+            : filtered.map(p => {
+              const precio = esMay && p.precio_mayorista ? p.precio_mayorista : p.precio_venta
+              const stockColor = p.stock <= 0 ? C.red : p.stock <= (p.stock_minimo || 0) ? C.amber : C.green
+              return (
+                <div key={p.id} className="cliente-opt"
+                  onMouseDown={() => { onSelect(p); setOpen(false); setQuery('') }}
+                  style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
+                  <div style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{p.nombre}</div>
+                  <div style={{ fontSize: 11, color: C.dim, marginTop: 2, display: 'flex', gap: 10 }}>
+                    {p.bodega && <span>{p.bodega}</span>}
+                    {p.varietal && <span>{p.varietal}</span>}
+                    <span style={{ color: stockColor, fontWeight: 600 }}>Stock: {p.stock}</span>
+                    <span style={{ color: C.muted }}>${precio.toLocaleString('es-AR')}</span>
+                  </div>
+                </div>
+              )
+            })
+          }
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── ClienteSearch ────────────────────────────────────────────────────────────
 function ClienteSearch({ clientes, clienteId, clienteNombre, onSelect }: {
   clientes: Cliente[]
@@ -148,7 +217,6 @@ export default function VentasPage() {
   const [clienteTipo, setClienteTipo] = useState('')
   const [vendedorNombre, setVendedorNombre] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
-  const [busqueda, setBusqueda] = useState<string[]>([''])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
   const [condVenta, setCondVenta] = useState('Contado')
@@ -171,7 +239,6 @@ export default function VentasPage() {
   const [pClienteTipo, setPClienteTipo] = useState('')
   const [pVendedor, setPVendedor] = useState('')
   const [pItems, setPItems] = useState<PedidoItem[]>([{ ...PEDIDO_ITEM_EMPTY }])
-  const [pBusqueda, setPBusqueda] = useState<string[]>([''])
   const [pNotas, setPNotas] = useState('')
   const [pFecha, setPFecha] = useState('')
   const [pStock, setPStock] = useState<StockStatus>({})
@@ -220,12 +287,11 @@ export default function VentasPage() {
     setClienteId(c.id!); setClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()); setClienteData(c); setClienteTipo(c.tipo)
   }
 
-  function selProducto(idx: number, prodId: string) {
-    const prod = productos.find(p => p.id === prodId)
-    if (!prod) return
+  function selProducto(idx: number, prod: Producto | null) {
+    const ni = [...items]
+    if (!prod) { ni[idx] = { ...ITEM_EMPTY }; setItems(ni); return }
     const esMay = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
     const precio = esMay && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
-    const ni = [...items]
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio }
     ni[idx].subtotal = calcSub(ni[idx])
     setItems(ni)
@@ -280,7 +346,7 @@ export default function VentasPage() {
       producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
       precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
     }))
-    setItems(vi); setBusqueda(vi.map(() => ''))
+    setItems(vi)
     setDescuentoGlobal(v.descuento); setNotas(v.notas || '')
     setCondVenta((v as unknown as Record<string, string>).condicion_venta || 'Contado')
     setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
@@ -289,7 +355,7 @@ export default function VentasPage() {
   function abrirNuevo(t: 'presupuesto' | 'remito') {
     setEditVentaId(null); setTipo(t)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
-    setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }]); setBusqueda([''])
+    setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
     setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado'); setEstadoPago('pagado')
     setModal(true)
   }
@@ -309,10 +375,9 @@ export default function VentasPage() {
     setPClienteId(c.id!); setPClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()); setPClienteData(c); setPClienteTipo(c.tipo)
   }
 
-  function selProductoPedido(idx: number, prodId: string) {
-    const prod = productos.find(p => p.id === prodId)
-    if (!prod) return
+  function selProductoPedido(idx: number, prod: Producto | null) {
     const ni = [...pItems]
+    if (!prod) { ni[idx] = { ...PEDIDO_ITEM_EMPTY }; setPItems(ni); return }
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: prod.precio_venta }
     setPItems(ni); setPStockChecked(false)
   }
@@ -359,7 +424,7 @@ export default function VentasPage() {
 
   function abrirNuevoPedido() {
     setPClienteId(''); setPClienteNombre('Consumidor Final'); setPClienteData(null); setPClienteTipo('')
-    setPVendedor(''); setPItems([{ ...PEDIDO_ITEM_EMPTY }]); setPBusqueda([''])
+    setPVendedor(''); setPItems([{ ...PEDIDO_ITEM_EMPTY }])
     setPNotas(''); setPFecha(''); setPStock({}); setPStockChecked(false)
     setPedidoModal(true)
   }
@@ -642,13 +707,13 @@ export default function VentasPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Productos</div>
                 <button className="vbtn" style={{ ...btn('ghost', { padding: '3px 8px', fontSize: 12 }), color: C.accent }}
-                  onClick={() => { setItems([...items, { ...ITEM_EMPTY }]); setBusqueda([...busqueda, '']) }}>+ agregar línea</button>
+                  onClick={() => setItems([...items, { ...ITEM_EMPTY }])}>+ agregar línea</button>
               </div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${C.border}`, background: '#111' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 10px', color: C.dim, fontWeight: 500, width: '40%' }}>Buscar producto</th>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: C.dim, fontWeight: 500, width: '42%' }}>Producto</th>
                       <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 56 }}>Cant.</th>
                       <th style={{ textAlign: 'right', padding: '8px 6px', color: C.dim, fontWeight: 500 }}>P.Unit.</th>
                       <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 52 }}>Dto%</th>
@@ -660,16 +725,12 @@ export default function VentasPage() {
                     {items.map((item, idx) => (
                       <tr key={idx} className="item-row" style={{ background: 'transparent' }}>
                         <td style={{ padding: '6px 8px' }}>
-                          <input type="text" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 7px', marginBottom: 4 }}
-                            placeholder="Buscar por nombre, bodega..." value={busqueda[idx] || ''}
-                            onChange={e => { const a = [...busqueda]; a[idx] = e.target.value; setBusqueda(a) }} />
-                          <select className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 7px' }}
-                            value={item.producto_id} onChange={e => selProducto(idx, e.target.value)}>
-                            <option value="">— Seleccionar —</option>
-                            {filtrarProductos(productos, busqueda[idx] || '').map(p => (
-                              <option key={p.id} value={p.id}>{p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} (Stock: {p.stock})</option>
-                            ))}
-                          </select>
+                          <ProductoSearch
+                            productos={productos}
+                            productoId={item.producto_id}
+                            clienteTipo={clienteTipo}
+                            onSelect={prod => selProducto(idx, prod)}
+                          />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
@@ -686,7 +747,7 @@ export default function VentasPage() {
                         <td style={{ padding: '6px 6px', textAlign: 'center' }}>
                           {items.length > 1 && (
                             <button className="vbtn" style={{ background: 'transparent', border: 'none', color: C.dim, fontSize: 16, cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
-                              onClick={() => { setItems(items.filter((_, i) => i !== idx)); setBusqueda(busqueda.filter((_, i) => i !== idx)) }}>×</button>
+                              onClick={() => setItems(items.filter((_, i) => i !== idx))}>×</button>
                           )}
                         </td>
                       </tr>
@@ -758,7 +819,7 @@ export default function VentasPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Productos</div>
                 <button className="vbtn" style={{ ...btn('ghost', { padding: '3px 8px', fontSize: 12 }), color: C.accent }}
-                  onClick={() => { setPItems([...pItems, { ...PEDIDO_ITEM_EMPTY }]); setPBusqueda([...pBusqueda, '']) }}>+ agregar línea</button>
+                  onClick={() => setPItems([...pItems, { ...PEDIDO_ITEM_EMPTY }])}>+ agregar línea</button>
               </div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -775,16 +836,12 @@ export default function VentasPage() {
                       return (
                         <tr key={idx} style={{ background: st ? (st.ok ? 'rgba(76,175,125,0.05)' : 'rgba(224,85,85,0.05)') : 'transparent', borderBottom: `1px solid ${C.border}` }}>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="text" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 7px', marginBottom: 4 }}
-                              placeholder="Buscar por nombre, bodega..." value={pBusqueda[idx] || ''}
-                              onChange={e => { const a = [...pBusqueda]; a[idx] = e.target.value; setPBusqueda(a) }} />
-                            <select className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 7px' }}
-                              value={item.producto_id} onChange={e => selProductoPedido(idx, e.target.value)}>
-                              <option value="">— Seleccionar —</option>
-                              {filtrarProductos(productos, pBusqueda[idx] || '').map(p => (
-                                <option key={p.id} value={p.id}>{p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} (Stock: {p.stock})</option>
-                              ))}
-                            </select>
+                            <ProductoSearch
+                              productos={productos}
+                              productoId={item.producto_id}
+                              clienteTipo={pClienteTipo}
+                              onSelect={prod => selProductoPedido(idx, prod)}
+                            />
                             {st && (
                               <div style={{ fontSize: 11, marginTop: 4, fontWeight: 600, color: st.ok ? C.green : C.red }}>
                                 {st.ok ? `✓ ${st.disponible} disponibles` : `✗ Solo ${st.disponible} disponibles, pedís ${st.pedido}`}
@@ -798,7 +855,7 @@ export default function VentasPage() {
                           <td style={{ padding: '6px 6px', textAlign: 'center' }}>
                             {pItems.length > 1 && (
                               <button className="vbtn" style={{ background: 'transparent', border: 'none', color: C.dim, fontSize: 16, cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
-                                onClick={() => { setPItems(pItems.filter((_, i) => i !== idx)); setPBusqueda(pBusqueda.filter((_, i) => i !== idx)); setPStockChecked(false) }}>×</button>
+                                onClick={() => { setPItems(pItems.filter((_, i) => i !== idx)); setPStockChecked(false) }}>×</button>
                             )}
                           </td>
                         </tr>
