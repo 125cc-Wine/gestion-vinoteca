@@ -277,6 +277,7 @@ export default function VentasPage() {
   const [notas, setNotas] = useState('')
   const [condVenta, setCondVenta] = useState('Contado')
   const [estadoPago, setEstadoPago] = useState('pagado')
+  const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
 
   // ── Filtros comprobantes
@@ -349,14 +350,28 @@ export default function VentasPage() {
   }
 
   function selCliente(c: Cliente | null) {
-    if (!c) { setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo(''); return }
+    if (!c) { setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo(''); setAplicarMayorista(false); return }
     setClienteId(c.id!); setClienteNombre(c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()); setClienteData(c); setClienteTipo(c.tipo)
+    setAplicarMayorista(c.tipo === 'mayorista' || c.tipo === 'revendedor')
+  }
+
+  function toggleAplicarMayorista(val: boolean) {
+    setAplicarMayorista(val)
+    const ni = items.map(item => {
+      if (!item.producto_id) return item
+      const prod = productos.find(p => p.id === item.producto_id)
+      if (!prod) return item
+      const precio = val && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
+      const updated = { ...item, precio_unitario: precio }
+      return { ...updated, subtotal: calcSub(updated) }
+    })
+    setItems(ni)
   }
 
   function selProducto(idx: number, prod: Producto | null) {
     const ni = [...items]
     if (!prod) { ni[idx] = { ...ITEM_EMPTY }; setItems(ni); return }
-    const esMay = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
+    const esMay = aplicarMayorista && (clienteTipo === 'mayorista' || clienteTipo === 'revendedor')
     const precio = esMay && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio }
     ni[idx].subtotal = calcSub(ni[idx])
@@ -426,7 +441,29 @@ export default function VentasPage() {
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
     setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
     setEstadoPago(empresa === 'lavid' && t === 'presupuesto' ? 'cuenta_corriente' : 'pagado')
+    setAplicarMayorista(false)
     setModal(true)
+  }
+
+  function whatsappVenta(v: Venta) {
+    const vitems = v.items as VentaItem[]
+    const fecha = new Date(v.created_at!).toLocaleDateString('es-AR')
+    let texto = `*${v.tipo === 'presupuesto' ? 'PRESUPUESTO' : 'REMITO'} ${v.numero}*\n`
+    texto += `${emp.nombre} — ${fecha}\n\n`
+    texto += `*Cliente:* ${v.cliente_nombre}\n\n`
+    texto += `*Detalle:*\n`
+    vitems.forEach(i => {
+      const sub = i.subtotal || (i.cantidad * i.precio_unitario)
+      texto += `• ${i.cantidad}x ${i.nombre} — $${sub.toLocaleString('es-AR')}\n`
+    })
+    if (v.descuento > 0) texto += `_Descuento global: ${v.descuento}%_\n`
+    texto += `\n*TOTAL: $${v.total.toLocaleString('es-AR')}*`
+    const cliente = clientes.find(c => c.id === v.cliente_id)
+    const tel = cliente?.telefono?.replace(/\D/g, '')
+    const url = tel
+      ? `https://wa.me/549${tel}?text=${encodeURIComponent(texto)}`
+      : `https://wa.me/?text=${encodeURIComponent(texto)}`
+    window.open(url, '_blank')
   }
 
   function imprimirDoc() {
@@ -634,6 +671,7 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => { setVentaParaImprimir(v); setTimeout(imprimirDoc, 400) }}>Imprimir</button>
+                            <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
                           </div>
@@ -766,11 +804,16 @@ export default function VentasPage() {
             </div>
 
             {clienteData && (
-              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: C.muted }}>
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: C.muted, alignItems: 'center' }}>
                 {clienteData.cuit && <span>CUIT: {clienteData.cuit}</span>}
                 {clienteData.direccion && <span>{clienteData.direccion}</span>}
                 {clienteData.telefono && <span>{clienteData.telefono}</span>}
-                {(clienteTipo === 'mayorista' || clienteTipo === 'revendedor') && <span style={{ color: C.amber, fontWeight: 600 }}>Precio mayorista activo</span>}
+                {(clienteTipo === 'mayorista' || clienteTipo === 'revendedor') && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 'auto' }}>
+                    <input type="checkbox" checked={aplicarMayorista} onChange={e => toggleAplicarMayorista(e.target.checked)} style={{ accentColor: C.amber, width: 14, height: 14 }} />
+                    <span style={{ color: aplicarMayorista ? C.amber : C.dim, fontWeight: 600 }}>Precio mayorista</span>
+                  </label>
+                )}
               </div>
             )}
 

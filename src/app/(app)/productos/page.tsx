@@ -223,6 +223,49 @@ export default function ProductosPage() {
     setNewModal(true)
   }
 
+  function imprimirListaPrecios() {
+    const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
+    const fecha = new Date().toLocaleDateString('es-AR')
+    const conPrecio = productos.filter(p => p.precio_venta > 0).sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre))
+    const categorias = Array.from(new Set(conPrecio.map(p => p.categoria)))
+    const rows = categorias.map(cat => {
+      const prods = conPrecio.filter(p => p.categoria === cat)
+      const header = `<tr style="background:#f0f0f0"><td colspan="5" style="padding:8px 10px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#333">${cat}</td></tr>`
+      const items = prods.map(p => `
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:6px 10px;font-size:12px">${p.nombre}</td>
+          <td style="padding:6px 10px;font-size:11px;color:#666">${p.bodega || ''}</td>
+          <td style="padding:6px 10px;font-size:11px;color:#666">${p.varietal || ''}</td>
+          <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:600">$${p.precio_venta.toLocaleString('es-AR')}</td>
+          <td style="padding:6px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : ''}</td>
+        </tr>`).join('')
+      return header + items
+    }).join('')
+    const html = `<html><head><title>Lista de Precios — ${empNombre}</title>
+    <style>body{font-family:Arial,sans-serif;margin:24px;color:#222}table{width:100%;border-collapse:collapse}@media print{body{margin:12px}}</style>
+    </head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #333;padding-bottom:10px;margin-bottom:16px">
+      <div><div style="font-size:20px;font-weight:700">${empNombre}</div><div style="font-size:12px;color:#666;margin-top:2px">Lista de precios</div></div>
+      <div style="text-align:right;font-size:11px;color:#666"><div>${fecha}</div><div style="margin-top:2px">${conPrecio.length} productos</div></div>
+    </div>
+    <table>
+      <thead><tr style="border-bottom:2px solid #333">
+        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Producto</th>
+        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Bodega</th>
+        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Varietal</th>
+        <th style="padding:6px 10px;text-align:right;font-size:11px;text-transform:uppercase">P. Público</th>
+        <th style="padding:6px 10px;text-align:right;font-size:11px;text-transform:uppercase">P. Mayorista</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:20px;font-size:10px;color:#aaa;text-align:center">Precios en pesos argentinos. Válidos a la fecha de emisión.</div>
+    </body></html>`
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(html)
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
+  }
+
   async function saveEdit() {
     if (!editingId) return
     setSaving(true)
@@ -399,6 +442,7 @@ export default function ProductosPage() {
             <button onClick={openWooImport} style={btn()}>⬇ Importar web</button>
             <button onClick={syncWoo} disabled={syncing} style={btn()}>{syncing ? '...' : '↻ Sync Woo'}</button>
           </>}
+          <button onClick={imprimirListaPrecios} style={btn('default',{padding:'6px 14px',fontSize:13})}>Lista precios</button>
           <button onClick={openNew} style={btn('accent',{padding:'6px 14px',fontSize:13})}>+ Nuevo</button>
         </div>
       </div>
