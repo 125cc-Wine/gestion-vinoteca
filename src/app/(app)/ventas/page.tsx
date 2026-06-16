@@ -310,20 +310,30 @@ export default function VentasPage() {
 
   async function cargarTodo(emp: string) {
     setLoading(true)
-    const [vRes, pRes, cRes, vendRes, pedRes] = await Promise.all([
-      fetch(`/api/ventas?empresa=${emp}`),
-      fetch(`/api/productos?empresa=${emp}`),
-      fetch(`/api/clientes?empresa=${emp}`),
-      fetch(`/api/vendedores?empresa=${emp}`),
-      fetch(`/api/pedidos?empresa=${emp}`),
-    ])
-    setVentas(await vRes.json().catch(() => []))
-    setProductos(await pRes.json().catch(() => []))
-    setClientes(await cRes.json().catch(() => []))
-    const vendRaw: { id: string; nombre: string }[] = await vendRes.json().catch(() => [])
-    setVendedores(vendRaw.filter((v, i, arr) => arr.findIndex(x => x.nombre === v.nombre) === i))
-    setPedidos(await pedRes.json().catch(() => []))
-    setLoading(false)
+    try {
+      const [vRes, pRes, cRes, vendRes, pedRes] = await Promise.all([
+        fetch(`/api/ventas?empresa=${emp}`),
+        fetch(`/api/productos?empresa=${emp}`),
+        fetch(`/api/clientes?empresa=${emp}`),
+        fetch(`/api/vendedores?empresa=${emp}`),
+        fetch(`/api/pedidos?empresa=${emp}`),
+      ])
+      const [vData, pData, cData, vendData, pedData] = await Promise.all([
+        vRes.json().catch(() => []),
+        pRes.json().catch(() => []),
+        cRes.json().catch(() => []),
+        vendRes.json().catch(() => []),
+        pedRes.json().catch(() => []),
+      ])
+      setVentas(Array.isArray(vData) ? vData : [])
+      setProductos(Array.isArray(pData) ? pData : [])
+      setClientes(Array.isArray(cData) ? cData : [])
+      const vendRaw: { id: string; nombre: string }[] = Array.isArray(vendData) ? vendData : []
+      setVendedores(vendRaw.filter((v, i, arr) => arr.findIndex(x => x.nombre === v.nombre) === i))
+      setPedidos(Array.isArray(pedData) ? pedData : [])
+    } finally {
+      setLoading(false)
+    }
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
