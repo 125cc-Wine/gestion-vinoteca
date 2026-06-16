@@ -109,6 +109,13 @@ export default function ProductosPage() {
   const [newModal, setNewModal] = useState(false)
   const [newForm, setNewForm]   = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
 
+  // Lista de precios modal
+  interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_mayorista: number }
+  const [listaModal, setListaModal] = useState(false)
+  const [listaItems, setListaItems] = useState<ListaItem[]>([])
+  const [listaQuery, setListaQuery] = useState('')
+  const [listaSugsOpen, setListaSugsOpen] = useState(false)
+
   // WooCommerce import modal
   const [importModal, setImportModal]       = useState(false)
   const [importLoading, setImportLoading]   = useState(false)
@@ -223,47 +230,52 @@ export default function ProductosPage() {
     setNewModal(true)
   }
 
-  function imprimirListaPrecios() {
+  function abrirListaModal() {
+    setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaModal(true)
+  }
+
+  function listaAgregarProducto(p: Producto) {
+    if (listaItems.find(i => i.id === p.id)) return
+    setListaItems(prev => [...prev, {
+      id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_mayorista: p.precio_mayorista || 0,
+    }])
+    setListaQuery(''); setListaSugsOpen(false)
+  }
+
+  function imprimirLista() {
     const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
     const fecha = new Date().toLocaleDateString('es-AR')
-    const conPrecio = productos.filter(p => p.precio_venta > 0).sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre))
-    const categorias = Array.from(new Set(conPrecio.map(p => p.categoria)))
-    const rows = categorias.map(cat => {
-      const prods = conPrecio.filter(p => p.categoria === cat)
-      const header = `<tr style="background:#f0f0f0"><td colspan="5" style="padding:8px 10px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#333">${cat}</td></tr>`
-      const items = prods.map(p => `
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:6px 10px;font-size:12px">${p.nombre}</td>
-          <td style="padding:6px 10px;font-size:11px;color:#666">${p.bodega || ''}</td>
-          <td style="padding:6px 10px;font-size:11px;color:#666">${p.varietal || ''}</td>
-          <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:600">$${p.precio_venta.toLocaleString('es-AR')}</td>
-          <td style="padding:6px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : ''}</td>
-        </tr>`).join('')
-      return header + items
-    }).join('')
+    const rows = listaItems.map(p => `
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:7px 10px;font-size:12px;font-weight:500">${p.nombre}</td>
+        <td style="padding:7px 10px;font-size:11px;color:#666">${p.bodega}</td>
+        <td style="padding:7px 10px;font-size:11px;color:#666">${p.varietal}</td>
+        <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700">$${p.precio_venta.toLocaleString('es-AR')}</td>
+        <td style="padding:7px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
+      </tr>`).join('')
     const html = `<html><head><title>Lista de Precios — ${empNombre}</title>
-    <style>body{font-family:Arial,sans-serif;margin:24px;color:#222}table{width:100%;border-collapse:collapse}@media print{body{margin:12px}}</style>
-    </head><body>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #333;padding-bottom:10px;margin-bottom:16px">
-      <div><div style="font-size:20px;font-weight:700">${empNombre}</div><div style="font-size:12px;color:#666;margin-top:2px">Lista de precios</div></div>
-      <div style="text-align:right;font-size:11px;color:#666"><div>${fecha}</div><div style="margin-top:2px">${conPrecio.length} productos</div></div>
-    </div>
-    <table>
-      <thead><tr style="border-bottom:2px solid #333">
-        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Producto</th>
-        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Bodega</th>
-        <th style="padding:6px 10px;text-align:left;font-size:11px;text-transform:uppercase">Varietal</th>
-        <th style="padding:6px 10px;text-align:right;font-size:11px;text-transform:uppercase">P. Público</th>
-        <th style="padding:6px 10px;text-align:right;font-size:11px;text-transform:uppercase">P. Mayorista</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div style="margin-top:20px;font-size:10px;color:#aaa;text-align:center">Precios en pesos argentinos. Válidos a la fecha de emisión.</div>
-    </body></html>`
+      <style>body{font-family:Arial,sans-serif;margin:28px;color:#222}table{width:100%;border-collapse:collapse}@media print{body{margin:14px}}</style>
+      </head><body>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:18px">
+        <div><div style="font-size:22px;font-weight:700">${empNombre}</div><div style="font-size:13px;color:#555;margin-top:3px">Lista de precios</div></div>
+        <div style="text-align:right;font-size:11px;color:#777"><div>${fecha}</div><div style="margin-top:2px">${listaItems.length} productos</div></div>
+      </div>
+      <table>
+        <thead><tr style="border-bottom:2px solid #222">
+          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Producto</th>
+          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Bodega</th>
+          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Varietal</th>
+          <th style="padding:7px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio</th>
+          <th style="padding:7px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Mayorista</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:24px;font-size:10px;color:#bbb;text-align:center">Precios en pesos argentinos · Válidos a la fecha de emisión</div>
+      </body></html>`
     const w = window.open('', '_blank', 'width=900,height=700')
     if (!w) return
-    w.document.write(html)
-    w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
+    w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
   }
 
   async function saveEdit() {
@@ -394,6 +406,7 @@ export default function ProductosPage() {
         .pr.act  { outline: 1px solid #3A3A3A; outline-offset: -1px; }
         .dark-inp:focus { border-color: #555 !important; box-shadow: 0 0 0 2px rgba(139,26,42,0.2); }
         .dark-inp::placeholder { color: ${C.dim}; }
+        .lista-sug:hover { background: rgba(255,255,255,0.04) !important; }
         .pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 100ms; background: transparent; color: ${C.muted}; }
         .pill:hover { border-color: #3A3A3A; color: ${C.text}; }
         .pill.on { background: rgba(139,26,42,0.18); border-color: ${C.accent}; color: ${C.text}; }
@@ -442,7 +455,7 @@ export default function ProductosPage() {
             <button onClick={openWooImport} style={btn()}>⬇ Importar web</button>
             <button onClick={syncWoo} disabled={syncing} style={btn()}>{syncing ? '...' : '↻ Sync Woo'}</button>
           </>}
-          <button onClick={imprimirListaPrecios} style={btn('default',{padding:'6px 14px',fontSize:13})}>Lista precios</button>
+          <button onClick={abrirListaModal} style={btn('default',{padding:'6px 14px',fontSize:13})}>Lista precios</button>
           <button onClick={openNew} style={btn('accent',{padding:'6px 14px',fontSize:13})}>+ Nuevo</button>
         </div>
       </div>
@@ -766,6 +779,98 @@ export default function ProductosPage() {
                 </div>
               </div>
             </>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Lista de precios modal ────────────────────────────────── */}
+      {listaModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:24, overflowY:'auto' }}
+          onClick={e => e.target === e.currentTarget && setListaModal(false)}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:28, width:'100%', maxWidth:700, boxShadow:'0 24px 64px rgba(0,0,0,0.6)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h2 style={{ margin:0, fontSize:15, fontWeight:700, color:C.text }}>Armar lista de precios</h2>
+              <button onClick={() => setListaModal(false)} style={{ background:'none', border:'none', color:C.dim, fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
+            </div>
+
+            {/* Buscador */}
+            <div style={{ position:'relative', marginBottom:16 }}>
+              <input
+                style={{ ...INP, paddingRight:32 }}
+                placeholder="Buscar y agregar producto..."
+                value={listaQuery}
+                onChange={e => { setListaQuery(e.target.value); setListaSugsOpen(true) }}
+                onFocus={() => setListaSugsOpen(true)}
+                onBlur={() => setTimeout(() => setListaSugsOpen(false), 150)}
+                autoComplete="off"
+              />
+              {listaSugsOpen && listaQuery && (
+                <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:10, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.5)', maxHeight:280, overflowY:'auto', marginTop:2 }}>
+                  {productos
+                    .filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
+                      `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase()))
+                    .slice(0, 20)
+                    .map(p => (
+                      <div key={p.id} onMouseDown={() => listaAgregarProducto(p)}
+                        style={{ padding:'9px 14px', cursor:'pointer', borderBottom:`1px solid rgba(42,42,42,0.5)`, display:'flex', justifyContent:'space-between', alignItems:'center' }}
+                        className="lista-sug">
+                        <div>
+                          <div style={{ fontSize:13, color:C.text, fontWeight:500 }}>{p.nombre}</div>
+                          <div style={{ fontSize:11, color:C.dim, marginTop:2 }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</div>
+                        </div>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.green }}>${p.precio_venta.toLocaleString('es-AR')}</div>
+                      </div>
+                    ))}
+                  {productos.filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
+                    `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase())).length === 0 && (
+                    <div style={{ padding:'14px', fontSize:12, color:C.dim, textAlign:'center' }}>Sin resultados</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Tabla de items */}
+            {listaItems.length === 0 ? (
+              <div style={{ padding:'32px', textAlign:'center', color:C.dim, fontSize:13 }}>Buscá productos para armar la lista</div>
+            ) : (
+              <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden', marginBottom:20 }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <thead>
+                    <tr style={{ borderBottom:`1px solid ${C.border}`, background:C.surface }}>
+                      {['Producto','Bodega','Varietal','Precio','Mayorista',''].map(h => (
+                        <th key={h} style={{ padding:'8px 12px', fontSize:10, color:C.dim, fontWeight:600, textAlign: h === 'Precio' || h === 'Mayorista' ? 'right' : 'left', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listaItems.map((item, i) => (
+                      <tr key={item.id} style={{ borderBottom:`1px solid rgba(42,42,42,0.5)` }}>
+                        <td style={{ padding:'9px 12px', color:C.text, fontWeight:500 }}>{item.nombre}</td>
+                        <td style={{ padding:'9px 12px', color:C.muted, fontSize:12 }}>{item.bodega || '—'}</td>
+                        <td style={{ padding:'9px 12px', color:C.muted, fontSize:12 }}>{item.varietal || '—'}</td>
+                        <td style={{ padding:'9px 12px', textAlign:'right', fontWeight:700, color:C.green }}>${item.precio_venta.toLocaleString('es-AR')}</td>
+                        <td style={{ padding:'9px 12px', textAlign:'right', color:C.muted, fontSize:12 }}>{item.precio_mayorista ? '$' + item.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
+                        <td style={{ padding:'9px 8px', textAlign:'right' }}>
+                          <button onClick={() => setListaItems(prev => prev.filter((_,j) => j !== i))}
+                            style={{ background:'none', border:'none', color:C.dim, cursor:'pointer', fontSize:16, lineHeight:1, padding:'2px 4px' }}>×</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:12, color:C.dim }}>{listaItems.length} producto{listaItems.length !== 1 ? 's' : ''}</span>
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={() => setListaModal(false)} style={btn('default', { padding:'7px 16px', fontSize:13 })}>Cancelar</button>
+                <button onClick={imprimirLista} disabled={listaItems.length === 0}
+                  style={{ ...btn('accent', { padding:'7px 18px', fontSize:13, fontWeight:600 }), opacity: listaItems.length === 0 ? 0.4 : 1 }}>
+                  Imprimir lista
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
