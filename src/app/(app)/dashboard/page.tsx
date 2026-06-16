@@ -2,14 +2,50 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+const C = {
+  bg:      '#0F0F0F',
+  surface: '#141414',
+  card:    '#1A1A1A',
+  border:  '#2A2A2A',
+  accent:  '#8B1A2A',
+  text:    '#E8E8E8',
+  muted:   '#888888',
+  dim:     '#555555',
+  green:   '#4CAF7D',
+  amber:   '#D4820A',
+  red:     '#E05555',
+  blue:    '#7AADFF',
+}
+
 interface DashData {
-  alertas: { sinStock: {nombre:string;bodega:string}[]; stockBajo: {nombre:string;bodega:string;stock:number;stock_minimo:number}[]; vencidos: {id:string;numero:string;cliente_nombre:string;total:number;created_at:string}[]; pedidosPendientes: number }
+  alertas: {
+    sinStock: { nombre: string; bodega: string }[]
+    stockBajo: { nombre: string; bodega: string; stock: number; stock_minimo: number }[]
+    vencidos: { id: string; numero: string; cliente_nombre: string; total: number; created_at: string }[]
+    pedidosPendientes: number
+  }
   ventasHoy: { total: number; cantidad: number }
   ventasMes: { total: number; cantidad: number }
   caja: { ingresos: number; egresos: number; saldo: number }
   vendedores: { nombre: string; total: number; cantidad: number }[]
   cuentasCorrientes: { cantidad: number; total: number }
   topProductos: { nombre: string; cantidad: number; total: number }[]
+}
+
+function Card({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', ...style }}>
+      {children}
+    </div>
+  )
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+      {children}
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -22,7 +58,7 @@ export default function DashboardPage() {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
     cargar(e)
-    const interval = setInterval(() => cargar(e), 60000) // refresh cada 1 min
+    const interval = setInterval(() => cargar(e), 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -35,8 +71,8 @@ export default function DashboardPage() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-gray-400 text-sm">Cargando dashboard...</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280, color: C.dim, fontSize: 13 }}>
+      Cargando...
     </div>
   )
 
@@ -45,183 +81,222 @@ export default function DashboardPage() {
   const totalAlertas = data.alertas.sinStock.length + data.alertas.stockBajo.length
   const cristian = data.vendedores.find(v => v.nombre === 'Cristian')
   const locales = data.vendedores.filter(v => v.nombre !== 'Cristian')
+  const maxVendedor = locales[0]?.total || 1
 
   return (
-    <div className="space-y-6">
-      {/* Alertas destacadas */}
-      {totalAlertas > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">⚠️</span>
-            <h2 className="font-medium text-amber-800">Alertas de stock ({totalAlertas})</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {data.alertas.sinStock.length > 0 && (
-              <div>
-                <div className="text-xs font-medium text-red-600 mb-2">Sin stock ({data.alertas.sinStock.length})</div>
-                <div className="space-y-1">
-                  {data.alertas.sinStock.map((p, i) => (
-                    <div key={i} className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded flex items-center gap-1">
-                      <span className="w-2 h-2 bg-red-400 rounded-full inline-block"></span>
-                      {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''}
-                    </div>
-                  ))}
+    <div style={{ background: C.bg, minHeight: '100vh', padding: 24, color: C.text }}>
+      <style>{`
+        .dash-alert-row:hover { background: rgba(255,255,255,0.03) !important; }
+        .quick-card:hover { background: #222 !important; border-color: #3A3A3A !important; }
+        .quick-card { transition: background 0.15s, border-color 0.15s; cursor: pointer; }
+        .link-btn:hover { opacity: 0.7; }
+      `}</style>
+
+      {/* ── Alertas ─────────────────────────────────────────────────────────── */}
+      {(totalAlertas > 0 || data.alertas.vencidos.length > 0 || data.alertas.pedidosPendientes > 0) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+
+          {/* Stock */}
+          {totalAlertas > 0 && (
+            <div style={{ background: 'rgba(212,130,10,0.07)', border: `1px solid rgba(212,130,10,0.25)`, borderRadius: 10, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.amber }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.amber }}>Alertas de stock — {totalAlertas} producto{totalAlertas > 1 ? 's' : ''}</span>
                 </div>
+                <button className="link-btn" onClick={() => router.push('/productos')} style={{ fontSize: 11, color: C.amber, background: 'none', border: 'none', cursor: 'pointer' }}>
+                  Ver productos →
+                </button>
               </div>
-            )}
-            {data.alertas.stockBajo.length > 0 && (
-              <div>
-                <div className="text-xs font-medium text-yellow-600 mb-2">Stock bajo ({data.alertas.stockBajo.length})</div>
-                <div className="space-y-1">
-                  {data.alertas.stockBajo.map((p, i) => (
-                    <div key={i} className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded flex items-center gap-1">
-                      <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-                      {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} — {p.stock} u.
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <button onClick={() => router.push('/productos')} className="mt-3 text-xs text-amber-700 underline">Ver todos los productos →</button>
-        </div>
-      )}
-
-      {/* Alertas de vencimiento */}
-      {data.alertas.vencidos.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🔴</span>
-            <h2 className="font-medium text-red-800">Comprobantes vencidos +30 días sin pago ({data.alertas.vencidos.length})</h2>
-          </div>
-          <div className="space-y-1">
-            {data.alertas.vencidos.map((v,i) => (
-              <div key={i} className="text-xs bg-red-100 text-red-700 px-3 py-2 rounded-lg flex justify-between">
-                <span><strong>{v.numero}</strong> — {v.cliente_nombre}</span>
-                <span className="font-medium">${v.total.toLocaleString('es-AR')}</span>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => router.push('/ventas')} className="mt-3 text-xs text-red-700 underline">Ver en ventas →</button>
-        </div>
-      )}
-
-      {data.alertas.pedidosPendientes > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span>📦</span>
-            <span className="text-sm text-blue-800">{data.alertas.pedidosPendientes} pedido{data.alertas.pedidosPendientes>1?'s':''} pendiente{data.alertas.pedidosPendientes>1?'s':''} de entrega</span>
-          </div>
-          <button onClick={() => router.push('/pedidos')} className="text-xs text-blue-700 underline">Ver pedidos →</button>
-        </div>
-      )}
-
-      {/* Métricas principales */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="card">
-          <div className="text-xs text-gray-400 mb-1">Ventas hoy</div>
-          <div className="text-2xl font-medium text-gray-800">${data.ventasHoy.total.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">{data.ventasHoy.cantidad} comprobantes</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-gray-400 mb-1">Ventas del mes</div>
-          <div className="text-2xl font-medium text-gray-800">${data.ventasMes.total.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">{data.ventasMes.cantidad} comprobantes</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-gray-400 mb-1">Caja hoy</div>
-          <div className={`text-2xl font-medium ${data.caja.saldo >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-            ${data.caja.saldo.toLocaleString('es-AR')}
-          </div>
-          <div className="text-xs text-gray-400 mt-1">+${data.caja.ingresos.toLocaleString('es-AR')} / -${data.caja.egresos.toLocaleString('es-AR')}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-gray-400 mb-1">Cuentas corrientes</div>
-          <div className="text-2xl font-medium text-blue-600">${data.cuentasCorrientes.total.toLocaleString('es-AR')}</div>
-          <div className="text-xs text-gray-400 mt-1">{data.cuentasCorrientes.cantidad} clientes con saldo</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {/* Vendedores locales */}
-        <div className="card col-span-1">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">📊 Vendedores — mes actual</h3>
-          {locales.length === 0
-            ? <div className="text-xs text-gray-400">Sin ventas registradas</div>
-            : <div className="space-y-2">
-              {locales.map((v, i) => {
-                const max = locales[0]?.total || 1
-                return (
-                  <div key={i}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="font-medium text-gray-700">{v.nombre}</span>
-                      <span className="text-gray-500">${v.total.toLocaleString('es-AR')} · {v.cantidad} ventas</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div className="bg-gray-600 h-1.5 rounded-full" style={{ width: `${(v.total / max) * 100}%` }}></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {data.alertas.sinStock.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: C.red, fontWeight: 600, marginBottom: 6 }}>Sin stock ({data.alertas.sinStock.length})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {data.alertas.sinStock.slice(0, 8).map((p, i) => (
+                        <div key={i} style={{ fontSize: 11, color: '#CC8888', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.red, flexShrink: 0, display: 'inline-block' }} />
+                          {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''}
+                        </div>
+                      ))}
+                      {data.alertas.sinStock.length > 8 && <div style={{ fontSize: 11, color: C.dim }}>+{data.alertas.sinStock.length - 8} más</div>}
                     </div>
                   </div>
-                )
-              })}
+                )}
+                {data.alertas.stockBajo.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, color: C.amber, fontWeight: 600, marginBottom: 6 }}>Stock bajo ({data.alertas.stockBajo.length})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {data.alertas.stockBajo.slice(0, 8).map((p, i) => (
+                        <div key={i} style={{ fontSize: 11, color: '#C8A060', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.amber, flexShrink: 0, display: 'inline-block' }} />
+                          {p.nombre}{p.bodega ? ` · ${p.bodega}` : ''} — {p.stock} u.
+                        </div>
+                      ))}
+                      {data.alertas.stockBajo.length > 8 && <div style={{ fontSize: 11, color: C.dim }}>+{data.alertas.stockBajo.length - 8} más</div>}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          }
-        </div>
+          )}
 
-        {/* Cristian - vendedor de calle */}
-        <div className="card col-span-1">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">🚗 Cristian — vendedor de calle</h3>
-          {cristian ? (
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Total mes</div>
-                <div className="text-2xl font-medium text-gray-800">${cristian.total.toLocaleString('es-AR')}</div>
+          {/* Vencidos */}
+          {data.alertas.vencidos.length > 0 && (
+            <div style={{ background: 'rgba(224,85,85,0.07)', border: `1px solid rgba(224,85,85,0.25)`, borderRadius: 10, padding: '14px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.red }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.red }}>Comprobantes vencidos +30 días ({data.alertas.vencidos.length})</span>
+                </div>
+                <button className="link-btn" onClick={() => router.push('/ventas')} style={{ fontSize: 11, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}>
+                  Ver ventas →
+                </button>
               </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Comprobantes</div>
-                <div className="text-xl font-medium text-gray-700">{cristian.cantidad}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {data.alertas.vencidos.map((v, i) => (
+                  <div key={i} className="dash-alert-row" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#CC8888', padding: '5px 8px', borderRadius: 6, background: 'rgba(224,85,85,0.06)' }}>
+                    <span><strong style={{ color: '#E08888' }}>{v.numero}</strong> — {v.cliente_nombre}</span>
+                    <span style={{ fontWeight: 600 }}>${v.total.toLocaleString('es-AR')}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="text-xs text-gray-400">Sin ventas este mes</div>
+          )}
+
+          {/* Pedidos pendientes */}
+          {data.alertas.pedidosPendientes > 0 && (
+            <div style={{ background: 'rgba(122,173,255,0.07)', border: `1px solid rgba(122,173,255,0.2)`, borderRadius: 10, padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.blue }} />
+                <span style={{ fontSize: 13, color: C.blue }}>
+                  {data.alertas.pedidosPendientes} pedido{data.alertas.pedidosPendientes > 1 ? 's' : ''} pendiente{data.alertas.pedidosPendientes > 1 ? 's' : ''} de entrega
+                </span>
+              </div>
+              <button className="link-btn" onClick={() => router.push('/pedidos')} style={{ fontSize: 11, color: C.blue, background: 'none', border: 'none', cursor: 'pointer' }}>
+                Ver pedidos →
+              </button>
+            </div>
           )}
         </div>
+      )}
 
-        {/* Top productos */}
-        <div className="card col-span-1">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">🍷 Top productos — mes</h3>
-          {data.topProductos.length === 0
-            ? <div className="text-xs text-gray-400">Sin datos</div>
-            : <div className="space-y-2">
-              {data.topProductos.map((p, i) => (
-                <div key={i} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400 w-4">{i + 1}.</span>
-                    <span className="text-gray-700 truncate max-w-32">{p.nombre}</span>
+      {/* ── KPIs ────────────────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        <Card>
+          <Label>Ventas hoy</Label>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>${data.ventasHoy.total.toLocaleString('es-AR')}</div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{data.ventasHoy.cantidad} comprobantes</div>
+        </Card>
+        <Card>
+          <Label>Ventas del mes</Label>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>${data.ventasMes.total.toLocaleString('es-AR')}</div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{data.ventasMes.cantidad} comprobantes</div>
+        </Card>
+        <Card>
+          <Label>Caja hoy</Label>
+          <div style={{ fontSize: 26, fontWeight: 700, color: data.caja.saldo >= 0 ? C.green : C.red }}>
+            ${data.caja.saldo.toLocaleString('es-AR')}
+          </div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>
+            <span style={{ color: C.green }}>+${data.caja.ingresos.toLocaleString('es-AR')}</span>
+            {' / '}
+            <span style={{ color: C.red }}>-${data.caja.egresos.toLocaleString('es-AR')}</span>
+          </div>
+        </Card>
+        <Card>
+          <Label>Cuentas corrientes</Label>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.blue }}>${data.cuentasCorrientes.total.toLocaleString('es-AR')}</div>
+          <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{data.cuentasCorrientes.cantidad} clientes con saldo</div>
+        </Card>
+      </div>
+
+      {/* ── Panels ──────────────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+
+        {/* Vendedores */}
+        <Card>
+          <Label>Vendedores — mes actual</Label>
+          {locales.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.dim, paddingTop: 8 }}>Sin ventas registradas</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {locales.map((v, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
+                    <span style={{ fontWeight: 600, color: C.text }}>{v.nombre}</span>
+                    <span style={{ color: C.muted }}>${v.total.toLocaleString('es-AR')} · {v.cantidad} v.</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-gray-600 font-medium">${p.total.toLocaleString('es-AR')}</div>
-                    <div className="text-gray-400">{p.cantidad} u.</div>
+                  <div style={{ height: 3, background: C.border, borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: C.accent, borderRadius: 2, width: `${(v.total / maxVendedor) * 100}%`, transition: 'width 0.4s' }} />
                   </div>
                 </div>
               ))}
             </div>
-          }
-        </div>
+          )}
+        </Card>
+
+        {/* Cristian */}
+        <Card>
+          <Label>Cristian — vendedor de calle</Label>
+          {cristian ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 4 }}>
+              <div>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4 }}>Total mes</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: C.text }}>${cristian.total.toLocaleString('es-AR')}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 2 }}>Comprobantes</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: C.muted }}>{cristian.cantidad}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: C.dim, paddingTop: 8 }}>Sin ventas este mes</div>
+          )}
+        </Card>
+
+        {/* Top productos */}
+        <Card>
+          <Label>Top productos — mes</Label>
+          {data.topProductos.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.dim, paddingTop: 8 }}>Sin datos</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {data.topProductos.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                  <span style={{ color: C.dim, fontWeight: 700, fontSize: 11, minWidth: 16 }}>{i + 1}</span>
+                  <span style={{ color: C.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ color: C.green, fontWeight: 600, fontSize: 11 }}>${p.total.toLocaleString('es-AR')}</div>
+                    <div style={{ color: C.dim, fontSize: 10 }}>{p.cantidad} u.</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
 
-      {/* Accesos rápidos */}
-      <div className="grid grid-cols-5 gap-3">
+      {/* ── Accesos rápidos ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
         {[
-          { label: 'Nuevo presupuesto', icon: '📋', href: '/ventas' },
-          { label: 'Nuevo remito', icon: '📦', href: '/ventas' },
-          { label: 'Agregar producto', icon: '🍷', href: '/productos' },
-          { label: 'Abrir caja', icon: '💰', href: '/caja' },
-          { label: 'Ver clientes', icon: '👥', href: '/clientes' },
+          { label: 'Nuevo presupuesto', sub: 'Ventas', href: '/ventas' },
+          { label: 'Nuevo remito',      sub: 'Ventas', href: '/ventas' },
+          { label: 'Agregar producto',  sub: 'Catálogo', href: '/productos' },
+          { label: 'Movimiento caja',   sub: 'Caja', href: '/caja' },
+          { label: 'Ver clientes',      sub: 'Clientes', href: '/clientes' },
         ].map(a => (
-          <button key={a.href + a.label} onClick={() => router.push(a.href)}
-            className="card text-center cursor-pointer hover:bg-gray-50 transition-colors">
-            <div className="text-2xl mb-1">{a.icon}</div>
-            <div className="text-xs text-gray-600">{a.label}</div>
+          <button
+            key={a.label}
+            className="quick-card"
+            onClick={() => router.push(a.href)}
+            style={{
+              background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+              padding: '16px 14px', textAlign: 'left', cursor: 'pointer',
+            }}
+          >
+            <div style={{ fontSize: 10, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{a.sub}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{a.label}</div>
           </button>
         ))}
       </div>

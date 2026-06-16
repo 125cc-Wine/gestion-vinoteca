@@ -4,15 +4,25 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 
+const C = {
+  bg:      '#0F0F0F',
+  surface: '#141414',
+  border:  '#2A2A2A',
+  accent:  '#8B1A2A',
+  text:    '#E8E8E8',
+  muted:   '#888888',
+  dim:     '#444444',
+}
+
 const NAV = [
-  { href: '/dashboard',   label: 'Inicio',      icon: '📊' },
-  { href: '/ventas',      label: 'Ventas',       icon: '🧾' },
-  { href: '/pedidos',     label: 'Pedidos',      icon: '📋' },
-  { href: '/productos',   label: 'Productos',    icon: '🍷' },
-  { href: '/bodegas',     label: 'Bodegas',      icon: '🏭' },
-  { href: '/clientes',    label: 'Clientes',     icon: '👥' },
-  { href: '/proveedores', label: 'Proveedores',  icon: '🚛' },
-  { href: '/caja',        label: 'Caja',         icon: '💰' },
+  { href: '/dashboard',   label: 'Inicio' },
+  { href: '/ventas',      label: 'Ventas' },
+  { href: '/pedidos',     label: 'Pedidos' },
+  { href: '/productos',   label: 'Productos' },
+  { href: '/bodegas',     label: 'Bodegas' },
+  { href: '/clientes',    label: 'Clientes' },
+  { href: '/proveedores', label: 'Proveedores' },
+  { href: '/caja',        label: 'Caja' },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -30,66 +40,86 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const esAroma = empresa === 'aroma'
 
-  const headerCls = esAroma
-    ? 'bg-[#FEFBF6] border-b border-amber-100'
-    : 'bg-[#0D1424] border-b border-slate-700'
-
-  const activeCls = esAroma
-    ? 'bg-amber-100 text-amber-900 font-semibold'
-    : 'bg-slate-700 text-white font-semibold'
-
-  const inactiveCls = esAroma
-    ? 'text-gray-500 hover:text-amber-800 hover:bg-amber-50'
-    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
-
-  const badgeCls = esAroma
-    ? 'text-amber-800 border-amber-200 bg-amber-50'
-    : 'text-cyan-300 border-cyan-700 bg-cyan-950'
-
-  const changeCls = esAroma
-    ? 'text-gray-400 hover:text-amber-700'
-    : 'text-slate-500 hover:text-slate-300'
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className={`${headerCls} sticky top-0 z-50 shadow-sm`}>
-        <div className="flex items-center justify-between px-6 h-14">
-          <div className="flex items-center gap-3">
+    <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        .nav-link { transition: color 0.15s, background 0.15s; }
+        .nav-link:hover { color: ${C.text} !important; background: rgba(255,255,255,0.05) !important; }
+        .nav-link.active { color: ${C.text} !important; background: rgba(139,26,42,0.18) !important; }
+        .nav-link.active::after {
+          content: '';
+          position: absolute; bottom: -1px; left: 8px; right: 8px;
+          height: 2px; background: ${C.accent}; border-radius: 2px;
+        }
+        .nav-link { position: relative; }
+        .cambiar-btn:hover { color: ${C.muted} !important; }
+      `}</style>
+
+      <header style={{
+        background: C.surface,
+        borderBottom: `1px solid ${C.border}`,
+        position: 'sticky', top: 0, zIndex: 50,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 52 }}>
+          {/* Logo + badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 180 }}>
             <Image
               src={esAroma ? '/logos/aroma.jpg' : '/logos/lavid.png'}
               alt={esAroma ? 'Aroma de Vid' : 'La Vid Consultora'}
-              width={100} height={32}
-              style={{ objectFit: 'contain', height: '32px', width: 'auto' }}
+              width={90} height={28}
+              style={{ objectFit: 'contain', height: 28, width: 'auto' }}
             />
-            <span className={`text-xs px-2 py-0.5 rounded-full border ${badgeCls}`}>
-              {esAroma ? 'Consumidor final' : 'Reventa'}
+            <span style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.05em',
+              padding: '2px 8px', borderRadius: 99,
+              background: esAroma ? 'rgba(139,26,42,0.15)' : 'rgba(100,140,220,0.12)',
+              color: esAroma ? '#D08090' : '#7AADFF',
+              border: `1px solid ${esAroma ? 'rgba(139,26,42,0.35)' : 'rgba(100,140,220,0.3)'}`,
+              textTransform: 'uppercase',
+            }}>
+              {esAroma ? 'Retail' : 'Distribución'}
             </span>
           </div>
 
-          <nav className="flex gap-0.5">
-            {NAV.map(n => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-                  pathname.startsWith(n.href) ? activeCls : inactiveCls
-                }`}
-              >
-                <span className="mr-1">{n.icon}</span>{n.label}
-              </Link>
-            ))}
+          {/* Nav */}
+          <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            {NAV.map(n => {
+              const active = pathname.startsWith(n.href)
+              return (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={`nav-link${active ? ' active' : ''}`}
+                  style={{
+                    padding: '5px 11px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? C.text : C.muted,
+                    textDecoration: 'none',
+                    display: 'block',
+                  }}
+                >
+                  {n.label}
+                </Link>
+              )
+            })}
           </nav>
 
-          <button
-            onClick={() => { localStorage.removeItem('empresa'); router.push('/') }}
-            className={`text-xs ${changeCls} transition-colors`}
-          >
-            cambiar empresa
-          </button>
+          {/* Cambiar empresa */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 180, justifyContent: 'flex-end' }}>
+            <button
+              className="cambiar-btn"
+              onClick={() => { localStorage.removeItem('empresa'); router.push('/') }}
+              style={{ fontSize: 11, color: C.dim, background: 'none', border: 'none', cursor: 'pointer', transition: 'color 0.15s' }}
+            >
+              cambiar empresa
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 p-6 max-w-screen-2xl mx-auto w-full">
+      <main style={{ flex: 1, maxWidth: 1600, width: '100%', margin: '0 auto', padding: '0 0' }}>
         {children}
       </main>
     </div>
