@@ -387,7 +387,7 @@ export default function VentasPage() {
     setItems(ni)
   }
 
-  async function guardar() {
+  async function guardar(imprimir = true) {
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
     const subtotal = items.reduce((a, i) => a + calcSub(i), 0)
     const ventaData = {
@@ -410,7 +410,7 @@ export default function VentasPage() {
     setModal(false)
     await cargarTodo(empresa)
     showToast(editVentaId ? 'Comprobante actualizado' : `${tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${data.numero} generado`)
-    if (!editVentaId) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
+    if (!editVentaId && imprimir) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
   }
 
   async function eliminarVenta(id: string) {
@@ -906,8 +906,13 @@ export default function VentasPage() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
               <button className="vbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
-              <button className="vbtn" style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })} onClick={guardar}>
-                {editVentaId ? 'Guardar cambios' : `Generar ${tipo === 'presupuesto' ? 'presupuesto' : 'remito'}`}
+              {!editVentaId && (
+                <button className="vbtn" style={btn('default', { padding: '7px 14px', fontSize: 13 })} onClick={() => guardar(false)}>
+                  Solo registrar
+                </button>
+              )}
+              <button className="vbtn" style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })} onClick={() => guardar(true)}>
+                {editVentaId ? 'Guardar cambios' : `Generar e imprimir`}
               </button>
             </div>
           </div>
