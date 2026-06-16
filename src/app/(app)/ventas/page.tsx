@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 
 const EMPRESAS_DATA = {
@@ -61,62 +62,117 @@ function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const ref = useRef<HTMLDivElement>(null)
+  const [hi, setHi] = useState(0)
+  const [pos, setPos] = useState({ top: 0, left: 0, w: 0 })
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const selected = productos.find(p => p.id === productoId)
+  const filtered = filtrarProductos(productos, query)
+  const esMay = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
 
+  // Cerrar al click fuera
   useEffect(() => {
+    if (!open) return
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!inputRef.current?.contains(t) && !listRef.current?.contains(t)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  }, [open])
 
-  const filtered = filtrarProductos(productos, query)
-  const esMay = clienteTipo === 'mayorista' || clienteTipo === 'revendedor'
+  // Scroll al item destacado
+  useEffect(() => {
+    if (!open || !listRef.current) return
+    const el = listRef.current.children[hi] as HTMLElement
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [hi, open])
+
+  function openDropdown() {
+    const rect = inputRef.current?.getBoundingClientRect()
+    if (!rect) return
+    setPos({ top: rect.bottom + 2, left: rect.left, w: Math.max(rect.width, 400) })
+    setOpen(true); setQuery(''); setHi(0)
+  }
+
+  function handleKey(e: React.KeyboardEvent) {
+    if (!open) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); openDropdown() }
+      return
+    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, filtered.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[hi]) { onSelect(filtered[hi]); setOpen(false) } }
+    else if (e.key === 'Escape') setOpen(false)
+    else if (e.key === 'Tab' && filtered[hi]) { onSelect(filtered[hi]); setOpen(false) }
+  }
+
   const display = selected ? `${selected.nombre}${selected.bodega ? ' · ' + selected.bodega : ''}` : ''
 
+  const dropdown = open ? (
+    <div ref={listRef} style={{
+      position: 'fixed', top: pos.top, left: pos.left, width: pos.w,
+      zIndex: 9999, background: '#1A1A1A', border: '1px solid #2A2A2A',
+      borderRadius: 8, boxShadow: '0 16px 48px rgba(0,0,0,0.85)',
+      maxHeight: 320, overflowY: 'auto',
+    }}>
+      {filtered.length === 0
+        ? <div style={{ padding: '16px 12px', fontSize: 12, color: '#555', textAlign: 'center' }}>
+            {query ? `Sin resultados para "${query}"` : 'Escribí para buscar'}
+          </div>
+        : filtered.map((p, i) => {
+          const precio = esMay && p.precio_mayorista ? p.precio_mayorista : p.precio_venta
+          const stockOk = p.stock > (p.stock_minimo || 0)
+          const stockBajo = p.stock > 0 && p.stock <= (p.stock_minimo || 0)
+          const stockColor = p.stock <= 0 ? '#E05555' : stockBajo ? '#D4820A' : '#4CAF7D'
+          return (
+            <div key={p.id}
+              onMouseDown={e => { e.preventDefault(); onSelect(p); setOpen(false) }}
+              onMouseEnter={() => setHi(i)}
+              style={{
+                padding: '9px 14px', cursor: 'pointer',
+                background: i === hi ? 'rgba(139,26,42,0.2)' : 'transparent',
+                borderBottom: '1px solid rgba(42,42,42,0.6)',
+                borderLeft: `3px solid ${i === hi ? '#8B1A2A' : 'transparent'}`,
+                transition: 'background 0.1s',
+              }}>
+              <div style={{ fontSize: 13, color: '#E8E8E8', fontWeight: 500 }}>{p.nombre}</div>
+              <div style={{ fontSize: 11, marginTop: 3, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                {p.bodega && <span style={{ color: '#888' }}>{p.bodega}</span>}
+                {p.varietal && <span style={{ color: '#555' }}>{p.varietal}</span>}
+                <span style={{ color: stockColor, fontWeight: 600 }}>
+                  {p.stock <= 0 ? 'Sin stock' : stockBajo ? `Stock bajo: ${p.stock}` : `Stock: ${p.stock}`}
+                </span>
+                <span style={{ color: '#888', marginLeft: 'auto' }}>${precio.toLocaleString('es-AR')}</span>
+              </div>
+            </div>
+          )
+        })
+      }
+    </div>
+  ) : null
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <div style={{ position: 'relative' }}>
         <input
+          ref={inputRef}
           className="vinp"
-          style={{ ...INP, fontSize: 12, padding: '4px 7px', paddingRight: productoId ? 26 : 7 }}
+          style={{ ...INP, fontSize: 12, padding: '5px 8px', paddingRight: productoId ? 28 : 8 }}
           value={open ? query : display}
           placeholder="Buscar producto..."
-          onFocus={() => { setOpen(true); setQuery('') }}
-          onChange={e => setQuery(e.target.value)}
+          onFocus={openDropdown}
+          onChange={e => { if (!open) openDropdown(); setQuery(e.target.value); setHi(0) }}
+          onKeyDown={handleKey}
+          autoComplete="off"
         />
         {productoId && !open && (
           <button onMouseDown={e => { e.preventDefault(); onSelect(null) }}
-            style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: C.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '2px 3px' }}>×</button>
+            style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '2px 3px' }}>×</button>
         )}
       </div>
-      {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, right: 0, zIndex: 400, background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, boxShadow: '0 8px 32px rgba(0,0,0,0.7)', maxHeight: 260, overflowY: 'auto' }}>
-          {filtered.length === 0
-            ? <div style={{ padding: '14px', fontSize: 12, color: C.dim, textAlign: 'center' }}>Sin resultados para &ldquo;{query}&rdquo;</div>
-            : filtered.map(p => {
-              const precio = esMay && p.precio_mayorista ? p.precio_mayorista : p.precio_venta
-              const stockColor = p.stock <= 0 ? C.red : p.stock <= (p.stock_minimo || 0) ? C.amber : C.green
-              return (
-                <div key={p.id} className="cliente-opt"
-                  onMouseDown={() => { onSelect(p); setOpen(false); setQuery('') }}
-                  style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
-                  <div style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{p.nombre}</div>
-                  <div style={{ fontSize: 11, color: C.dim, marginTop: 2, display: 'flex', gap: 10 }}>
-                    {p.bodega && <span>{p.bodega}</span>}
-                    {p.varietal && <span>{p.varietal}</span>}
-                    <span style={{ color: stockColor, fontWeight: 600 }}>Stock: {p.stock}</span>
-                    <span style={{ color: C.muted }}>${precio.toLocaleString('es-AR')}</span>
-                  </div>
-                </div>
-              )
-            })
-          }
-        </div>
-      )}
+      {typeof document !== 'undefined' && dropdown && createPortal(dropdown, document.body)}
     </div>
   )
 }
@@ -294,6 +350,8 @@ export default function VentasPage() {
     const precio = esMay && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio }
     ni[idx].subtotal = calcSub(ni[idx])
+    // Auto-agregar línea vacía si era la última
+    if (idx === ni.length - 1) ni.push({ ...ITEM_EMPTY })
     setItems(ni)
   }
 
@@ -379,6 +437,8 @@ export default function VentasPage() {
     const ni = [...pItems]
     if (!prod) { ni[idx] = { ...PEDIDO_ITEM_EMPTY }; setPItems(ni); return }
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: prod.precio_venta }
+    // Auto-agregar línea vacía si era la última
+    if (idx === ni.length - 1) ni.push({ ...PEDIDO_ITEM_EMPTY })
     setPItems(ni); setPStockChecked(false)
   }
 
