@@ -44,10 +44,10 @@ export default function Home() {
 
         <button
           onClick={() => setEmpresa('lavid')}
-          className={`bg-slate-900 rounded-2xl border-2 p-8 flex flex-col items-center gap-4 transition-all cursor-pointer shadow-sm ${
+          className={`bg-white rounded-2xl border-2 p-8 flex flex-col items-center gap-4 transition-all cursor-pointer shadow-sm ${
             empresa === 'lavid'
-              ? 'border-cyan-400 shadow-cyan-900/30 shadow-md'
-              : 'border-slate-700 hover:border-slate-500 hover:shadow-md'
+              ? 'border-amber-600 shadow-amber-100 shadow-md'
+              : 'border-gray-100 hover:border-amber-200 hover:shadow-md'
           }`}
         >
           <Image
@@ -58,8 +58,8 @@ export default function Home() {
             style={{ objectFit: 'contain' }}
           />
           <div className="text-center">
-            <div className="font-semibold text-white">La Vid Consultora</div>
-            <div className="text-xs text-slate-400 mt-1">Distribución · Reventa</div>
+            <div className="font-semibold text-gray-800">La Vid Consultora</div>
+            <div className="text-xs text-gray-400 mt-1">Distribución · Reventa</div>
           </div>
         </button>
       </div>
