@@ -1,6 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import ComboInput from '@/components/ComboInput'
+
+const C = { bg:'#0F0F0F', surface:'#141414', card:'#1A1A1A', border:'#2A2A2A', accent:'#8B1A2A', text:'#E8E8E8', muted:'#888888', dim:'#555555', green:'#4CAF7D', amber:'#D4820A', red:'#E05555' }
+const btn = (bg = C.accent): React.CSSProperties => ({ background: bg, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 })
+const INP: React.CSSProperties = { background: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 8, padding: '8px 12px', width: '100%', fontSize: 13, outline: 'none' }
+const LBL: React.CSSProperties = { display: 'block', fontSize: 12, color: C.muted, marginBottom: 4 }
 
 interface Bodega {
   id: string
@@ -12,10 +16,7 @@ interface Bodega {
   activo: boolean
 }
 
-interface Proveedor {
-  id: string
-  nombre: string
-}
+interface Proveedor { id: string; nombre: string }
 
 const EMPTY = { nombre: '', proveedor_nombre: '', region: '', pais: 'Argentina', notas: '' }
 
@@ -32,16 +33,12 @@ export default function BodegasPage() {
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
-    setEmpresa(e)
-    cargar(e)
+    setEmpresa(e); cargar(e)
   }, [])
 
   async function cargar(emp: string) {
     setLoading(true)
-    const [bRes, pRes] = await Promise.all([
-      fetch('/api/bodegas'),
-      fetch(`/api/proveedores?empresa=${emp}`),
-    ])
+    const [bRes, pRes] = await Promise.all([fetch('/api/bodegas'), fetch(`/api/proveedores?empresa=${emp}`)])
     setBodegas(await bRes.json().catch(() => []))
     setProveedores(await pRes.json().catch(() => []))
     setLoading(false)
@@ -79,34 +76,48 @@ export default function BodegasPage() {
   })
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-medium text-gray-800">Bodegas</h1>
-        <button onClick={abrirNuevo} className="btn btn-primary">+ Nueva bodega</button>
+    <div style={{ padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ color: C.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Bodegas</h1>
+          <p style={{ color: C.muted, fontSize: 13, margin: '2px 0 0' }}>{bodegas.length} bodegas registradas</p>
+        </div>
+        <button style={btn()} onClick={abrirNuevo}>+ Nueva bodega</button>
       </div>
 
-      <input className="input mb-4" placeholder="Buscar por nombre, proveedor, región..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+      <input
+        style={{ ...INP, maxWidth: 360, marginBottom: 16 }}
+        placeholder="Buscar por nombre, proveedor, región..."
+        value={busqueda}
+        onChange={e => setBusqueda(e.target.value)}
+      />
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-100">
-            {['Bodega','Proveedor','Región','País',''].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-            ))}
-          </tr></thead>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              {['Bodega', 'Proveedor', 'Región', 'País', ''].map(h => (
+                <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: C.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? <tr><td colSpan={5} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : filtradas.length === 0 ? <tr><td colSpan={5} className="text-center py-12 text-gray-400">No hay bodegas todavía</td></tr>
-            : filtradas.map(b => (
-              <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{b.nombre}</td>
-                <td className="px-4 py-3 text-gray-600">{b.proveedor_nombre || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{b.region || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{b.pais || '—'}</td>
-                <td className="px-4 py-3"><div className="flex gap-2">
-                  <button onClick={() => abrirEditar(b)} className="btn btn-primary text-xs py-1 px-2">✏️</button>
-                  <button onClick={() => eliminar(b.id)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
-                </div></td>
+            {loading ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: 48, color: C.muted }}>Cargando...</td></tr>
+            ) : filtradas.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: 48, color: C.muted }}>No hay bodegas todavía</td></tr>
+            ) : filtradas.map(b => (
+              <tr key={b.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                <td style={{ padding: '11px 16px', color: C.text, fontWeight: 600 }}>{b.nombre}</td>
+                <td style={{ padding: '11px 16px', color: C.muted }}>{b.proveedor_nombre || '—'}</td>
+                <td style={{ padding: '11px 16px', color: C.dim }}>{b.region || '—'}</td>
+                <td style={{ padding: '11px 16px', color: C.dim }}>{b.pais || '—'}</td>
+                <td style={{ padding: '11px 16px' }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button style={btn('#2A2A2A')} onClick={() => abrirEditar(b)}>Editar</button>
+                    <button style={btn(C.red)} onClick={() => eliminar(b.id)}>Eliminar</button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -114,42 +125,56 @@ export default function BodegasPage() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-md">
-            <h2 className="text-base font-medium text-gray-800 mb-5">{editId ? 'Editar bodega' : 'Nueva bodega'}</h2>
-            <div className="space-y-3">
-              <div><label className="label">Nombre de la bodega *</label>
-                <input className="input" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Alta Vista" />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 480 }}>
+            <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 20px' }}>{editId ? 'Editar bodega' : 'Nueva bodega'}</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={LBL}>Nombre de la bodega *</label>
+                <input style={INP} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Alta Vista" />
               </div>
-              <div><label className="label">Proveedor / Distribuidor</label>
-                <ComboInput
+              <div>
+                <label style={LBL}>Proveedor / Distribuidor</label>
+                <input
+                  style={INP}
                   value={form.proveedor_nombre}
-                  onChange={v => setForm(f => ({ ...f, proveedor_nombre: v }))}
-                  options={proveedores.map(p => p.nombre)}
+                  onChange={e => setForm(f => ({ ...f, proveedor_nombre: e.target.value }))}
                   placeholder="Escribir o elegir proveedor..."
+                  list="proveedores-list"
                 />
+                <datalist id="proveedores-list">
+                  {proveedores.map(p => <option key={p.id} value={p.nombre} />)}
+                </datalist>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="label">Región</label>
-                  <input className="input" value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))} placeholder="Ej: Mendoza" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={LBL}>Región</label>
+                  <input style={INP} value={form.region} onChange={e => setForm(f => ({ ...f, region: e.target.value }))} placeholder="Ej: Mendoza" />
                 </div>
-                <div><label className="label">País</label>
-                  <input className="input" value={form.pais} onChange={e => setForm(f => ({ ...f, pais: e.target.value }))} />
+                <div>
+                  <label style={LBL}>País</label>
+                  <input style={INP} value={form.pais} onChange={e => setForm(f => ({ ...f, pais: e.target.value }))} />
                 </div>
               </div>
-              <div><label className="label">Notas</label>
-                <textarea className="input h-16 resize-none" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
+              <div>
+                <label style={LBL}>Notas</label>
+                <textarea style={{ ...INP, height: 72, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-5">
-              <button onClick={() => setModal(false)} className="btn btn-primary">Cancelar</button>
-              <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">Guardar</button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+              <button style={btn('#2A2A2A')} onClick={() => setModal(false)}>Cancelar</button>
+              <button style={btn()} onClick={guardar}>Guardar</button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1E1E1E', color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 12, zIndex: 100, border: `1px solid ${C.border}` }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

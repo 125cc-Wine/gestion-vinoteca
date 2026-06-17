@@ -1,6 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import SearchSelect from '@/components/SearchSelect'
+
+const C = { bg:'#0F0F0F', surface:'#141414', card:'#1A1A1A', border:'#2A2A2A', accent:'#8B1A2A', text:'#E8E8E8', muted:'#888888', dim:'#555555', green:'#4CAF7D', amber:'#D4820A', red:'#E05555' }
+const btn = (bg = C.accent): React.CSSProperties => ({ background: bg, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 })
+const INP: React.CSSProperties = { background: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 8, padding: '8px 12px', width: '100%', fontSize: 13, outline: 'none' }
+const LBL: React.CSSProperties = { display: 'block', fontSize: 12, color: C.muted, marginBottom: 4 }
+
+const DROP: React.CSSProperties = { position: 'absolute', top: '100%', left: 0, right: 0, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, zIndex: 100, maxHeight: 220, overflowY: 'auto', marginTop: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }
+
+const ESTADO_COLOR: Record<string, string> = { pendiente: C.amber, entregado: C.green, cancelado: C.red }
 
 interface Producto { id: string; nombre: string; bodega?: string; stock: number; precio_venta: number }
 interface Cliente { id: string; nombre: string; apellido?: string; razon_social?: string }
@@ -23,8 +31,12 @@ export default function PedidosPage() {
   const [modal, setModal] = useState(false)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('')
+  const [clienteSearch, setClienteSearch] = useState('')
+  const [clienteOpen, setClienteOpen] = useState(false)
   const [vendedorNombre, setVendedorNombre] = useState('')
   const [items, setItems] = useState<PedidoItem[]>([{ ...ITEM_EMPTY }])
+  const [prodSearches, setProdSearches] = useState<string[]>([''])
+  const [prodOpen, setProdOpen] = useState<number>(-1)
   const [notas, setNotas] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [stockStatus, setStockStatus] = useState<StockStatus>({})
@@ -54,19 +66,31 @@ export default function PedidosPage() {
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
-  function seleccionarProducto(idx: number, prodId: string, prodLabel: string) {
+  function seleccionarProducto(idx: number, prodId: string, prodNombre: string) {
     const prod = productos.find(p => p.id === prodId)
     const newItems = [...items]
-    newItems[idx] = { producto_id: prodId, nombre: prodLabel, cantidad: newItems[idx].cantidad, precio_unitario: prod?.precio_venta || 0 }
+    newItems[idx] = { producto_id: prodId, nombre: prodNombre, cantidad: newItems[idx].cantidad, precio_unitario: prod?.precio_venta || 0 }
     setItems(newItems)
+    setProdOpen(-1)
     setStockChecked(false)
   }
 
   function updateItem(idx: number, field: string, value: number | string) {
     const newItems = [...items]
-    ;(newItems[idx] as unknown as Record<string,number|string>)[field] = value
+    ;(newItems[idx] as unknown as Record<string, number | string>)[field] = value
     setItems(newItems)
     setStockChecked(false)
+  }
+
+  function addItem() {
+    setItems(i => [...i, { ...ITEM_EMPTY }])
+    setProdSearches(s => [...s, ''])
+  }
+
+  function removeItem(idx: number) {
+    setItems(i => i.filter((_, j) => j !== idx))
+    setProdSearches(s => s.filter((_, j) => j !== idx))
+    if (prodOpen === idx) setProdOpen(-1)
   }
 
   async function verificarStock() {
@@ -78,8 +102,7 @@ export default function PedidosPage() {
         vendedor_nombre: vendedorNombre || null,
         items: items.filter(i => i.producto_id),
         notas, fecha_entrega: fechaEntrega || null,
-        estado: 'pendiente', verificarStock: true,
-        _dryRun: true,
+        estado: 'pendiente', verificarStock: true, _dryRun: true,
       }),
     })
     const data = await res.json()
@@ -116,56 +139,77 @@ export default function PedidosPage() {
   }
 
   function abrirNuevo() {
-    setClienteId(''); setClienteNombre(''); setVendedorNombre('')
-    setItems([{ ...ITEM_EMPTY }]); setNotas(''); setFechaEntrega('')
+    setClienteId(''); setClienteNombre(''); setClienteSearch(''); setClienteOpen(false)
+    setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }]); setProdSearches([''])
+    setProdOpen(-1); setNotas(''); setFechaEntrega('')
     setStockStatus({}); setStockChecked(false); setModal(true)
   }
 
-  const productosOpts = productos.map(p => ({ value: p.id, label: p.nombre, sublabel: p.bodega || '', badge: `Stock: ${p.stock}` }))
-  const clientesOpts = clientes.map(c => ({ value: c.id, label: c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim(), sublabel: '' }))
   const pendientes = pedidos.filter(p => p.estado === 'pendiente')
   const entregados = pedidos.filter(p => p.estado === 'entregado')
 
+  const clientesFiltrados = (() => {
+    const q = clienteSearch.toLowerCase()
+    return q
+      ? clientes.filter(c => `${c.razon_social || ''} ${c.nombre} ${c.apellido || ''}`.toLowerCase().includes(q)).slice(0, 20)
+      : clientes.slice(0, 20)
+  })()
+
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Pedidos pendientes</div><div className="text-2xl font-medium text-yellow-600">{pendientes.length}</div></div>
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Entregados este mes</div><div className="text-2xl font-medium text-green-600">{entregados.length}</div></div>
-        <div className="card"><div className="text-xs text-gray-400 mb-1">Total pedidos</div><div className="text-2xl font-medium text-gray-800">{pedidos.length}</div></div>
+    <div style={{ padding: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+        {[
+          { label: 'Pedidos pendientes', value: pendientes.length, color: C.amber },
+          { label: 'Entregados',         value: entregados.length, color: C.green },
+          { label: 'Total pedidos',      value: pedidos.length,    color: C.text  },
+        ].map(kpi => (
+          <div key={kpi.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '16px 20px' }}>
+            <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{kpi.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-medium text-gray-800">Pedidos pendientes</h1>
-        <button onClick={abrirNuevo} className="btn btn-primary">+ Nuevo pedido</button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h1 style={{ color: C.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Pedidos</h1>
+        <button style={btn()} onClick={abrirNuevo}>+ Nuevo pedido</button>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-gray-100">
-            {['Número','Cliente','Vendedor','Productos','Fecha entrega','Estado',''].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-xs text-gray-400 font-medium">{h}</th>
-            ))}
-          </tr></thead>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              {['Número','Cliente','Vendedor','Productos','Fecha entrega','Estado',''].map(h => (
+                <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: C.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">Cargando...</td></tr>
-            : pedidos.length === 0 ? <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay pedidos pendientes</td></tr>
-            : pedidos.map(p => (
-              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{p.numero}</td>
-                <td className="px-4 py-3 text-gray-600">{p.cliente_nombre}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{p.vendedor_nombre || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{(p.items as PedidoItem[]).length} items</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{p.fecha_entrega ? new Date(p.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR') : '—'}</td>
-                <td className="px-4 py-3">
-                  <span className={`badge ${p.estado === 'pendiente' ? 'badge-yellow' : p.estado === 'entregado' ? 'badge-green' : 'badge-red'}`}>
+            {loading ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: C.muted }}>Cargando...</td></tr>
+            ) : pedidos.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: C.muted }}>No hay pedidos todavía</td></tr>
+            ) : pedidos.map(p => (
+              <tr key={p.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                <td style={{ padding: '11px 16px', color: C.text, fontWeight: 600 }}>{p.numero}</td>
+                <td style={{ padding: '11px 16px', color: C.muted }}>{p.cliente_nombre}</td>
+                <td style={{ padding: '11px 16px', color: C.dim, fontSize: 12 }}>{p.vendedor_nombre || '—'}</td>
+                <td style={{ padding: '11px 16px', color: C.dim }}>{(p.items as PedidoItem[]).length} items</td>
+                <td style={{ padding: '11px 16px', color: C.dim, fontSize: 12 }}>
+                  {p.fecha_entrega ? new Date(p.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
+                </td>
+                <td style={{ padding: '11px 16px' }}>
+                  <span style={{ background: `${ESTADO_COLOR[p.estado] || C.dim}22`, color: ESTADO_COLOR[p.estado] || C.dim, padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                     {p.estado}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <button onClick={() => setModalDetalle(p)} className="btn btn-primary text-xs py-1 px-2">👁</button>
-                    {p.estado === 'pendiente' && <button onClick={() => cambiarEstado(p.id, 'entregado')} className="btn btn-primary text-xs py-1 px-2 text-green-600">✓</button>}
-                    <button onClick={() => eliminar(p.id)} className="btn btn-danger text-xs py-1 px-2">🗑</button>
+                <td style={{ padding: '11px 16px' }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button style={btn('#2A2A2A')} onClick={() => setModalDetalle(p)}>Ver</button>
+                    {p.estado === 'pendiente' && (
+                      <button style={btn(C.green)} onClick={() => cambiarEstado(p.id, 'entregado')}>Entregar</button>
+                    )}
+                    <button style={btn(C.red)} onClick={() => eliminar(p.id)}>Cancelar</button>
                   </div>
                 </td>
               </tr>
@@ -176,20 +220,57 @@ export default function PedidosPage() {
 
       {/* Modal nuevo pedido */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={e=>e.target===e.currentTarget&&setModal(false)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-2xl my-4">
-            <h2 className="text-base font-medium text-gray-800 mb-4">Nuevo pedido</h2>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}
+          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 680, margin: 'auto' }}>
+            <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 20px' }}>Nuevo pedido</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+              {/* Cliente */}
               <div>
-                <label className="label">Cliente</label>
-                <SearchSelect options={clientesOpts} value={clienteId} onChange={(v,l)=>{setClienteId(v);setClienteNombre(l)}} placeholder="Buscar cliente..." searchPlaceholder="Nombre, CUIT..." />
+                <label style={LBL}>Cliente</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    style={INP}
+                    placeholder="Buscar cliente..."
+                    value={clienteOpen ? clienteSearch : (clienteNombre || '')}
+                    onFocus={() => { setClienteOpen(true); setClienteSearch('') }}
+                    onChange={e => setClienteSearch(e.target.value)}
+                    onBlur={() => setTimeout(() => setClienteOpen(false), 200)}
+                  />
+                  {clienteOpen && (
+                    <div style={DROP}>
+                      <div
+                        onMouseDown={() => { setClienteId(''); setClienteNombre(''); setClienteOpen(false) }}
+                        style={{ padding: '8px 12px', cursor: 'pointer', color: C.dim, fontSize: 12, borderBottom: `1px solid ${C.border}` }}
+                      >
+                        — Sin cliente —
+                      </div>
+                      {clientesFiltrados.map(c => {
+                        const label = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
+                        return (
+                          <div key={c.id}
+                            onMouseDown={() => { setClienteId(c.id); setClienteNombre(label); setClienteOpen(false) }}
+                            style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: `1px solid ${C.border}`, background: clienteId === c.id ? '#222' : 'transparent' }}>
+                            <div style={{ color: C.text, fontSize: 13 }}>{label}</div>
+                          </div>
+                        )
+                      })}
+                      {clientesFiltrados.length === 0 && (
+                        <div style={{ padding: '8px 12px', color: C.dim, fontSize: 12 }}>Sin resultados</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Vendedor */}
               <div>
-                <label className="label">Vendedor</label>
-                <div className="flex gap-2 flex-wrap">
-                  {vendedores.map(v=>(
-                    <button key={v.id} onClick={()=>setVendedorNombre(v.nombre)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${vendedorNombre===v.nombre?'bg-gray-800 text-white border-gray-800':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                <label style={LBL}>Vendedor</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
+                  {vendedores.map(v => (
+                    <button key={v.id} onClick={() => setVendedorNombre(v.nombre)}
+                      style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1px solid ${vendedorNombre === v.nombre ? C.accent : C.border}`, background: vendedorNombre === v.nombre ? C.accent : 'transparent', color: vendedorNombre === v.nombre ? '#fff' : C.muted }}>
                       {v.nombre}
                     </button>
                   ))}
@@ -197,36 +278,64 @@ export default function PedidosPage() {
               </div>
             </div>
 
-            <div className="mb-4">
-              <div className="flex justify-between mb-2">
-                <label className="label mb-0">Productos</label>
-                <button onClick={()=>setItems([...items,{...ITEM_EMPTY}])} className="text-xs text-blue-600 hover:underline">+ agregar línea</button>
+            {/* Productos */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ ...LBL, margin: 0 }}>Productos</label>
+                <button style={{ ...btn('#2A2A2A'), padding: '4px 10px', fontSize: 12 }} onClick={addItem}>+ agregar línea</button>
               </div>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {items.map((item, idx) => {
                   const st = stockStatus[item.producto_id]
+                  const q = (prodSearches[idx] || '').toLowerCase()
+                  const filtered = prodOpen === idx
+                    ? (q ? productos.filter(p => `${p.nombre} ${p.bodega || ''}`.toLowerCase().includes(q)) : productos).slice(0, 25)
+                    : []
                   return (
-                    <div key={idx} className={`border rounded-xl p-3 ${st ? (st.ok ? 'border-green-200 bg-green-50/30' : 'border-red-200 bg-red-50/30') : 'border-gray-100'}`}>
-                      <div className="flex gap-2 items-start">
-                        <div className="flex-1">
-                          <SearchSelect
-                            options={productosOpts}
-                            value={item.producto_id}
-                            onChange={(v,l)=>seleccionarProducto(idx,v,l)}
+                    <div key={idx} style={{ border: `1px solid ${st ? (st.ok ? C.green : C.red) : C.border}`, borderRadius: 10, padding: 10, background: st ? (st.ok ? '#4CAF7D0A' : '#E055550A') : 'transparent' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <input
+                            style={INP}
                             placeholder="Buscar producto..."
-                            searchPlaceholder="Nombre, bodega, varietal..."
+                            value={prodOpen === idx ? (prodSearches[idx] || '') : item.nombre}
+                            onFocus={() => {
+                              setProdOpen(idx)
+                              setProdSearches(s => { const n = [...s]; n[idx] = ''; return n })
+                            }}
+                            onChange={e => setProdSearches(s => { const n = [...s]; n[idx] = e.target.value; return n })}
+                            onBlur={() => setTimeout(() => setProdOpen(p => p === idx ? -1 : p), 200)}
                           />
+                          {prodOpen === idx && (
+                            <div style={DROP}>
+                              {filtered.map(p => (
+                                <div key={p.id}
+                                  onMouseDown={() => seleccionarProducto(idx, p.id, p.nombre)}
+                                  style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: `1px solid ${C.border}` }}>
+                                  <div style={{ color: C.text, fontSize: 13 }}>{p.nombre}</div>
+                                  <div style={{ color: C.dim, fontSize: 11 }}>{p.bodega ? `${p.bodega} · ` : ''}Stock: {p.stock}</div>
+                                </div>
+                              ))}
+                              {filtered.length === 0 && (
+                                <div style={{ padding: '8px 12px', color: C.dim, fontSize: 12 }}>Sin resultados</div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="w-20">
-                          <input type="number" min="1" className="input text-center" value={item.cantidad}
-                            onChange={e=>updateItem(idx,'cantidad',parseInt(e.target.value)||1)} placeholder="Cant." />
-                        </div>
+                        <input
+                          type="number" min="1"
+                          style={{ ...INP, width: 80, textAlign: 'center' }}
+                          value={item.cantidad}
+                          onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)}
+                          placeholder="Cant."
+                        />
                         {items.length > 1 && (
-                          <button onClick={()=>setItems(items.filter((_,i)=>i!==idx))} className="text-gray-300 hover:text-red-400 text-xl leading-none mt-2">×</button>
+                          <button onClick={() => removeItem(idx)}
+                            style={{ background: 'none', border: 'none', color: C.dim, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '6px 4px' }}>×</button>
                         )}
                       </div>
                       {st && (
-                        <div className={`text-xs mt-2 font-medium ${st.ok ? 'text-green-600' : 'text-red-600'}`}>
+                        <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: st.ok ? C.green : C.red }}>
                           {st.ok ? `✓ Stock OK — ${st.disponible} disponibles` : `⚠ Stock insuficiente — ${st.disponible} disponibles, pedís ${st.pedido}`}
                         </div>
                       )}
@@ -236,24 +345,22 @@ export default function PedidosPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div><label className="label">Fecha de entrega estimada</label>
-                <input type="date" className="input" value={fechaEntrega} onChange={e=>setFechaEntrega(e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+              <div>
+                <label style={LBL}>Fecha de entrega estimada</label>
+                <input type="date" style={INP} value={fechaEntrega} onChange={e => setFechaEntrega(e.target.value)} />
               </div>
-              <div><label className="label">Notas</label>
-                <input className="input" value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Observaciones..." />
+              <div>
+                <label style={LBL}>Notas</label>
+                <input style={INP} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Observaciones..." />
               </div>
             </div>
 
-            <div className="flex justify-between items-center">
-              <button onClick={verificarStock} className="px-4 py-2 rounded-lg border border-blue-200 text-blue-600 text-sm hover:bg-blue-50 transition-all">
-                🔍 Verificar stock
-              </button>
-              <div className="flex gap-3">
-                <button onClick={()=>setModal(false)} className="btn btn-primary">Cancelar</button>
-                <button onClick={guardar} className="px-5 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">
-                  Guardar pedido
-                </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button style={btn('#2A2A2A')} onClick={verificarStock}>Verificar stock</button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button style={btn('#2A2A2A')} onClick={() => setModal(false)}>Cancelar</button>
+                <button style={btn()} onClick={guardar}>Guardar pedido</button>
               </div>
             </div>
           </div>
@@ -262,37 +369,47 @@ export default function PedidosPage() {
 
       {/* Modal detalle */}
       {modalDetalle && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e=>e.target===e.currentTarget&&setModalDetalle(null)}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 w-full max-w-lg">
-            <h2 className="text-base font-medium text-gray-800 mb-4">Pedido {modalDetalle.numero}</h2>
-            <div className="text-sm text-gray-500 mb-4 space-y-1">
-              <div><strong>Cliente:</strong> {modalDetalle.cliente_nombre}</div>
-              {modalDetalle.vendedor_nombre && <div><strong>Vendedor:</strong> {modalDetalle.vendedor_nombre}</div>}
-              {modalDetalle.fecha_entrega && <div><strong>Entrega:</strong> {new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</div>}
-              {modalDetalle.notas && <div><strong>Notas:</strong> {modalDetalle.notas}</div>}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setModalDetalle(null)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 480 }}>
+            <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 16px' }}>Pedido {modalDetalle.numero}</h2>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div><span style={{ color: C.dim }}>Cliente:</span> <span style={{ color: C.text }}>{modalDetalle.cliente_nombre}</span></div>
+              {modalDetalle.vendedor_nombre && <div><span style={{ color: C.dim }}>Vendedor:</span> <span style={{ color: C.text }}>{modalDetalle.vendedor_nombre}</span></div>}
+              {modalDetalle.fecha_entrega && <div><span style={{ color: C.dim }}>Entrega:</span> <span style={{ color: C.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
+              {modalDetalle.notas && <div><span style={{ color: C.dim }}>Notas:</span> <span style={{ color: C.text }}>{modalDetalle.notas}</span></div>}
+              <div><span style={{ color: C.dim }}>Estado:</span>{' '}
+                <span style={{ color: ESTADO_COLOR[modalDetalle.estado] || C.dim, fontWeight: 700 }}>{modalDetalle.estado}</span>
+              </div>
             </div>
-            <table className="w-full text-sm border-collapse">
-              <thead><tr className="border-b border-gray-100">
-                <th className="text-left py-2 text-xs text-gray-400">Producto</th>
-                <th className="text-center py-2 text-xs text-gray-400">Cant.</th>
-              </tr></thead>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <th style={{ textAlign: 'left', padding: '6px 0', fontSize: 11, color: C.muted }}>Producto</th>
+                  <th style={{ textAlign: 'center', padding: '6px 0', fontSize: 11, color: C.muted }}>Cant.</th>
+                </tr>
+              </thead>
               <tbody>
-                {(modalDetalle.items as PedidoItem[]).map((item,i) => (
-                  <tr key={i} className="border-b border-gray-50">
-                    <td className="py-2 text-gray-800">{item.nombre}</td>
-                    <td className="py-2 text-center text-gray-600">{item.cantidad}</td>
+                {(modalDetalle.items as PedidoItem[]).map((item, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px 0', color: C.text }}>{item.nombre}</td>
+                    <td style={{ padding: '8px 0', textAlign: 'center', color: C.muted }}>{item.cantidad}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="flex justify-end mt-4">
-              <button onClick={()=>setModalDetalle(null)} className="btn btn-primary">Cerrar</button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button style={btn('#2A2A2A')} onClick={() => setModalDetalle(null)}>Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
-      {toast && <div className="fixed bottom-6 right-6 bg-gray-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#1E1E1E', color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 12, zIndex: 100, border: `1px solid ${C.border}` }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
 }
