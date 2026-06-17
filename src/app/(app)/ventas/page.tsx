@@ -280,6 +280,7 @@ export default function VentasPage() {
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
+  const [previewFactura, setPreviewFactura] = useState<{ venta: Venta; tipo: 1 | 6 } | null>(null)
 
   // ── Facturación AFIP
   const [factModal, setFactModal] = useState(false)
@@ -1227,11 +1228,37 @@ export default function VentasPage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-              <button style={btn('default')} onClick={() => setFactModal(false)} disabled={factLoading}>Cancelar</button>
-              <button style={btn('accent', { opacity: factLoading ? 0.6 : 1 })} onClick={emitirFactura} disabled={factLoading}>
-                {factLoading ? 'Emitiendo...' : 'Emitir factura'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button style={btn('default')} onClick={() => { setPreviewFactura({ venta: factVenta!, tipo: factTipo }); setFactModal(false) }}>
+                Previsualizar
               </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button style={btn('default')} onClick={() => setFactModal(false)} disabled={factLoading}>Cancelar</button>
+                <button style={btn('accent', { opacity: factLoading ? 0.6 : 1 })} onClick={emitirFactura} disabled={factLoading}>
+                  {factLoading ? 'Emitiendo...' : 'Emitir factura'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal preview Factura A/B ───────────────────────────────────────── */}
+      {previewFactura && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 70, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}
+          onClick={e => e.target === e.currentTarget && setPreviewFactura(null)}>
+          <div style={{ width: '100%', maxWidth: 820 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>
+                Vista previa — {previewFactura.tipo === 1 ? 'Factura A' : 'Factura B'} (con CAE de ejemplo)
+              </span>
+              <button onClick={() => setPreviewFactura(null)}
+                style={{ background: '#333', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 13, cursor: 'pointer' }}>
+                Cerrar
+              </button>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} />
             </div>
           </div>
         </div>
@@ -1393,6 +1420,168 @@ function PrintDoc({ venta, empresa }: {
       <div style={{ marginTop: '24px', paddingTop: '10px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999' }}>
         <span>{empresa.nombre} — {empresa.cuit}</span>
         <span>Emitido: {fecha}</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── PrintFactura — formato oficial AFIP Factura A / B ────────────────────────
+function PrintFactura({ venta, tipo, empresa }: {
+  venta: Venta
+  tipo: 1 | 6
+  empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
+}) {
+  const items   = venta.items as (VentaItem & { descuento?: number })[]
+  const letra   = tipo === 1 ? 'A' : 'B'
+  const ptoVta  = venta.nro_cbte_afip?.split('-')[1] || '00001'
+  const nroCbte = venta.nro_cbte_afip?.split('-')[2] || '00000001'
+  const fecha   = new Date(venta.created_at || Date.now()).toLocaleDateString('es-AR')
+
+  // Si es preview sin CAE real, mostrar placeholder
+  const cae    = venta.cae    || '75XXXXXXXXXXXXXX'
+  const caeVto = venta.cae_vto || '20261231'
+  const caeVtoFmt = `${caeVto.slice(6,8)}/${caeVto.slice(4,6)}/${caeVto.slice(0,4)}`
+
+  // Cálculo IVA
+  const neto       = parseFloat((venta.total / 1.21).toFixed(2))
+  const iva21      = parseFloat((venta.total - neto).toFixed(2))
+
+  const TD: React.CSSProperties = { padding: '2px 4px', verticalAlign: 'top' }
+
+  return (
+    <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#000', maxWidth: '780px', margin: '0 auto' }}>
+
+      {/* ── Encabezado: 3 columnas ── */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            {/* Col izquierda — datos emisor */}
+            <td style={{ ...TD, width: '42%', padding: '10px 14px', borderRight: '1px solid #000' }}>
+              <img src={empresa.logoPath} alt={empresa.nombre} style={{ height: 48, objectFit: 'contain', marginBottom: 6 }} />
+              <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: 4 }}>{empresa.nombre}</div>
+              <div>Domicilio Comercial: {empresa.domicilio}</div>
+              <div style={{ marginTop: 2 }}>Condición frente al IVA: <strong>Responsable Inscripto</strong></div>
+            </td>
+
+            {/* Col central — letra */}
+            <td style={{ width: '16%', textAlign: 'center', verticalAlign: 'middle', borderRight: '1px solid #000', padding: '8px' }}>
+              <div style={{ border: '2px solid #000', display: 'inline-block', width: 54, height: 54, lineHeight: '54px', fontSize: '32px', fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>
+                {letra}
+              </div>
+              <div style={{ fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.05em' }}>FACTURA</div>
+              <div style={{ fontSize: '8px', color: '#555', marginTop: 2 }}>COD. 00{tipo}</div>
+            </td>
+
+            {/* Col derecha — número y fechas */}
+            <td style={{ ...TD, width: '42%', padding: '10px 14px' }}>
+              <div style={{ marginBottom: 4 }}>
+                <span style={{ fontSize: '9px', color: '#555' }}>N° de Comprobante</span><br />
+                <strong style={{ fontSize: '14px' }}>{ptoVta} - {nroCbte}</strong>
+              </div>
+              <div style={{ marginBottom: 2 }}><strong>Fecha de emisión:</strong> {fecha}</div>
+              <div style={{ marginBottom: 2 }}><strong>C.U.I.T.:</strong> {empresa.cuit}</div>
+              <div style={{ marginBottom: 2 }}><strong>Ingresos Brutos:</strong> {empresa.cuit}</div>
+              <div><strong>Inicio de Actividades:</strong> 01/01/2010</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ── Datos cliente ── */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <td style={{ ...TD, padding: '8px 14px', width: '60%', borderRight: '1px solid #000' }}>
+              <div><strong>Apellido y Nombre / Razón Social:</strong> {venta.cliente_nombre}</div>
+              <div style={{ marginTop: 3 }}><strong>Condición frente al IVA:</strong> {tipo === 1 ? 'Responsable Inscripto' : 'Consumidor Final'}</div>
+              {venta.notas && <div style={{ marginTop: 3 }}><strong>Notas:</strong> {venta.notas}</div>}
+            </td>
+            <td style={{ ...TD, padding: '8px 14px', width: '40%' }}>
+              <div><strong>Condición de venta:</strong> {(venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'}</div>
+              {tipo === 1 && <div style={{ marginTop: 3 }}><strong>C.U.I.T.:</strong> ___________________________</div>}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* ── Tabla de productos ── */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '11px' }}>
+        <thead>
+          <tr style={{ background: '#f0f0f0', border: '1px solid #000' }}>
+            <th style={{ padding: '5px 8px', textAlign: 'center', width: 50, borderRight: '1px solid #ccc' }}>Cant.</th>
+            <th style={{ padding: '5px 8px', textAlign: 'left', borderRight: '1px solid #ccc' }}>Descripción</th>
+            <th style={{ padding: '5px 8px', textAlign: 'center', width: 50, borderRight: '1px solid #ccc' }}>U.Med.</th>
+            <th style={{ padding: '5px 8px', textAlign: 'right', width: 110, borderRight: '1px solid #ccc' }}>Precio Unit.</th>
+            {tipo === 1 && <th style={{ padding: '5px 8px', textAlign: 'center', width: 60, borderRight: '1px solid #ccc' }}>% Bonif.</th>}
+            <th style={{ padding: '5px 8px', textAlign: 'right', width: 110 }}>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>{item.cantidad}</td>
+              <td style={{ padding: '5px 8px', borderRight: '1px solid #eee' }}>{item.nombre}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>un.</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right', borderRight: '1px solid #eee' }}>
+                {(item.precio_unitario / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </td>
+              {tipo === 1 && <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
+              <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                {(item.subtotal / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </td>
+            </tr>
+          ))}
+          {/* filas vacías para dar espacio */}
+          {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
+            <tr key={`e${i}`} style={{ borderBottom: '1px solid #f5f5f5' }}>
+              <td colSpan={tipo === 1 ? 6 : 5} style={{ padding: '5px 8px' }}>&nbsp;</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* ── Totales + IVA ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: '11px', minWidth: 260, border: '1px solid #000' }}>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #ddd' }}>
+              <td style={{ padding: '4px 12px', color: '#555' }}>Subtotal (neto gravado):</td>
+              <td style={{ padding: '4px 12px', textAlign: 'right' }}>${neto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            </tr>
+            {venta.descuento > 0 && (
+              <tr style={{ borderBottom: '1px solid #ddd' }}>
+                <td style={{ padding: '4px 12px', color: '#555' }}>Descuento ({venta.descuento}%):</td>
+                <td style={{ padding: '4px 12px', textAlign: 'right', color: '#888' }}>-</td>
+              </tr>
+            )}
+            <tr style={{ borderBottom: '1px solid #ddd' }}>
+              <td style={{ padding: '4px 12px', color: '#555' }}>IVA 21%:</td>
+              <td style={{ padding: '4px 12px', textAlign: 'right' }}>${iva21.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            </tr>
+            <tr style={{ background: '#f0f0f0' }}>
+              <td style={{ padding: '6px 12px', fontWeight: 'bold', fontSize: '13px' }}>TOTAL:</td>
+              <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>
+                ${venta.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── CAE ── */}
+      <div style={{ border: '1px solid #000', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '9px', color: '#555', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+            Comprobante Electrónico — CAE
+          </div>
+          <div style={{ fontSize: '11px' }}>CAE N°: <strong>{cae}</strong></div>
+          <div style={{ fontSize: '11px', marginTop: 2 }}>Fecha de Vto. de CAE: <strong>{caeVtoFmt}</strong></div>
+        </div>
+        <div style={{ textAlign: 'right', fontSize: '9px', color: '#777' }}>
+          {!venta.cae && <div style={{ color: '#e07030', fontWeight: 'bold', marginBottom: 4 }}>⚠ VISTA PREVIA — CAE de ejemplo</div>}
+          <div>Factura electrónica</div>
+          <div>RG AFIP 2485</div>
+        </div>
       </div>
     </div>
   )
