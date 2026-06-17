@@ -280,6 +280,15 @@ export default function VentasPage() {
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
 
+  // ── Facturación AFIP
+  const [factModal, setFactModal] = useState(false)
+  const [factVenta, setFactVenta] = useState<Venta | null>(null)
+  const [factTipo, setFactTipo] = useState<1 | 6>(6)
+  const [factDocTipo, setFactDocTipo] = useState(99)
+  const [factDocNro, setFactDocNro] = useState('')
+  const [factLoading, setFactLoading] = useState(false)
+  const [factError, setFactError] = useState('')
+
   // ── Filtros comprobantes
   const [busquedaVentas, setBusquedaVentas] = useState('')
   const [filtroDesde, setFiltroDesde] = useState('')
@@ -417,6 +426,47 @@ export default function VentasPage() {
     if (!confirm('¿Eliminar este comprobante?')) return
     await fetch(`/api/ventas?id=${id}`, { method: 'DELETE' })
     cargarTodo(empresa); showToast('Comprobante eliminado')
+  }
+
+  function abrirFacturar(v: Venta) {
+    const c = clientes.find(cl => cl.id === v.cliente_id)
+    const tieneCuit = !!(c?.cuit && c.cuit.replace(/-/g, '').length === 11)
+    setFactVenta(v)
+    setFactTipo(tieneCuit ? 1 : 6)
+    setFactDocTipo(tieneCuit ? 80 : 99)
+    setFactDocNro(tieneCuit ? c!.cuit!.replace(/-/g, '') : '')
+    setFactError('')
+    setFactModal(true)
+  }
+
+  async function emitirFactura() {
+    if (!factVenta) return
+    if (factTipo === 1 && factDocNro.length !== 11) { setFactError('El CUIT debe tener 11 dígitos'); return }
+    if (factTipo === 6 && factDocTipo !== 99 && !factDocNro) { setFactError('Ingresá el número de documento'); return }
+    setFactLoading(true); setFactError('')
+    try {
+      const res = await fetch('/api/afip/factura', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ventaId: factVenta.id,
+          empresa,
+          cbteTipo: factTipo,
+          docTipo: factDocTipo,
+          docNro: factDocNro || '0',
+          total: factVenta.total,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { setFactError(data.error); return }
+      setFactModal(false)
+      await cargarTodo(empresa)
+      showToast(`Factura emitida — CAE ${data.cae}`)
+    } catch {
+      setFactError('Error de conexión con AFIP')
+    } finally {
+      setFactLoading(false)
+    }
   }
 
   function editarVenta(v: Venta) {
@@ -690,6 +740,10 @@ export default function VentasPage() {
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
+                            {v.facturado
+                              ? <span style={{ fontSize: 10, fontWeight: 700, color: C.green, padding: '4px 6px', border: `1px solid ${C.green}44`, borderRadius: 4 }}>CAE ✓</span>
+                              : <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirFacturar(v)}>Facturar</button>
+                            }
                             <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
                           </div>
                         </td>
@@ -1064,6 +1118,96 @@ export default function VentasPage() {
         </div>
       )}
 
+      {/* ── Modal facturación AFIP ──────────────────────────────────────────── */}
+      {factModal && factVenta && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && !factLoading && setFactModal(false)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 440 }}>
+            <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Emitir factura AFIP</h2>
+            <p style={{ color: C.muted, fontSize: 13, margin: '0 0 18px' }}>
+              {factVenta.cliente_nombre} · #{factVenta.numero}
+            </p>
+
+            {/* Tipo de comprobante */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>TIPO DE COMPROBANTE</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {([
+                  { val: 1 as const, label: 'Factura A', sub: 'Resp. Inscripto — IVA discriminado' },
+                  { val: 6 as const, label: 'Factura B', sub: 'Consumidor Final / Monotributo' },
+                ]).map(opt => (
+                  <button key={opt.val}
+                    onClick={() => { setFactTipo(opt.val); if (opt.val === 6) { setFactDocTipo(99); setFactDocNro('') } else setFactDocTipo(80) }}
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `1px solid ${factTipo === opt.val ? C.accent : C.border}`, background: factTipo === opt.val ? `${C.accent}22` : 'transparent' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: factTipo === opt.val ? C.text : C.muted }}>{opt.label}</div>
+                    <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Documento cliente — Fact A */}
+            {factTipo === 1 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>CUIT DEL CLIENTE *</div>
+                <input style={INP} value={factDocNro} maxLength={11}
+                  onChange={e => setFactDocNro(e.target.value.replace(/\D/g, ''))}
+                  placeholder="20123456789 (11 dígitos, sin guiones)" />
+              </div>
+            )}
+
+            {/* Documento cliente — Fact B */}
+            {factTipo === 6 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>DOCUMENTO DEL CLIENTE</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select style={{ ...INP, width: 160, flexShrink: 0 }} value={factDocTipo}
+                    onChange={e => { setFactDocTipo(parseInt(e.target.value)); setFactDocNro('') }}>
+                    <option value={99}>Consumidor Final</option>
+                    <option value={96}>DNI</option>
+                    <option value={80}>CUIT</option>
+                  </select>
+                  {factDocTipo !== 99 && (
+                    <input style={INP} value={factDocNro}
+                      onChange={e => setFactDocNro(e.target.value.replace(/\D/g, ''))}
+                      placeholder={factDocTipo === 96 ? 'DNI sin puntos' : 'CUIT sin guiones'} />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Resumen montos */}
+            <div style={{ background: C.surface, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: C.dim, marginBottom: 4 }}>
+                <span>Neto gravado (21%):</span>
+                <span>${(factVenta.total / 1.21).toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: C.dim, marginBottom: 4 }}>
+                <span>IVA 21%:</span>
+                <span>${(factVenta.total - factVenta.total / 1.21).toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: C.text, fontWeight: 700, borderTop: `1px solid ${C.border}`, paddingTop: 4 }}>
+                <span>Total:</span>
+                <span>${factVenta.total.toLocaleString('es-AR')}</span>
+              </div>
+            </div>
+
+            {factError && (
+              <div style={{ background: `${C.red}18`, border: `1px solid ${C.red}55`, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: C.red }}>
+                {factError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button style={btn('default')} onClick={() => setFactModal(false)} disabled={factLoading}>Cancelar</button>
+              <button style={btn('accent', { opacity: factLoading ? 0.6 : 1 })} onClick={emitirFactura} disabled={factLoading}>
+                {factLoading ? 'Emitiendo...' : 'Emitir factura'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div id="print-area" style={{ display: 'none' }}>
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
       </div>
@@ -1194,7 +1338,30 @@ function PrintDoc({ venta, empresa }: {
         </div>
       )}
 
-      <div style={{ marginTop: '32px', paddingTop: '10px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999' }}>
+      {/* CAE — solo aparece si la venta fue facturada electrónicamente */}
+      {venta.cae && (
+        <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid #000', borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#555', marginBottom: 4 }}>
+              Comprobante Electrónico — {venta.cbte_tipo === 1 ? 'FACTURA A' : 'FACTURA B'}
+            </div>
+            {venta.nro_cbte_afip && (
+              <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: 2 }}>N°: {venta.nro_cbte_afip}</div>
+            )}
+            <div style={{ fontSize: '10px' }}>CAE: <strong>{venta.cae}</strong></div>
+            {venta.cae_vto && (
+              <div style={{ fontSize: '10px' }}>
+                Vto. CAE: {venta.cae_vto.slice(0,4)}/{venta.cae_vto.slice(4,6)}/{venta.cae_vto.slice(6,8)}
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: '9px', color: '#555', textAlign: 'right' }}>
+            Factura electrónica<br />según RG AFIP 2485
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: '24px', paddingTop: '10px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999' }}>
         <span>{empresa.nombre} — {empresa.cuit}</span>
         <span>Emitido: {fecha}</span>
       </div>

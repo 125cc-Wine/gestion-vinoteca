@@ -1,0 +1,91 @@
+import forge from 'node-forge'
+import { supabase } from '@/lib/supabase'
+
+const WSAA_URL = {
+  homo: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
+  prod: 'https://wsaa.afip.gov.ar/ws/services/LoginCms',
+}
+
+function buildTRA(): string {
+  const now = new Date()
+  const exp = new Date(now.getTime() + 10 * 60 * 60 * 1000)
+  const fmt = (d: Date) => {
+    const s = new Date(d.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 19)
+    return s + '-03:00'
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<loginTicketRequest version="1.0">
+  <header>
+    <uniqueId>${Math.floor(Date.now() / 1000)}</uniqueId>
+    <generationTime>${fmt(now)}</generationTime>
+    <expirationTime>${fmt(exp)}</expirationTime>
+  </header>
+  <service>wsfe</service>
+</loginTicketRequest>`
+}
+
+function signTRA(tra: string, certPem: string, keyPem: string): string {
+  const p7 = forge.pkcs7.createSignedData()
+  p7.content = forge.util.createBuffer(tra, 'utf8')
+  p7.addCertificate(certPem)
+  p7.addSigner({
+    key: forge.pki.privateKeyFromPem(keyPem),
+    certificate: forge.pki.certificateFromPem(certPem),
+    digestAlgorithm: forge.pki.oids.sha256,
+    authenticatedAttributes: [],
+  })
+  p7.sign({ detached: false })
+  const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
+  return Buffer.from(der, 'binary').toString('base64')
+}
+
+export async function getTA(empresa: string): Promise<{ token: string; sign: string }> {
+  const { data: cached } = await supabase
+    .from('afip_tokens')
+    .select('token, sign, expiration')
+    .eq('empresa', empresa)
+    .single()
+
+  if (cached?.token && new Date(cached.expiration) > new Date(Date.now() + 5 * 60 * 1000)) {
+    return { token: cached.token, sign: cached.sign }
+  }
+
+  const suffix = empresa === 'aroma' ? 'AROMA' : 'LAVID'
+  const certPem = (process.env[`AFIP_CERT_${suffix}`] || '').replace(/\\n/g, '\n')
+  const keyPem  = (process.env[`AFIP_KEY_${suffix}`]  || '').replace(/\\n/g, '\n')
+
+  if (!certPem || !keyPem) throw new Error(`Faltan credenciales AFIP para ${empresa}`)
+
+  const tra = buildTRA()
+  const cms = signTRA(tra, certPem, keyPem)
+  const env = (process.env.AFIP_ENV || 'homo') as 'homo' | 'prod'
+
+  const soapBody = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:log="http://wsaa.view.sua.dvadac.desein.afip.gov">
+  <soapenv:Body>
+    <log:loginCms><log:in0>${cms}</log:in0></log:loginCms>
+  </soapenv:Body>
+</soapenv:Envelope>`
+
+  const res = await fetch(WSAA_URL[env], {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/xml;charset=UTF-8', SOAPAction: '' },
+    body: soapBody,
+  })
+  const xml = await res.text()
+
+  const token = xml.match(/<token>([\s\S]*?)<\/token>/)?.[1]?.trim() || ''
+  const sign  = xml.match(/<sign>([\s\S]*?)<\/sign>/)?.[1]?.trim()  || ''
+
+  if (!token) throw new Error('WSAA error: ' + xml.slice(0, 500))
+
+  const expirStr = tra.match(/<expirationTime>(.*?)<\/expirationTime>/)?.[1] || ''
+  const expirDate = new Date(expirStr.replace('-03:00', 'Z')).toISOString()
+
+  await supabase.from('afip_tokens').upsert(
+    { empresa, token, sign, expiration: expirDate, updated_at: new Date().toISOString() },
+    { onConflict: 'empresa' }
+  )
+
+  return { token, sign }
+}

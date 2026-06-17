@@ -88,6 +88,13 @@ export interface Venta {
   estado_pago?: 'pagado' | 'pendiente' | 'cuenta_corriente'
   notas?: string
   condicion_venta?: string
+  // AFIP
+  facturado?: boolean
+  cae?: string
+  cae_vto?: string
+  nro_factura?: number
+  cbte_tipo?: number
+  nro_cbte_afip?: string
   created_at?: string
 }
 
