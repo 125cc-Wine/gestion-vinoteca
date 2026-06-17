@@ -3,11 +3,12 @@ import { useEffect, useState } from 'react'
 import type { Cliente, Venta } from '@/types'
 
 const TIPOS = [
-  { value: 'consumidor_final', label: 'Consumidor final' },
-  { value: 'revendedor',       label: 'Revendedor' },
-  { value: 'mayorista',        label: 'Mayorista' },
-  { value: 'gastronomia',      label: 'Gastronomía' },
-  { value: 'otro',             label: 'Otro' },
+  { value: 'consumidor_final',    label: 'Consumidor final' },
+  { value: 'responsable_inscripto', label: 'Resp. Inscripto' },
+  { value: 'revendedor',          label: 'Revendedor' },
+  { value: 'mayorista',           label: 'Mayorista' },
+  { value: 'gastronomia',         label: 'Gastronomía' },
+  { value: 'otro',                label: 'Otro' },
 ]
 
 interface MovCtaCte {
@@ -137,8 +138,11 @@ export default function ClientesPage() {
 
     const tipoMap: Record<string, string> = {
       'consumidor final': 'consumidor_final',
-      'responsable inscripto': 'otro',
+      'responsable inscripto': 'responsable_inscripto',
+      'resp. inscripto': 'responsable_inscripto',
+      'resp inscripto': 'responsable_inscripto',
       'monotributo': 'otro',
+      'monotributista': 'otro',
       'revendedor': 'revendedor',
       'mayorista': 'mayorista',
       'gastronomia': 'gastronomia',

@@ -432,10 +432,12 @@ export default function VentasPage() {
 
   function abrirFacturar(v: Venta) {
     const c = clientes.find(cl => cl.id === v.cliente_id)
+    const esRI = c?.tipo === 'responsable_inscripto'
     const tieneCuit = !!(c?.cuit && c.cuit.replace(/-/g, '').length === 11)
+    const usarFactA = esRI || tieneCuit
     setFactVenta(v)
-    setFactTipo(tieneCuit ? 1 : 6)
-    setFactDocTipo(tieneCuit ? 80 : 99)
+    setFactTipo(usarFactA ? 1 : 6)
+    setFactDocTipo(usarFactA ? 80 : 99)
     setFactDocNro(tieneCuit ? c!.cuit!.replace(/-/g, '') : '')
     setFactError('')
     setFactModal(true)

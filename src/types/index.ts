@@ -39,7 +39,7 @@ export interface Cliente {
   email?: string
   telefono?: string
   direccion?: string
-  tipo: 'consumidor_final' | 'revendedor' | 'mayorista' | 'gastronomia' | 'otro'
+  tipo: 'consumidor_final' | 'responsable_inscripto' | 'revendedor' | 'mayorista' | 'gastronomia' | 'otro'
   saldo: number
   limite_credito?: number
   notas?: string
