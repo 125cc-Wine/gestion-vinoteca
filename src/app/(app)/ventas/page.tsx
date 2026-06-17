@@ -279,6 +279,7 @@ export default function VentasPage() {
   const [estadoPago, setEstadoPago] = useState('pagado')
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
+  const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
 
   // ── Facturación AFIP
   const [factModal, setFactModal] = useState(false)
@@ -736,6 +737,7 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
                         <td style={{ padding: '11px 14px' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
+                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => setPreviewVenta(v)}>Ver</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => { setVentaParaImprimir(v); setTimeout(imprimirDoc, 400) }}>Imprimir</button>
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
@@ -1113,6 +1115,33 @@ export default function VentasPage() {
             </table>
             <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
               <button className="vbtn" style={btn('default')} onClick={() => setDetallePedido(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal vista previa ──────────────────────────────────────────────── */}
+      {previewVenta && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}
+          onClick={e => e.target === e.currentTarget && setPreviewVenta(null)}>
+          <div style={{ width: '100%', maxWidth: 820 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Vista previa — {previewVenta.numero}</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { setVentaParaImprimir(previewVenta); setTimeout(imprimirDoc, 400) }}
+                  style={{ background: C.accent, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Imprimir
+                </button>
+                <button
+                  onClick={() => setPreviewVenta(null)}
+                  style={{ background: '#333', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 13, cursor: 'pointer' }}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+              <PrintDoc venta={previewVenta} empresa={emp} />
             </div>
           </div>
         </div>
