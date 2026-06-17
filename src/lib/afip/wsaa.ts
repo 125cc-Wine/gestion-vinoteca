@@ -40,21 +40,26 @@ function signTRA(tra: string, certPem: string, keyPem: string): string {
 }
 
 export async function getTA(empresa: string): Promise<{ token: string; sign: string }> {
-  const { data: cached } = await supabase
-    .from('afip_tokens')
-    .select('token, sign, expiration')
-    .eq('empresa', empresa)
-    .single()
+  // Intentar leer token cacheado — si la tabla no existe, continuar igual
+  try {
+    const { data: cached } = await supabase
+      .from('afip_tokens')
+      .select('token, sign, expiration')
+      .eq('empresa', empresa)
+      .single()
 
-  if (cached?.token && new Date(cached.expiration) > new Date(Date.now() + 5 * 60 * 1000)) {
-    return { token: cached.token, sign: cached.sign }
+    if (cached?.token && new Date(cached.expiration) > new Date(Date.now() + 5 * 60 * 1000)) {
+      return { token: cached.token, sign: cached.sign }
+    }
+  } catch {
+    // tabla no existe o error de conexión — generar TA de todas formas
   }
 
   const suffix = empresa === 'aroma' ? 'AROMA' : 'LAVID'
   const certPem = (process.env[`AFIP_CERT_${suffix}`] || '').replace(/\\n/g, '\n')
   const keyPem  = (process.env[`AFIP_KEY_${suffix}`]  || '').replace(/\\n/g, '\n')
 
-  if (!certPem || !keyPem) throw new Error(`Faltan credenciales AFIP para ${empresa}`)
+  if (!certPem || !keyPem) throw new Error(`Faltan credenciales AFIP para ${empresa} (AFIP_CERT_${suffix} / AFIP_KEY_${suffix})`)
 
   const tra = buildTRA()
   const cms = signTRA(tra, certPem, keyPem)
@@ -79,13 +84,17 @@ export async function getTA(empresa: string): Promise<{ token: string; sign: str
 
   if (!token) throw new Error('WSAA error: ' + xml.slice(0, 500))
 
-  const expirStr = tra.match(/<expirationTime>(.*?)<\/expirationTime>/)?.[1] || ''
-  const expirDate = new Date(expirStr.replace('-03:00', 'Z')).toISOString()
-
-  await supabase.from('afip_tokens').upsert(
-    { empresa, token, sign, expiration: expirDate, updated_at: new Date().toISOString() },
-    { onConflict: 'empresa' }
-  )
+  // Cachear — ignorar error si la tabla todavía no existe
+  try {
+    const expirStr = tra.match(/<expirationTime>(.*?)<\/expirationTime>/)?.[1] || ''
+    const expirDate = new Date(expirStr.replace('-03:00', 'Z')).toISOString()
+    await supabase.from('afip_tokens').upsert(
+      { empresa, token, sign, expiration: expirDate, updated_at: new Date().toISOString() },
+      { onConflict: 'empresa' }
+    )
+  } catch {
+    // sin caché, se pedirá un TA nuevo en cada llamada — aceptable
+  }
 
   return { token, sign }
 }
