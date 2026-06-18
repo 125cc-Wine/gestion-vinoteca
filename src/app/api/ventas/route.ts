@@ -24,10 +24,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { descontarStock, ...venta } = body
+  const { descontarStock, devolverStock, ...venta } = body
 
   // Generar número de comprobante
-  const tipo = venta.tipo === 'presupuesto' ? 'PRES' : 'REM'
+  const prefijos: Record<string, string> = { presupuesto: 'PRES', remito: 'REM', devolucion: 'DEV' }
+  const tipo = prefijos[venta.tipo] || 'COMP'
   const { count } = await supabase
     .from('ventas')
     .select('*', { count: 'exact', head: true })
@@ -43,6 +44,37 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Devolver stock si es devolución (incrementar)
+  if (devolverStock && venta.items) {
+    for (const item of venta.items) {
+      if (item.producto_id) {
+        const { data: prod } = await supabase
+          .from('productos')
+          .select('id, nombre, empresa, stock, woo_product_id, precio_venta, unidad_medida')
+          .eq('id', item.producto_id)
+          .single()
+        if (prod) {
+          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : 1
+          const nuevoStock = (prod.stock || 0) + item.cantidad * factor
+          await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+          const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+          const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otraEmpresa).single()
+          if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+        }
+      }
+    }
+    // Registrar egreso en caja si había pago (devolución de dinero)
+    if (venta.total > 0 && venta.estado_pago === 'pagado') {
+      await supabase.from('movimientos_caja').insert([{
+        empresa: venta.empresa, tipo: 'egreso',
+        concepto: `Devolución ${venta.numero} - ${venta.cliente_nombre}`,
+        monto: venta.total, fecha: new Date().toISOString().split('T')[0],
+        categoria: 'Devoluciones', referencia_id: data.id,
+      }])
+    }
+    return NextResponse.json(data)
+  }
 
   // Descontar stock si es remito (en ambas empresas — depósito compartido)
   if (descontarStock && venta.items) {

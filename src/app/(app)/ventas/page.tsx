@@ -38,6 +38,8 @@ const C = {
   amberBg: 'rgba(160,112,16,0.07)',
   red:     '#C03030',
   redBg:   'rgba(192,48,48,0.08)',
+  blue:    '#2B5EA0',
+  blueBg:  'rgba(43,94,160,0.08)',
   dangerBg:     'rgba(192,48,48,0.08)',
   dangerBorder: 'rgba(192,48,48,0.35)',
 }
@@ -277,7 +279,7 @@ export default function VentasPage() {
 
   // ── Venta modal state
   const [modal, setModal] = useState(false)
-  const [tipo, setTipo] = useState<'presupuesto' | 'remito'>('presupuesto')
+  const [tipo, setTipo] = useState<'presupuesto' | 'remito' | 'devolucion'>('presupuesto')
   const [editVentaId, setEditVentaId] = useState<string | null>(null)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
@@ -423,7 +425,8 @@ export default function VentasPage() {
       })),
       subtotal, descuento: descuentoGlobal, total: calcTotal(),
       estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
-      descontarStock: (tipo === 'remito' || tipo === 'presupuesto') && !editVentaId,
+      descontarStock: tipo === 'remito' && !editVentaId,
+      devolverStock: tipo === 'devolucion' && !editVentaId,
     }
     const res = editVentaId
       ? await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
@@ -432,7 +435,8 @@ export default function VentasPage() {
     if (data.error) { showToast('Error: ' + data.error); return }
     setModal(false)
     await cargarTodo(empresa)
-    showToast(editVentaId ? 'Comprobante actualizado' : `${tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${data.numero} generado`)
+    const tipoLabel = tipo === 'presupuesto' ? 'Presupuesto' : tipo === 'devolucion' ? 'Devolución' : 'Remito'
+    showToast(editVentaId ? 'Comprobante actualizado' : `${tipoLabel} ${data.numero} generado`)
     if (!editVentaId && imprimir) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
   }
 
@@ -486,7 +490,7 @@ export default function VentasPage() {
   }
 
   function editarVenta(v: Venta) {
-    setEditVentaId(v.id!); setTipo(v.tipo as 'presupuesto' | 'remito')
+    setEditVentaId(v.id!); setTipo(v.tipo as 'presupuesto' | 'remito' | 'devolucion')
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
     const c = clientes.find(c => c.id === v.cliente_id)
     setClienteData(c || null); setClienteTipo(c?.tipo || '')
@@ -502,7 +506,7 @@ export default function VentasPage() {
   }
 
   function duplicarVenta(v: Venta) {
-    setEditVentaId(null); setTipo(v.tipo as 'presupuesto' | 'remito')
+    setEditVentaId(null); setTipo(v.tipo as 'presupuesto' | 'remito' | 'devolucion')
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
     const c = clientes.find(cl => cl.id === v.cliente_id)
     setClienteData(c || null); setClienteTipo(c?.tipo || '')
@@ -517,7 +521,22 @@ export default function VentasPage() {
     setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
   }
 
-  function abrirNuevo(t: 'presupuesto' | 'remito') {
+  function abrirDevolucion(v: Venta) {
+    setEditVentaId(null); setTipo('devolucion')
+    setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
+    const c = clientes.find(cl => cl.id === v.cliente_id)
+    setClienteData(c || null); setClienteTipo(c?.tipo || '')
+    setAplicarMayorista(false)
+    setVendedorNombre((v as Venta & { vendedor_nombre?: string }).vendedor_nombre || '')
+    const vi = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
+      producto_id: i.producto_id || '', nombre: i.nombre, cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario, descuento: 0, subtotal: i.subtotal,
+    }))
+    setItems(vi); setDescuentoGlobal(0); setNotas(`Devolución de ${v.numero}`)
+    setCondVenta('Contado'); setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
+  }
+
+  function abrirNuevo(t: 'presupuesto' | 'remito' | 'devolucion') {
     setEditVentaId(null); setTipo(t)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
@@ -667,6 +686,7 @@ export default function VentasPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           {tab === 'comprobantes' && <>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13 })} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
+            <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13, color: C.blue })} onClick={() => abrirNuevo('devolucion')}>+ Devolución</button>
             <button className="vbtn" style={btn('accent', { padding: '7px 16px', fontSize: 13, fontWeight: 600 })} onClick={() => abrirNuevo('remito')}>+ Remito</button>
           </>}
           {tab === 'pedidos' && (
@@ -754,8 +774,11 @@ export default function VentasPage() {
                       <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
                         <td style={{ padding: '11px 14px', fontWeight: 600, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{v.numero}</td>
                         <td style={{ padding: '11px 14px' }}>
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.08)' : 'rgba(45,122,79,0.1)', color: v.tipo === 'presupuesto' ? '#800000' : C.green, border: `1px solid ${v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.25)' : 'rgba(45,122,79,0.3)'}` }}>
-                            {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                            background: v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.08)' : v.tipo === 'devolucion' ? 'rgba(43,94,160,0.08)' : 'rgba(45,122,79,0.1)',
+                            color: v.tipo === 'presupuesto' ? '#800000' : v.tipo === 'devolucion' ? C.blue : C.green,
+                            border: `1px solid ${v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.25)' : v.tipo === 'devolucion' ? 'rgba(43,94,160,0.25)' : 'rgba(45,122,79,0.3)'}` }}>
+                            {v.tipo === 'presupuesto' ? 'Presupuesto' : v.tipo === 'devolucion' ? 'Devolución' : 'Remito'}
                           </span>
                         </td>
                         <td style={{ padding: '11px 14px', color: C.text }}>{v.cliente_nombre}</td>
@@ -775,6 +798,7 @@ export default function VentasPage() {
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
+                            {v.tipo === 'remito' && <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.blue })} onClick={() => abrirDevolucion(v)}>Dev.</button>}
                             {v.facturado
                               ? <span style={{ fontSize: 10, fontWeight: 700, color: C.green, padding: '4px 6px', border: `1px solid ${C.green}44`, borderRadius: 4 }}>CAE ✓</span>
                               : <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirFacturar(v)}>Facturar</button>
@@ -866,15 +890,16 @@ export default function VentasPage() {
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : 'remito'}</h2>
+                <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : tipo === 'devolucion' ? 'comprobante de devolución' : 'remito'}</h2>
                 {tipo === 'remito' && !editVentaId && <div style={{ fontSize: 11, color: C.green, marginTop: 3 }}>Descuenta stock automáticamente al guardar</div>}
+                {tipo === 'devolucion' && !editVentaId && <div style={{ fontSize: 11, color: C.blue, marginTop: 3 }}>Devuelve stock automáticamente al guardar</div>}
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ display: 'flex', background: C.surface, borderRadius: 7, padding: 3, border: `1px solid ${C.border}` }}>
-                  {(['presupuesto', 'remito'] as const).map(t => (
+                  {(['presupuesto', 'remito', 'devolucion'] as const).map(t => (
                     <button key={t} className="vbtn" onClick={() => setTipo(t)}
                       style={{ ...btn(tipo === t ? 'accent' : 'ghost', { padding: '4px 12px', fontSize: 12, borderRadius: 5 }), border: 'none' }}>
-                      {t === 'presupuesto' ? 'Presupuesto' : 'Remito'}
+                      {t === 'presupuesto' ? 'Presupuesto' : t === 'devolucion' ? 'Devolución' : 'Remito'}
                     </button>
                   ))}
                 </div>

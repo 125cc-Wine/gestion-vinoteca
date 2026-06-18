@@ -76,7 +76,7 @@ export interface Venta {
   id?: string
   empresa: Empresa
   numero?: string
-  tipo: 'presupuesto' | 'remito' | 'factura'
+  tipo: 'presupuesto' | 'remito' | 'factura' | 'devolucion'
   cliente_id?: string
   cliente_nombre: string
   vendedor_nombre?: string

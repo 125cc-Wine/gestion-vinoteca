@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import type { Venta } from '@/types'
 
 const T = {
   bg:      '#F5F1EC',
@@ -101,6 +102,19 @@ function HBar({ pct, color }: { pct: number; color: string }) {
   )
 }
 
+const MESES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
+function ventasPorMes(ventasArr: Venta[], anio: number): number[] {
+  const meses = Array(12).fill(0)
+  ventasArr.forEach(v => {
+    const d = new Date(v.created_at!)
+    if (d.getFullYear() === anio && v.tipo === 'remito') {
+      meses[d.getMonth()] += v.total
+    }
+  })
+  return meses
+}
+
 export default function ReportesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [datos, setDatos] = useState<Datos | null>(null)
@@ -111,9 +125,18 @@ export default function ReportesPage() {
   })
   const [hasta, setHasta] = useState(new Date().toISOString().split('T')[0])
 
+  // Estacionalidad
+  const curYear = new Date().getFullYear()
+  const [estAnio, setEstAnio] = useState(curYear)
+  const [estComparar, setEstComparar] = useState(false)
+  const [estHover, setEstHover] = useState<{ mes: number; valor: number; anio: number } | null>(null)
+  const [todasVentas, setTodasVentas] = useState<Venta[]>([])
+  const [estLoading, setEstLoading] = useState(false)
+  const estFetchedEmp = useRef('')
+
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
-    setEmpresa(e); cargar(e, desde, hasta)
+    setEmpresa(e); cargar(e, desde, hasta); cargarVentasEst(e)
   }, [])
 
   async function cargar(emp: string, d: string, h: string) {
@@ -124,6 +147,19 @@ export default function ReportesPage() {
       if (!data.error) setDatos(data)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function cargarVentasEst(emp: string) {
+    if (estFetchedEmp.current === emp) return
+    estFetchedEmp.current = emp
+    setEstLoading(true)
+    try {
+      const res = await fetch(`/api/ventas?empresa=${emp}`)
+      const data = await res.json()
+      if (Array.isArray(data)) setTodasVentas(data)
+    } finally {
+      setEstLoading(false)
     }
   }
 
@@ -327,6 +363,176 @@ export default function ReportesPage() {
 
           </div>
         )}
+        {/* ── Estacionalidad de ventas ── */}
+        {(() => {
+          const datosAnio = ventasPorMes(todasVentas, estAnio)
+          const datosAnt  = ventasPorMes(todasVentas, estAnio - 1)
+          const allVals   = estComparar ? [...datosAnio, ...datosAnt] : datosAnio
+          const maxVal    = Math.max(...allVals, 1)
+
+          const BAR_W    = 20
+          const BAR_GAP  = estComparar ? 4 : 0
+          const GRP_GAP  = 12
+          const GRP_W    = estComparar ? BAR_W * 2 + BAR_GAP : BAR_W
+          const CHART_H  = 160
+          const LABEL_H  = 24
+          const SVG_H    = CHART_H + LABEL_H
+          const SVG_W    = 12 * (GRP_W + GRP_GAP) - GRP_GAP + 24
+
+          return (
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 24, marginTop: 24, boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Estacionalidad de ventas</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.muted, cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={estComparar}
+                      onChange={e => setEstComparar(e.target.checked)}
+                      style={{ accentColor: T.gold, cursor: 'pointer' }}
+                    />
+                    Comparar con año anterior
+                  </label>
+                  <select
+                    value={estAnio}
+                    onChange={e => setEstAnio(Number(e.target.value))}
+                    style={{ ...INP, width: 'auto', padding: '5px 10px', fontSize: 13 }}
+                  >
+                    <option value={curYear}>{curYear}</option>
+                    <option value={curYear - 1}>{curYear - 1}</option>
+                    <option value={curYear - 2}>{curYear - 2}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Legend */}
+              {estComparar && (
+                <div style={{ display: 'flex', gap: 18, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: 3, background: T.wine }} />
+                    <span style={{ fontSize: 12, color: T.muted }}>{estAnio}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: 3, background: T.gold }} />
+                    <span style={{ fontSize: 12, color: T.muted }}>{estAnio - 1}</span>
+                  </div>
+                </div>
+              )}
+
+              {estLoading ? (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: T.muted, fontSize: 13 }}>Cargando datos...</div>
+              ) : (
+                <div style={{ position: 'relative' }}>
+                  <svg
+                    viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+                    style={{ width: '100%', overflow: 'visible' }}
+                    preserveAspectRatio="xMidYMid meet"
+                    onMouseLeave={() => setEstHover(null)}
+                  >
+                    {/* Horizontal guide lines */}
+                    {[0.25, 0.5, 0.75, 1].map(f => {
+                      const y = CHART_H - f * CHART_H
+                      return (
+                        <line key={f} x1={0} y1={y} x2={SVG_W} y2={y}
+                          stroke={T.border} strokeWidth={0.5} strokeDasharray="3 3" />
+                      )
+                    })}
+
+                    {datosAnio.map((val, mes) => {
+                      const grpX = 12 + mes * (GRP_W + GRP_GAP)
+                      const barH  = maxVal > 0 ? (val / maxVal) * CHART_H : 0
+                      const barX  = grpX
+                      const barY  = CHART_H - barH
+
+                      const antVal = datosAnt[mes]
+                      const antH   = maxVal > 0 ? (antVal / maxVal) * CHART_H : 0
+                      const antX   = grpX + BAR_W + BAR_GAP
+                      const antY   = CHART_H - antH
+
+                      const labelX = grpX + GRP_W / 2
+
+                      return (
+                        <g key={mes}>
+                          {/* Bar for selected year */}
+                          <rect
+                            x={barX} y={barH > 0 ? barY : CHART_H - 1}
+                            width={BAR_W} height={barH > 0 ? barH : 1}
+                            fill={T.wine} rx={barH > 4 ? 3 : 0}
+                            opacity={estHover?.mes === mes && estHover?.anio === estAnio ? 1 : 0.82}
+                            style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                            onMouseEnter={() => setEstHover({ mes, valor: val, anio: estAnio })}
+                          />
+
+                          {/* Bar for previous year (if comparing) */}
+                          {estComparar && (
+                            <rect
+                              x={antX} y={antH > 0 ? antY : CHART_H - 1}
+                              width={BAR_W} height={antH > 0 ? antH : 1}
+                              fill={T.gold} rx={antH > 4 ? 3 : 0}
+                              opacity={estHover?.mes === mes && estHover?.anio === estAnio - 1 ? 1 : 0.82}
+                              style={{ cursor: 'pointer', transition: 'opacity 0.1s' }}
+                              onMouseEnter={() => setEstHover({ mes, valor: antVal, anio: estAnio - 1 })}
+                            />
+                          )}
+
+                          {/* Month label */}
+                          <text
+                            x={labelX} y={CHART_H + 16}
+                            textAnchor="middle"
+                            fontSize={9}
+                            fill={T.dim}
+                            fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif"
+                          >
+                            {MESES_SHORT[mes]}
+                          </text>
+                        </g>
+                      )
+                    })}
+                  </svg>
+
+                  {/* Hover tooltip */}
+                  {estHover && (
+                    <div style={{
+                      position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+                      background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8,
+                      padding: '7px 13px', pointerEvents: 'none',
+                      boxShadow: '0 4px 16px rgba(26,18,16,0.12)', zIndex: 10,
+                      fontSize: 12, color: T.text, whiteSpace: 'nowrap',
+                    }}>
+                      <span style={{ fontWeight: 700 }}>{MESES_SHORT[estHover.mes]} {estHover.anio}</span>
+                      {'  '}
+                      <span style={{ color: estHover.anio === estAnio ? T.wine : T.gold, fontWeight: 700 }}>
+                        {estHover.valor.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Summary totals row */}
+              {!estLoading && (
+                <div style={{ display: 'flex', gap: 24, marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.border}`, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total {estAnio}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: T.wine }}>
+                      {datosAnio.reduce((a, b) => a + b, 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                  {estComparar && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Total {estAnio - 1}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.gold }}>
+                        {datosAnt.reduce((a, b) => a + b, 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
       </div>
     </div>
   )
