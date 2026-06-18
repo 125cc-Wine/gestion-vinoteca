@@ -2,6 +2,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
+import {
+  connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava,
+  type LabelPrinterPort, type LabelData,
+} from '@/lib/labelPrinter'
+import wooUrls from '@/data/wooUrls.json'
+
+function _normStr(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+}
+function lookupWooUrl(nombre: string): string {
+  const n = _normStr(nombre)
+  if (!n) return ''
+  const list = wooUrls as { title: string; url: string }[]
+  return (
+    list.find(w => _normStr(w.title) === n) ||
+    list.find(w => _normStr(w.title).startsWith(n) || n.startsWith(_normStr(w.title))) ||
+    list.find(w => _normStr(w.title).includes(n) || n.includes(_normStr(w.title)))
+  )?.url || ''
+}
 
 const EMPRESAS_DATA = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
@@ -331,6 +350,11 @@ export default function VentasPage() {
 
   // ── Modal etiquetas desde venta ──
   const [etiquetaVenta, setEtiquetaVenta] = useState<Venta | null>(null)
+  const [etiquetaPort, setEtiquetaPort] = useState<LabelPrinterPort | null>(null)
+  const [etiquetaQtys, setEtiquetaQtys] = useState<Record<number, number>>({})
+  const [etiquetaPrinting, setEtiquetaPrinting] = useState(false)
+  const [etiquetaPrintIdx, setEtiquetaPrintIdx] = useState(-1)
+  const etiquetaCanvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
@@ -366,6 +390,54 @@ export default function VentasPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  useEffect(() => {
+    if (!etiquetaVenta) return
+    const qtys: Record<number, number> = {}
+    ;(etiquetaVenta.items as VentaItem[]).forEach((item, i) => { qtys[i] = item.cantidad })
+    setEtiquetaQtys(qtys)
+  }, [etiquetaVenta])
+
+  function buildLabelData(item: VentaItem, prod: Producto | undefined): LabelData {
+    return {
+      nombre: item.nombre,
+      bodega: prod?.bodega || '',
+      varietal: prod?.varietal || '',
+      region: prod?.region || '',
+      categoria: prod?.categoria || '',
+      precio: String(item.precio_unitario),
+      sku: prod?.sku || '',
+      wooUrl: lookupWooUrl(item.nombre) || (prod?.woo_product_id ? `https://aromadevid.com.ar/?p=${prod.woo_product_id}` : ''),
+    }
+  }
+
+  async function printOneEtiqueta(item: VentaItem, prod: Producto | undefined, copies: number) {
+    if (!etiquetaPort || !etiquetaCanvasRef.current) return
+    const d = buildLabelData(item, prod)
+    for (let c = 0; c < copies; c++) {
+      await renderCava(etiquetaCanvasRef.current, d)
+      await printCanvas(etiquetaPort, etiquetaCanvasRef.current)
+    }
+  }
+
+  async function printAllEtiquetas() {
+    if (!etiquetaPort || !etiquetaVenta) return
+    setEtiquetaPrinting(true)
+    const items = etiquetaVenta.items as VentaItem[]
+    try {
+      for (let i = 0; i < items.length; i++) {
+        setEtiquetaPrintIdx(i)
+        const prod = productos.find(p => p.id === items[i].producto_id)
+        await printOneEtiqueta(items[i], prod, etiquetaQtys[i] ?? items[i].cantidad)
+      }
+      showToast('Etiquetas impresas ✓')
+    } catch (e) {
+      showToast('Error al imprimir: ' + (e as Error).message)
+    } finally {
+      setEtiquetaPrinting(false)
+      setEtiquetaPrintIdx(-1)
+    }
+  }
 
   // ── Venta helpers
   function calcSub(item: ItemForm) {
@@ -1328,51 +1400,113 @@ export default function VentasPage() {
       )}
 
       {/* ── Modal etiquetas de cava ── */}
-      {etiquetaVenta && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setEtiquetaVenta(null)}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 500, boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Generar etiquetas de cava</div>
-                <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{etiquetaVenta.numero} · {etiquetaVenta.cliente_nombre}</div>
+      {etiquetaVenta && (() => {
+        const items = etiquetaVenta.items as VentaItem[]
+        const totalEtiquetas = items.reduce((s, item, i) => s + (etiquetaQtys[i] ?? item.cantidad), 0)
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onClick={e => e.target === e.currentTarget && !etiquetaPrinting && setEtiquetaVenta(null)}>
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 8px 40px rgba(26,18,16,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px 14px', borderBottom: `1px solid ${C.border}` }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Etiquetas de cava</div>
+                  <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{etiquetaVenta.numero} · {etiquetaVenta.cliente_nombre}</div>
+                </div>
+                <button className="vbtn" style={btn('ghost', { padding: '4px 10px', fontSize: 20, color: C.dim })}
+                  onClick={() => !etiquetaPrinting && setEtiquetaVenta(null)}>×</button>
               </div>
-              <button className="vbtn" style={btn('ghost', { padding: '4px 8px', fontSize: 18, color: C.dim })} onClick={() => setEtiquetaVenta(null)}>×</button>
-            </div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>
-              Hacé clic en un producto para abrir el diseñador de etiquetas con los datos pre-cargados.
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(etiquetaVenta.items as VentaItem[]).map((item, i) => {
-                const prod = productos.find(p => p.id === item.producto_id)
-                return (
-                  <button key={i} className="vbtn"
-                    onClick={() => {
-                      if (prod) localStorage.setItem('etiqueta_prefill', JSON.stringify(prod))
-                      else localStorage.setItem('etiqueta_prefill', JSON.stringify({ nombre: item.nombre, bodega: '', varietal: '', categoria: '', precio_venta: item.precio_unitario, sku: '' }))
-                      window.location.href = '/etiquetas'
-                    }}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'border-color 0.12s' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = C.border2)}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.nombre}</div>
-                      <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
-                        x{item.cantidad} · ${item.precio_unitario.toLocaleString('es-AR')}
-                        {prod?.woo_product_id ? ' · 🔗 tiene QR' : ''}
+
+              {/* Barra impresora */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', borderBottom: `1px solid ${C.border}`, background: C.bg }}>
+                <span style={{ fontSize: 12, color: etiquetaPort ? C.green : C.dim, fontWeight: 600 }}>
+                  {etiquetaPort ? '● Conectada' : '○ Sin impresora'}
+                </span>
+                {!etiquetaPort
+                  ? <button className="vbtn" style={btn('default', { fontSize: 12, padding: '4px 12px' })}
+                      onClick={async () => { try { setEtiquetaPort(await connectPrinter()) } catch(e) { showToast('Error: ' + (e as Error).message) } }}>
+                      Conectar
+                    </button>
+                  : <>
+                      <button className="vbtn" style={btn('ghost', { fontSize: 12, padding: '4px 10px' })}
+                        onClick={async () => { await disconnectPrinter(etiquetaPort); setEtiquetaPort(null) }}>
+                        Desconectar
+                      </button>
+                      <button className="vbtn" style={btn('ghost', { fontSize: 12, padding: '4px 10px' })}
+                        onClick={() => testPrint(etiquetaPort).catch(e => showToast(e.message))}>
+                        Test
+                      </button>
+                    </>
+                }
+              </div>
+
+              {/* Lista de items */}
+              <div style={{ overflowY: 'auto', flex: 1, padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {items.map((item, i) => {
+                  const prod = productos.find(p => p.id === item.producto_id)
+                  const hasQr = !!(lookupWooUrl(item.nombre) || prod?.woo_product_id)
+                  const qty = etiquetaQtys[i] ?? item.cantidad
+                  const isPrinting = etiquetaPrinting && etiquetaPrintIdx === i
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: isPrinting ? C.greenBg : C.bg, border: `1px solid ${isPrinting ? C.green : C.border}`, borderRadius: 9, transition: 'all 0.15s' }}>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.nombre}</div>
+                        <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
+                          ${item.precio_unitario.toLocaleString('es-AR')}
+                          {hasQr ? <span style={{ color: C.green, marginLeft: 6 }}>● QR</span> : <span style={{ color: C.dim, marginLeft: 6 }}>○ sin QR</span>}
+                        </div>
                       </div>
+                      {/* Spinner de cantidad */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        <button className="vbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 16, lineHeight: 1 })}
+                          onClick={() => setEtiquetaQtys(q => ({ ...q, [i]: Math.max(1, (q[i] ?? item.cantidad) - 1) }))}>−</button>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: C.text, minWidth: 22, textAlign: 'center' }}>{qty}</span>
+                        <button className="vbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 16, lineHeight: 1 })}
+                          onClick={() => setEtiquetaQtys(q => ({ ...q, [i]: (q[i] ?? item.cantidad) + 1 }))}>+</button>
+                      </div>
+                      {/* Botón imprimir uno */}
+                      <button className="vbtn"
+                        disabled={!etiquetaPort || etiquetaPrinting}
+                        style={btn('default', { fontSize: 12, padding: '5px 10px', opacity: (!etiquetaPort || etiquetaPrinting) ? 0.4 : 1 })}
+                        onClick={async () => {
+                          setEtiquetaPrinting(true); setEtiquetaPrintIdx(i)
+                          try { await printOneEtiqueta(item, prod, qty); showToast(`${qty} etiqueta${qty > 1 ? 's' : ''} ✓`) }
+                          catch(e) { showToast('Error: ' + (e as Error).message) }
+                          finally { setEtiquetaPrinting(false); setEtiquetaPrintIdx(-1) }
+                        }}>
+                        {isPrinting ? '…' : '🖨️'}
+                      </button>
                     </div>
-                    <span style={{ fontSize: 20 }}>🏷️</span>
-                  </button>
-                )
-              })}
-            </div>
-            <div style={{ marginTop: 16, fontSize: 11, color: C.dim, background: C.bg, borderRadius: 8, padding: '8px 12px' }}>
-              💡 Para imprimir múltiples productos de corrido, imprimí cada uno desde la página de Etiquetas y volvé acá.
+                  )
+                })}
+              </div>
+
+              {/* Footer — imprimir todas */}
+              <div style={{ padding: '14px 20px', borderTop: `1px solid ${C.border}` }}>
+                <button className="vbtn"
+                  disabled={!etiquetaPort || etiquetaPrinting}
+                  style={btn('accent', { width: '100%', padding: '11px', fontSize: 14, opacity: (!etiquetaPort || etiquetaPrinting) ? 0.5 : 1 })}
+                  onClick={printAllEtiquetas}>
+                  {etiquetaPrinting
+                    ? `Imprimiendo ${etiquetaPrintIdx + 1}/${items.length}…`
+                    : `Imprimir todas — ${totalEtiquetas} etiqueta${totalEtiquetas !== 1 ? 's' : ''}`}
+                </button>
+                {!etiquetaPort && (
+                  <div style={{ fontSize: 11, color: C.dim, textAlign: 'center', marginTop: 8 }}>
+                    Conectá la impresora primero (Chrome/Edge con Bluetooth activo)
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
+
+      {/* Canvas oculto para renderizar etiquetas antes de imprimir */}
+      <canvas ref={etiquetaCanvasRef} style={{ display: 'none' }} />
 
       <div id="print-area" style={{ display: 'none' }}>
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
