@@ -5,6 +5,25 @@ import {
   renderLabel, PRINTER_W, PRINTER_H,
   type LabelPrinterPort, type LabelData, type LabelFormat,
 } from '@/lib/labelPrinter'
+import wooUrls from '@/data/wooUrls.json'
+
+function normStr(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+}
+function lookupWooUrl(nombre: string): string {
+  const n = normStr(nombre)
+  if (!n) return ''
+  const exact = (wooUrls as { title: string; url: string }[]).find(w => normStr(w.title) === n)
+  if (exact) return exact.url
+  const starts = (wooUrls as { title: string; url: string }[]).find(
+    w => normStr(w.title).startsWith(n) || n.startsWith(normStr(w.title))
+  )
+  if (starts) return starts.url
+  const includes = (wooUrls as { title: string; url: string }[]).find(
+    w => normStr(w.title).includes(n) || n.includes(normStr(w.title))
+  )
+  return includes?.url || ''
+}
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -72,12 +91,11 @@ export default function EtiquetasPage() {
         try {
           const p: Producto = JSON.parse(raw)
           localStorage.removeItem('etiqueta_prefill')
-          const base = 'https://aromadevid.com.ar/?p='
-          setWooBase(base)
+          const wooUrl = lookupWooUrl(p.nombre)
+            || (p.woo_product_id ? `https://aromadevid.com.ar/?p=${p.woo_product_id}` : '')
           setData({ nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
             region: p.region || '', categoria: p.categoria || '',
-            precio: String(p.precio_venta || ''), sku: p.sku || '',
-            wooUrl: p.woo_product_id ? `${base}${p.woo_product_id}` : '' })
+            precio: String(p.precio_venta || ''), sku: p.sku || '', wooUrl })
           setBusqueda(p.nombre)
         } catch { /**/ }
       }
@@ -95,7 +113,8 @@ export default function EtiquetasPage() {
   }
 
   function selProducto(p: Producto) {
-    const wooUrl = p.woo_product_id ? `${wooBase}${p.woo_product_id}` : ''
+    const wooUrl = lookupWooUrl(p.nombre)
+      || (p.woo_product_id ? `${wooBase}${p.woo_product_id}` : '')
     setData({ nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
       region: p.region || '', categoria: p.categoria || '',
       precio: String(p.precio_venta || ''), sku: p.sku || '', wooUrl })
