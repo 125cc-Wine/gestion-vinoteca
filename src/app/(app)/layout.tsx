@@ -4,20 +4,29 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 
-const C = {
-  bg:      '#100D0A',
-  sidebar: '#0D0A08',
-  surface: '#181310',
-  card:    '#1F1814',
-  border:  '#2E2218',
-  border2: '#3D2E22',
-  accent:  '#A52035',
+// Sidebar: oscuro vino · Contenido: crema cálida
+const S = {
+  bg:     '#1A0E0B',
+  border: '#2E1A14',
+  text:   '#F0E2D8',
+  muted:  '#8A6858',
+  dim:    '#4A3028',
+  hover:  'rgba(255,255,255,0.06)',
+  active: 'rgba(165,32,53,0.22)',
+  pill:   '#C84055',
+}
+const L = {
+  bg:      '#F4EEE6',
+  surface: '#FFFFFF',
+  card:    '#FFFFFF',
+  border:  '#E8DDD0',
+  border2: '#D4C4B0',
+  text:    '#1C1410',
+  muted:   '#7A6858',
+  dim:     '#B0A090',
+  accent:  '#8B1A2A',
   accentL: '#C84055',
-  text:    '#F0E6DC',
-  muted:   '#9A8070',
-  dim:     '#5A4035',
-  green:   '#5BAF80',
-  amber:   '#C9952A',
+  gold:    '#B08020',
 }
 
 const NAV = [
@@ -35,13 +44,13 @@ const NAV = [
 ]
 
 const TIPO_ICON: Record<string, string> = { venta: '🧾', cliente: '👤', producto: '🍷' }
-const TIPO_COLOR: Record<string, string> = { venta: '#7AADFF', cliente: '#D4820A', producto: '#4CAF7D' }
+const TIPO_COLOR: Record<string, string> = { venta: '#3070A8', cliente: '#B08020', producto: '#2E8B57' }
 
 interface SearchResult { tipo: string; id: string; titulo: string; subtitulo: string; href: string }
 
 function NavIcon({ d }: { d: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </svg>
   )
@@ -108,29 +117,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const currentNav = NAV.find(n => pathname.startsWith(n.href))
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: L.bg, display: 'flex' }}>
       <style>{`
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${C.border2}; border-radius: 2px; }
-        .nav-item { transition: background 0.15s, color 0.15s; }
-        .nav-item:hover { background: rgba(255,255,255,0.05) !important; color: ${C.text} !important; }
-        .nav-item.active { background: rgba(139,26,42,0.2) !important; color: ${C.text} !important; }
+        ::-webkit-scrollbar-thumb { background: ${L.border2}; border-radius: 2px; }
+        .nav-item { transition: background 0.12s, color 0.12s; }
+        .nav-item:hover { background: ${S.hover} !important; color: ${S.text} !important; }
+        .nav-item.active { background: ${S.active} !important; color: ${S.text} !important; }
         .sres { transition: background 0.1s; }
-        .sres:hover, .sres.sel { background: rgba(255,255,255,0.06) !important; }
-        .search-btn:hover { border-color: ${C.border2} !important; background: rgba(255,255,255,0.05) !important; }
+        .sres:hover, .sres.sel { background: ${L.bg} !important; }
+        .search-btn:hover { border-color: ${L.border2} !important; background: ${L.bg} !important; }
+        .cambiar-btn:hover { background: rgba(255,255,255,0.08) !important; }
       `}</style>
 
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
       <aside style={{
-        width: 220, flexShrink: 0, background: C.sidebar,
-        borderRight: `1px solid ${C.border}`,
+        width: 220, flexShrink: 0, background: S.bg,
         display: 'flex', flexDirection: 'column',
         position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
       }}>
         {/* Brand */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ padding: '22px 18px 16px' }}>
           <Image
             src={esAroma ? '/logos/aroma.jpg' : '/logos/lavid.png'}
             alt={esAroma ? 'Aroma de Vid' : 'La Vid Consultora'}
@@ -140,34 +149,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: esAroma ? C.accentL : '#7AADFF',
-              boxShadow: `0 0 6px ${esAroma ? C.accentL : '#7AADFF'}`,
+              background: esAroma ? '#E06070' : '#7AADFF',
+              boxShadow: `0 0 8px ${esAroma ? '#E06070' : '#7AADFF'}`,
             }} />
-            <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>
+            <span style={{ fontSize: 11, color: S.muted, fontWeight: 500 }}>
               {esAroma ? 'Aroma de Vid' : 'La Vid Consultora'}
             </span>
           </div>
         </div>
 
+        {/* Divider */}
+        <div style={{ height: 1, background: S.border, margin: '0 12px 8px' }} />
+
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '10px 8px' }}>
+        <nav style={{ flex: 1, padding: '4px 8px' }}>
           {NAV.map(n => {
             const active = pathname.startsWith(n.href)
             return (
               <Link key={n.href} href={n.href}
                 className={`nav-item${active ? ' active' : ''}`}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 10px', borderRadius: 8, marginBottom: 1,
-                  color: active ? C.text : C.muted,
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  padding: '7px 10px', borderRadius: 7, marginBottom: 1,
+                  color: active ? S.text : S.muted,
                   textDecoration: 'none', fontSize: 13, fontWeight: active ? 600 : 400,
                   position: 'relative',
                 }}>
                 {active && (
                   <div style={{
-                    position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                    position: 'absolute', left: 0, top: '18%', bottom: '18%',
                     width: 3, borderRadius: '0 2px 2px 0',
-                    background: `linear-gradient(180deg, ${C.accentL}, ${C.accent})`,
+                    background: `linear-gradient(180deg, ${S.pill}, #8B1A2A)`,
                   }} />
                 )}
                 <NavIcon d={n.icon} />
@@ -178,19 +190,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Footer sidebar */}
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.border}` }}>
-          <button
+        <div style={{ padding: '10px 12px 16px', borderTop: `1px solid ${S.border}` }}>
+          <button className="cambiar-btn"
             onClick={() => { localStorage.removeItem('empresa'); router.push('/') }}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-              background: 'transparent', border: `1px solid ${C.border}`,
-              borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
-              color: C.dim, fontSize: 12, transition: 'all 0.15s',
+              background: 'transparent', border: 'none',
+              borderRadius: 7, padding: '7px 10px', cursor: 'pointer',
+              color: S.dim, fontSize: 12, transition: 'background 0.12s', textAlign: 'left',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border2; (e.currentTarget as HTMLElement).style.color = C.muted }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; (e.currentTarget as HTMLElement).style.color = C.dim }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
             Cambiar empresa
@@ -203,17 +213,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Topbar */}
         <header style={{
-          height: 52, background: C.surface,
-          borderBottom: `1px solid ${C.border}`,
+          height: 52, background: L.surface,
+          borderBottom: `1px solid ${L.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 24px', position: 'sticky', top: 0, zIndex: 40,
+          padding: '0 28px', position: 'sticky', top: 0, zIndex: 40,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}>
           {/* Page title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {currentNav && (
               <>
-                <span style={{ color: C.dim, display: 'flex' }}><NavIcon d={currentNav.icon} /></span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{currentNav.label}</span>
+                <span style={{ color: L.dim, display: 'flex' }}><NavIcon d={currentNav.icon} /></span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: L.text }}>{currentNav.label}</span>
               </>
             )}
           </div>
@@ -223,21 +234,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <button className="search-btn" onClick={() => setSearchOpen(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'transparent', border: `1px solid ${C.border}`,
+                background: L.bg, border: `1px solid ${L.border}`,
                 borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
-                color: C.muted, fontSize: 12, transition: 'all 0.15s',
+                color: L.muted, fontSize: 12, transition: 'all 0.12s',
               }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <span>Buscar</span>
-              <kbd style={{ fontSize: 10, color: C.dim, background: C.card, border: `1px solid ${C.border}`, borderRadius: 4, padding: '1px 5px', lineHeight: 1.6 }}>⌘K</kbd>
+              <kbd style={{ fontSize: 10, color: L.dim, background: L.border, borderRadius: 4, padding: '1px 5px', lineHeight: 1.6, border: 'none' }}>⌘K</kbd>
             </button>
 
             <div style={{
-              fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 99,
-              background: esAroma ? 'rgba(139,26,42,0.15)' : 'rgba(100,140,220,0.12)',
-              color: esAroma ? '#D08090' : '#7AADFF',
-              border: `1px solid ${esAroma ? 'rgba(139,26,42,0.3)' : 'rgba(100,140,220,0.25)'}`,
-              letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+              fontSize: 11, fontWeight: 700, padding: '4px 11px', borderRadius: 99,
+              background: esAroma ? 'rgba(139,26,42,0.1)' : 'rgba(48,112,168,0.1)',
+              color: esAroma ? '#8B1A2A' : '#3070A8',
+              border: `1px solid ${esAroma ? 'rgba(139,26,42,0.25)' : 'rgba(48,112,168,0.25)'}`,
+              letterSpacing: '0.05em', textTransform: 'uppercase' as const,
             }}>
               {esAroma ? 'Retail' : 'Distribución'}
             </div>
@@ -252,42 +263,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Búsqueda global ────────────────────────────────────────────────── */}
       {searchOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '14vh' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,20,16,0.55)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
           onClick={e => e.target === e.currentTarget && setSearchOpen(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', borderBottom: searchResults.length > 0 || searchLoading ? `1px solid ${C.border}` : 'none' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <div style={{ background: L.surface, border: `1px solid ${L.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, boxShadow: '0 24px 60px rgba(28,20,16,0.2)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', borderBottom: searchResults.length > 0 || searchLoading ? `1px solid ${L.border}` : 'none' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={L.muted} strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input ref={searchRef} value={searchQ} onChange={e => setSearchQ(e.target.value)} onKeyDown={onSearchKey}
                 placeholder="Buscar ventas, clientes, productos..."
-                style={{ background: 'transparent', border: 'none', color: C.text, fontSize: 15, outline: 'none', flex: 1 }} />
-              {searchLoading && <div style={{ fontSize: 12, color: C.dim }}>...</div>}
-              <kbd style={{ fontSize: 10, color: C.dim, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, padding: '2px 5px' }}>Esc</kbd>
+                style={{ background: 'transparent', border: 'none', color: L.text, fontSize: 15, outline: 'none', flex: 1 }} />
+              {searchLoading && <div style={{ fontSize: 12, color: L.dim }}>...</div>}
+              <kbd style={{ fontSize: 10, color: L.dim, background: L.bg, border: `1px solid ${L.border}`, borderRadius: 4, padding: '2px 5px' }}>Esc</kbd>
             </div>
 
             {searchResults.length > 0 && (
               <div style={{ maxHeight: 380, overflowY: 'auto' }}>
                 {searchResults.map((r, i) => (
                   <div key={r.id + r.tipo} className={`sres${searchSel === i ? ' sel' : ''}`}
-                    style={{ padding: '10px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, borderBottom: i < searchResults.length - 1 ? `1px solid rgba(31,31,31,0.8)` : 'none' }}
+                    style={{ padding: '10px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, borderBottom: i < searchResults.length - 1 ? `1px solid ${L.border}` : 'none' }}
                     onClick={() => goToResult(r)} onMouseEnter={() => setSearchSel(i)}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: `${TIPO_COLOR[r.tipo]}12`, border: `1px solid ${TIPO_COLOR[r.tipo]}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 9, background: `${TIPO_COLOR[r.tipo]}15`, border: `1px solid ${TIPO_COLOR[r.tipo]}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>
                       {TIPO_ICON[r.tipo]}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{r.subtitulo}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: L.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</div>
+                      <div style={{ fontSize: 11, color: L.muted, marginTop: 1 }}>{r.subtitulo}</div>
                     </div>
-                    <span style={{ fontSize: 10, color: TIPO_COLOR[r.tipo], background: `${TIPO_COLOR[r.tipo]}12`, padding: '2px 7px', borderRadius: 5, flexShrink: 0, fontWeight: 600 }}>{r.tipo}</span>
+                    <span style={{ fontSize: 10, color: TIPO_COLOR[r.tipo], background: `${TIPO_COLOR[r.tipo]}15`, padding: '2px 7px', borderRadius: 5, flexShrink: 0, fontWeight: 700 }}>{r.tipo}</span>
                   </div>
                 ))}
               </div>
             )}
             {searchQ.length >= 2 && !searchLoading && searchResults.length === 0 && (
-              <div style={{ padding: '28px 16px', textAlign: 'center', color: C.dim, fontSize: 13 }}>Sin resultados para &ldquo;{searchQ}&rdquo;</div>
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: L.dim, fontSize: 13 }}>Sin resultados para &ldquo;{searchQ}&rdquo;</div>
             )}
             {!searchQ && (
-              <div style={{ padding: '14px 16px', color: C.dim, fontSize: 12, lineHeight: 1.6 }}>
-                Escribí para buscar · <span style={{ color: C.muted }}>↑↓ navegar · Enter para ir</span>
+              <div style={{ padding: '14px 16px', color: L.dim, fontSize: 12, lineHeight: 1.6 }}>
+                Escribí para buscar · <span style={{ color: L.muted }}>↑↓ navegar · Enter para ir</span>
               </div>
             )}
           </div>
