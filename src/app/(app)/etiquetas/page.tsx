@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint,
-  renderLabel, PRINTER_W, PRINTER_H,
+  renderLabel, PRINTER_W, PRINTER_H, feedNextLabel,
   type LabelPrinterPort, type LabelData, type LabelFormat,
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
@@ -178,6 +178,8 @@ export default function EtiquetasPage() {
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: T.green, display: 'inline-block' }} />Conectada
               </span>
               <button className="ebtn" style={btn('default', { fontSize: 12 })} onClick={testear}>Test</button>
+              <button className="ebtn" style={btn('default', { fontSize: 12 })} title="Avanza hasta inicio de la siguiente etiqueta"
+                onClick={() => feedNextLabel(port!).catch(e => toast$(e.message, true))}>↓ Papel</button>
               <button className="ebtn" style={btn('danger', { fontSize: 12 })} onClick={desconectar}>Desconectar</button>
             </>
           ) : (

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 import {
-  connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava,
+  connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
   type LabelPrinterPort, type LabelData,
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
@@ -1436,6 +1436,11 @@ export default function VentasPage() {
                       <button className="vbtn" style={btn('ghost', { fontSize: 12, padding: '4px 10px' })}
                         onClick={() => testPrint(etiquetaPort).catch(e => showToast(e.message))}>
                         Test
+                      </button>
+                      <button className="vbtn" style={btn('ghost', { fontSize: 12, padding: '4px 10px' })}
+                        title="Avanza el papel hasta el inicio de la siguiente etiqueta"
+                        onClick={() => feedNextLabel(etiquetaPort).catch(e => showToast(e.message))}>
+                        ↓ Papel
                       </button>
                     </>
                 }

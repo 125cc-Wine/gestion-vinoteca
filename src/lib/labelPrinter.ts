@@ -35,6 +35,9 @@ const CMD_INIT       = new Uint8Array([ESC, 0x40])
 const CMD_ALIGN_LEFT = new Uint8Array([ESC, 0x61, 0x00])
 const CMD_FEED       = (n: number) => new Uint8Array([ESC, 0x64, n])
 const CMD_LF         = new Uint8Array([0x0a])
+// FF = Form Feed: le dice al printer "terminé esta etiqueta, avanzá al
+// inicio de la siguiente usando el sensor de gap". Evita asumir una altura fija.
+const CMD_FF         = new Uint8Array([0x0c])
 
 function cmdRaster(imgData: Uint8Array, wBytes: number, h: number): Uint8Array {
   const hdr = new Uint8Array([
@@ -137,9 +140,10 @@ export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   // Init + raster: chunked to avoid buffer overflow
   await writeChunked(port, concat(CMD_INIT, CMD_ALIGN_LEFT, cmdRaster(data, widthBytes, height)))
 
-  // Feed 10 lines (240 dots ≈ 31mm) so last dots clear the print head.
-  // Without enough feed the bottom of the label never exits the head zone.
-  await writeRaw(port, concat(CMD_FEED(10), CMD_LF))
+  // FF: el sensor de gap detecta el espacio entre etiquetas y frena exactamente
+  // al inicio de la siguiente. Reemplaza CMD_FEED(n) fijo que no conoce la
+  // separación real entre stickers del rollo.
+  await writeRaw(port, CMD_FF)
 
   // Wait for the printer to finish before the caller can start the next label.
   await sleep(POST_LABEL_DELAY)
@@ -147,7 +151,13 @@ export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
 
 export async function testPrint(port: SerialPort) {
   const enc = new TextEncoder()
-  await writeRaw(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n50x44mm OK\n\n\n'), CMD_FEED(3)))
+  await writeRaw(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n50x44mm OK\n\n\n'), CMD_FF))
+}
+
+// Avanza hasta el inicio de la próxima etiqueta usando el sensor de gap.
+// Útil para reposicionar el papel antes de imprimir la primera etiqueta.
+export async function feedNextLabel(port: SerialPort) {
+  await writeRaw(port, CMD_FF)
 }
 
 // ── QR helper ─────────────────────────────────────────────────────────────
