@@ -5,19 +5,19 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 
 const C = {
-  bg:      '#0A0A0A',
-  sidebar: '#0F0F0F',
-  surface: '#111111',
-  card:    '#161616',
-  border:  '#1F1F1F',
-  border2: '#2A2A2A',
-  accent:  '#8B1A2A',
-  accentL: '#C0364A',
-  text:    '#F0F0F0',
-  muted:   '#777777',
-  dim:     '#444444',
-  green:   '#4CAF7D',
-  amber:   '#D4820A',
+  bg:      '#100D0A',
+  sidebar: '#0D0A08',
+  surface: '#181310',
+  card:    '#1F1814',
+  border:  '#2E2218',
+  border2: '#3D2E22',
+  accent:  '#A52035',
+  accentL: '#C84055',
+  text:    '#F0E6DC',
+  muted:   '#9A8070',
+  dim:     '#5A4035',
+  green:   '#5BAF80',
+  amber:   '#C9952A',
 }
 
 const NAV = [
