@@ -70,6 +70,15 @@ export function canvasToBitmap(canvas: HTMLCanvasElement) {
   return { data: bmp, widthBytes: wb, height }
 }
 
+// ── Timing constants ─────────────────────────────────────────────────────
+// Printer thermal head: ~60 mm/s = 460 dot-lines/s = 22 KB/s at 384 dots wide.
+// We throttle Bluetooth writes to ~18 KB/s so the printer buffer never fills.
+const CHUNK_BYTES  = 512   // bytes per write chunk
+const CHUNK_DELAY  = 28    // ms between chunks → 512/28ms ≈ 18 KB/s
+const POST_LABEL_DELAY = 600  // ms after each label — lets printer finish last lines
+
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
+
 // ── Serial helpers ────────────────────────────────────────────────────────
 export async function connectPrinter(): Promise<SerialPort> {
   if (!('serial' in navigator)) throw new Error('Web Serial no disponible. Usá Chrome o Edge.')
@@ -79,9 +88,21 @@ export async function connectPrinter(): Promise<SerialPort> {
 }
 export async function disconnectPrinter(port: SerialPort) { try { await port.close() } catch { /**/ } }
 
-async function write(port: SerialPort, data: Uint8Array) {
+async function writeRaw(port: SerialPort, data: Uint8Array) {
   const w = port.writable!.getWriter()
   try { await w.write(data) } finally { w.releaseLock() }
+}
+
+// Throttled writer: sends in CHUNK_BYTES chunks with CHUNK_DELAY between each.
+// Prevents Bluetooth buffer overflow on the printer side.
+async function writeChunked(port: SerialPort, data: Uint8Array) {
+  const w = port.writable!.getWriter()
+  try {
+    for (let off = 0; off < data.length; off += CHUNK_BYTES) {
+      await w.write(data.slice(off, Math.min(off + CHUNK_BYTES, data.length)))
+      if (off + CHUNK_BYTES < data.length) await sleep(CHUNK_DELAY)
+    }
+  } finally { w.releaseLock() }
 }
 
 function concat(...arrays: Uint8Array[]): Uint8Array {
@@ -93,25 +114,40 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 }
 
 /**
- * Scales the 3× render canvas down to printer dots, then sends as raster bitmap.
+ * Scales the 3× render canvas down to printer dots, sends as raster bitmap.
+ *
+ * Uses chunked throttled writes so the printer buffer doesn't overflow.
+ * Waits POST_LABEL_DELAY ms after each label so the next call never arrives
+ * while the printer is still running. This fixes truncated last lines and
+ * corrupted second labels.
  */
 export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   const ph = Math.round(canvas.height / SCALE)
-  const out = document.createElement('canvas')
-  out.width = PRINTER_W; out.height = ph
-  const ctx = out.getContext('2d')!
+  const scaled = document.createElement('canvas')
+  scaled.width = PRINTER_W; scaled.height = ph
+  const ctx = scaled.getContext('2d')!
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   ctx.fillStyle = '#fff'
   ctx.fillRect(0, 0, PRINTER_W, ph)
   ctx.drawImage(canvas, 0, 0, PRINTER_W, ph)
-  const { data, widthBytes, height } = canvasToBitmap(out)
-  await write(port, concat(CMD_INIT, CMD_ALIGN_LEFT, cmdRaster(data, widthBytes, height), CMD_FEED(4), CMD_LF))
+
+  const { data, widthBytes, height } = canvasToBitmap(scaled)
+
+  // Init + raster: chunked to avoid buffer overflow
+  await writeChunked(port, concat(CMD_INIT, CMD_ALIGN_LEFT, cmdRaster(data, widthBytes, height)))
+
+  // Feed 10 lines (240 dots ≈ 31mm) so last dots clear the print head.
+  // Without enough feed the bottom of the label never exits the head zone.
+  await writeRaw(port, concat(CMD_FEED(10), CMD_LF))
+
+  // Wait for the printer to finish before the caller can start the next label.
+  await sleep(POST_LABEL_DELAY)
 }
 
 export async function testPrint(port: SerialPort) {
   const enc = new TextEncoder()
-  await write(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n50x44mm OK\n\n\n'), CMD_FEED(3)))
+  await writeRaw(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n50x44mm OK\n\n\n'), CMD_FEED(3)))
 }
 
 // ── QR helper ─────────────────────────────────────────────────────────────
