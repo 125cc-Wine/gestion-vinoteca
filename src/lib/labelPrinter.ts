@@ -1,6 +1,9 @@
 /**
  * Label printer — Web Serial API (Bluetooth COM port) + ESC/POS raster bitmap.
- * Printer: DeTong P1, 50mm wide, 203 DPI → 384 dots = 48 bytes/row.
+ * Printer: DeTong P1, 50mm × 44mm label, ~7.68 dots/mm → 384 × 338 dots.
+ *
+ * Quality technique: render at SCALE=3 (1152×1014) using anti-aliased fonts,
+ * then downscale to 384×338 with high-quality smoothing before 1-bit conversion.
  */
 import QRCode from 'qrcode'
 
@@ -18,10 +21,13 @@ declare global {
 export type LabelPrinterPort = SerialPort
 
 // ── Printer constants ─────────────────────────────────────────────────────
-export const PRINTER_W = 384          // dots wide (50mm @ 203dpi)
-export const PRINTER_BYTES = PRINTER_W / 8   // 48 bytes/row
-// Legacy export name kept for compatibility
-export const PRINTER_WIDTH_DOTS = PRINTER_W
+export const PRINTER_W    = 384                       // 50mm @ ~7.68 dots/mm
+export const PRINTER_H    = 338                       // 44mm @ ~7.68 dots/mm
+export const PRINTER_BYTES = PRINTER_W / 8            // 48 bytes/row
+export const PRINTER_WIDTH_DOTS = PRINTER_W           // legacy compat
+
+// Supersampling: all renderers draw at SCALE× then printCanvas scales down.
+const SCALE = 3
 
 // ── ESC/POS commands ──────────────────────────────────────────────────────
 const ESC = 0x1b, GS = 0x1d
@@ -31,7 +37,11 @@ const CMD_FEED       = (n: number) => new Uint8Array([ESC, 0x64, n])
 const CMD_LF         = new Uint8Array([0x0a])
 
 function cmdRaster(imgData: Uint8Array, wBytes: number, h: number): Uint8Array {
-  const hdr = new Uint8Array([GS, 0x76, 0x30, 0x00, wBytes & 0xff, (wBytes >> 8) & 0xff, h & 0xff, (h >> 8) & 0xff])
+  const hdr = new Uint8Array([
+    GS, 0x76, 0x30, 0x00,
+    wBytes & 0xff, (wBytes >> 8) & 0xff,
+    h & 0xff, (h >> 8) & 0xff,
+  ])
   const out = new Uint8Array(hdr.length + imgData.length)
   out.set(hdr); out.set(imgData, hdr.length)
   return out
@@ -51,7 +61,7 @@ export function canvasToBitmap(canvas: HTMLCanvasElement) {
         const x = bx * 8 + bit
         if (x < width) {
           const i = (y * width + x) * 4
-          if (px[i] * 0.299 + px[i+1] * 0.587 + px[i+2] * 0.114 < 128) byte |= 0x80 >> bit
+          if (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114 < 145) byte |= 0x80 >> bit
         }
       }
       bmp[y * wb + bx] = byte
@@ -78,18 +88,30 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
   const total = arrays.reduce((a, c) => a + c.length, 0)
   const out = new Uint8Array(total)
   let off = 0
-  for (let i = 0; i < arrays.length; i++) { out.set(arrays[i], off); off += arrays[i].length }
+  for (const arr of arrays) { out.set(arr, off); off += arr.length }
   return out
 }
 
+/**
+ * Scales the 3× render canvas down to printer dots, then sends as raster bitmap.
+ */
 export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
-  const { data, widthBytes, height } = canvasToBitmap(canvas)
+  const ph = Math.round(canvas.height / SCALE)
+  const out = document.createElement('canvas')
+  out.width = PRINTER_W; out.height = ph
+  const ctx = out.getContext('2d')!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, PRINTER_W, ph)
+  ctx.drawImage(canvas, 0, 0, PRINTER_W, ph)
+  const { data, widthBytes, height } = canvasToBitmap(out)
   await write(port, concat(CMD_INIT, CMD_ALIGN_LEFT, cmdRaster(data, widthBytes, height), CMD_FEED(4), CMD_LF))
 }
 
 export async function testPrint(port: SerialPort) {
   const enc = new TextEncoder()
-  await write(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n\n\n'), CMD_FEED(3)))
+  await write(port, concat(CMD_INIT, enc.encode('TEST IMPRESORA P1\n50x44mm OK\n\n\n'), CMD_FEED(3)))
 }
 
 // ── QR helper ─────────────────────────────────────────────────────────────
@@ -97,6 +119,19 @@ async function makeQR(url: string, size: number): Promise<HTMLCanvasElement> {
   const c = document.createElement('canvas')
   await QRCode.toCanvas(c, url, { width: size, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
   return c
+}
+
+// ── Text wrap helper ──────────────────────────────────────────────────────
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let line = ''
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w
+    if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w } else line = t
+  }
+  if (line) lines.push(line)
+  return lines
 }
 
 // ── Label data type ───────────────────────────────────────────────────────
@@ -108,212 +143,245 @@ export interface LabelData {
   categoria: string
   precio: string
   sku: string
-  wooUrl?: string   // full URL for QR; omit to skip QR
+  wooUrl?: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// FORMAT 1 — CAVA  (gondola shelf label, 50mm × ~45mm, with QR)
-// 384 × 344 dots
+// FORMAT 1 — CAVA  (gondola shelf label, full 50×44mm)
+// Logical: 384×338 dots  |  Canvas: 1152×1014 px (SCALE=3)
+//
+// Layout (logical dots):
+//   [0..6]    top black bar
+//   [14..~]   name (bold 27px), QR top-right (112×112 if url)
+//   [~..]     bodega (14px bold), varietal·region (12px)
+//   [210]     separator line
+//   [228]     category badge
+//   [246]     SKU
+//   [330]     price (42px bold, right-aligned)
+//   [332..338] bottom black bar
 // ─────────────────────────────────────────────────────────────────────────
 export async function renderCava(canvas: HTMLCanvasElement, d: LabelData) {
-  const W = PRINTER_W, H = 344
+  const LW = PRINTER_W, LH = PRINTER_H   // logical dots
+  const W = LW * SCALE, H = LH * SCALE   // canvas pixels
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')!
+  const s = (n: number) => Math.round(n * SCALE)
+
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H)
 
   const PAD = 14
-  const QR_SIZE = 100
-  const textW = d.wooUrl ? W - PAD * 2 - QR_SIZE - 8 : W - PAD * 2
+  const QR_LOG = 112          // QR size in logical dots
+  const QR_X   = LW - PAD - QR_LOG  // = 258
+  const QR_Y   = 8
 
-  // ── Top accent bar ──
+  // ── Top bar ──
   ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, W, 6)
+  ctx.fillRect(0, 0, W, s(6))
 
-  // ── Nombre ──
-  ctx.fillStyle = '#000'
-  ctx.font = 'bold 30px Arial'
-  ctx.textAlign = 'left'
-  const words = d.nombre.split(' ')
-  let line = ''; const nameLines: string[] = []
-  for (const w of words) {
-    const t = line ? line + ' ' + w : w
-    if (ctx.measureText(t).width > textW) { nameLines.push(line); line = w } else line = t
-  }
-  nameLines.push(line)
-  nameLines.slice(0, 2).forEach((l, i) => ctx.fillText(l, PAD, 44 + i * 33))
-
-  // ── Bodega ──
-  const yAfterNombre = nameLines.length > 1 ? 118 : 86
-  ctx.font = 'bold 17px Arial'
-  ctx.fillStyle = '#222'
-  ctx.fillText((d.bodega || '').toUpperCase(), PAD, yAfterNombre)
-
-  // ── Varietal · Región ──
-  const sub = [d.varietal, d.region].filter(Boolean).join('  ·  ')
-  ctx.font = '15px Arial'
-  ctx.fillStyle = '#555'
-  ctx.fillText(sub, PAD, yAfterNombre + 22)
-
-  // ── QR code ──
+  // ── QR ──
   if (d.wooUrl) {
-    const qr = await makeQR(d.wooUrl, QR_SIZE)
-    ctx.drawImage(qr, W - PAD - QR_SIZE, 14, QR_SIZE, QR_SIZE)
-    ctx.font = '9px Arial'
-    ctx.fillStyle = '#888'
+    const qrCanvas = await makeQR(d.wooUrl, s(QR_LOG))
+    ctx.drawImage(qrCanvas, s(QR_X), s(QR_Y), s(QR_LOG), s(QR_LOG))
+    ctx.font = `${s(8)}px Arial`
+    ctx.fillStyle = '#777'
     ctx.textAlign = 'center'
-    ctx.fillText('Ver ficha', W - PAD - QR_SIZE / 2, 14 + QR_SIZE + 11)
+    ctx.fillText('Ver ficha', s(QR_X + QR_LOG / 2), s(QR_Y + QR_LOG + 11))
     ctx.textAlign = 'left'
   }
 
-  // ── Separator line ──
-  ctx.strokeStyle = '#000'
-  ctx.lineWidth = 1.5
-  ctx.beginPath(); ctx.moveTo(PAD, H - 62); ctx.lineTo(W - PAD, H - 62); ctx.stroke()
-
-  // ── Categoría badge ──
-  ctx.font = 'bold 13px Arial'
+  // ── Name ──
+  const textW = d.wooUrl ? QR_X - PAD - 6 : LW - PAD * 2   // logical
+  ctx.font = `bold ${s(27)}px Arial`
   ctx.fillStyle = '#000'
-  const cat = (d.categoria || '').toUpperCase()
-  ctx.fillText(cat, PAD, H - 36)
+  ctx.textAlign = 'left'
+  const nameLines = wrapText(ctx, d.nombre, s(textW)).slice(0, 2)
+  const nameLineH = 30
+  const nameY0 = 48                               // baseline of first line
+  nameLines.forEach((l, i) => ctx.fillText(l, s(PAD), s(nameY0 + i * nameLineH)))
+  const nameBottom = nameY0 + (nameLines.length - 1) * nameLineH
 
-  // ── SKU small ──
+  // ── Bodega ──
+  const bodegaY = nameBottom + 22
+  ctx.font = `bold ${s(14)}px Arial`
+  ctx.fillStyle = '#1a1210'
+  ctx.fillText((d.bodega || '').toUpperCase(), s(PAD), s(bodegaY))
+
+  // ── Varietal · Región ──
+  const sub = [d.varietal, d.region].filter(Boolean).join('  ·  ')
+  if (sub) {
+    ctx.font = `${s(12)}px Arial`
+    ctx.fillStyle = '#555'
+    ctx.fillText(sub, s(PAD), s(bodegaY + 18))
+  }
+
+  // ── Separator ──
+  ctx.strokeStyle = '#111'
+  ctx.lineWidth = s(1)
+  ctx.beginPath()
+  ctx.moveTo(s(PAD), s(210)); ctx.lineTo(s(LW - PAD), s(210))
+  ctx.stroke()
+
+  // ── Category ──
+  if (d.categoria) {
+    ctx.font = `bold ${s(13)}px Arial`
+    ctx.fillStyle = '#000'
+    ctx.fillText((d.categoria).toUpperCase(), s(PAD), s(228))
+  }
+
+  // ── SKU ──
   if (d.sku) {
-    ctx.font = '11px Arial'
+    ctx.font = `${s(10)}px Arial`
     ctx.fillStyle = '#888'
-    ctx.fillText(`SKU ${d.sku}`, PAD, H - 18)
+    ctx.fillText(`SKU ${d.sku}`, s(PAD), s(246))
   }
 
   // ── Price ──
   if (d.precio) {
     const priceStr = `$${Number(d.precio).toLocaleString('es-AR')}`
-    ctx.font = 'bold 38px Arial'
+    ctx.font = `bold ${s(42)}px Arial`
     ctx.fillStyle = '#000'
     ctx.textAlign = 'right'
-    ctx.fillText(priceStr, W - PAD, H - 14)
+    ctx.fillText(priceStr, s(LW - PAD), s(330))
   }
 
-  // ── Bottom accent bar ──
+  // ── Bottom bar ──
   ctx.fillStyle = '#000'
-  ctx.fillRect(0, H - 5, W, 5)
+  ctx.fillRect(0, s(332), W, s(6))
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// FORMAT 2 — PRECIO RÁPIDO  (price tag, 50mm × ~25mm)
-// 384 × 190 dots
+// FORMAT 2 — PRECIO RÁPIDO  (full 50×44mm, price-focused)
+// Logical: 384×338 dots  |  Canvas: 1152×1014 px
+//
+//   [0..6]    top black bar
+//   [50]      name (bold 24px)
+//   [72]      bodega · varietal (13px)
+//   [90]      divider
+//   [290]     BIG PRICE centered (70px bold)
+//   [315]     category small
+//   [332..338] bottom bar
 // ─────────────────────────────────────────────────────────────────────────
 export function renderPrecio(canvas: HTMLCanvasElement, d: LabelData) {
-  const W = PRINTER_W, H = 190
+  const LW = PRINTER_W, LH = PRINTER_H
+  const W = LW * SCALE, H = LH * SCALE
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')!
+  const s = (n: number) => Math.round(n * SCALE)
+
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H)
-  const PAD = 12
+  const PAD = 14
 
-  // Thick top bar
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, W, 8)
+  // Top bar
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, s(6))
 
-  // Nombre — wrap if needed
-  ctx.font = 'bold 24px Arial'
-  ctx.fillStyle = '#000'
-  ctx.textAlign = 'left'
-  const words = d.nombre.split(' ')
-  let line = ''; const nameLines: string[] = []
-  for (const w of words) {
-    const t = line ? line + ' ' + w : w
-    if (ctx.measureText(t).width > W - PAD * 2) { nameLines.push(line); line = w } else line = t
+  // Name (1 line, truncate with ellipsis if too long)
+  ctx.font = `bold ${s(24)}px Arial`
+  ctx.fillStyle = '#000'; ctx.textAlign = 'left'
+  const maxNW = s(LW - PAD * 2)
+  let nombre = d.nombre
+  while (nombre.length > 1 && ctx.measureText(nombre + '…').width > maxNW) nombre = nombre.slice(0, -1)
+  if (nombre !== d.nombre) nombre += '…'
+  ctx.fillText(nombre, s(PAD), s(50))
+
+  // Bodega · varietal
+  const sub2 = [d.bodega, d.varietal].filter(Boolean).join(' · ')
+  if (sub2) {
+    ctx.font = `${s(13)}px Arial`; ctx.fillStyle = '#444'
+    ctx.fillText(sub2, s(PAD), s(72))
   }
-  nameLines.push(line)
-  nameLines.slice(0, 1).forEach(l => ctx.fillText(l, PAD, 42))
-
-  // Bodega · Varietal
-  ctx.font = '14px Arial'
-  ctx.fillStyle = '#444'
-  ctx.fillText([d.bodega, d.varietal].filter(Boolean).join(' · '), PAD, 62)
 
   // Divider
-  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1
-  ctx.beginPath(); ctx.moveTo(PAD, 74); ctx.lineTo(W - PAD, 74); ctx.stroke()
+  ctx.strokeStyle = '#bbb'; ctx.lineWidth = s(1)
+  ctx.beginPath(); ctx.moveTo(s(PAD), s(90)); ctx.lineTo(s(LW - PAD), s(90)); ctx.stroke()
 
-  // Price — big
+  // Big price
   if (d.precio) {
-    ctx.font = 'bold 52px Arial'
-    ctx.fillStyle = '#000'
-    ctx.textAlign = 'center'
-    ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, W / 2, H - 16)
+    ctx.font = `bold ${s(70)}px Arial`
+    ctx.fillStyle = '#000'; ctx.textAlign = 'center'
+    ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, W / 2, s(290))
   }
 
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, H - 6, W, 6)
+  // Category small
+  if (d.categoria) {
+    ctx.font = `${s(11)}px Arial`; ctx.fillStyle = '#888'; ctx.textAlign = 'center'
+    ctx.fillText((d.categoria).toUpperCase(), W / 2, s(315))
+  }
+
+  // Bottom bar
+  ctx.fillStyle = '#000'; ctx.fillRect(0, s(332), W, s(6))
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// FORMAT 3 — BOTELLA  (bottle sticker, half-width 192px × 300px, prints 2-up)
-// We render at full width but split in half visually with a dashed center line
-// so the user can cut two stickers from one label.
+// FORMAT 3 — BOTELLA  (two 25×44mm stickers side-by-side on one 50×44mm label)
+// Logical: 384×338  |  Canvas: 1152×1014 px
+// Each half: 192 logical wide. Dashed cut line in center.
 // ─────────────────────────────────────────────────────────────────────────
 export async function renderBottle(canvas: HTMLCanvasElement, d: LabelData) {
-  const W = PRINTER_W, H = 300
+  const LW = PRINTER_W, LH = PRINTER_H
+  const W = LW * SCALE, H = LH * SCALE
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')!
+  const s = (n: number) => Math.round(n * SCALE)
+
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H)
 
-  // Draw same label content in left half and right half (2-up)
-  for (const xOff of [0, W / 2]) {
-    const hw = W / 2   // 192px
-    const PAD = 8
+  const HW = LW / 2     // half-width logical = 192
+  const PAD = 8
+  const BAR = 6
 
+  let qrCanvas: HTMLCanvasElement | null = null
+  const QR_LOG = 86     // 86 dots ≈ 11.2mm — decent for close-range scan
+  if (d.wooUrl) qrCanvas = await makeQR(d.wooUrl, s(QR_LOG))
+
+  for (const xL of [0, HW]) {   // xL = logical x offset for left / right half
     // Border
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5
-    ctx.strokeRect(xOff + 2, 2, hw - 4, H - 4)
+    ctx.strokeStyle = '#000'; ctx.lineWidth = s(1.5)
+    ctx.strokeRect(s(xL + 2), s(2), s(HW - 4), s(LH - 4))
 
     // Top bar
     ctx.fillStyle = '#000'
-    ctx.fillRect(xOff + 2, 2, hw - 4, 6)
+    ctx.fillRect(s(xL + 2), s(2), s(HW - 4), s(BAR))
 
-    // Nombre
-    ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'left'
-    const words = d.nombre.split(' ')
-    let line = ''; const nl: string[] = []
-    for (const w of words) {
-      const t = line ? line + ' ' + w : w
-      if (ctx.measureText(t).width > hw - PAD * 2 - 4) { nl.push(line); line = w } else line = t
-    }
-    nl.push(line)
-    nl.slice(0, 3).forEach((l, i) => ctx.fillText(l, xOff + PAD + 2, 28 + i * 19))
-
-    const yAfter = 28 + Math.min(nl.length, 3) * 19
+    // Name
+    ctx.font = `bold ${s(13)}px Arial`; ctx.fillStyle = '#000'; ctx.textAlign = 'left'
+    const nl = wrapText(ctx, d.nombre, s(HW - PAD * 2 - 4)).slice(0, 3)
+    const nlH = 15
+    nl.forEach((l, i) => ctx.fillText(l, s(xL + PAD + 2), s(BAR + 4 + 13 + i * nlH)))
+    const afterName = BAR + 4 + nl.length * nlH + 4
 
     // Bodega
-    ctx.font = 'bold 12px Arial'; ctx.fillStyle = '#333'
-    ctx.fillText((d.bodega || '').toUpperCase(), xOff + PAD + 2, yAfter + 4)
+    ctx.font = `bold ${s(10)}px Arial`; ctx.fillStyle = '#333'
+    ctx.fillText((d.bodega || '').toUpperCase(), s(xL + PAD + 2), s(afterName + 10))
 
     // Varietal
-    ctx.font = '11px Arial'; ctx.fillStyle = '#666'
-    ctx.fillText(d.varietal || '', xOff + PAD + 2, yAfter + 18)
-
-    // QR
-    if (d.wooUrl) {
-      const qrSize = 72
-      const qr = await makeQR(d.wooUrl, qrSize)
-      ctx.drawImage(qr, xOff + (hw - qrSize) / 2, yAfter + 26, qrSize, qrSize)
+    if (d.varietal) {
+      ctx.font = `${s(9)}px Arial`; ctx.fillStyle = '#666'
+      ctx.fillText(d.varietal, s(xL + PAD + 2), s(afterName + 22))
     }
 
-    // Price
+    // QR centered
+    if (qrCanvas) {
+      const qrX = xL + (HW - QR_LOG) / 2
+      const qrY = afterName + 30
+      ctx.drawImage(qrCanvas, s(qrX), s(qrY), s(QR_LOG), s(QR_LOG))
+    }
+
+    // Price (bottom)
     if (d.precio) {
-      ctx.font = 'bold 22px Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center'
-      ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, xOff + hw / 2, H - 10)
+      ctx.font = `bold ${s(20)}px Arial`; ctx.fillStyle = '#000'; ctx.textAlign = 'center'
+      ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, s(xL + HW / 2), s(LH - 8))
     }
   }
 
-  // Dashed cut line in center
-  ctx.setLineDash([4, 3])
-  ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1
+  // Dashed cut line
+  ctx.setLineDash([s(4), s(3)])
+  ctx.strokeStyle = '#aaa'; ctx.lineWidth = s(0.8)
   ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke()
   ctx.setLineDash([])
 
-  // Scissors icon hint
-  ctx.font = '12px Arial'; ctx.fillStyle = '#bbb'; ctx.textAlign = 'center'
-  ctx.fillText('✂', W / 2, H / 2)
+  // Scissors
+  ctx.font = `${s(12)}px Arial`; ctx.fillStyle = '#aaa'; ctx.textAlign = 'center'
+  ctx.fillText('✂', W / 2, H / 2 + s(5))
 }
 
 // ── Render dispatcher ─────────────────────────────────────────────────────

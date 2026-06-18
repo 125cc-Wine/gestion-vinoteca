@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint,
-  renderLabel, PRINTER_W,
+  renderLabel, PRINTER_W, PRINTER_H,
   type LabelPrinterPort, type LabelData, type LabelFormat,
 } from '@/lib/labelPrinter'
 
@@ -264,10 +264,10 @@ export default function EtiquetasPage() {
           <div style={{ background: '#e8e8e8', border: `1px solid ${T.border}`, borderRadius: 14, padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <div style={{ background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', borderRadius: 4 }}>
               <canvas ref={canvasRef}
-                style={{ display: 'block', width: '100%', maxWidth: 500, height: 'auto', imageRendering: 'pixelated' }} />
+                style={{ display: 'block', width: '100%', maxWidth: 500, height: 'auto' }} />
             </div>
             <div style={{ fontSize: 11, color: '#888', textAlign: 'center' }}>
-              {PRINTER_W}px ancho · 203 DPI · imprime en negro sobre papel térmico
+              {PRINTER_W}×{PRINTER_H} dots (50×44mm) · ~203 DPI · negro sobre papel térmico
             </div>
           </div>
 
