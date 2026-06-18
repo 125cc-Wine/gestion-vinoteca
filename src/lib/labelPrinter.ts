@@ -235,14 +235,7 @@ export async function renderCava(canvas: HTMLCanvasElement, d: LabelData) {
       ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, s(LW - PAD), s(326))
     }
 
-    // ── Categoría + SKU (inferior izquierda, diminuto) ──
     ctx.textAlign = 'left'
-    const metaLine = [d.categoria, d.sku ? `SKU ${d.sku}` : ''].filter(Boolean).join('  ·  ')
-    if (metaLine) {
-      ctx.font = `${s(9)}px Arial`
-      ctx.fillStyle = '#999'
-      ctx.fillText(metaLine.toUpperCase(), s(PAD), s(326))
-    }
 
   } else {
     // ── Sin QR: nombre muy grande, ocupa la mitad superior ──
