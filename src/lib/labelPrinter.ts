@@ -150,98 +150,136 @@ export interface LabelData {
 // FORMAT 1 — CAVA  (gondola shelf label, full 50×44mm)
 // Logical: 384×338 dots  |  Canvas: 1152×1014 px (SCALE=3)
 //
-// Layout (logical dots):
-//   [0..6]    top black bar
-//   [14..~]   name (bold 27px), QR top-right (112×112 if url)
-//   [~..]     bodega (14px bold), varietal·region (12px)
-//   [210]     separator line
-//   [228]     category badge
-//   [246]     SKU
-//   [330]     price (42px bold, right-aligned)
+// Layout con QR (wooUrl presente):
+//   [0..6]     top black bar
+//   [8..188]   QR 180×180 centrado (hero element, ~23mm)
+//   [196..206] "Escaneá para ver ficha" 8px center
+//   [210]      thin separator
+//   [218..+]   NOMBRE bold 30px, hasta 2 líneas
+//   [+18]      BODEGA bold 13px
+//   [+14]      VARIETAL 11px (solo si 1 línea de nombre)
+//   [326]      PRECIO 20px right + CATEGORÍA 9px left
 //   [332..338] bottom black bar
+//
+// Layout sin QR:
+//   [0..6]    top bar
+//   [18..+]   NOMBRE bold 36px, hasta 2 líneas
+//   [+22]     BODEGA bold 18px
+//   [+16]     VARIETAL·REGION 13px
+//   [268]     separator
+//   [286]     CATEGORÍA 13px bold
+//   [302]     SKU 10px dim
+//   [326]     PRECIO 28px right
+//   [332..338] bottom bar
 // ─────────────────────────────────────────────────────────────────────────
 export async function renderCava(canvas: HTMLCanvasElement, d: LabelData) {
-  const LW = PRINTER_W, LH = PRINTER_H   // logical dots
-  const W = LW * SCALE, H = LH * SCALE   // canvas pixels
+  const LW = PRINTER_W, LH = PRINTER_H
+  const W = LW * SCALE, H = LH * SCALE
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')!
   const s = (n: number) => Math.round(n * SCALE)
 
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H)
-
   const PAD = 14
-  const QR_LOG = 112          // QR size in logical dots
-  const QR_X   = LW - PAD - QR_LOG  // = 258
-  const QR_Y   = 8
 
   // ── Top bar ──
   ctx.fillStyle = '#000'
   ctx.fillRect(0, 0, W, s(6))
 
-  // ── QR ──
   if (d.wooUrl) {
+    // ── QR hero ──
+    const QR_LOG = 180
+    const qrX = Math.round((LW - QR_LOG) / 2)   // 102, centered
     const qrCanvas = await makeQR(d.wooUrl, s(QR_LOG))
-    ctx.drawImage(qrCanvas, s(QR_X), s(QR_Y), s(QR_LOG), s(QR_LOG))
+    ctx.drawImage(qrCanvas, s(qrX), s(8), s(QR_LOG), s(QR_LOG))
+
+    // "Escaneá" hint
     ctx.font = `${s(8)}px Arial`
-    ctx.fillStyle = '#777'
-    ctx.textAlign = 'center'
-    ctx.fillText('Ver ficha', s(QR_X + QR_LOG / 2), s(QR_Y + QR_LOG + 11))
-    ctx.textAlign = 'left'
-  }
-
-  // ── Name ──
-  const textW = d.wooUrl ? QR_X - PAD - 6 : LW - PAD * 2   // logical
-  ctx.font = `bold ${s(27)}px Arial`
-  ctx.fillStyle = '#000'
-  ctx.textAlign = 'left'
-  const nameLines = wrapText(ctx, d.nombre, s(textW)).slice(0, 2)
-  const nameLineH = 30
-  const nameY0 = 48                               // baseline of first line
-  nameLines.forEach((l, i) => ctx.fillText(l, s(PAD), s(nameY0 + i * nameLineH)))
-  const nameBottom = nameY0 + (nameLines.length - 1) * nameLineH
-
-  // ── Bodega ──
-  const bodegaY = nameBottom + 22
-  ctx.font = `bold ${s(14)}px Arial`
-  ctx.fillStyle = '#1a1210'
-  ctx.fillText((d.bodega || '').toUpperCase(), s(PAD), s(bodegaY))
-
-  // ── Varietal · Región ──
-  const sub = [d.varietal, d.region].filter(Boolean).join('  ·  ')
-  if (sub) {
-    ctx.font = `${s(12)}px Arial`
-    ctx.fillStyle = '#555'
-    ctx.fillText(sub, s(PAD), s(bodegaY + 18))
-  }
-
-  // ── Separator ──
-  ctx.strokeStyle = '#111'
-  ctx.lineWidth = s(1)
-  ctx.beginPath()
-  ctx.moveTo(s(PAD), s(210)); ctx.lineTo(s(LW - PAD), s(210))
-  ctx.stroke()
-
-  // ── Category ──
-  if (d.categoria) {
-    ctx.font = `bold ${s(13)}px Arial`
-    ctx.fillStyle = '#000'
-    ctx.fillText((d.categoria).toUpperCase(), s(PAD), s(228))
-  }
-
-  // ── SKU ──
-  if (d.sku) {
-    ctx.font = `${s(10)}px Arial`
     ctx.fillStyle = '#888'
-    ctx.fillText(`SKU ${d.sku}`, s(PAD), s(246))
-  }
+    ctx.textAlign = 'center'
+    ctx.fillText('Escaneá para ver la ficha completa', W / 2, s(196))
+    ctx.textAlign = 'left'
 
-  // ── Price ──
-  if (d.precio) {
-    const priceStr = `$${Number(d.precio).toLocaleString('es-AR')}`
-    ctx.font = `bold ${s(42)}px Arial`
+    // Thin separator
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = s(0.8)
+    ctx.beginPath(); ctx.moveTo(s(PAD), s(206)); ctx.lineTo(s(LW - PAD), s(206)); ctx.stroke()
+
+    // ── Nombre (grande) ──
+    ctx.font = `bold ${s(30)}px Arial`
     ctx.fillStyle = '#000'
-    ctx.textAlign = 'right'
-    ctx.fillText(priceStr, s(LW - PAD), s(330))
+    const nameLines = wrapText(ctx, d.nombre, s(LW - PAD * 2)).slice(0, 2)
+    const nameLineH = 34
+    const nameBase = 218 + 30   // first baseline = 248
+    nameLines.forEach((l, i) => ctx.fillText(l, s(PAD), s(nameBase + i * nameLineH)))
+    const nameBottom = nameBase + (nameLines.length - 1) * nameLineH   // 248 or 282
+
+    // ── Bodega ──
+    const bodegaY = nameBottom + 18
+    ctx.font = `bold ${s(13)}px Arial`
+    ctx.fillStyle = '#222'
+    ctx.fillText((d.bodega || '').toUpperCase(), s(PAD), s(bodegaY))
+
+    // ── Varietal (solo si hay espacio = 1 línea de nombre) ──
+    if (nameLines.length === 1 && d.varietal) {
+      const sub = [d.varietal, d.region].filter(Boolean).join(' · ')
+      ctx.font = `${s(11)}px Arial`
+      ctx.fillStyle = '#666'
+      ctx.fillText(sub, s(PAD), s(bodegaY + 14))
+    }
+
+    // ── Precio (pequeño, esquina inferior derecha) ──
+    if (d.precio) {
+      ctx.font = `bold ${s(20)}px Arial`
+      ctx.fillStyle = '#000'
+      ctx.textAlign = 'right'
+      ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, s(LW - PAD), s(326))
+    }
+
+    // ── Categoría + SKU (inferior izquierda, diminuto) ──
+    ctx.textAlign = 'left'
+    const metaLine = [d.categoria, d.sku ? `SKU ${d.sku}` : ''].filter(Boolean).join('  ·  ')
+    if (metaLine) {
+      ctx.font = `${s(9)}px Arial`
+      ctx.fillStyle = '#999'
+      ctx.fillText(metaLine.toUpperCase(), s(PAD), s(326))
+    }
+
+  } else {
+    // ── Sin QR: nombre muy grande, ocupa la mitad superior ──
+    ctx.font = `bold ${s(36)}px Arial`
+    ctx.fillStyle = '#000'
+    const nameLines = wrapText(ctx, d.nombre, s(LW - PAD * 2)).slice(0, 2)
+    const nameLineH = 40
+    const nameBase = 50
+    nameLines.forEach((l, i) => ctx.fillText(l, s(PAD), s(nameBase + i * nameLineH)))
+    const nameBottom = nameBase + (nameLines.length - 1) * nameLineH
+
+    const bodegaY = nameBottom + 22
+    ctx.font = `bold ${s(18)}px Arial`
+    ctx.fillStyle = '#222'
+    ctx.fillText((d.bodega || '').toUpperCase(), s(PAD), s(bodegaY))
+
+    const sub = [d.varietal, d.region].filter(Boolean).join('  ·  ')
+    if (sub) {
+      ctx.font = `${s(13)}px Arial`; ctx.fillStyle = '#555'
+      ctx.fillText(sub, s(PAD), s(bodegaY + 18))
+    }
+
+    ctx.strokeStyle = '#111'; ctx.lineWidth = s(1)
+    ctx.beginPath(); ctx.moveTo(s(PAD), s(268)); ctx.lineTo(s(LW - PAD), s(268)); ctx.stroke()
+
+    if (d.categoria) {
+      ctx.font = `bold ${s(13)}px Arial`; ctx.fillStyle = '#000'
+      ctx.fillText(d.categoria.toUpperCase(), s(PAD), s(286))
+    }
+    if (d.sku) {
+      ctx.font = `${s(10)}px Arial`; ctx.fillStyle = '#888'
+      ctx.fillText(`SKU ${d.sku}`, s(PAD), s(302))
+    }
+    if (d.precio) {
+      ctx.font = `bold ${s(28)}px Arial`; ctx.fillStyle = '#000'; ctx.textAlign = 'right'
+      ctx.fillText(`$${Number(d.precio).toLocaleString('es-AR')}`, s(LW - PAD), s(326))
+    }
   }
 
   // ── Bottom bar ──
