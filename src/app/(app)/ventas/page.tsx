@@ -329,6 +329,9 @@ export default function VentasPage() {
 
   const [toast, setToast] = useState('')
 
+  // ── Modal etiquetas desde venta ──
+  const [etiquetaVenta, setEtiquetaVenta] = useState<Venta | null>(null)
+
   useEffect(() => {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
     setEmpresa(e); cargarTodo(e)
@@ -799,6 +802,7 @@ export default function VentasPage() {
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
                             {v.tipo === 'remito' && <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.blue })} onClick={() => abrirDevolucion(v)}>Dev.</button>}
+                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} title="Generar etiquetas" onClick={() => setEtiquetaVenta(v)}>🏷️</button>
                             {v.facturado
                               ? <span style={{ fontSize: 10, fontWeight: 700, color: C.green, padding: '4px 6px', border: `1px solid ${C.green}44`, borderRadius: 4 }}>CAE ✓</span>
                               : <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirFacturar(v)}>Facturar</button>
@@ -1318,6 +1322,53 @@ export default function VentasPage() {
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
               <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal etiquetas de cava ── */}
+      {etiquetaVenta && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && setEtiquetaVenta(null)}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 500, boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Generar etiquetas de cava</div>
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{etiquetaVenta.numero} · {etiquetaVenta.cliente_nombre}</div>
+              </div>
+              <button className="vbtn" style={btn('ghost', { padding: '4px 8px', fontSize: 18, color: C.dim })} onClick={() => setEtiquetaVenta(null)}>×</button>
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>
+              Hacé clic en un producto para abrir el diseñador de etiquetas con los datos pre-cargados.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(etiquetaVenta.items as VentaItem[]).map((item, i) => {
+                const prod = productos.find(p => p.id === item.producto_id)
+                return (
+                  <button key={i} className="vbtn"
+                    onClick={() => {
+                      if (prod) localStorage.setItem('etiqueta_prefill', JSON.stringify(prod))
+                      else localStorage.setItem('etiqueta_prefill', JSON.stringify({ nombre: item.nombre, bodega: '', varietal: '', categoria: '', precio_venta: item.precio_unitario, sku: '' }))
+                      window.location.href = '/etiquetas'
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'border-color 0.12s' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = C.border2)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.nombre}</div>
+                      <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>
+                        x{item.cantidad} · ${item.precio_unitario.toLocaleString('es-AR')}
+                        {prod?.woo_product_id ? ' · 🔗 tiene QR' : ''}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 20 }}>🏷️</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ marginTop: 16, fontSize: 11, color: C.dim, background: C.bg, borderRadius: 8, padding: '8px 12px' }}>
+              💡 Para imprimir múltiples productos de corrido, imprimí cada uno desde la página de Etiquetas y volvé acá.
             </div>
           </div>
         </div>
