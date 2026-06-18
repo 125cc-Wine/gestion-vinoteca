@@ -7,15 +7,31 @@ interface Movimiento {
   cliente: string; producto: string; producto_id: string | null; cantidad: number
 }
 
-const C = {
-  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
-  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
-  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
+const T = {
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  wine:    '#800000',
+  wineBg:  'rgba(128,0,0,0.07)',
+  wineBd:  'rgba(128,0,0,0.18)',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  greenBd: 'rgba(45,122,79,0.22)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  redBd:   'rgba(192,48,48,0.22)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  amberBd: 'rgba(160,112,16,0.22)',
 }
 
 const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '6px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
+  color: T.text, padding: '7px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box',
 }
 
 export default function MovimientosPage() {
@@ -81,114 +97,128 @@ export default function MovimientosPage() {
   const totalEntradas = filtrados.filter(m => m.tipo === 'entrada').reduce((a, m) => a + m.cantidad, 0)
 
   return (
-    <div style={{ padding: 28, background: C.bg, minHeight: '100vh', color: C.text }}>
+    <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
       <style>{`
-        .mrow:hover { background: rgba(255,255,255,0.025) !important; }
-        .minp:focus { border-color: #555 !important; }
+        .tr:hover { background: #FDFAF6 !important; }
+        .minp:focus { border-color: ${T.border2} !important; }
       `}</style>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      {/* Page header */}
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Movimientos de stock</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: C.muted }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Movimientos de stock</h1>
+          <p style={{ fontSize: 12, color: T.muted, marginTop: 3, margin: '3px 0 0' }}>
             {empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}
           </p>
         </div>
         <button
           onClick={() => setAjusteModal(true)}
-          style={{ background: '#222', border: `1px solid ${C.border}`, color: C.text, borderRadius: 7, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+          style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.text, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
         >
           + Ajuste manual
         </button>
       </div>
 
-      {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input className="minp" style={{ ...INP, flex: '1 1 220px' }} placeholder="Buscar producto, cliente, comprobante..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-        <input className="minp" type="date" style={INP} value={desde} onChange={e => { setDesde(e.target.value); cargar(empresa, e.target.value, hasta) }} />
-        <input className="minp" type="date" style={INP} value={hasta} onChange={e => { setHasta(e.target.value); cargar(empresa, desde, e.target.value) }} />
-      </div>
+      <div style={{ padding: '24px 28px' }}>
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          <input className="minp" style={{ ...INP, flex: '1 1 220px' }} placeholder="Buscar producto, cliente, comprobante..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+          <input className="minp" type="date" style={INP} value={desde} onChange={e => { setDesde(e.target.value); cargar(empresa, e.target.value, hasta) }} />
+          <input className="minp" type="date" style={INP} value={hasta} onChange={e => { setHasta(e.target.value); cargar(empresa, desde, e.target.value) }} />
+        </div>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Movimientos', value: filtrados.length, color: C.text },
-          { label: 'Unidades vendidas', value: totalEgresos, color: C.red },
-          { label: 'Unidades ingresadas', value: totalEntradas, color: C.green },
-        ].map(s => (
-          <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: 'Movimientos', value: filtrados.length, color: T.text },
+            { label: 'Unidades vendidas', value: totalEgresos, color: T.red },
+            { label: 'Unidades ingresadas', value: totalEntradas, color: T.green },
+          ].map(s => (
+            <div key={s.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>{s.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
 
-      {/* Tabla */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
-              {['Fecha', 'Tipo', 'Comprobante', 'Producto', 'Cliente', 'Cant.'].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Cant.' ? 'right' : 'left', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: C.dim }}>Cargando...</td></tr>
-            ) : filtrados.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: C.dim }}>Sin movimientos en el período</td></tr>
-            ) : filtrados.map(m => (
-              <tr key={m.id} className="mrow" style={{ borderBottom: `1px solid rgba(42,42,42,0.6)` }}>
-                <td style={{ padding: '10px 14px', color: C.muted, fontSize: 12 }}>
-                  {new Date(m.fecha).toLocaleDateString('es-AR')}
-                </td>
-                <td style={{ padding: '10px 14px' }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4,
-                    background: m.tipo === 'egreso' ? 'rgba(224,85,85,0.12)' : m.tipo === 'entrada' ? 'rgba(76,175,125,0.12)' : 'rgba(212,130,10,0.12)',
-                    color: m.tipo === 'egreso' ? C.red : m.tipo === 'entrada' ? C.green : C.amber,
-                    border: `1px solid ${m.tipo === 'egreso' ? 'rgba(224,85,85,0.3)' : m.tipo === 'entrada' ? 'rgba(76,175,125,0.3)' : 'rgba(212,130,10,0.3)'}`,
-                  }}>
-                    {m.tipo === 'egreso' ? 'Venta' : m.tipo === 'entrada' ? 'Entrada' : 'Ajuste'}
-                  </span>
-                </td>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: C.muted }}>{m.comprobante}</td>
-                <td style={{ padding: '10px 14px', color: C.text, fontWeight: 500 }}>{m.producto}</td>
-                <td style={{ padding: '10px 14px', color: C.muted, fontSize: 12 }}>{m.cliente || '—'}</td>
-                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: m.tipo === 'egreso' ? C.red : C.green }}>
-                  {m.tipo === 'egreso' ? '-' : '+'}{m.cantidad}
-                </td>
+        {/* Tabla */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                {['Fecha', 'Tipo', 'Comprobante', 'Producto', 'Cliente', 'Cant.'].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Cant.' ? 'right' : 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
+              ) : filtrados.length === 0 ? (
+                <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin movimientos en el período</td></tr>
+              ) : filtrados.map(m => (
+                <tr key={m.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'default', transition: 'background 0.1s' }}>
+                  <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>
+                    {new Date(m.fecha).toLocaleDateString('es-AR')}
+                  </td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99,
+                      background: m.tipo === 'egreso' ? T.redBg : m.tipo === 'entrada' ? T.greenBg : T.amberBg,
+                      color: m.tipo === 'egreso' ? T.red : m.tipo === 'entrada' ? T.green : T.amber,
+                      border: `1px solid ${m.tipo === 'egreso' ? T.redBd : m.tipo === 'entrada' ? T.greenBd : T.amberBd}`,
+                    }}>
+                      {m.tipo === 'egreso' ? 'Venta' : m.tipo === 'entrada' ? 'Entrada' : 'Ajuste'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{m.comprobante}</td>
+                  <td style={{ padding: '10px 14px', color: T.text, fontWeight: 500, fontSize: 13 }}>{m.producto}</td>
+                  <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{m.cliente || '—'}</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: m.tipo === 'egreso' ? T.red : T.green, fontSize: 13 }}>
+                    {m.tipo === 'egreso' ? '-' : '+'}{m.cantidad}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal ajuste */}
       {ajusteModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setAjusteModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 420 }}>
-            <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 700, color: C.text }}>Ajuste manual de stock</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && setAjusteModal(false)}
+        >
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Ajuste manual de stock</h2>
+              <button onClick={() => setAjusteModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Producto</div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Producto</label>
                 <input className="minp" style={{ ...INP, width: '100%' }} placeholder="Nombre del producto" value={ajusteProducto} onChange={e => setAjusteProducto(e.target.value)} />
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Cantidad (+/-)</div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Cantidad (+/-)</label>
                 <input className="minp" type="number" style={{ ...INP, width: '100%' }} placeholder="Ej: 12 para sumar, -3 para restar" value={ajusteCantidad} onChange={e => setAjusteCantidad(e.target.value)} />
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Motivo</div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Motivo</label>
                 <input className="minp" style={{ ...INP, width: '100%' }} placeholder="Recepción de mercadería, pérdida, etc." value={ajusteMotivo} onChange={e => setAjusteMotivo(e.target.value)} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
-              <button onClick={() => setAjusteModal(false)} style={{ background: '#222', border: `1px solid ${C.border}`, color: C.text, borderRadius: 6, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={guardarAjuste} disabled={ajusteGuardando || !ajusteProducto || !ajusteCantidad}
-                style={{ background: C.accent, border: 'none', color: C.text, borderRadius: 6, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !ajusteProducto || !ajusteCantidad ? 0.5 : 1 }}>
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setAjusteModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer' }}>Cancelar</button>
+              <button
+                onClick={guardarAjuste}
+                disabled={ajusteGuardando || !ajusteProducto || !ajusteCantidad}
+                style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !ajusteProducto || !ajusteCantidad ? 0.5 : 1 }}
+              >
                 {ajusteGuardando ? 'Guardando...' : 'Registrar ajuste'}
               </button>
             </div>
@@ -196,8 +226,9 @@ export default function MovimientosPage() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: T.surface, border: `1px solid ${T.border}`, color: T.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 4px 16px rgba(26,18,16,0.12)', zIndex: 200 }}>
           {toast}
         </div>
       )}

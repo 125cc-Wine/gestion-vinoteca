@@ -1,18 +1,46 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 
-const C = {
-  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
-  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
-  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
+const T = {
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  wine:    '#800000',
+  wineBg:  'rgba(128,0,0,0.07)',
+  wineBd:  'rgba(128,0,0,0.18)',
+  brown:   '#633A2C',
+  gold:    '#B88A2C',
+  goldBg:  'rgba(184,138,44,0.08)',
+  goldBd:  'rgba(184,138,44,0.22)',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  greenBd: 'rgba(45,122,79,0.22)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  redBd:   'rgba(192,48,48,0.22)',
+  blue:    '#2B5EA0',
+  blueBg:  'rgba(43,94,160,0.08)',
+  blueBd:  'rgba(43,94,160,0.22)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  amberBd: 'rgba(160,112,16,0.22)',
 }
+
 const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '6px 10px', fontSize: 13, outline: 'none', boxSizing: 'border-box',
-}
-function btn(v: 'default' | 'accent' | 'danger' | 'ghost' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
-  const b = { default: { background: '#222', border: `1px solid ${C.border}` }, accent: { background: C.accent, border: 'none' }, danger: { background: 'rgba(224,85,85,0.1)', border: `1px solid rgba(224,85,85,0.3)` }, ghost: { background: 'transparent', border: '1px solid transparent' } }
-  return { ...b[v], color: C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+  background: T.surface,
+  border: `1px solid ${T.border}`,
+  borderRadius: 7,
+  color: T.text,
+  padding: '9px 12px',
+  fontSize: 13,
+  outline: 'none',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+  transition: 'border-color 0.12s',
 }
 
 interface ItemCompra { producto_id: string; nombre: string; cantidad: number; precio_unitario: number; subtotal: number }
@@ -28,8 +56,14 @@ interface Producto { id: string; nombre: string; bodega: string; precio_costo?: 
 
 const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0 }
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
-const ESTADO_COLOR: Record<string, string> = { pendiente: C.amber, enviado: '#7AADFF', recibido: C.green, cancelado: C.dim }
 const NEXT_ESTADO: Record<string, string> = { pendiente: 'enviado', enviado: 'recibido' }
+
+const ESTADO_STYLE: Record<string, React.CSSProperties> = {
+  pendiente: { background: T.amberBg, color: T.amber, border: `1px solid rgba(160,112,16,0.25)` },
+  enviado:   { background: T.blueBg,  color: T.blue,  border: `1px solid rgba(43,94,160,0.25)` },
+  recibido:  { background: T.greenBg, color: T.green, border: `1px solid rgba(45,122,79,0.25)` },
+  cancelado: { background: T.bg,      color: T.dim,   border: `1px solid ${T.border}` },
+}
 
 export default function ComprasPage() {
   const [empresa, setEmpresa] = useState('aroma')
@@ -147,189 +181,211 @@ export default function ComprasPage() {
   }
 
   return (
-    <div style={{ padding: 28, background: C.bg, minHeight: '100vh', color: C.text }}>
-      <style>{`.crow:hover{background:rgba(255,255,255,0.025)!important}.cinp:focus{border-color:#555!important}.psug:hover{background:rgba(255,255,255,0.07)!important}`}</style>
+    <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        .tr:hover { background: #FDFAF6 !important; }
+        .btn-row:hover { border-color: ${T.border2} !important; color: ${T.muted} !important; }
+        .btn-wine:hover { background: #6A0000 !important; }
+        .drop-item:hover { background: ${T.bg} !important; }
+        input:focus, select:focus, textarea:focus { border-color: ${T.border2} !important; box-shadow: 0 0 0 3px rgba(128,0,0,0.08) !important; }
+      `}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      {/* Page header */}
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Órdenes de compra</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: C.muted }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Órdenes de compra</h1>
+          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
         </div>
-        <button onClick={abrirNuevo} style={{ ...btn('accent'), padding: '8px 18px', fontSize: 13 }}>+ Nueva orden</button>
+        <button className="btn-wine" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s', fontFamily: 'inherit' }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva orden
+        </button>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Pendientes de envío', value: kpis.pendientes, color: C.amber },
-          { label: 'Enviadas', value: kpis.enviadas, color: '#7AADFF' },
-          { label: 'Total en tránsito', value: `$${kpis.total.toLocaleString('es-AR')}`, color: C.text },
-        ].map(k => (
-          <div key={k.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
-          </div>
-        ))}
-      </div>
+      <div style={{ padding: '24px 28px' }}>
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+          {[
+            { label: 'Pendientes de envío', value: kpis.pendientes, color: T.amber },
+            { label: 'Enviadas',            value: kpis.enviadas,   color: T.blue  },
+            { label: 'Total en tránsito',   value: `$${kpis.total.toLocaleString('es-AR')}`, color: T.text },
+          ].map(k => (
+            <div key={k.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{k.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+            </div>
+          ))}
+        </div>
 
-      {/* Filtro estado */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-        {['', 'pendiente', 'enviado', 'recibido'].map(e => (
-          <button key={e} onClick={() => setFiltroEstado(e)}
-            style={{ ...btn(filtroEstado === e ? 'accent' : 'ghost', { padding: '4px 12px', fontSize: 12 }), border: `1px solid ${filtroEstado === e ? C.accent : C.border}` }}>
-            {e === '' ? 'Todas' : ESTADO_LABEL[e]}
-          </button>
-        ))}
-      </div>
+        {/* Filtro estado */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+          {['', 'pendiente', 'enviado', 'recibido'].map(e => (
+            <button key={e} onClick={() => setFiltroEstado(e)}
+              style={{ background: filtroEstado === e ? T.wine : T.surface, color: filtroEstado === e ? '#fff' : T.muted, border: `1px solid ${filtroEstado === e ? T.wine : T.border}`, borderRadius: 7, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+              {e === '' ? 'Todas' : ESTADO_LABEL[e]}
+            </button>
+          ))}
+        </div>
 
-      {/* Tabla */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
-              {['N°', 'Proveedor', 'Items', 'Total', 'Estado', 'Fecha esp.', ''].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: C.dim }}>Cargando...</td></tr>
-            ) : filtradas.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: C.dim }}>Sin órdenes</td></tr>
-            ) : filtradas.map(c => (
-              <tr key={c.id} className="crow" style={{ borderBottom: `1px solid rgba(42,42,42,0.6)`, cursor: 'pointer' }} onClick={() => setDetalle(c)}>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: C.muted }}>{c.numero}</td>
-                <td style={{ padding: '10px 14px', fontWeight: 500 }}>{c.proveedor_nombre}</td>
-                <td style={{ padding: '10px 14px', color: C.muted }}>{c.items?.length || 0} ítem{c.items?.length !== 1 ? 's' : ''}</td>
-                <td style={{ padding: '10px 14px', fontWeight: 700 }}>${c.total.toLocaleString('es-AR')}</td>
-                <td style={{ padding: '10px 14px' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4, color: ESTADO_COLOR[c.estado], background: `${ESTADO_COLOR[c.estado]}18`, border: `1px solid ${ESTADO_COLOR[c.estado]}44` }}>
-                    {ESTADO_LABEL[c.estado]}
-                  </span>
-                </td>
-                <td style={{ padding: '10px 14px', color: C.muted, fontSize: 12 }}>
-                  {c.fecha_esperada ? new Date(c.fecha_esperada + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
-                </td>
-                <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {NEXT_ESTADO[c.estado] && (
-                      <button className="cinp" style={btn('default', { padding: '3px 8px', fontSize: 11 })} onClick={() => avanzarEstado(c)}>
-                        → {ESTADO_LABEL[NEXT_ESTADO[c.estado]]}
-                      </button>
-                    )}
-                    {c.estado !== 'recibido' && (
-                      <button className="cinp" style={btn('danger', { padding: '3px 8px', fontSize: 11 })} onClick={() => cancelar(c)}>Cancelar</button>
-                    )}
-                  </div>
-                </td>
+        {/* Tabla */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                {['N°', 'Proveedor', 'Items', 'Total', 'Estado', 'Fecha esp.', ''].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
+              ) : filtradas.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin órdenes</td></tr>
+              ) : filtradas.map(c => (
+                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', transition: 'background 0.1s' }} onClick={() => setDetalle(c)}>
+                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{c.proveedor_nombre}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, color: T.muted }}>{c.items?.length || 0} ítem{c.items?.length !== 1 ? 's' : ''}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: T.text }}>${c.total.toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <span style={{ ...(ESTADO_STYLE[c.estado] || {}), padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
+                      {ESTADO_LABEL[c.estado]}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: T.muted }}>
+                    {c.fecha_esperada ? new Date(c.fecha_esperada + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
+                  </td>
+                  <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {NEXT_ESTADO[c.estado] && (
+                        <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.dim, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => avanzarEstado(c)}>
+                          → {ESTADO_LABEL[NEXT_ESTADO[c.estado]]}
+                        </button>
+                      )}
+                      {c.estado !== 'recibido' && (
+                        <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.red, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => cancelar(c)}>Cancelar</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal nueva OC */}
       {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 700 }}>Nueva orden de compra</h2>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-              <div style={{ gridColumn: '1/-1', position: 'relative' }}>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Proveedor</div>
-                <input ref={provRef} className="cinp" style={{ ...INP, width: '100%' }}
-                  placeholder="Buscar proveedor..." value={proveedorNombre}
-                  onFocus={() => setProvSugsOpen(true)}
-                  onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
-                  onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
-                {provSugsOpen && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                    {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
-                      <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
-                        onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
-                        <span style={{ fontWeight: 500 }}>{p.nombre}</span>
-                        {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: C.muted }}> — {p.razon_social}</span>}
-                      </div>
-                    ))}
-                    {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
-                      <div style={{ padding: '8px 12px', fontSize: 12, color: C.dim }}>Sin resultados — se usará el nombre ingresado</div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Fecha esperada de entrega</div>
-                <input type="date" className="cinp" style={{ ...INP, width: '100%' }} value={fechaEsperada} onChange={e => setFechaEsperada(e.target.value)} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 5 }}>Notas</div>
-                <input className="cinp" style={{ ...INP, width: '100%' }} placeholder="Observaciones..." value={notas} onChange={e => setNotas(e.target.value)} />
-              </div>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nueva orden de compra</h2>
+              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
 
-            {/* Ítems */}
-            <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>Productos a pedir</div>
-            <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-                    {['Producto', 'Cantidad', 'Precio unitario', 'Subtotal', ''].map(h => (
-                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
-                      <td style={{ padding: '6px 8px', position: 'relative' }}>
-                        <input className="cinp" style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto..."
-                          value={item.nombre}
-                          onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
-                          onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
-                        {prodSugs === idx && (
-                          <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, zIndex: 20, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                            {(() => {
-                              const porBodega = proveedorNombre
-                                ? productos.filter(p => p.bodega?.toLowerCase().includes(proveedorNombre.toLowerCase()) || proveedorNombre.toLowerCase().includes((p.bodega || '').toLowerCase()))
-                                : productos
-                              const filtrados = porBodega.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
-                              const resultado = filtrados.length > 0 ? filtrados : productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
-                              return resultado.slice(0, 12).map(p => (
-                              <div key={p.id} className="psug" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }} onMouseDown={() => selProducto(idx, p)}>
-                                <span style={{ fontWeight: 500 }}>{p.nombre}</span>
-                                {p.bodega && <span style={{ color: C.muted }}> — {p.bodega}</span>}
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ gridColumn: '1/-1', position: 'relative' }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Proveedor</label>
+                  <input ref={provRef} style={{ ...INP, width: '100%' }}
+                    placeholder="Buscar proveedor..." value={proveedorNombre}
+                    onFocus={() => setProvSugsOpen(true)}
+                    onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
+                    onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
+                  {provSugsOpen && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                      {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
+                        <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}
+                          onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                          <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
+                          {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: T.muted }}> — {p.razon_social}</span>}
+                        </div>
+                      ))}
+                      {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
+                        <div style={{ padding: '8px 12px', fontSize: 12, color: T.dim }}>Sin resultados — se usará el nombre ingresado</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha esperada de entrega</label>
+                  <input type="date" style={{ ...INP, width: '100%' }} value={fechaEsperada} onChange={e => setFechaEsperada(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas</label>
+                  <input style={{ ...INP, width: '100%' }} placeholder="Observaciones..." value={notas} onChange={e => setNotas(e.target.value)} />
+                </div>
+              </div>
+
+              {/* Ítems */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Productos a pedir</div>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                        {['Producto', 'Cantidad', 'Precio unitario', 'Subtotal', ''].map(h => (
+                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td style={{ padding: '6px 8px', position: 'relative' }}>
+                            <input style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto..."
+                              value={item.nombre}
+                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
+                              onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
+                            {prodSugs === idx && (
+                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 20, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                                {(() => {
+                                  const porBodega = proveedorNombre
+                                    ? productos.filter(p => p.bodega?.toLowerCase().includes(proveedorNombre.toLowerCase()) || proveedorNombre.toLowerCase().includes((p.bodega || '').toLowerCase()))
+                                    : productos
+                                  const filtrados = porBodega.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+                                  const resultado = filtrados.length > 0 ? filtrados : productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+                                  return resultado.slice(0, 12).map(p => (
+                                    <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }} onMouseDown={() => selProducto(idx, p)}>
+                                      <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
+                                      {p.bodega && <span style={{ color: T.muted }}> — {p.bodega}</span>}
+                                    </div>
+                                  ))
+                                })()}
                               </div>
-                              ))
-                            })()}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: '6px 8px' }}>
-                        <input type="number" className="cinp" style={{ ...INP, width: 70 }} min={1} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', +e.target.value || 1)} />
-                      </td>
-                      <td style={{ padding: '6px 8px' }}>
-                        <input type="number" className="cinp" style={{ ...INP, width: 100 }} min={0} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
-                      </td>
-                      <td style={{ padding: '6px 8px', fontWeight: 600, color: C.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
-                      <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                        {items.length > 1 && (
-                          <button style={{ background: 'transparent', border: 'none', color: C.dim, fontSize: 16, cursor: 'pointer' }} onClick={() => setItems(items.filter((_, i) => i !== idx))}>×</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            )}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 70 }} min={1} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', +e.target.value || 1)} />
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 100 }} min={0} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                            {items.length > 1 && (
+                              <button style={{ background: 'transparent', border: 'none', color: T.dim, fontSize: 16, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setItems(items.filter((_, i) => i !== idx))}>×</button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button onClick={() => setItems([...items, { ...ITEM_EMPTY }])} style={{ ...btn('ghost', { fontSize: 12 }), color: C.accent }}>+ agregar línea</button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 700 }}>Total: <span style={{ color: C.green }}>${total.toLocaleString('es-AR')}</span></span>
-                <button onClick={() => setModal(false)} style={btn('default', { padding: '7px 16px' })}>Cancelar</button>
-                <button onClick={guardar} disabled={saving} style={{ ...btn('accent', { padding: '7px 18px', fontSize: 13 }), opacity: saving ? 0.6 : 1 }}>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button className="btn-row" onClick={() => setItems([...items, { ...ITEM_EMPTY }])}
+                style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.wine, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, transition: 'all 0.12s' }}>
+                + agregar línea
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Total: <span style={{ color: T.green }}>${total.toLocaleString('es-AR')}</span></span>
+                <button onClick={() => setModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                <button className="btn-wine" onClick={guardar} disabled={saving} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', opacity: saving ? 0.6 : 1 }}>
                   {saving ? 'Guardando...' : 'Crear orden'}
                 </button>
               </div>
@@ -340,55 +396,57 @@ export default function ComprasPage() {
 
       {/* Modal detalle */}
       {detalle && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={e => e.target === e.currentTarget && setDetalle(null)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 540 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 540, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{detalle.numero}</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: C.muted }}>{detalle.proveedor_nombre}</p>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{detalle.numero}</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: T.muted }}>{detalle.proveedor_nombre}</p>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 6, color: ESTADO_COLOR[detalle.estado], background: `${ESTADO_COLOR[detalle.estado]}18`, border: `1px solid ${ESTADO_COLOR[detalle.estado]}44` }}>
+              <span style={{ ...(ESTADO_STYLE[detalle.estado] || {}), padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
                 {ESTADO_LABEL[detalle.estado]}
               </span>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 16 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  {['Producto', 'Cant.', 'P. Unit.', 'Subtotal'].map(h => (
-                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(detalle.items || []).map((item, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
-                    <td style={{ padding: '8px 10px' }}>{item.nombre}</td>
-                    <td style={{ padding: '8px 10px', color: C.muted }}>{item.cantidad}</td>
-                    <td style={{ padding: '8px 10px', color: C.muted }}>${item.precio_unitario?.toLocaleString('es-AR')}</td>
-                    <td style={{ padding: '8px 10px', fontWeight: 600 }}>${item.subtotal?.toLocaleString('es-AR')}</td>
+            <div style={{ padding: '0 24px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 0 }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+                    {['Producto', 'Cant.', 'P. Unit.', 'Subtotal'].map(h => (
+                      <th key={h} style={{ padding: '10px 8px 8px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 13, color: C.muted }}>{detalle.notas}</div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>Total: <span style={{ color: C.green }}>${detalle.total.toLocaleString('es-AR')}</span></div>
+                </thead>
+                <tbody>
+                  {(detalle.items || []).map((item, i) => (
+                    <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
+                      <td style={{ padding: '9px 8px', color: T.text }}>{item.nombre}</td>
+                      <td style={{ padding: '9px 8px', color: T.muted }}>{item.cantidad}</td>
+                      <td style={{ padding: '9px 8px', color: T.muted }}>${item.precio_unitario?.toLocaleString('es-AR')}</td>
+                      <td style={{ padding: '9px 8px', fontWeight: 600, color: T.text }}>${item.subtotal?.toLocaleString('es-AR')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div style={{ padding: '12px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 13, color: T.muted }}>{detalle.notas}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Total: <span style={{ color: T.green }}>${detalle.total.toLocaleString('es-AR')}</span></div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               {NEXT_ESTADO[detalle.estado] && (
-                <button style={btn('accent', { padding: '7px 16px' })} onClick={() => { avanzarEstado(detalle); setDetalle(null) }}>
+                <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s' }} onClick={() => { avanzarEstado(detalle); setDetalle(null) }}>
                   → {ESTADO_LABEL[NEXT_ESTADO[detalle.estado]]}
                 </button>
               )}
-              <button style={btn('default', { padding: '7px 16px' })} onClick={() => setDetalle(null)}>Cerrar</button>
+              <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setDetalle(null)}>Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: T.surface, border: `1px solid ${T.border}`, color: T.text, fontSize: 13, padding: '12px 20px', borderRadius: 12, boxShadow: '0 8px 32px rgba(26,18,16,0.12)', zIndex: 200 }}>
           {toast}
         </div>
       )}

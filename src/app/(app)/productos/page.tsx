@@ -3,22 +3,33 @@ import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const C = {
-  bg:          '#0F0F0F',
-  surface:     '#141414',
-  card:        '#1A1A1A',
-  border:      '#2A2A2A',
-  accent:      '#8B1A2A',
-  text:        '#E8E8E8',
-  muted:       '#888888',
-  dim:         '#555555',
-  selBg:       'rgba(139,26,42,0.13)',
-  selBorder:   '#8B1A2A',
-  dangerBg:    '#3A1010',
-  dangerBorder:'#8B2020',
-  green:       '#4CAF7D',
-  amber:       '#D4820A',
-  red:         '#E05555',
+const T = {
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  wine:    '#800000',
+  wineBg:  'rgba(128,0,0,0.07)',
+  wineBd:  'rgba(128,0,0,0.18)',
+  brown:   '#633A2C',
+  gold:    '#B88A2C',
+  goldBg:  'rgba(184,138,44,0.08)',
+  goldBd:  'rgba(184,138,44,0.22)',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  greenBd: 'rgba(45,122,79,0.22)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  redBd:   'rgba(192,48,48,0.22)',
+  blue:    '#2B5EA0',
+  blueBg:  'rgba(43,94,160,0.08)',
+  blueBd:  'rgba(43,94,160,0.22)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  amberBd: 'rgba(160,112,16,0.22)',
 }
 
 const CATS = ['Tinto','Blanco','Rosado','Espumante','Otro'] as const
@@ -55,17 +66,31 @@ interface WooPreview {
 
 // ─── Tiny style helpers ───────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '5px 8px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box',
+  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
+  color: T.text, padding: '8px 12px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box',
+  fontFamily: 'inherit',
 }
-function btn(v: 'default'|'accent'|'ghost'|'danger' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
-  const bases = {
-    default: { background: '#222', border: `1px solid ${C.border}` },
-    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
-    ghost:   { background: 'transparent', border: '1px solid transparent' },
-    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
-  }
-  return { ...bases[v], color: C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+const INP_SM: React.CSSProperties = {
+  ...INP, padding: '6px 10px', fontSize: 13,
+}
+
+function catBadge(cat: string): React.CSSProperties {
+  if (cat === 'Tinto')    return { background: T.wineBg,  color: T.wine,  border: `1px solid ${T.wineBd}` }
+  if (cat === 'Blanco')   return { background: T.blueBg,  color: T.blue,  border: `1px solid ${T.blueBd}` }
+  if (cat === 'Rosado')   return { background: T.goldBg,  color: T.gold,  border: `1px solid ${T.goldBd}` }
+  if (cat === 'Espumante')return { background: T.greenBg, color: T.green, border: `1px solid ${T.greenBd}` }
+  return { background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}` }
+}
+
+function stockBadge(stock: number, minimo: number): React.CSSProperties {
+  if (stock === 0)     return { background: T.redBg,   color: T.red,   border: '1px solid rgba(192,48,48,0.25)' }
+  if (stock <= minimo) return { background: T.amberBg, color: T.amber, border: '1px solid rgba(160,112,16,0.25)' }
+  return                      { background: T.greenBg, color: T.green, border: '1px solid rgba(45,122,79,0.25)' }
+}
+
+const BADGE_BASE: React.CSSProperties = {
+  padding: '3px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700,
+  display: 'inline-block', whiteSpace: 'nowrap',
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -433,254 +458,271 @@ export default function ProductosPage() {
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'Inter, system-ui, -apple-system, sans-serif', padding: '0 0 48px' }}>
+    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: 'Inter, system-ui, -apple-system, sans-serif', padding: '0 0 48px' }}>
       <style>{`
-        .pr:hover { background: rgba(255,255,255,0.025) !important; }
-        .pr.sel  { background: ${C.selBg} !important; }
-        .pr.sel td:first-child { border-left: 2px solid ${C.selBorder}; }
-        .pr      td:first-child { border-left: 2px solid transparent; }
-        .pr.act  { outline: 1px solid #3A3A3A; outline-offset: -1px; }
-        .dark-inp:focus { border-color: #555 !important; box-shadow: 0 0 0 2px rgba(139,26,42,0.2); }
-        .dark-inp::placeholder { color: ${C.dim}; }
-        .lista-sug:hover { background: rgba(255,255,255,0.04) !important; }
-        .pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 100ms; background: transparent; color: ${C.muted}; }
-        .pill:hover { border-color: #3A3A3A; color: ${C.text}; }
-        .pill.on { background: rgba(139,26,42,0.18); border-color: ${C.accent}; color: ${C.text}; }
-        .kbd-tag { display:inline-block; background:#222; border:1px solid #444; border-radius:4px; padding:1px 6px; font-size:11px; font-family:monospace; color:#CCC; }
+        * { box-sizing: border-box; }
+        .tr:hover { background: #FDFAF6 !important; }
+        .tr.sel  { background: rgba(128,0,0,0.05) !important; }
+        .tr.sel td:first-child { border-left: 2px solid ${T.wine}; }
+        .tr      td:first-child { border-left: 2px solid transparent; }
+        .tr.act  { outline: 1px solid ${T.border2}; outline-offset: -1px; }
+        .btn-row { transition: all 0.12s; }
+        .btn-row:hover { border-color: ${T.border2} !important; color: ${T.muted} !important; }
+        .btn-wine { transition: background 0.12s; }
+        .btn-wine:hover { background: #6A0000 !important; }
+        input:focus, select:focus, textarea:focus { border-color: ${T.border2} !important; box-shadow: 0 0 0 3px rgba(128,0,0,0.08) !important; outline: none !important; }
+        .lista-sug:hover { background: ${T.bg} !important; }
+        .pill { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 100ms; background: transparent; color: ${T.muted}; font-family: inherit; }
+        .pill:hover { border-color: ${T.border}; color: ${T.text}; }
+        .pill.on { background: ${T.wineBg}; border-color: ${T.wineBd}; color: ${T.wine}; }
+        .kbd-tag { display:inline-block; background:${T.bg}; border:1px solid ${T.border}; border-radius:4px; padding:1px 6px; font-size:11px; font-family:monospace; color:${T.muted}; }
         .bar-in { animation: barIn 140ms ease; }
         @keyframes barIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
         .pop-in { animation: popIn 100ms ease; }
         @keyframes popIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
         ::-webkit-scrollbar { width:5px; height:5px; }
         ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
-        select option { background:${C.card}; color:${C.text}; }
+        ::-webkit-scrollbar-thumb { background:${T.border}; border-radius:3px; }
+        select option { background:${T.surface}; color:${T.text}; }
       `}</style>
 
-      {/* ── Stats ─────────────────────────────────────────────────── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:20 }}>
-        {[
-          { l:'Total',         v: productos.length },
-          { l:'Unidades stock',v: totalStock },
-          { l:'Con stock',     v: conStock },
-          { l:'Sin precio',    v: sinPrecio, warn: sinPrecio > 0 },
-        ].map(s => (
-          <div key={s.l} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'12px 16px' }}>
-            <div style={{ fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{s.l}</div>
-            <div style={{ fontSize:22, fontWeight:700, color:s.warn ? C.red : C.text }}>{s.v}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 16px', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      {/* ── Page header ────────────────────────────────────────────── */}
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>Valor en stock</div>
-          <div style={{ fontSize:20, fontWeight:700 }}>${valorStock.toLocaleString('es-AR')}</div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Productos</h1>
+          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>
+            {productos.length} productos · {productos.filter(p => p.stock === 0).length} sin stock
+            <span style={{ marginLeft: 8, color: T.dim }}>· {empresa}</span>
+          </p>
         </div>
-        <div style={{ fontSize:12, color:C.dim }}>a precio lista</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => setShowKb(true)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '7px 12px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }} title="Atajos de teclado">?</button>
+          {empresa === 'aroma' && <>
+            <button onClick={openWooImport} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Importar web</button>
+            <button onClick={syncWoo} disabled={syncing} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{syncing ? '...' : 'Sync Woo'}</button>
+          </>}
+          <button onClick={calcularCostos} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
+          <button onClick={abrirListaModal} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Lista precios</button>
+          <button onClick={openNew} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>+ Nuevo producto</button>
+        </div>
       </div>
 
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-        <div>
-          <h1 style={{ margin:0, fontSize:18, fontWeight:700, letterSpacing:'-0.02em' }}>Productos</h1>
-          <span style={{ fontSize:11, color:C.muted, textTransform:'capitalize' }}>{empresa}</span>
-        </div>
-        <div style={{ display:'flex', gap:6 }}>
-          <button onClick={() => setShowKb(true)} style={btn('ghost',{padding:'5px 10px',fontSize:15})} title="Atajos de teclado">?</button>
-          {empresa === 'aroma' && <>
-            <button onClick={openWooImport} style={btn()}>⬇ Importar web</button>
-            <button onClick={syncWoo} disabled={syncing} style={btn()}>{syncing ? '...' : '↻ Sync Woo'}</button>
-          </>}
-          <button onClick={calcularCostos} style={btn('default',{padding:'6px 14px',fontSize:13})} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
-          <button onClick={abrirListaModal} style={btn('default',{padding:'6px 14px',fontSize:13})}>Lista precios</button>
-          <button onClick={openNew} style={btn('accent',{padding:'6px 14px',fontSize:13})}>+ Nuevo</button>
+      <div style={{ padding: '0 28px' }}>
+
+      {/* ── Stats ─────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 16 }}>
+        {[
+          { l: 'Total productos', v: productos.length, warn: false },
+          { l: 'Unidades en stock', v: totalStock, warn: false },
+          { l: 'Con stock', v: conStock, warn: false },
+          { l: 'Sin precio', v: sinPrecio, warn: sinPrecio > 0 },
+        ].map(s => (
+          <div key={s.l} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+            <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{s.l}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: s.warn ? T.red : T.text }}>{s.v}</div>
+          </div>
+        ))}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+          <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Valor en stock</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>${valorStock.toLocaleString('es-AR')}</div>
+          <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>a precio lista</div>
         </div>
       </div>
 
       {/* ── Filters ───────────────────────────────────────────────── */}
-      <div style={{ display:'flex', gap:8, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
-        <div style={{ position:'relative', flex:'1 1 200px', maxWidth:340 }}>
-          <span style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:C.dim, fontSize:14, pointerEvents:'none' }}>⌕</span>
-          <input ref={searchRef} className="dark-inp" style={{ ...INP, paddingLeft:28 }}
-            placeholder="Buscar producto... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 360 }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 14, pointerEvents: 'none' }}>⌕</span>
+          <input ref={searchRef} style={{ ...INP, paddingLeft: 30 }}
+            placeholder="Buscar producto, bodega, varietal... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
-        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-          <button className={`pill${!filtroCategoria?' on':''}`} onClick={() => setFiltroCategoria('')}>Todos</button>
-          {CATS.map(c => (
-            <button key={c} className={`pill${filtroCategoria===c?' on':''}`} onClick={() => setFiltroCategoria(filtroCategoria===c?'':c)}>{c}</button>
-          ))}
-        </div>
-        <select className="dark-inp" style={{ ...INP, width:'auto', minWidth:150 }} value={filtroBodega} onChange={e => setFiltroBodega(e.target.value)}>
+        <select style={{ ...INP, width: 'auto', minWidth: 160 }} value={filtroBodega} onChange={e => setFiltroBodega(e.target.value)}>
           <option value="">Todas las bodegas</option>
           {bodegasUnicas.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
-        <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:C.muted, cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
-          <input type="checkbox" checked={filtroSinPrecio} onChange={e => setFiltroSinPrecio(e.target.checked)} style={{ accentColor:C.accent }} />
-          Sin precio
-        </label>
+        <select style={{ ...INP, width: 'auto', minWidth: 140 }} value={filtroSinPrecio ? 'sinprecio' : ''} onChange={e => setFiltroSinPrecio(e.target.value === 'sinprecio')}>
+          <option value="">Todo el stock</option>
+          <option value="sinprecio">Sin precio</option>
+        </select>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <button className={`pill${!filtroCategoria ? ' on' : ''}`} onClick={() => setFiltroCategoria('')}>Todos</button>
+          {CATS.map(c => (
+            <button key={c} className={`pill${filtroCategoria === c ? ' on' : ''}`} onClick={() => setFiltroCategoria(filtroCategoria === c ? '' : c)}>{c}</button>
+          ))}
+        </div>
       </div>
 
       {/* Counter */}
-      <div style={{ fontSize:12, color:C.dim, marginBottom:8 }}>
-        Mostrando <b style={{ color:C.muted }}>{filtrados.length}</b> de {productos.length} productos
-        {seleccionados.size > 0 && <span style={{ marginLeft:8, color:C.accent }}>· {seleccionados.size} seleccionado{seleccionados.size!==1?'s':''}</span>}
+      <div style={{ fontSize: 12, color: T.dim, marginBottom: 8 }}>
+        Mostrando <b style={{ color: T.muted }}>{filtrados.length}</b> de {productos.length} productos
+        {seleccionados.size > 0 && <span style={{ marginLeft: 8, color: T.wine, fontWeight: 600 }}>· {seleccionados.size} seleccionado{seleccionados.size !== 1 ? 's' : ''}</span>}
       </div>
 
       {/* ── Bulk action bar ───────────────────────────────────────── */}
       {seleccionados.size > 0 && (
-        <div className="bar-in" style={{ background:'#161616', border:`1px solid ${C.border}`, borderRadius:8, padding:'8px 12px', marginBottom:8, display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
-          <span style={{ fontSize:12, fontWeight:600, color:C.accent, marginRight:4 }}>
+        <div className="bar-in" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', marginBottom: 10, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 1px 4px rgba(26,18,16,0.06)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.wine, marginRight: 4 }}>
             {seleccionados.size} sel.
           </span>
-          <button onClick={() => setSeleccionados(new Set())} style={btn('ghost',{padding:'3px 8px',fontSize:11})}>✕</button>
-          <div style={{ width:1, height:18, background:C.border, margin:'0 4px' }}/>
+          <button onClick={() => setSeleccionados(new Set())} className="btn-row" style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
+          <div style={{ width: 1, height: 18, background: T.border, margin: '0 4px' }} />
 
           {BULK_ACTIONS.map(a => (
-            <div key={a.key} style={{ position:'relative' }}>
+            <div key={a.key} style={{ position: 'relative' }}>
               <button
-                onClick={() => { setActiveBulk(activeBulk===a.key?null:a.key); setBulkVal('') }}
-                style={btn(activeBulk===a.key?'accent':'default')}
+                onClick={() => { setActiveBulk(activeBulk === a.key ? null : a.key); setBulkVal('') }}
+                style={{
+                  background: activeBulk === a.key ? T.wineBg : T.surface,
+                  border: `1px solid ${activeBulk === a.key ? T.wineBd : T.border}`,
+                  color: activeBulk === a.key ? T.wine : T.muted,
+                  borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                }}
               >{a.label}</button>
               {activeBulk === a.key && (
-                <div className="pop-in" style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:100, background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:10, minWidth:200, boxShadow:'0 12px 32px rgba(0,0,0,0.7)' }}>
-                  <div style={{ fontSize:11, color:C.muted, fontWeight:600, marginBottom:6, textTransform:'uppercase', letterSpacing:'0.04em' }}>
-                    {a.key==='aumento_precio'?'Aumentar precio (%)':a.key==='precio_fijo'?'Precio fijo ($)':`Asignar ${a.label}`}
+                <div className="pop-in" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 12, minWidth: 210, boxShadow: '0 12px 32px rgba(26,18,16,0.12)' }}>
+                  <div style={{ fontSize: 11, color: T.muted, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {a.key === 'aumento_precio' ? 'Aumentar precio (%)' : a.key === 'precio_fijo' ? 'Precio fijo ($)' : `Asignar ${a.label}`}
                   </div>
                   {a.kind === 'select' ? (
-                    <select className="dark-inp" style={INP} value={bulkVal} onChange={e => setBulkVal(e.target.value)}>
+                    <select style={INP_SM} value={bulkVal} onChange={e => setBulkVal(e.target.value)}>
                       <option value="">Elegir bodega...</option>
                       {bodegas.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
                     </select>
                   ) : (
-                    <input autoFocus className="dark-inp" type={a.kind} style={INP}
+                    <input autoFocus type={a.kind} style={INP_SM}
                       placeholder={a.placeholder || a.label}
                       value={bulkVal} onChange={e => setBulkVal(e.target.value)}
-                      onKeyDown={e => { if(e.key==='Enter') bulkRequest(a.key, a.kind==='number'?Number(bulkVal):bulkVal); if(e.key==='Escape') setActiveBulk(null) }}
+                      onKeyDown={e => { if (e.key === 'Enter') bulkRequest(a.key, a.kind === 'number' ? Number(bulkVal) : bulkVal); if (e.key === 'Escape') setActiveBulk(null) }}
                     />
                   )}
-                  <div style={{ display:'flex', gap:6, marginTop:8 }}>
-                    <button disabled={!bulkVal||bulkLoading} onClick={() => bulkRequest(a.key, a.kind==='number'?Number(bulkVal):bulkVal)}
-                      style={{ ...btn('accent',{flex:1}), opacity:(!bulkVal||bulkLoading)?0.5:1 }}>
-                      {bulkLoading?'...':'Aplicar'}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <button disabled={!bulkVal || bulkLoading} onClick={() => bulkRequest(a.key, a.kind === 'number' ? Number(bulkVal) : bulkVal)}
+                      style={{ flex: 1, background: T.wine, color: '#FFF', border: 'none', borderRadius: 7, padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (!bulkVal || bulkLoading) ? 0.5 : 1 }}>
+                      {bulkLoading ? '...' : 'Aplicar'}
                     </button>
-                    <button onClick={() => setActiveBulk(null)} style={btn()}>✕</button>
+                    <button onClick={() => setActiveBulk(null)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, padding: '7px 10px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
                   </div>
                 </div>
               )}
             </div>
           ))}
 
-          <div style={{ width:1, height:18, background:C.border, margin:'0 4px' }}/>
-          <button onClick={eliminarSel} disabled={bulkLoading} style={{ ...btn('danger'), opacity:bulkLoading?.5:1 }}>
-            🗑 Eliminar
+          <div style={{ width: 1, height: 18, background: T.border, margin: '0 4px' }} />
+          <button onClick={eliminarSel} disabled={bulkLoading} style={{ background: T.redBg, border: `1px solid ${T.redBd}`, color: T.red, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: bulkLoading ? 0.5 : 1 }}>
+            Eliminar
           </button>
         </div>
       )}
 
       {/* ── Table ─────────────────────────────────────────────────── */}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom:`1px solid ${C.border}`, background:C.surface }}>
-              <th style={{ width:40, padding:'9px 12px', textAlign:'center' }}>
+            <tr style={{ background: T.bg }}>
+              <th style={{ width: 40, padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${T.border}` }}>
                 <input type="checkbox" checked={allCheck}
-                  ref={el => { if(el) el.indeterminate = !allCheck && someCheck }}
+                  ref={el => { if (el) el.indeterminate = !allCheck && someCheck }}
                   onChange={() => setSeleccionados(allCheck ? new Set() : new Set(filtrados.map(p => p.id!)))}
-                  style={{ accentColor:C.accent, cursor:'pointer' }} />
+                  style={{ accentColor: T.wine, cursor: 'pointer' }} />
               </th>
-              {['Nombre','Bodega','Varietal','Precio venta','Precio costo','Stock',''].map(h => (
-                <th key={h} style={{ textAlign:'left', padding:'9px 12px', fontSize:11, fontWeight:600, color:C.muted, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
+              {['Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio costo', 'Stock', ''].map(h => (
+                <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}` }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign:'center', padding:'56px 0', color:C.dim }}>Cargando...</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign:'center', padding:'56px 0', color:C.dim }}>Sin resultados</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Sin resultados</td></tr>
             ) : filtrados.map((p, idx) => {
               const isSel = seleccionados.has(p.id!)
               const isAct = activeRow === p.id
               const isEdit = editingId === p.id
 
               if (isEdit) return (
-                <tr key={p.id + 'e'} style={{ background:'#16161E', borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.accent}` }}>
-                  <td colSpan={8} style={{ padding:'10px 12px' }}>
-                    <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 80px 70px auto', gap:6, alignItems:'center' }}>
-                      <input ref={editFirstRef} className="dark-inp" style={INP}
-                        value={editForm.nombre} onChange={e => setEditForm(f=>({...f,nombre:e.target.value}))}
+                <tr key={p.id + 'e'} style={{ background: T.bg, borderBottom: `1px solid ${T.border}`, borderLeft: `2px solid ${T.wine}` }}>
+                  <td colSpan={9} style={{ padding: '10px 16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px 70px auto', gap: 8, alignItems: 'center' }}>
+                      <input ref={editFirstRef} style={INP_SM}
+                        value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
                         placeholder="Nombre"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" style={INP} list="bod-dl"
-                        value={editForm.bodega} onChange={e => setEditForm(f=>({...f,bodega:e.target.value}))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input style={INP_SM} list="bod-dl"
+                        value={editForm.bodega} onChange={e => setEditForm(f => ({ ...f, bodega: e.target.value }))}
                         placeholder="Bodega"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" style={INP}
-                        value={editForm.varietal} onChange={e => setEditForm(f=>({...f,varietal:e.target.value}))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input style={INP_SM}
+                        value={editForm.varietal} onChange={e => setEditForm(f => ({ ...f, varietal: e.target.value }))}
                         placeholder="Varietal"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" type="number" style={INP}
-                        value={editForm.precio_venta || ''} onChange={e => { const pv = +e.target.value; setEditForm(f=>({...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input type="number" style={INP_SM}
+                        value={editForm.precio_venta || ''} onChange={e => { const pv = +e.target.value; setEditForm(f => ({ ...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
                         placeholder="$ venta"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" type="number" style={INP}
-                        value={editForm.precio_costo || ''} onChange={e => setEditForm(f=>({...f,precio_costo:+e.target.value}))}
-                        placeholder="$ costo (auto 50%)"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" type="number" style={INP}
-                        value={editForm.stock || ''} onChange={e => setEditForm(f=>({...f,stock:+e.target.value}))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input type="number" style={INP_SM}
+                        value={editForm.precio_costo || ''} onChange={e => setEditForm(f => ({ ...f, precio_costo: +e.target.value }))}
+                        placeholder="$ costo"
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input type="number" style={INP_SM}
+                        value={editForm.stock || ''} onChange={e => setEditForm(f => ({ ...f, stock: +e.target.value }))}
                         placeholder="Stock"
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <input className="dark-inp" type="number" style={INP}
-                        value={editForm.stock_minimo || ''} onChange={e => setEditForm(f=>({...f,stock_minimo:+e.target.value}))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <input type="number" style={INP_SM}
+                        value={editForm.stock_minimo || ''} onChange={e => setEditForm(f => ({ ...f, stock_minimo: +e.target.value }))}
                         placeholder="Mín."
-                        onKeyDown={e => { if(e.key==='Enter')saveEdit(); if(e.key==='Escape')setEditingId(null) }} />
-                      <select className="dark-inp" style={{...INP}} value={editForm.unidad_medida || 'botella'} onChange={e => setEditForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <select style={INP_SM} value={editForm.unidad_medida || 'botella'} onChange={e => setEditForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
                         <option value="botella">Botella</option>
                         <option value="caja6">Caja ×6</option>
                         <option value="caja12">Caja ×12</option>
                       </select>
-                      <div style={{ display:'flex', gap:4 }}>
-                        <button onClick={saveEdit} disabled={saving} style={{ ...btn('accent',{padding:'5px 10px'}), opacity:saving?.7:1 }}>✓</button>
-                        <button onClick={() => { const p = productos.find(x=>x.id===editingId); if(p) { setEditingId(null); openFullEdit(p) } }} style={btn('default',{padding:'5px 10px',fontSize:11})} title="Ver todos los campos">⋯</button>
-                        <button onClick={() => setEditingId(null)} style={btn('default',{padding:'5px 10px'})}>✕</button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={saveEdit} disabled={saving} className="btn-wine" style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 7, padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>✓</button>
+                        <button onClick={() => { const px = productos.find(x => x.id === editingId); if (px) { setEditingId(null); openFullEdit(px) } }} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 7, padding: '6px 10px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }} title="Ver todos los campos">⋯</button>
+                        <button onClick={() => setEditingId(null)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 7, padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
                       </div>
                     </div>
-                    <datalist id="bod-dl">{bodegas.map(b => <option key={b.id} value={b.nombre}/>)}</datalist>
+                    <datalist id="bod-dl">{bodegas.map(b => <option key={b.id} value={b.nombre} />)}</datalist>
                   </td>
                 </tr>
               )
 
               return (
-                <tr key={p.id} className={`pr${isSel?' sel':''}${isAct?' act':''}`}
-                  style={{ borderBottom:`1px solid ${C.border}`, cursor:'default' }}
+                <tr key={p.id} className={`tr${isSel ? ' sel' : ''}${isAct ? ' act' : ''}`}
+                  style={{ borderBottom: `1px solid ${T.border}`, cursor: 'default', transition: 'background 0.1s' }}
                   onMouseDown={e => onRowMouseDown(e, idx, p.id!)}
                   onMouseEnter={() => onRowMouseEnter(idx)}
                   onDoubleClick={() => openEdit(p)}>
-                  <td style={{ padding:'7px 12px', textAlign:'center' }} onMouseDown={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={isSel} onChange={() => toggleSel(p.id!)} style={{ accentColor:C.accent, cursor:'pointer' }} />
+                  <td style={{ padding: '11px 12px', textAlign: 'center' }} onMouseDown={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={isSel} onChange={() => toggleSel(p.id!)} style={{ accentColor: T.wine, cursor: 'pointer' }} />
                   </td>
-                  <td style={{ padding:'7px 12px', maxWidth:260 }}>
-                    <div style={{ fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nombre}</div>
-                    {p.sku && <div style={{ fontSize:11, color:C.dim }}>{p.sku}</div>}
+                  <td style={{ padding: '11px 16px', maxWidth: 260 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                    {p.sku && <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{p.sku}</div>}
                   </td>
-                  <td style={{ padding:'7px 12px', color:C.muted, fontSize:12 }}>{p.bodega || <span style={{color:C.dim}}>—</span>}</td>
-                  <td style={{ padding:'7px 12px', color:C.muted, fontSize:12 }}>{p.varietal || <span style={{color:C.dim}}>—</span>}</td>
-                  <td style={{ padding:'7px 12px', fontWeight:600 }}>
-                    {p.precio_venta ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{color:C.red,fontSize:12}}>Sin precio</span>}
+                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{p.bodega || <span style={{ color: T.dim }}>—</span>}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{p.varietal || <span style={{ color: T.dim }}>—</span>}</td>
+                  <td style={{ padding: '11px 16px' }}>
+                    {p.categoria && (
+                      <span style={{ ...BADGE_BASE, ...catBadge(p.categoria) }}>{p.categoria}</span>
+                    )}
                   </td>
-                  <td style={{ padding:'7px 12px', color:C.dim, fontSize:12 }}>
+                  <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: T.text }}>
+                    {p.precio_venta ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{ color: T.red, fontSize: 12, fontWeight: 500 }}>Sin precio</span>}
+                  </td>
+                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.dim }}>
                     {p.precio_costo ? `$${p.precio_costo.toLocaleString('es-AR')}` : '—'}
                   </td>
-                  <td style={{ padding:'7px 12px' }}>
-                    <span style={{ fontWeight:600, color: p.stock===0 ? C.red : p.stock<=p.stock_minimo ? C.amber : C.green }}>
-                      {p.stock}
+                  <td style={{ padding: '11px 16px' }}>
+                    <span style={{ ...BADGE_BASE, ...stockBadge(p.stock, p.stock_minimo) }}>
+                      {p.stock === 0 ? 'Sin stock' : p.stock <= p.stock_minimo ? `${p.stock} u. ⚠` : `${p.stock} u.`}
                     </span>
                   </td>
-                  <td style={{ padding:'7px 8px' }} onMouseDown={e => e.stopPropagation()}>
-                    <div style={{ display:'flex', gap:2 }}>
-                      <button onClick={() => openEdit(p)} style={btn('ghost',{padding:'3px 7px',color:C.muted})} title="Editar (E)">✏</button>
-                      <button onClick={() => eliminarUno(p.id!)} style={btn('ghost',{padding:'3px 7px',color:C.red})} title="Eliminar">✕</button>
+                  <td style={{ padding: '11px 10px' }} onMouseDown={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
+                      <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Eliminar" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
                     </div>
                   </td>
                 </tr>
@@ -690,19 +732,21 @@ export default function ProductosPage() {
         </table>
       </div>
 
+      </div>{/* end padding wrapper */}
+
       {/* ── Keyboard shortcuts modal ──────────────────────────────── */}
       {showKb && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setShowKb(false)}>
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, minWidth:300, boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-              <h3 style={{ margin:0, fontSize:14, fontWeight:600 }}>Atajos de teclado</h3>
-              <button onClick={() => setShowKb(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowKb(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, minWidth: 320, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text }}>Atajos de teclado</h3>
+              <button onClick={() => setShowKb(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {KB.map(([k, d]) => (
-                <div key={k} style={{ display:'flex', justifyContent:'space-between', gap:16 }}>
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
                   <span className="kbd-tag">{k}</span>
-                  <span style={{ fontSize:12, color:C.muted }}>{d}</span>
+                  <span style={{ fontSize: 12, color: T.muted }}>{d}</span>
                 </div>
               ))}
             </div>
@@ -712,62 +756,66 @@ export default function ProductosPage() {
 
       {/* ── Full edit modal ───────────────────────────────────────── */}
       {fullEditId && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setFullEditId(null)}>
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:520, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
-              <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Editar producto</h2>
-              <button onClick={() => setFullEditId(null)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setFullEditId(null)}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 600, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Editar producto</h2>
+              <button onClick={() => setFullEditId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20 }}>×</button>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div style={{ gridColumn:'1/-1' }}>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Nombre *</label>
-                <input autoFocus className="dark-inp" style={INP} value={fullForm.nombre} onChange={e => setFullForm(f=>({...f,nombre:e.target.value}))} />
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Nombre *</label>
+                <input autoFocus style={INP} value={fullForm.nombre} onChange={e => setFullForm(f => ({ ...f, nombre: e.target.value }))} />
               </div>
-              {([['bodega','Bodega','edit-bod'],['varietal','Varietal',''],['region','Región',''],['sku','SKU','']] as [string,string,string][]).map(([k,l,dl]) => (
-                <div key={k}>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
-                  <input className="dark-inp" style={INP} list={dl||undefined}
-                    value={(fullForm as Record<string,unknown>)[k] as string}
-                    onChange={e => setFullForm(f=>({...f,[k]:e.target.value}))} />
-                  {dl && <datalist id={dl}>{bodegas.map(b=><option key={b.id} value={b.nombre}/>)}</datalist>}
-                </div>
-              ))}
-              <div style={{ gridColumn:'1/-1' }}>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Categoría</label>
-                <select className="dark-inp" style={INP} value={fullForm.categoria} onChange={e => setFullForm(f=>({...f,categoria:e.target.value as Producto['categoria']}))}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {([['bodega', 'Bodega', 'edit-bod'], ['varietal', 'Varietal', ''], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
+                  <div key={k}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
+                    <input style={INP} list={dl || undefined}
+                      value={(fullForm as Record<string, unknown>)[k] as string}
+                      onChange={e => setFullForm(f => ({ ...f, [k]: e.target.value }))} />
+                    {dl && <datalist id={dl}>{bodegas.map(b => <option key={b.id} value={b.nombre} />)}</datalist>}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Categoría</label>
+                <select style={INP} value={fullForm.categoria} onChange={e => setFullForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
                   {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              {([['precio_venta','Precio venta ($)'],['precio_costo','Precio costo ($)'],['precio_mayorista','Precio mayorista ($)'],['stock','Stock'],['stock_minimo','Stock mínimo']] as [string,string][]).map(([k,l]) => (
-                <div key={k}>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
-                  <input className="dark-inp" type="number" min="0" style={INP}
-                    value={(fullForm as Record<string,unknown>)[k] as number || ''}
-                    onChange={e => setFullForm(f=>({...f,[k]:+e.target.value}))} />
-                </div>
-              ))}
-              <div>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Unidad de medida</label>
-                <select className="dark-inp" style={INP} value={fullForm.unidad_medida||'botella'} onChange={e => setFullForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
-                  <option value="botella">Botella (×1)</option>
-                  <option value="caja6">Caja ×6</option>
-                  <option value="caja12">Caja ×12</option>
-                </select>
-              </div>
-              {empresa==='aroma' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (
+                  <div key={k}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
+                    <input type="number" min="0" style={INP}
+                      value={(fullForm as Record<string, unknown>)[k] as number || ''}
+                      onChange={e => setFullForm(f => ({ ...f, [k]: +e.target.value }))} />
+                  </div>
+                ))}
                 <div>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>WooCommerce ID</label>
-                  <input className="dark-inp" type="number" style={INP}
-                    value={fullForm.woo_product_id||''}
-                    onChange={e => setFullForm(f=>({...f,woo_product_id:+e.target.value||undefined}))}
-                    placeholder="Dejar vacío si no aplica" />
+                  <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Unidad de medida</label>
+                  <select style={INP} value={fullForm.unidad_medida || 'botella'} onChange={e => setFullForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
+                    <option value="botella">Botella (×1)</option>
+                    <option value="caja6">Caja ×6</option>
+                    <option value="caja12">Caja ×12</option>
+                  </select>
                 </div>
-              )}
+                {empresa === 'aroma' && (
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>WooCommerce ID</label>
+                    <input type="number" style={INP}
+                      value={fullForm.woo_product_id || ''}
+                      onChange={e => setFullForm(f => ({ ...f, woo_product_id: +e.target.value || undefined }))}
+                      placeholder="Dejar vacío si no aplica" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:20 }}>
-              <button onClick={() => setFullEditId(null)} style={btn()}>Cancelar</button>
-              <button onClick={saveFullEdit} disabled={saving} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:saving?.7:1 }}>
-                {saving?'Guardando...':'Guardar cambios'}
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, position: 'sticky', bottom: 0, background: T.surface }}>
+              <button onClick={() => setFullEditId(null)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button onClick={saveFullEdit} disabled={saving} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>
@@ -776,61 +824,65 @@ export default function ProductosPage() {
 
       {/* ── New product modal ─────────────────────────────────────── */}
       {newModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setNewModal(false)}>
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:520, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
-              <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Nuevo producto</h2>
-              <button onClick={() => setNewModal(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setNewModal(false)}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 600, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nuevo producto</h2>
+              <button onClick={() => setNewModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20 }}>×</button>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div style={{ gridColumn:'1/-1' }}>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Nombre *</label>
-                <input autoFocus className="dark-inp" style={INP} value={newForm.nombre} onChange={e => setNewForm(f=>({...f,nombre:e.target.value}))} placeholder="Ej: Gran Reserva Malbec" />
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Nombre *</label>
+                <input autoFocus style={INP} value={newForm.nombre} onChange={e => setNewForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Gran Reserva Malbec" />
               </div>
-              {([['bodega','Bodega','new-bod'],['varietal','Varietal',''],['region','Región',''],['sku','SKU','']] as [string,string,string][]).map(([k,l,dl]) => (
-                <div key={k}>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
-                  <input className="dark-inp" style={INP} list={dl||undefined}
-                    value={(newForm as Record<string,unknown>)[k] as string}
-                    onChange={e => setNewForm(f=>({...f,[k]:e.target.value}))} />
-                  {dl && <datalist id={dl}>{bodegas.map(b=><option key={b.id} value={b.nombre}/>)}</datalist>}
-                </div>
-              ))}
-              <div style={{ gridColumn:'1/-1' }}>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Categoría</label>
-                <select className="dark-inp" style={INP} value={newForm.categoria} onChange={e => setNewForm(f=>({...f,categoria:e.target.value as Producto['categoria']}))}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {([['bodega', 'Bodega', 'new-bod'], ['varietal', 'Varietal', ''], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
+                  <div key={k}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
+                    <input style={INP} list={dl || undefined}
+                      value={(newForm as Record<string, unknown>)[k] as string}
+                      onChange={e => setNewForm(f => ({ ...f, [k]: e.target.value }))} />
+                    {dl && <datalist id={dl}>{bodegas.map(b => <option key={b.id} value={b.nombre} />)}</datalist>}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Categoría</label>
+                <select style={INP} value={newForm.categoria} onChange={e => setNewForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
                   {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              {([['precio_venta','Precio venta ($)'],['precio_costo','Precio costo ($)'],['precio_mayorista','Precio mayorista ($)'],['stock','Stock'],['stock_minimo','Stock mínimo']] as [string,string][]).map(([k,l]) => (
-                <div key={k}>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>{l}</label>
-                  <input className="dark-inp" type="number" min="0" style={INP}
-                    value={(newForm as Record<string,unknown>)[k] as number}
-                    onChange={e => setNewForm(f=>({...f,[k]:+e.target.value}))} />
-                </div>
-              ))}
-              <div>
-                <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Unidad de medida</label>
-                <select className="dark-inp" style={INP} value={newForm.unidad_medida || 'botella'} onChange={e => setNewForm(f=>({...f,unidad_medida:e.target.value as 'botella'|'caja6'|'caja12'}))}>
-                  <option value="botella">Botella (×1)</option>
-                  <option value="caja6">Caja ×6</option>
-                  <option value="caja12">Caja ×12</option>
-                </select>
-              </div>
-              {empresa==='aroma' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (
+                  <div key={k}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
+                    <input type="number" min="0" style={INP}
+                      value={(newForm as Record<string, unknown>)[k] as number}
+                      onChange={e => setNewForm(f => ({ ...f, [k]: +e.target.value }))} />
+                  </div>
+                ))}
                 <div>
-                  <label style={{ fontSize:11, color:C.muted, display:'block', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>WooCommerce ID</label>
-                  <input className="dark-inp" type="number" style={INP}
-                    value={newForm.woo_product_id||''} onChange={e => setNewForm(f=>({...f,woo_product_id:+e.target.value||undefined}))}
-                    placeholder="Dejar vacío si no aplica" />
+                  <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Unidad de medida</label>
+                  <select style={INP} value={newForm.unidad_medida || 'botella'} onChange={e => setNewForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
+                    <option value="botella">Botella (×1)</option>
+                    <option value="caja6">Caja ×6</option>
+                    <option value="caja12">Caja ×12</option>
+                  </select>
                 </div>
-              )}
+                {empresa === 'aroma' && (
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>WooCommerce ID</label>
+                    <input type="number" style={INP}
+                      value={newForm.woo_product_id || ''} onChange={e => setNewForm(f => ({ ...f, woo_product_id: +e.target.value || undefined }))}
+                      placeholder="Dejar vacío si no aplica" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:20 }}>
-              <button onClick={() => setNewModal(false)} style={btn()}>Cancelar</button>
-              <button onClick={saveNew} disabled={saving} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:saving?.7:1 }}>
-                {saving?'Guardando...':'Crear producto'}
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, position: 'sticky', bottom: 0, background: T.surface }}>
+              <button onClick={() => setNewModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button onClick={saveNew} disabled={saving} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Guardando...' : 'Crear producto'}
               </button>
             </div>
           </div>
@@ -839,57 +891,61 @@ export default function ProductosPage() {
 
       {/* ── WooCommerce import modal ───────────────────────────────── */}
       {importModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={e => e.target===e.currentTarget && setImportModal(false)}>
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:24, width:'100%', maxWidth:860, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 64px rgba(0,0,0,0.9)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14, flexShrink:0 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexShrink: 0 }}>
               <div>
-                <h2 style={{ margin:0, fontSize:15, fontWeight:600 }}>Importar desde WooCommerce</h2>
-                {!importLoading && <p style={{ margin:'3px 0 0', fontSize:12, color:C.muted }}>
-                  {wooList.length} productos · <span style={{color:C.green}}>{wooList.filter(p=>!p.ya_importado).length} nuevos</span>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Importar desde WooCommerce</h2>
+                {!importLoading && <p style={{ margin: '3px 0 0', fontSize: 12, color: T.muted }}>
+                  {wooList.length} productos · <span style={{ color: T.green, fontWeight: 600 }}>{wooList.filter(p => !p.ya_importado).length} nuevos</span>
                 </p>}
               </div>
-              <button onClick={() => setImportModal(false)} style={btn('ghost',{padding:'2px 8px'})}>✕</button>
+              <button onClick={() => setImportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20 }}>×</button>
             </div>
             {importLoading ? (
-              <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:C.dim }}>Cargando desde la web...</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.dim }}>Cargando desde la web...</div>
             ) : <>
-              <div style={{ display:'flex', gap:12, marginBottom:10, flexShrink:0, alignItems:'center' }}>
-                <label style={{ display:'flex', gap:5, fontSize:12, color:C.muted, cursor:'pointer' }}>
-                  <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} style={{accentColor:C.accent}} />
+              <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexShrink: 0, alignItems: 'center' }}>
+                <label style={{ display: 'flex', gap: 5, fontSize: 12, color: T.muted, cursor: 'pointer', alignItems: 'center' }}>
+                  <input type="checkbox" checked={soloNuevos} onChange={e => setSoloNuevos(e.target.checked)} style={{ accentColor: T.wine }} />
                   Solo nuevos
                 </label>
-                <button onClick={() => setWooSel(new Set(wooList.filter(p=>!p.ya_importado).map(p=>p.woo_product_id)))} style={btn('ghost',{padding:'3px 8px',fontSize:11})}>Sel. todos</button>
-                <button onClick={() => setWooSel(new Set())} style={btn('ghost',{padding:'3px 8px',fontSize:11,color:C.dim})}>Limpiar</button>
+                <button onClick={() => setWooSel(new Set(wooList.filter(p => !p.ya_importado).map(p => p.woo_product_id)))} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Sel. todos</button>
+                <button onClick={() => setWooSel(new Set())} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.dim, cursor: 'pointer', fontFamily: 'inherit' }}>Limpiar</button>
               </div>
-              <div style={{ flex:1, overflowY:'auto', border:`1px solid ${C.border}`, borderRadius:8 }}>
-                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
-                  <thead style={{ position:'sticky', top:0, background:C.surface, borderBottom:`1px solid ${C.border}` }}>
-                    <tr>{['','Nombre','Bodega','Varietal','Categoría','Precio','Stock','Estado'].map(h=>(
-                      <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontSize:10, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+              <div style={{ flex: 1, overflowY: 'auto', border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                    <tr>{['', 'Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio', 'Stock', 'Estado'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '10px 12px', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody>
                     {wooList.filter(p => !soloNuevos || !p.ya_importado).map(p => (
-                      <tr key={p.woo_product_id} style={{ borderBottom:`1px solid ${C.border}`, opacity:p.ya_importado?.5:1 }}>
-                        <td style={{ padding:'6px 10px' }}><input type="checkbox" disabled={p.ya_importado} checked={wooSel.has(p.woo_product_id)} onChange={() => setWooSel(s => { const n=new Set(s); n.has(p.woo_product_id)?n.delete(p.woo_product_id):n.add(p.woo_product_id); return n })} style={{accentColor:C.accent}} /></td>
-                        <td style={{ padding:'6px 10px', maxWidth:220 }}><div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nombre}</div></td>
-                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.bodega||'—'}</td>
-                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.varietal||'—'}</td>
-                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.categoria}</td>
-                        <td style={{ padding:'6px 10px', fontWeight:600 }}>{p.precio_venta>0?`$${p.precio_venta.toLocaleString('es-AR')}`:'-'}</td>
-                        <td style={{ padding:'6px 10px', color:C.muted }}>{p.stock}</td>
-                        <td style={{ padding:'6px 10px' }}><span style={{ fontSize:10, padding:'2px 7px', borderRadius:10, background:p.ya_importado?'#222':'rgba(76,175,125,0.15)', color:p.ya_importado?C.dim:C.green, border:`1px solid ${p.ya_importado?C.border:'rgba(76,175,125,0.3)'}` }}>{p.ya_importado?'Importado':'Nuevo'}</span></td>
+                      <tr key={p.woo_product_id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, opacity: p.ya_importado ? 0.5 : 1 }}>
+                        <td style={{ padding: '8px 12px' }}><input type="checkbox" disabled={p.ya_importado} checked={wooSel.has(p.woo_product_id)} onChange={() => setWooSel(s => { const n = new Set(s); n.has(p.woo_product_id) ? n.delete(p.woo_product_id) : n.add(p.woo_product_id); return n })} style={{ accentColor: T.wine }} /></td>
+                        <td style={{ padding: '8px 12px', maxWidth: 220 }}><div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, color: T.text }}>{p.nombre}</div></td>
+                        <td style={{ padding: '8px 12px', color: T.muted }}>{p.bodega || '—'}</td>
+                        <td style={{ padding: '8px 12px', color: T.muted }}>{p.varietal || '—'}</td>
+                        <td style={{ padding: '8px 12px' }}>{p.categoria && <span style={{ ...BADGE_BASE, ...catBadge(p.categoria) }}>{p.categoria}</span>}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, color: T.text }}>{p.precio_venta > 0 ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}</td>
+                        <td style={{ padding: '8px 12px', color: T.muted }}>{p.stock}</td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <span style={{ ...BADGE_BASE, ...(p.ya_importado ? { background: T.bg, color: T.dim, border: `1px solid ${T.border}` } : { background: T.greenBg, color: T.green, border: `1px solid ${T.greenBd}` }) }}>
+                            {p.ya_importado ? 'Importado' : 'Nuevo'}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14, flexShrink:0 }}>
-                <span style={{ fontSize:12, color:C.muted }}>{wooSel.size} seleccionados</span>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button onClick={() => setImportModal(false)} style={btn()}>Cancelar</button>
-                  <button onClick={importarWoo} disabled={importando||wooSel.size===0} style={{ ...btn('accent',{padding:'6px 16px'}), opacity:(importando||wooSel.size===0)?.5:1 }}>
-                    {importando?'Importando...':`Importar ${wooSel.size}`}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexShrink: 0 }}>
+                <span style={{ fontSize: 12, color: T.muted }}>{wooSel.size} seleccionados</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setImportModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                  <button onClick={importarWoo} disabled={importando || wooSel.size === 0} className="btn-wine" style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (importando || wooSel.size === 0) ? 0.5 : 1 }}>
+                    {importando ? 'Importando...' : `Importar ${wooSel.size}`}
                   </button>
                 </div>
               </div>
@@ -900,18 +956,18 @@ export default function ProductosPage() {
 
       {/* ── Lista de precios modal ────────────────────────────────── */}
       {listaModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:200, display:'flex', alignItems:'flex-start', justifyContent:'center', padding:24, overflowY:'auto' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}
           onClick={e => e.target === e.currentTarget && setListaModal(false)}>
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:28, width:'100%', maxWidth:700, boxShadow:'0 24px 64px rgba(0,0,0,0.6)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-              <h2 style={{ margin:0, fontSize:15, fontWeight:700, color:C.text }}>Armar lista de precios</h2>
-              <button onClick={() => setListaModal(false)} style={{ background:'none', border:'none', color:C.dim, fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 720, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Armar lista de precios</h2>
+              <button onClick={() => setListaModal(false)} style={{ background: 'none', border: 'none', color: T.dim, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
             </div>
 
             {/* Buscador */}
-            <div style={{ position:'relative', marginBottom:16 }}>
+            <div style={{ position: 'relative', marginBottom: 16 }}>
               <input
-                style={{ ...INP, paddingRight:32 }}
+                style={{ ...INP, paddingRight: 32 }}
                 placeholder="Buscar y agregar producto..."
                 value={listaQuery}
                 onChange={e => { setListaQuery(e.target.value); setListaSugsOpen(true) }}
@@ -920,25 +976,25 @@ export default function ProductosPage() {
                 autoComplete="off"
               />
               {listaSugsOpen && listaQuery && (
-                <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:10, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, boxShadow:'0 8px 24px rgba(0,0,0,0.5)', maxHeight:280, overflowY:'auto', marginTop:2 }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 280, overflowY: 'auto', marginTop: 4 }}>
                   {productos
                     .filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
                       `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase()))
                     .slice(0, 20)
                     .map(p => (
                       <div key={p.id} onMouseDown={() => listaAgregarProducto(p)}
-                        style={{ padding:'9px 14px', cursor:'pointer', borderBottom:`1px solid rgba(42,42,42,0.5)`, display:'flex', justifyContent:'space-between', alignItems:'center' }}
+                        style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                         className="lista-sug">
                         <div>
-                          <div style={{ fontSize:13, color:C.text, fontWeight:500 }}>{p.nombre}</div>
-                          <div style={{ fontSize:11, color:C.dim, marginTop:2 }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</div>
+                          <div style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>{p.nombre}</div>
+                          <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</div>
                         </div>
-                        <div style={{ fontSize:13, fontWeight:700, color:C.green }}>${p.precio_venta.toLocaleString('es-AR')}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: T.green }}>${p.precio_venta.toLocaleString('es-AR')}</div>
                       </div>
                     ))}
                   {productos.filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
                     `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase())).length === 0 && (
-                    <div style={{ padding:'14px', fontSize:12, color:C.dim, textAlign:'center' }}>Sin resultados</div>
+                    <div style={{ padding: '14px', fontSize: 12, color: T.dim, textAlign: 'center' }}>Sin resultados</div>
                   )}
                 </div>
               )}
@@ -946,28 +1002,28 @@ export default function ProductosPage() {
 
             {/* Tabla de items */}
             {listaItems.length === 0 ? (
-              <div style={{ padding:'32px', textAlign:'center', color:C.dim, fontSize:13 }}>Buscá productos para armar la lista</div>
+              <div style={{ padding: '36px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Buscá productos para armar la lista</div>
             ) : (
-              <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden', marginBottom:20 }}>
-                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden', marginBottom: 20 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom:`1px solid ${C.border}`, background:C.surface }}>
-                      {['Producto','Bodega','Varietal','Precio','Mayorista',''].map(h => (
-                        <th key={h} style={{ padding:'8px 12px', fontSize:10, color:C.dim, fontWeight:600, textAlign: h === 'Precio' || h === 'Mayorista' ? 'right' : 'left', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                    <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.bg }}>
+                      {['Producto', 'Bodega', 'Varietal', 'Precio', 'Mayorista', ''].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', fontSize: 11, color: T.dim, fontWeight: 700, textAlign: h === 'Precio' || h === 'Mayorista' ? 'right' : 'left', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {listaItems.map((item, i) => (
-                      <tr key={item.id} style={{ borderBottom:`1px solid rgba(42,42,42,0.5)` }}>
-                        <td style={{ padding:'9px 12px', color:C.text, fontWeight:500 }}>{item.nombre}</td>
-                        <td style={{ padding:'9px 12px', color:C.muted, fontSize:12 }}>{item.bodega || '—'}</td>
-                        <td style={{ padding:'9px 12px', color:C.muted, fontSize:12 }}>{item.varietal || '—'}</td>
-                        <td style={{ padding:'9px 12px', textAlign:'right', fontWeight:700, color:C.green }}>${item.precio_venta.toLocaleString('es-AR')}</td>
-                        <td style={{ padding:'9px 12px', textAlign:'right', color:C.muted, fontSize:12 }}>{item.precio_mayorista ? '$' + item.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
-                        <td style={{ padding:'9px 8px', textAlign:'right' }}>
-                          <button onClick={() => setListaItems(prev => prev.filter((_,j) => j !== i))}
-                            style={{ background:'none', border:'none', color:C.dim, cursor:'pointer', fontSize:16, lineHeight:1, padding:'2px 4px' }}>×</button>
+                      <tr key={item.id} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                        <td style={{ padding: '10px 14px', color: T.text, fontWeight: 500 }}>{item.nombre}</td>
+                        <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.bodega || '—'}</td>
+                        <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.varietal || '—'}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.green }}>${item.precio_venta.toLocaleString('es-AR')}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: 12 }}>{item.precio_mayorista ? '$' + item.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
+                        <td style={{ padding: '10px 10px', textAlign: 'right' }}>
+                          <button onClick={() => setListaItems(prev => prev.filter((_, j) => j !== i))}
+                            style={{ background: 'none', border: 'none', color: T.dim, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px' }}>×</button>
                         </td>
                       </tr>
                     ))}
@@ -976,12 +1032,12 @@ export default function ProductosPage() {
               </div>
             )}
 
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:12, color:C.dim }}>{listaItems.length} producto{listaItems.length !== 1 ? 's' : ''}</span>
-              <div style={{ display:'flex', gap:10 }}>
-                <button onClick={() => setListaModal(false)} style={btn('default', { padding:'7px 16px', fontSize:13 })}>Cancelar</button>
-                <button onClick={imprimirLista} disabled={listaItems.length === 0}
-                  style={{ ...btn('accent', { padding:'7px 18px', fontSize:13, fontWeight:600 }), opacity: listaItems.length === 0 ? 0.4 : 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: T.dim }}>{listaItems.length} producto{listaItems.length !== 1 ? 's' : ''}</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setListaModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                <button onClick={imprimirLista} disabled={listaItems.length === 0} className="btn-wine"
+                  style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: listaItems.length === 0 ? 0.4 : 1 }}>
                   Imprimir lista
                 </button>
               </div>
@@ -992,7 +1048,7 @@ export default function ProductosPage() {
 
       {/* ── Toast ─────────────────────────────────────────────────── */}
       {toast && (
-        <div style={{ position:'fixed', bottom:24, right:24, background:'#222', border:`1px solid ${C.border}`, color:C.text, fontSize:13, padding:'10px 16px', borderRadius:8, boxShadow:'0 8px 32px rgba(0,0,0,0.7)', zIndex:300, animation:'popIn 150ms ease' }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: T.surface, border: `1px solid ${T.border}`, color: T.text, fontSize: 13, padding: '10px 18px', borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', zIndex: 300, animation: 'popIn 150ms ease' }}>
           {toast}
         </div>
       )}

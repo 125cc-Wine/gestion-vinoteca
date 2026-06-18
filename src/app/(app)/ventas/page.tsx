@@ -23,27 +23,40 @@ interface PedidoRecord {
 const PEDIDO_ITEM_EMPTY: PedidoItem = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0 }
 
 const C = {
-  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
-  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
-  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
-  dangerBg: '#3A1010', dangerBorder: '#8B2020',
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  card:    '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  accent:  '#800000',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  dangerBg:     'rgba(192,48,48,0.08)',
+  dangerBorder: 'rgba(192,48,48,0.35)',
 }
 
 const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '5px 8px', fontSize: 13, outline: 'none',
-  width: '100%', boxSizing: 'border-box',
+  background: '#FFFFFF', border: `1px solid #DDD0C0`, borderRadius: 6,
+  color: '#1A1210', padding: '7px 10px', fontSize: 13, outline: 'none',
+  width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', transition: 'border-color 0.12s',
 }
 
 function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
   const bases = {
-    default: { background: '#222', border: `1px solid ${C.border}` },
-    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
-    ghost:   { background: 'transparent', border: '1px solid transparent' },
-    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
-    green:   { background: 'rgba(76,175,125,0.15)', border: '1px solid rgba(76,175,125,0.3)' },
+    default: { background: '#FFFFFF', border: `1px solid #DDD0C0`, color: '#6B5D55' },
+    accent:  { background: '#800000', border: `1px solid #800000`, color: '#FFFFFF' },
+    ghost:   { background: 'transparent', border: '1px solid transparent', color: '#6B5D55' },
+    danger:  { background: 'rgba(192,48,48,0.08)', border: `1px solid rgba(192,48,48,0.35)`, color: '#C03030' },
+    green:   { background: 'rgba(45,122,79,0.08)', border: '1px solid rgba(45,122,79,0.3)', color: '#2D7A4F' },
   }
-  return { ...bases[v], color: v === 'green' ? C.green : C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
+  return { ...bases[v], borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s', ...ex }
 }
 
 function filtrarProductos(productos: Producto[], q: string) {
@@ -113,38 +126,37 @@ function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
   const dropdown = open ? (
     <div ref={listRef} style={{
       position: 'fixed', top: pos.top, left: pos.left, width: pos.w,
-      zIndex: 9999, background: '#1A1A1A', border: '1px solid #2A2A2A',
-      borderRadius: 8, boxShadow: '0 16px 48px rgba(0,0,0,0.85)',
+      zIndex: 9999, background: '#FFFFFF', border: '1px solid #C8BAA8',
+      borderRadius: 8, boxShadow: '0 16px 40px rgba(26,18,16,0.18)',
       maxHeight: 320, overflowY: 'auto',
     }}>
       {filtered.length === 0
-        ? <div style={{ padding: '16px 12px', fontSize: 12, color: '#555', textAlign: 'center' }}>
+        ? <div style={{ padding: '16px 12px', fontSize: 12, color: '#A89888', textAlign: 'center' }}>
             {query ? `Sin resultados para "${query}"` : 'Escribí para buscar'}
           </div>
         : filtered.map((p, i) => {
           const precio = esMay && p.precio_mayorista ? p.precio_mayorista : p.precio_venta
-          const stockOk = p.stock > (p.stock_minimo || 0)
           const stockBajo = p.stock > 0 && p.stock <= (p.stock_minimo || 0)
-          const stockColor = p.stock <= 0 ? '#E05555' : stockBajo ? '#D4820A' : '#4CAF7D'
+          const stockColor = p.stock <= 0 ? '#C03030' : stockBajo ? '#A07010' : '#2D7A4F'
           return (
             <div key={p.id}
               onMouseDown={e => { e.preventDefault(); onSelect(p); setOpen(false) }}
               onMouseEnter={() => setHi(i)}
               style={{
                 padding: '9px 14px', cursor: 'pointer',
-                background: i === hi ? 'rgba(139,26,42,0.2)' : 'transparent',
-                borderBottom: '1px solid rgba(42,42,42,0.6)',
-                borderLeft: `3px solid ${i === hi ? '#8B1A2A' : 'transparent'}`,
+                background: i === hi ? 'rgba(128,0,0,0.07)' : 'transparent',
+                borderBottom: '1px solid #EEE6D8',
+                borderLeft: `3px solid ${i === hi ? '#800000' : 'transparent'}`,
                 transition: 'background 0.1s',
               }}>
-              <div style={{ fontSize: 13, color: '#E8E8E8', fontWeight: 500 }}>{p.nombre}</div>
+              <div style={{ fontSize: 13, color: '#1A1210', fontWeight: 500 }}>{p.nombre}</div>
               <div style={{ fontSize: 11, marginTop: 3, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                {p.bodega && <span style={{ color: '#888' }}>{p.bodega}</span>}
-                {p.varietal && <span style={{ color: '#555' }}>{p.varietal}</span>}
+                {p.bodega && <span style={{ color: '#6B5D55' }}>{p.bodega}</span>}
+                {p.varietal && <span style={{ color: '#A89888' }}>{p.varietal}</span>}
                 <span style={{ color: stockColor, fontWeight: 600 }}>
                   {p.stock <= 0 ? 'Sin stock' : stockBajo ? `Stock bajo: ${p.stock}` : `Stock: ${p.stock}`}
                 </span>
-                <span style={{ color: '#888', marginLeft: 'auto' }}>${precio.toLocaleString('es-AR')}</span>
+                <span style={{ color: '#6B5D55', marginLeft: 'auto' }}>${precio.toLocaleString('es-AR')}</span>
               </div>
             </div>
           )
@@ -222,24 +234,24 @@ function ClienteSearch({ clientes, clienteId, clienteNombre, onSelect }: {
         )}
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 300, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: '0 12px 40px rgba(0,0,0,0.7)', maxHeight: 300, overflowY: 'auto' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 300, background: '#FFFFFF', border: '1px solid #C8BAA8', borderRadius: 8, boxShadow: '0 12px 32px rgba(26,18,16,0.16)', maxHeight: 300, overflowY: 'auto' }}>
           <div className="cliente-opt" onMouseDown={() => { onSelect(null); setOpen(false); setQuery('') }}
-            style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>Consumidor Final</div>
+            style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #EEE6D8' }}>
+            <div style={{ fontSize: 12, color: '#A89888', fontStyle: 'italic' }}>Consumidor Final</div>
           </div>
           {filtered.length === 0 && query
-            ? <div style={{ padding: '16px 14px', fontSize: 12, color: C.dim, textAlign: 'center' }}>Sin resultados</div>
+            ? <div style={{ padding: '16px 14px', fontSize: 12, color: '#A89888', textAlign: 'center' }}>Sin resultados</div>
             : filtered.map(c => {
               const name = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
               const esMay = c.tipo === 'mayorista' || c.tipo === 'revendedor'
               return (
                 <div key={c.id} className="cliente-opt"
                   onMouseDown={() => { onSelect(c); setOpen(false); setQuery('') }}
-                  style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
-                  <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{name}</div>
-                  <div style={{ fontSize: 11, color: C.dim, marginTop: 2, display: 'flex', gap: 12 }}>
+                  style={{ padding: '9px 14px', cursor: 'pointer', borderBottom: '1px solid #EEE6D8' }}>
+                  <div style={{ fontSize: 13, color: '#1A1210', fontWeight: 500 }}>{name}</div>
+                  <div style={{ fontSize: 11, color: '#A89888', marginTop: 2, display: 'flex', gap: 12 }}>
                     {c.cuit && <span>CUIT: {c.cuit}</span>}
-                    {c.tipo && <span style={{ color: esMay ? C.amber : C.dim, fontWeight: esMay ? 600 : 400 }}>{c.tipo}</span>}
+                    {c.tipo && <span style={{ color: esMay ? '#A07010' : '#A89888', fontWeight: esMay ? 600 : 400 }}>{c.tipo}</span>}
                     {c.telefono && <span>{c.telefono}</span>}
                   </div>
                 </div>
@@ -624,28 +636,46 @@ export default function VentasPage() {
   const pedidosPend = pedidos.filter(p => p.estado === 'pendiente').length
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', padding: '24px', color: C.text }}>
+    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
       <style>{`
-        .venta-row:hover { background: rgba(255,255,255,0.03) !important; }
-        .venta-row td, .pedido-row td { border-bottom: 1px solid ${C.border}; }
-        .pedido-row:hover { background: rgba(255,255,255,0.03) !important; }
-        .vbtn:hover { opacity: 0.8; } .vbtn:active { opacity: 0.6; }
-        .vinp:focus { border-color: ${C.accent} !important; }
-        .vinp::placeholder { color: ${C.dim}; }
-        select.vinp option { background: #1a1a1a; color: ${C.text}; }
-        .item-row td { border-bottom: 1px solid ${C.border}; }
-        .cliente-opt:hover { background: rgba(255,255,255,0.05) !important; }
+        * { box-sizing: border-box; }
+        .venta-row:hover { background: #FDFAF6 !important; }
+        .pedido-row:hover { background: #FDFAF6 !important; }
+        .vbtn:hover { opacity: 0.85; } .vbtn:active { opacity: 0.65; }
+        .vinp:focus { border-color: #C8BAA8 !important; box-shadow: 0 0 0 3px rgba(128,0,0,0.08) !important; }
+        .vinp::placeholder { color: #A89888; }
+        .item-row td { border-bottom: 1px solid #DDD0C0; }
+        .cliente-opt:hover { background: rgba(128,0,0,0.05) !important; }
+        .tab-active { background: #800000 !important; color: #fff !important; }
+        .tab-inactive { background: transparent !important; color: #6B5D55 !important; }
+        .tab-inactive:hover { background: rgba(128,0,0,0.06) !important; }
       `}</style>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, background: C.surface, borderRadius: 10, padding: 4, border: `1px solid ${C.border}`, width: 'fit-content' }}>
-        {(['comprobantes', 'pedidos'] as const).map(t => (
-          <button key={t} className="vbtn" onClick={() => setTab(t)}
-            style={{ ...btn(tab === t ? 'accent' : 'ghost', { padding: '7px 20px', fontSize: 13, borderRadius: 7 }), border: 'none' }}>
-            {t === 'comprobantes' ? `Comprobantes (${ventas.length})` : `Pedidos (${pedidosPend} pend.)`}
-          </button>
-        ))}
+      {/* Page header */}
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 2, background: C.bg, borderRadius: 9, padding: 3, border: `1px solid ${C.border}` }}>
+            {(['comprobantes', 'pedidos'] as const).map(t => (
+              <button key={t} className={`vbtn ${tab === t ? 'tab-active' : 'tab-inactive'}`} onClick={() => setTab(t)}
+                style={{ padding: '6px 18px', fontSize: 13, borderRadius: 7, border: 'none', fontWeight: tab === t ? 600 : 400, cursor: 'pointer', transition: 'all 0.12s', fontFamily: 'inherit' }}>
+                {t === 'comprobantes' ? `Comprobantes (${ventas.length})` : `Pedidos (${pedidosPend} pend.)`}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {tab === 'comprobantes' && <>
+            <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13 })} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
+            <button className="vbtn" style={btn('accent', { padding: '7px 16px', fontSize: 13, fontWeight: 600 })} onClick={() => abrirNuevo('remito')}>+ Remito</button>
+          </>}
+          {tab === 'pedidos' && (
+            <button className="vbtn" style={btn('accent', { padding: '7px 16px', fontSize: 13, fontWeight: 600 })} onClick={abrirNuevoPedido}>+ Nuevo pedido</button>
+          )}
+        </div>
       </div>
+
+      <div style={{ padding: '24px 28px', color: C.text }}>
 
       {/* ══ COMPROBANTES ══ */}
       {tab === 'comprobantes' && (
@@ -724,7 +754,7 @@ export default function VentasPage() {
                       <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
                         <td style={{ padding: '11px 14px', fontWeight: 600, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{v.numero}</td>
                         <td style={{ padding: '11px 14px' }}>
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.18)' : 'rgba(76,175,125,0.15)', color: v.tipo === 'presupuesto' ? '#D08090' : C.green, border: `1px solid ${v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.4)' : 'rgba(76,175,125,0.3)'}` }}>
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.08)' : 'rgba(45,122,79,0.1)', color: v.tipo === 'presupuesto' ? '#800000' : C.green, border: `1px solid ${v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.25)' : 'rgba(45,122,79,0.3)'}` }}>
                             {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
                           </span>
                         </td>
@@ -734,7 +764,7 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px' }}>
                           {v.estado_pago === 'pagado' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(76,175,125,0.15)', color: C.green, border: '1px solid rgba(76,175,125,0.3)' }}>Pagado</span>}
                           {v.estado_pago === 'pendiente' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)' }}>Pendiente</span>}
-                          {v.estado_pago === 'cuenta_corriente' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(100,140,220,0.15)', color: '#7AADFF', border: '1px solid rgba(100,140,220,0.3)' }}>Cta. Cte.</span>}
+                          {v.estado_pago === 'cuenta_corriente' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(43,94,160,0.08)', color: '#2B5EA0', border: '1px solid rgba(43,94,160,0.25)' }}>Cta. Cte.</span>}
                           {!v.estado_pago && <span style={{ color: C.dim }}>—</span>}
                         </td>
                         <td style={{ padding: '11px 14px', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
@@ -827,11 +857,13 @@ export default function VentasPage() {
         </>
       )}
 
+      </div>{/* end content wrapper */}
+
       {/* ══ MODAL VENTA ══ */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
           onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{editVentaId ? 'Editar' : 'Nuevo'} {tipo === 'presupuesto' ? 'presupuesto' : 'remito'}</h2>
@@ -902,7 +934,7 @@ export default function VentasPage() {
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ borderBottom: `1px solid ${C.border}`, background: '#111' }}>
+                    <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.bg }}>
                       <th style={{ textAlign: 'left', padding: '8px 10px', color: C.dim, fontWeight: 500, width: '42%' }}>Producto</th>
                       <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 56 }}>Cant.</th>
                       <th style={{ textAlign: 'right', padding: '8px 6px', color: C.dim, fontWeight: 500 }}>P.Unit.</th>
@@ -982,7 +1014,7 @@ export default function VentasPage() {
       {pedidoModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
           onClick={e => e.target === e.currentTarget && setPedidoModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 680, margin: '16px auto', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 680, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Nuevo pedido</h2>
               <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => setPedidoModal(false)}>×</button>
@@ -1019,7 +1051,7 @@ export default function VentasPage() {
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ borderBottom: `1px solid ${C.border}`, background: '#111' }}>
+                    <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.bg }}>
                       <th style={{ textAlign: 'left', padding: '8px 10px', color: C.dim, fontWeight: 500 }}>Producto</th>
                       <th style={{ textAlign: 'center', padding: '8px 6px', color: C.dim, fontWeight: 500, width: 80 }}>Cant.</th>
                       <th style={{ width: 28 }}></th>
@@ -1089,7 +1121,7 @@ export default function VentasPage() {
       {detallePedido && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={e => e.target === e.currentTarget && setDetallePedido(null)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Pedido {detallePedido.numero}</h2>
               <button className="vbtn" style={{ ...btn('ghost'), color: C.dim, fontSize: 18 }} onClick={() => setDetallePedido(null)}>×</button>
@@ -1271,7 +1303,7 @@ export default function VentasPage() {
       </div>
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.surface, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 4px 20px rgba(26,18,16,0.12)', zIndex: 100 }}>
           {toast}
         </div>
       )}

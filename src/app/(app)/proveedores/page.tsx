@@ -2,27 +2,43 @@
 import { useEffect, useState } from 'react'
 import type { Proveedor } from '@/types'
 
-const C = {
-  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
-  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
-  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
+const T = {
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  wine:    '#800000',
+  wineBg:  'rgba(128,0,0,0.07)',
+  wineBd:  'rgba(128,0,0,0.18)',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  greenBd: 'rgba(45,122,79,0.22)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  redBd:   'rgba(192,48,48,0.22)',
+  blue:    '#2B5EA0',
+  blueBg:  'rgba(43,94,160,0.08)',
+  blueBd:  'rgba(43,94,160,0.22)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  amberBd: 'rgba(160,112,16,0.22)',
 }
+
 const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '6px 10px', fontSize: 13, outline: 'none',
+  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
+  color: T.text, padding: '9px 12px', fontSize: 13, outline: 'none',
   width: '100%', boxSizing: 'border-box',
 }
-function btn(v: 'default' | 'accent' | 'ghost' | 'danger' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
-  const b = {
-    default: { background: '#222', border: `1px solid ${C.border}` },
-    accent:  { background: C.accent, border: 'none' },
-    ghost:   { background: 'transparent', border: '1px solid transparent' },
-    danger:  { background: 'rgba(224,85,85,0.1)', border: `1px solid rgba(224,85,85,0.3)` },
-  }
-  return { ...b[v], color: C.text, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
-}
+
 function Label({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 4 }}>{children}</div>
+  return (
+    <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+      {children}
+    </div>
+  )
 }
 
 const EMPTY: Omit<Proveedor, 'id' | 'created_at'> = {
@@ -36,7 +52,12 @@ interface Compra {
   total: number; estado: string; fecha_esperada: string | null; created_at: string
 }
 
-const ESTADO_COLOR: Record<string, string> = { pendiente: C.amber, enviado: '#7AADFF', recibido: C.green, cancelado: C.dim }
+const ESTADO_STYLE: Record<string, { color: string; bg: string; bd: string }> = {
+  pendiente: { color: T.amber, bg: T.amberBg, bd: T.amberBd },
+  enviado:   { color: T.blue,  bg: T.blueBg,  bd: T.blueBd  },
+  recibido:  { color: T.green, bg: T.greenBg, bd: T.greenBd },
+  cancelado: { color: T.dim,   bg: 'rgba(168,152,136,0.08)', bd: 'rgba(168,152,136,0.22)' },
+}
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
 
 export default function ProveedoresPage() {
@@ -111,134 +132,166 @@ export default function ProveedoresPage() {
 
   const saldoTotal = proveedores.reduce((a, p) => a + (p.saldo || 0), 0)
 
-  const OVERLAY: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
+  const OVERLAY: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)',
+    zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+  }
 
   return (
-    <div style={{ padding: 28, background: C.bg, minHeight: '100vh', color: C.text }}>
-      <style>{`.prow:hover{background:rgba(255,255,255,0.025)!important}.pinp:focus{border-color:#555!important}`}</style>
+    <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
+      <style>{`.tr:hover{background:#FDFAF6!important}.pinp:focus{border-color:${T.border2}!important}.btn-act:hover{opacity:0.85}`}</style>
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      {/* Page header */}
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Proveedores</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: C.muted }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: T.text }}>Proveedores</h1>
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: T.muted }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
         </div>
-        <button onClick={abrirNuevo} style={{ ...btn('accent'), padding: '8px 18px', fontSize: 13 }}>+ Nuevo proveedor</button>
+        <button className="btn-act" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          + Nuevo proveedor
+        </button>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Total proveedores', value: proveedores.length, color: C.text },
-          { label: 'Saldo a pagar', value: `$${saldoTotal.toLocaleString('es-AR')}`, color: saldoTotal > 0 ? C.red : C.text },
-          { label: 'Activos', value: proveedores.filter(p => p.activo).length, color: C.green },
-        ].map(k => (
-          <div key={k.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 18px' }}>
-            <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+      <div style={{ padding: '24px 28px' }}>
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: 'Total proveedores', value: proveedores.length, color: T.text, sub: 'registrados' },
+            { label: 'Saldo a pagar', value: `$${saldoTotal.toLocaleString('es-AR')}`, color: saldoTotal > 0 ? T.red : T.text, sub: 'deuda acumulada' },
+            { label: 'Activos', value: proveedores.filter(p => p.activo).length, color: T.green, sub: 'proveedores activos' },
+          ].map(k => (
+            <div key={k.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>{k.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table card */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+          {/* Filter bar */}
+          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${T.border}`, background: T.bg, display: 'flex', gap: 8 }}>
+            <input
+              className="pinp"
+              placeholder="Buscar por nombre, CUIT, contacto..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              style={{ flex: 1, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, padding: '7px 12px', fontSize: 13, color: T.text, outline: 'none' }}
+            />
           </div>
-        ))}
-      </div>
 
-      <input className="pinp" style={{ ...INP, marginBottom: 14 }} placeholder="Buscar por nombre, CUIT, contacto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-
-      {/* Tabla */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
-              {['Proveedor', 'CUIT', 'Contacto', 'Teléfono', 'Saldo', ''].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: C.dim }}>Cargando...</td></tr>
-            ) : filtrados.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: C.dim }}>Sin proveedores</td></tr>
-            ) : filtrados.map(p => (
-              <tr key={p.id} className="prow" style={{ borderBottom: `1px solid rgba(42,42,42,0.6)` }}>
-                <td style={{ padding: '11px 14px' }}>
-                  <div style={{ fontWeight: 600, color: C.text }}>{p.nombre}</div>
-                  {p.razon_social && p.razon_social !== p.nombre && <div style={{ fontSize: 11, color: C.dim, marginTop: 1 }}>{p.razon_social}</div>}
-                </td>
-                <td style={{ padding: '11px 14px', color: C.muted, fontFamily: 'monospace', fontSize: 12 }}>{p.cuit || '—'}</td>
-                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{p.contacto || '—'}</td>
-                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{p.telefono || '—'}</td>
-                <td style={{ padding: '11px 14px', fontWeight: 600, color: (p.saldo || 0) > 0 ? C.red : C.text }}>${(p.saldo || 0).toLocaleString('es-AR')}</td>
-                <td style={{ padding: '11px 14px' }}>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button style={btn('default', { padding: '4px 10px', fontSize: 11 })} onClick={() => abrirHistorial(p)}>Compras</button>
-                    <button style={btn('default', { padding: '4px 10px', fontSize: 11 })} onClick={() => abrirEditar(p)}>Editar</button>
-                    <button style={btn('danger', { padding: '4px 10px', fontSize: 11 })} onClick={() => eliminar(p.id!)}>Eliminar</button>
-                  </div>
-                </td>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                {['Proveedor', 'CUIT', 'Contacto', 'Teléfono', 'Saldo', ''].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
+              ) : filtrados.length === 0 ? (
+                <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin proveedores</td></tr>
+              ) : filtrados.map(p => (
+                <tr key={p.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'default', transition: 'background 0.1s' }}>
+                  <td style={{ padding: '11px 14px' }}>
+                    <div style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{p.nombre}</div>
+                    {p.razon_social && p.razon_social !== p.nombre && <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{p.razon_social}</div>}
+                  </td>
+                  <td style={{ padding: '11px 14px', color: T.muted, fontFamily: 'monospace', fontSize: 12 }}>{p.cuit || '—'}</td>
+                  <td style={{ padding: '11px 14px', color: T.muted, fontSize: 12 }}>{p.contacto || '—'}</td>
+                  <td style={{ padding: '11px 14px', color: T.muted, fontSize: 12 }}>{p.telefono || '—'}</td>
+                  <td style={{ padding: '11px 14px', fontWeight: 700, fontSize: 13, color: (p.saldo || 0) > 0 ? T.red : T.text }}>${(p.saldo || 0).toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '11px 14px' }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button
+                        onClick={() => abrirHistorial(p)}
+                        style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontWeight: 500 }}
+                      >Compras</button>
+                      <button
+                        onClick={() => abrirEditar(p)}
+                        style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontWeight: 500 }}
+                      >Editar</button>
+                      <button
+                        onClick={() => eliminar(p.id!)}
+                        style={{ background: T.redBg, border: `1px solid ${T.redBd}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.red, cursor: 'pointer', fontWeight: 500 }}
+                      >Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal historial compras */}
       {histProv && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setHistProv(null)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 680, maxHeight: '88vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 700, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{histProv.nombre}</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: C.muted }}>Historial de órdenes de compra</p>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{histProv.nombre}</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Historial de órdenes de compra</p>
               </div>
-              <button onClick={() => setHistProv(null)} style={btn('ghost', { fontSize: 18, color: C.dim, padding: '2px 8px' })}>×</button>
+              <button onClick={() => setHistProv(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, padding: 0 }}>×</button>
             </div>
 
-            {histLoading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: C.dim }}>Cargando...</div>
-            ) : histCompras.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: C.dim }}>Sin órdenes de compra registradas</div>
-            ) : (
-              <>
-                {/* Resumen */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-                  {[
-                    { label: 'Órdenes', value: histCompras.length },
-                    { label: 'Total comprado', value: `$${histCompras.reduce((a, c) => a + c.total, 0).toLocaleString('es-AR')}` },
-                    { label: 'Última compra', value: new Date(histCompras[0].created_at).toLocaleDateString('es-AR') },
-                  ].map(k => (
-                    <div key={k.label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
-                      <div style={{ fontSize: 10, color: C.dim, fontWeight: 600, textTransform: 'uppercase', marginBottom: 4 }}>{k.label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>{k.value}</div>
-                    </div>
-                  ))}
-                </div>
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {histLoading ? (
+                <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</div>
+              ) : histCompras.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin órdenes de compra registradas</div>
+              ) : (
+                <>
+                  {/* Resumen */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                    {[
+                      { label: 'Órdenes', value: histCompras.length },
+                      { label: 'Total comprado', value: `$${histCompras.reduce((a, c) => a + c.total, 0).toLocaleString('es-AR')}` },
+                      { label: 'Última compra', value: new Date(histCompras[0].created_at).toLocaleDateString('es-AR') },
+                    ].map(k => (
+                      <div key={k.label} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 14px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{k.label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{k.value}</div>
+                      </div>
+                    ))}
+                  </div>
 
-                {/* Lista OCs */}
-                <div style={{ overflowY: 'auto', flex: 1 }}>
-                  {histCompras.map(c => (
-                    <div key={c.id} style={{ border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: C.surface }}>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: 12, color: C.muted }}>{c.numero}</span>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 4, color: ESTADO_COLOR[c.estado], background: `${ESTADO_COLOR[c.estado]}18`, border: `1px solid ${ESTADO_COLOR[c.estado]}44` }}>
-                            {ESTADO_LABEL[c.estado]}
-                          </span>
-                          <span style={{ fontSize: 11, color: C.dim }}>{new Date(c.created_at).toLocaleDateString('es-AR')}</span>
-                        </div>
-                        <span style={{ fontWeight: 700, color: C.green }}>${c.total.toLocaleString('es-AR')}</span>
-                      </div>
-                      <div style={{ padding: '8px 14px' }}>
-                        {(c.items || []).map((item, i) => (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '3px 0', borderBottom: i < c.items.length - 1 ? `1px solid rgba(42,42,42,0.4)` : 'none' }}>
-                            <span style={{ color: C.text }}>{item.nombre}</span>
-                            <span style={{ color: C.muted }}>{item.cantidad} u. × ${item.precio_unitario?.toLocaleString('es-AR')}</span>
+                  {/* Lista OCs */}
+                  <div>
+                    {histCompras.map(c => {
+                      const es = ESTADO_STYLE[c.estado] || ESTADO_STYLE.cancelado
+                      return (
+                        <div key={c.id} style={{ border: `1px solid ${T.border}`, borderRadius: 10, marginBottom: 10, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                              <span style={{ fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 99, color: es.color, background: es.bg, border: `1px solid ${es.bd}` }}>
+                                {ESTADO_LABEL[c.estado]}
+                              </span>
+                              <span style={{ fontSize: 11, color: T.dim }}>{new Date(c.created_at).toLocaleDateString('es-AR')}</span>
+                            </div>
+                            <span style={{ fontWeight: 700, color: T.green, fontSize: 13 }}>${c.total.toLocaleString('es-AR')}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                          <div style={{ padding: '8px 14px', background: T.surface }}>
+                            {(c.items || []).map((item, i) => (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: i < c.items.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                                <span style={{ color: T.text }}>{item.nombre}</span>
+                                <span style={{ color: T.muted }}>{item.cantidad} u. × ${item.precio_unitario?.toLocaleString('es-AR')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -246,12 +299,15 @@ export default function ProveedoresPage() {
       {/* Modal editar/nuevo */}
       {modal && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{editId ? 'Editar proveedor' : 'Nuevo proveedor'}</h2>
-              <button onClick={() => setModal(false)} style={btn('ghost', { fontSize: 18, color: C.dim, padding: '2px 8px' })}>×</button>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{editId ? 'Editar proveedor' : 'Nuevo proveedor'}</h2>
+              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, padding: 0 }}>×</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+
+            {/* Body */}
+            <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div style={{ gridColumn: '1/-1' }}><Label>Nombre *</Label><input className="pinp" style={INP} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Razón social</Label><input className="pinp" style={INP} value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
               <div><Label>CUIT</Label><input className="pinp" style={INP} value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} /></div>
@@ -262,9 +318,11 @@ export default function ProveedoresPage() {
               <div style={{ gridColumn: '1/-1' }}><Label>Saldo (negativo = deuda)</Label><input className="pinp" type="number" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Notas</Label><textarea className="pinp" style={{ ...INP, height: 72, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button onClick={() => setModal(false)} style={btn('default', { padding: '7px 16px' })}>Cancelar</button>
-              <button onClick={guardar} disabled={saving} style={{ ...btn('accent', { padding: '7px 18px', fontSize: 13 }), opacity: saving ? 0.6 : 1 }}>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={guardar} disabled={saving} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
@@ -272,8 +330,9 @@ export default function ProveedoresPage() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: T.surface, border: `1px solid ${T.border}`, color: T.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 4px 16px rgba(26,18,16,0.12)', zIndex: 200 }}>
           {toast}
         </div>
       )}

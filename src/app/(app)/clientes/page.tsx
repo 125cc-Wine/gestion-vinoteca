@@ -23,40 +23,66 @@ const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
 }
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
-const C = {
-  bg: '#0F0F0F', surface: '#141414', card: '#1A1A1A', border: '#2A2A2A',
-  accent: '#8B1A2A', text: '#E8E8E8', muted: '#888888', dim: '#555555',
-  green: '#4CAF7D', amber: '#D4820A', red: '#E05555',
-  dangerBg: '#3A1010', dangerBorder: '#8B2020',
-}
-
-const INP: React.CSSProperties = {
-  background: '#111', border: `1px solid ${C.border}`, borderRadius: 6,
-  color: C.text, padding: '6px 9px', fontSize: 13, outline: 'none',
-  width: '100%', boxSizing: 'border-box',
-}
-
-function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default', ex: React.CSSProperties = {}): React.CSSProperties {
-  const bases: Record<string, React.CSSProperties> = {
-    default: { background: '#222', border: `1px solid ${C.border}` },
-    accent:  { background: C.accent, border: `1px solid ${C.accent}` },
-    ghost:   { background: 'transparent', border: '1px solid transparent' },
-    danger:  { background: C.dangerBg, border: `1px solid ${C.dangerBorder}` },
-    green:   { background: 'rgba(76,175,125,0.15)', border: '1px solid rgba(76,175,125,0.35)' },
-  }
-  return { ...bases[v], color: C.text, borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 500, cursor: 'pointer', ...ex }
-}
-
-function Label({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, color: C.dim, fontWeight: 500, marginBottom: 4 }}>{children}</div>
+const T = {
+  bg:      '#F5F1EC',
+  surface: '#FFFFFF',
+  border:  '#DDD0C0',
+  border2: '#C8BAA8',
+  text:    '#1A1210',
+  muted:   '#6B5D55',
+  dim:     '#A89888',
+  wine:    '#800000',
+  wineBg:  'rgba(128,0,0,0.07)',
+  wineBd:  'rgba(128,0,0,0.18)',
+  brown:   '#633A2C',
+  brownBg: 'rgba(99,58,44,0.08)',
+  brownBd: 'rgba(99,58,44,0.22)',
+  gold:    '#B88A2C',
+  goldBg:  'rgba(184,138,44,0.08)',
+  goldBd:  'rgba(184,138,44,0.22)',
+  green:   '#2D7A4F',
+  greenBg: 'rgba(45,122,79,0.08)',
+  greenBd: 'rgba(45,122,79,0.22)',
+  red:     '#C03030',
+  redBg:   'rgba(192,48,48,0.08)',
+  redBd:   'rgba(192,48,48,0.22)',
+  blue:    '#2B5EA0',
+  blueBg:  'rgba(43,94,160,0.08)',
+  blueBd:  'rgba(43,94,160,0.22)',
+  amber:   '#A07010',
+  amberBg: 'rgba(160,112,16,0.07)',
+  amberBd: 'rgba(160,112,16,0.22)',
 }
 
 function Badge({ color, bg, border, children }: { color: string; bg: string; border: string; children: React.ReactNode }) {
   return (
-    <span style={{ display: 'inline-block', padding: '2px 7px', borderRadius: 4, fontSize: 11, fontWeight: 600, color, background: bg, border: `1px solid ${border}` }}>
+    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, color, background: bg, border: `1px solid ${border}` }}>
       {children}
     </span>
   )
+}
+
+function tipoBadge(tipo: string) {
+  const label = TIPOS.find(t => t.value === tipo)?.label || tipo
+  if (tipo === 'consumidor_final')     return <Badge color={T.amber}  bg={T.amberBg}  border={T.amberBd}>{label}</Badge>
+  if (tipo === 'responsable_inscripto') return <Badge color={T.blue}   bg={T.blueBg}   border={T.blueBd}>{label}</Badge>
+  if (tipo === 'revendedor')           return <Badge color={T.wine}   bg={T.wineBg}   border={T.wineBd}>{label}</Badge>
+  if (tipo === 'mayorista')            return <Badge color={T.brown}  bg={T.brownBg}  border={T.brownBd}>{label}</Badge>
+  if (tipo === 'gastronomia')          return <Badge color={T.green}  bg={T.greenBg}  border={T.greenBd}>{label}</Badge>
+  return <Badge color={T.dim} bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">{label}</Badge>
+}
+
+function BadgePago({ estado }: { estado: string }) {
+  if (estado === 'pagado')          return <Badge color={T.green} bg={T.greenBg} border={T.greenBd}>Pagado</Badge>
+  if (estado === 'pendiente')       return <Badge color={T.amber} bg={T.amberBg} border={T.amberBd}>Pendiente</Badge>
+  if (estado === 'cuenta_corriente') return <Badge color={T.blue}  bg={T.blueBg}  border={T.blueBd}>Cta. Cte.</Badge>
+  return <span style={{ color: T.dim }}>—</span>
+}
+
+const INP: React.CSSProperties = {
+  background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
+  color: T.text, padding: '8px 11px', fontSize: 13, outline: 'none',
+  width: '100%', boxSizing: 'border-box', fontFamily: 'inherit',
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -64,6 +90,7 @@ export default function ClientesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  const [filtrTipo, setFiltrTipo] = useState('')
 
   // Modal edición
   const [modal, setModal] = useState(false)
@@ -308,10 +335,8 @@ export default function ClientesPage() {
     if (data.error) { showToast('Error: ' + data.error); return }
     setPagoModal(false)
     showToast(`${pagoVenta.numero} marcado como pagado`)
-    // Refrescar ventas y clientes
     if (histCliente) fetchVentas(histCliente.id!)
     cargar(empresa)
-    // Actualizar saldo mostrado en el header del modal
     setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - pagoVenta.total) } : prev)
   }
 
@@ -333,7 +358,9 @@ export default function ClientesPage() {
 
   const filtrados = clientes.filter(c => {
     const q = busqueda.toLowerCase()
-    return !q || `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q)
+    const matchQ = !q || `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q)
+    const matchTipo = !filtrTipo || c.tipo === filtrTipo
+    return matchQ && matchTipo
   })
 
   const conSaldo = clientes.filter(c => c.saldo > 0).length
@@ -341,142 +368,198 @@ export default function ClientesPage() {
   const totalCobradoHist = histMovs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
   const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0)
 
-  const OVERLAY: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }
-  const PANEL = (w = 480): React.CSSProperties => ({ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: w, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', margin: 'auto' })
-
-  // Badge estado_pago
-  function BadgePago({ estado }: { estado: string }) {
-    if (estado === 'pagado') return <Badge color={C.green} bg="rgba(76,175,125,0.15)" border="rgba(76,175,125,0.3)">Pagado</Badge>
-    if (estado === 'pendiente') return <Badge color={C.amber} bg="rgba(212,130,10,0.15)" border="rgba(212,130,10,0.3)">Pendiente</Badge>
-    if (estado === 'cuenta_corriente') return <Badge color="#7AADFF" bg="rgba(122,173,255,0.12)" border="rgba(122,173,255,0.3)">Cta. Cte.</Badge>
-    return <span style={{ color: C.dim }}>—</span>
+  const OVERLAY: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)',
+    zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
   }
+  const PANEL = (w = 480): React.CSSProperties => ({
+    background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: w,
+    boxShadow: '0 20px 60px rgba(26,18,16,0.18)', maxHeight: '90vh', overflowY: 'auto',
+  })
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', padding: 24, color: C.text }}>
+    <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
       <style>{`
-        .cl-row:hover { background: rgba(255,255,255,0.03) !important; }
-        .cl-row td { border-bottom: 1px solid ${C.border}; }
-        .cbtn:hover { opacity: 0.8; } .cbtn:active { opacity: 0.6; }
-        .cinp:focus { border-color: ${C.accent} !important; outline: none; }
-        .cinp::placeholder { color: ${C.dim}; }
-        select.cinp option { background: #1a1a1a; color: ${C.text}; }
-        .hist-row:hover { background: rgba(255,255,255,0.03) !important; }
-        .hist-row td { border-bottom: 1px solid ${C.border}; }
-        .venta-row:hover { background: rgba(255,255,255,0.03) !important; }
-        .venta-row td { border-bottom: 1px solid ${C.border}; }
+        * { box-sizing: border-box; }
+        .tr:hover { background: #FDFAF6 !important; }
+        .btn-row { transition: all 0.12s; }
+        .btn-row:hover { border-color: ${T.border2} !important; color: ${T.muted} !important; }
+        .btn-wine { transition: background 0.12s; }
+        .btn-wine:hover { background: #6A0000 !important; }
+        .btn-green { transition: background 0.12s; }
+        .btn-green:hover { background: rgba(45,122,79,0.18) !important; }
+        .btn-danger { transition: all 0.12s; }
+        .btn-danger:hover { border-color: ${T.red} !important; color: ${T.red} !important; }
+        input:focus, select:focus, textarea:focus { border-color: ${T.border2} !important; box-shadow: 0 0 0 3px rgba(128,0,0,0.08) !important; outline: none !important; }
+        .hist-tr:hover { background: #FDFAF6 !important; }
+        .venta-tr:hover { background: #FDFAF6 !important; }
+        .import-tr:hover { background: #FDFAF6 !important; }
       `}</style>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total clientes', value: String(clientes.length), color: C.text },
-          { label: 'Con saldo pendiente', value: String(conSaldo), color: C.amber },
-          { label: 'Saldo total cuentas corrientes', value: `$${saldoTotal.toLocaleString('es-AR')}`, color: saldoTotal > 0 ? C.amber : C.text, accent: saldoTotal > 0 },
-        ].map(s => (
-          <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px', ...(s.accent ? { borderLeft: `3px solid ${C.amber}` } : {}) }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>Clientes</h1>
-          <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>{filtrados.length} clientes</div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Clientes</h1>
+          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{clientes.length} clientes registrados</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="cbtn" style={btn('default', { padding: '6px 14px', fontSize: 13 })} onClick={() => setImportModal(true)}>Importar CSV</button>
-          <button className="cbtn" style={btn('accent', { padding: '6px 14px', fontSize: 13 })} onClick={abrirNuevo}>+ Nuevo cliente</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setImportModal(true)}>
+            Importar CSV
+          </button>
+          <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} onClick={abrirNuevo}>
+            + Nuevo cliente
+          </button>
         </div>
       </div>
 
-      <input className="cinp" style={{ ...INP, marginBottom: 14 }} placeholder="Buscar por nombre, CUIT, razón social, teléfono..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+      <div style={{ padding: '24px 28px' }}>
 
-      {/* Tabla */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead>
-            <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-              {['Cliente', 'CUIT', 'Contacto', 'Tipo', 'Saldo', ''].map(h => (
-                <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>Cargando...</td></tr>
-            ) : filtrados.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay clientes todavía</td></tr>
-            ) : filtrados.map(c => (
-              <tr key={c.id} className="cl-row" style={{ background: 'transparent' }}>
-                <td style={{ padding: '11px 14px' }}>
-                  <div style={{ fontWeight: 600, color: C.text }}>{c.nombre} {c.apellido || ''}</div>
-                  {c.razon_social && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{c.razon_social}</div>}
-                </td>
-                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{c.cuit || '—'}</td>
-                <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>
-                  {c.telefono && <div>{c.telefono}</div>}
-                  {c.email && <div style={{ color: C.dim }}>{c.email}</div>}
-                </td>
-                <td style={{ padding: '11px 14px' }}>
-                  <Badge color="#7AADFF" bg="rgba(122,173,255,0.1)" border="rgba(122,173,255,0.25)">
-                    {TIPOS.find(t => t.value === c.tipo)?.label || c.tipo}
-                  </Badge>
-                </td>
-                <td style={{ padding: '11px 14px', fontWeight: 700 }}>
-                  <span style={{ color: c.saldo > 0 ? C.amber : c.saldo < 0 ? C.red : C.dim }}>
-                    ${c.saldo.toLocaleString('es-AR')}
-                  </span>
-                </td>
-                <td style={{ padding: '11px 14px' }}>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirEditar(c)}>Editar</button>
-                    <button className="cbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c, 'comprobantes')}>Comprobantes</button>
-                    <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirHistorial(c, 'ctacte')}>Cta. Cte.</button>
-                    {c.saldo > 0 && <>
-                      <button className="cbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => abrirCobro(c)}>Cobrar</button>
-                      <button className="cbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => copiarMensajeWhatsApp(c)}>WA</button>
-                    </>}
-                    <button className="cbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminar(c.id!)}>Eliminar</button>
-                  </div>
-                </td>
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 24 }}>
+          {[
+            { label: 'Total clientes', value: String(clientes.length), color: T.text, accentColor: '' },
+            { label: 'Con saldo pendiente', value: String(conSaldo), color: T.amber, accentColor: T.amber },
+            { label: 'Saldo total cuentas corrientes', value: `$${saldoTotal.toLocaleString('es-AR')}`, color: saldoTotal > 0 ? T.amber : T.text, accentColor: saldoTotal > 0 ? T.amber : '' },
+          ].map(s => (
+            <div key={s.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '16px 20px', ...(s.accentColor ? { borderLeft: `3px solid ${s.accentColor}` } : {}), boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{s.label}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filter bar */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input
+            placeholder="Buscar por nombre, CUIT, razón social, teléfono..."
+            style={{ flex: 1, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, color: T.text, outline: 'none', fontFamily: 'inherit' }}
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+          <select
+            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: T.text, outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
+            value={filtrTipo}
+            onChange={e => setFiltrTipo(e.target.value)}
+          >
+            <option value="">Todos los tipos</option>
+            {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+
+        {/* Table */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                {['Cliente', 'Tipo', 'Email', 'Teléfono', 'CUIT', 'Saldo', 'Estado', ''].map(h => (
+                  <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
+              ) : filtrados.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>No hay clientes todavía</td></tr>
+              ) : filtrados.map(c => (
+                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                  <td style={{ padding: '11px 16px', fontSize: 13 }}>
+                    <div style={{ fontWeight: 600, color: T.text }}>{c.nombre} {c.apellido || ''}</div>
+                    {c.razon_social && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{c.razon_social}</div>}
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>{tipoBadge(c.tipo)}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{c.email || '—'}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{c.telefono || '—'}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted, fontFamily: 'monospace' }}>{c.cuit || '—'}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 700 }}>
+                    <span style={{ color: c.saldo > 0 ? T.red : c.saldo < 0 ? T.green : T.dim }}>
+                      ${c.saldo.toLocaleString('es-AR')}
+                    </span>
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>
+                    {c.activo
+                      ? <Badge color={T.green} bg={T.greenBg} border={T.greenBd}>Activo</Badge>
+                      : <Badge color={T.dim}   bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">Inactivo</Badge>
+                    }
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => abrirEditar(c)}>Editar</button>
+                      <button className="btn-wine" style={{ background: T.wine, border: 'none', borderRadius: 6, padding: '4px 9px', fontSize: 11, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }} onClick={() => abrirHistorial(c, 'comprobantes')}>Comprobantes</button>
+                      <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => abrirHistorial(c, 'ctacte')}>Cta. Cte.</button>
+                      {c.saldo > 0 && <>
+                        <button className="btn-green" style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.green, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }} onClick={() => abrirCobro(c)}>Cobrar</button>
+                        <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => copiarMensajeWhatsApp(c)}>WA</button>
+                      </>}
+                      <button className="btn-danger" style={{ background: T.redBg, border: `1px solid ${T.redBd}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.red, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => eliminar(c.id!)}>Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── Modal edición cliente ─────────────────────────────────────────── */}
       {modal && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setModal(false)}>
           <div style={PANEL(500)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
-              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setModal(false)}>×</button>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }} onClick={() => setModal(false)}>×</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><Label>Nombre *</Label><input className="cinp" style={INP} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
-              <div><Label>Apellido</Label><input className="cinp" style={INP} value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></div>
-              <div style={{ gridColumn: '1/-1' }}><Label>Razón social</Label><input className="cinp" style={INP} value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} /></div>
-              <div><Label>CUIT</Label><input className="cinp" style={INP} value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" /></div>
-              <div><Label>Tipo</Label>
-                <select className="cinp" style={INP} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
+            <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Nombre *</label>
+                <input style={INP} value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Apellido</label>
+                <input style={INP} value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Razón social</label>
+                <input style={INP} value={form.razon_social} onChange={e => setForm(f => ({ ...f, razon_social: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>CUIT</label>
+                <input style={INP} value={form.cuit} onChange={e => setForm(f => ({ ...f, cuit: e.target.value }))} placeholder="20-12345678-9" />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Tipo</label>
+                <select style={INP} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
                   {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
-              <div><Label>Teléfono</Label><input className="cinp" style={INP} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
-              <div><Label>Email</Label><input className="cinp" style={INP} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div style={{ gridColumn: '1/-1' }}><Label>Dirección</Label><input className="cinp" style={INP} value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
-              <div><Label>Saldo cta. corriente ($)</Label><input type="number" className="cinp" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
-              <div><Label>Límite de crédito ($)</Label><input type="number" className="cinp" style={INP} value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} /></div>
-              <div style={{ gridColumn: '1/-1' }}><Label>Notas</Label><textarea className="cinp" style={{ ...INP, height: 68, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Teléfono</label>
+                <input style={INP} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Email</label>
+                <input style={INP} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Dirección</label>
+                <input style={INP} value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Saldo cta. corriente ($)</label>
+                <input type="number" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Límite de crédito ($)</label>
+                <input type="number" style={INP} value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} />
+              </div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Notas</label>
+                <textarea style={{ ...INP, height: 68, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-              <button className="cbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
-              <button className="cbtn" style={btn('accent', { padding: '6px 18px', fontSize: 13, fontWeight: 600 })} onClick={guardar}>Guardar</button>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModal(false)}>Cancelar</button>
+              <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} onClick={guardar}>Guardar</button>
             </div>
           </div>
         </div>
@@ -485,24 +568,33 @@ export default function ClientesPage() {
       {/* ── Modal cobro manual ───────────────────────────────────────────── */}
       {cobroModal && cobroCliente && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
-          <div style={PANEL(380)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Registrar cobro</h2>
-              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setCobroModal(false)}>×</button>
+          <div style={PANEL(400)}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Registrar cobro</h2>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }} onClick={() => setCobroModal(false)}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>
-              {cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()}
-              {' — '}
-              <span style={{ fontWeight: 700, color: C.amber }}>Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: T.text }}>
+                <span style={{ fontWeight: 600 }}>{cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()}</span>
+                {' — '}
+                <span style={{ fontWeight: 700, color: T.amber }}>Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto a cobrar ($) *</label>
+                <input type="number" min="0" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
+                <input style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
+                <input type="date" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} />
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div><Label>Monto a cobrar ($) *</Label><input type="number" min="0" className="cinp" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus /></div>
-              <div><Label>Concepto</Label><input className="cinp" style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} /></div>
-              <div><Label>Fecha</Label><input type="date" className="cinp" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} /></div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-              <button className="cbtn" style={btn('default')} onClick={() => setCobroModal(false)}>Cancelar</button>
-              <button className="cbtn" style={btn('green', { padding: '6px 18px', fontSize: 13, fontWeight: 600, color: C.green })} onClick={guardarCobro}>Registrar cobro</button>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setCobroModal(false)}>Cancelar</button>
+              <button className="btn-green" style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: T.green, cursor: 'pointer', fontFamily: 'inherit' }} onClick={guardarCobro}>Registrar cobro</button>
             </div>
           </div>
         </div>
@@ -511,199 +603,208 @@ export default function ClientesPage() {
       {/* ── Modal historial + comprobantes ──────────────────────────────── */}
       {histModal && histCliente && (
         <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setHistModal(false)}>
-          <div style={{ ...PANEL(740), maxHeight: 'none', marginTop: 0 }}>
+          <div style={{ ...PANEL(760), maxHeight: '92vh' }}>
 
             {/* Header del modal */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, background: T.surface, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
                   {histCliente.razon_social || `${histCliente.nombre} ${histCliente.apellido || ''}`.trim()}
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                  <span style={{ fontSize: 12, color: C.muted }}>Saldo:</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: histCliente.saldo > 0 ? C.amber : C.dim }}>
+                  <span style={{ fontSize: 12, color: T.muted }}>Saldo:</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: histCliente.saldo > 0 ? T.amber : T.dim }}>
                     ${histCliente.saldo.toLocaleString('es-AR')}
                   </span>
                   {histCliente.saldo > 0 && (
-                    <span style={{ fontSize: 10, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)', padding: '2px 8px', borderRadius: 99, fontWeight: 600 }}>
-                      Deuda pendiente
-                    </span>
+                    <Badge color={T.amber} bg={T.amberBg} border={T.amberBd}>Deuda pendiente</Badge>
                   )}
                 </div>
               </div>
-              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setHistModal(false)}>×</button>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }} onClick={() => setHistModal(false)}>×</button>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 2, background: C.surface, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, marginBottom: 18, width: 'fit-content' }}>
-              {([['comprobantes', 'Comprobantes'], ['ctacte', 'Cuenta corriente']] as const).map(([t, label]) => (
-                <button
-                  key={t}
-                  className="cbtn"
-                  onClick={() => cambiarTab(t)}
-                  style={{ ...btn(histTab === t ? 'accent' : 'ghost', { padding: '5px 16px', fontSize: 12, borderRadius: 6 }), border: 'none' }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <div style={{ padding: '20px 24px' }}>
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: 2, background: T.bg, borderRadius: 8, padding: 3, border: `1px solid ${T.border}`, marginBottom: 20, width: 'fit-content' }}>
+                {([['comprobantes', 'Comprobantes'], ['ctacte', 'Cuenta corriente']] as const).map(([t, label]) => (
+                  <button
+                    key={t}
+                    onClick={() => cambiarTab(t)}
+                    style={{
+                      background: histTab === t ? T.wine : 'transparent',
+                      color: histTab === t ? '#fff' : T.muted,
+                      border: 'none', borderRadius: 6, padding: '6px 16px', fontSize: 12, fontWeight: histTab === t ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
 
-            {/* ── Tab: Comprobantes ─────────────────────────────────────── */}
-            {histTab === 'comprobantes' && (
-              <>
-                {histVentasCargando ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
-                ) : histVentas.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay comprobantes para este cliente</div>
-                ) : (
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                      <thead>
-                        <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-                          {['Número', 'Tipo', 'Fecha', 'Total', 'Estado pago', ''].map(h => (
-                            <th key={h} style={{ textAlign: h === 'Total' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {histVentas.map(v => (
-                          <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
-                            <td style={{ padding: '9px 12px', fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 11 }}>{v.numero}</td>
-                            <td style={{ padding: '9px 12px' }}>
-                              <Badge
-                                color={v.tipo === 'presupuesto' ? '#D08090' : C.green}
-                                bg={v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.18)' : 'rgba(76,175,125,0.15)'}
-                                border={v.tipo === 'presupuesto' ? 'rgba(139,26,42,0.4)' : 'rgba(76,175,125,0.3)'}
-                              >
-                                {v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'}
-                              </Badge>
-                            </td>
-                            <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
-                            <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
-                            <td style={{ padding: '9px 12px' }}><BadgePago estado={v.estado_pago || ''} /></td>
-                            <td style={{ padding: '9px 12px' }}>
-                              {v.estado_pago !== 'pagado' && (
-                                <button
-                                  className="cbtn"
-                                  style={btn('green', { padding: '4px 10px', fontSize: 11, color: C.green })}
-                                  onClick={() => abrirPagoVenta(v)}
-                                >
-                                  Marcar pagado
-                                </button>
-                              )}
-                            </td>
+              {/* ── Tab: Comprobantes ─────────────────────────────────────── */}
+              {histTab === 'comprobantes' && (
+                <>
+                  {histVentasCargando ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: T.dim, fontSize: 13 }}>Cargando...</div>
+                  ) : histVentas.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: T.dim, fontSize: 13 }}>No hay comprobantes para este cliente</div>
+                  ) : (
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: T.bg }}>
+                            {['Número', 'Tipo', 'Fecha', 'Total', 'Estado pago', ''].map(h => (
+                              <th key={h} style={{ textAlign: h === 'Total' ? 'right' : 'left', padding: '9px 14px', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ── Tab: Cuenta corriente ─────────────────────────────────── */}
-            {histTab === 'ctacte' && (
-              <>
-                {/* Filtros */}
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 14 }}>
-                  <div><Label>Desde</Label><input type="date" className="cinp" style={{ ...INP, width: 148 }} value={histDesde} onChange={e => setHistDesde(e.target.value)} /></div>
-                  <div><Label>Hasta</Label><input type="date" className="cinp" style={{ ...INP, width: 148 }} value={histHasta} onChange={e => setHistHasta(e.target.value)} /></div>
-                  <button className="cbtn" style={btn('default', { padding: '6px 14px' })} onClick={() => fetchMovimientos(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
-                  <button className="cbtn" style={btn('ghost', { fontSize: 12, color: C.dim })} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchMovimientos(histCliente.id!, '', h) }}>Ver todo</button>
-                </div>
-
-                {/* Resumen */}
-                {histMovs.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 14 }}>
-                    {[
-                      { label: 'Total cargado', value: totalCargadoHist, color: C.red, bg: 'rgba(224,85,85,0.08)', border: 'rgba(224,85,85,0.2)' },
-                      { label: 'Total cobrado', value: totalCobradoHist, color: C.green, bg: 'rgba(76,175,125,0.08)', border: 'rgba(76,175,125,0.2)' },
-                      { label: 'Neto período', value: totalCargadoHist - totalCobradoHist, color: totalCargadoHist - totalCobradoHist > 0 ? C.amber : C.dim, bg: 'rgba(212,130,10,0.07)', border: 'rgba(212,130,10,0.2)' },
-                    ].map(s => (
-                      <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 8, padding: '10px 14px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 600, color: s.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
-                        <div style={{ fontSize: 17, fontWeight: 700, color: s.color }}>${s.value.toLocaleString('es-AR')}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {histCargando ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>Cargando...</div>
-                ) : histMovs.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: C.dim }}>No hay movimientos en este período</div>
-                ) : (
-                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                      <thead>
-                        <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-                          {['Fecha', 'Tipo', 'Concepto', 'Monto', 'Saldo'].map(h => (
-                            <th key={h} style={{ textAlign: h === 'Monto' || h === 'Saldo' ? 'right' : 'left', padding: '8px 12px', fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {histMovs.map(m => {
-                          const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
-                          return (
-                            <tr key={m.id} className="hist-row" style={{ background: 'transparent' }}>
-                              <td style={{ padding: '9px 12px', color: C.muted, fontSize: 11 }}>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
-                              <td style={{ padding: '9px 12px' }}>
-                                <Badge color={esCobro ? C.green : C.red} bg={esCobro ? 'rgba(76,175,125,0.15)' : 'rgba(224,85,85,0.12)'} border={esCobro ? 'rgba(76,175,125,0.3)' : 'rgba(224,85,85,0.3)'}>
-                                  {esCobro ? 'Cobro' : 'Cargo'}
-                                </Badge>
+                        </thead>
+                        <tbody>
+                          {histVentas.map(v => (
+                            <tr key={v.id} className="venta-tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                              <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: T.text, fontSize: 11 }}>{v.numero}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                {v.tipo === 'presupuesto'
+                                  ? <Badge color={T.wine} bg={T.wineBg} border={T.wineBd}>Presupuesto</Badge>
+                                  : <Badge color={T.green} bg={T.greenBg} border={T.greenBd}>Remito</Badge>
+                                }
                               </td>
-                              <td style={{ padding: '9px 12px', color: C.text }}>{m.concepto}</td>
-                              <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: esCobro ? C.green : C.red }}>
-                                {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
-                              </td>
-                              <td style={{ padding: '9px 12px', textAlign: 'right', color: C.muted, fontSize: 11 }}>
-                                {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
+                              <td style={{ padding: '10px 14px', color: T.muted, fontSize: 11 }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>${v.total.toLocaleString('es-AR')}</td>
+                              <td style={{ padding: '10px 14px' }}><BadgePago estado={v.estado_pago || ''} /></td>
+                              <td style={{ padding: '10px 14px' }}>
+                                {v.estado_pago !== 'pagado' && (
+                                  <button
+                                    className="btn-green"
+                                    style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 6, padding: '4px 10px', fontSize: 11, color: T.green, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+                                    onClick={() => abrirPagoVenta(v)}
+                                  >
+                                    Marcar pagado
+                                  </button>
+                                )}
                               </td>
                             </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Tab: Cuenta corriente ─────────────────────────────────── */}
+              {histTab === 'ctacte' && (
+                <>
+                  {/* Filtros */}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 16 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Desde</label>
+                      <input type="date" style={{ ...INP, width: 148 }} value={histDesde} onChange={e => setHistDesde(e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Hasta</label>
+                      <input type="date" style={{ ...INP, width: 148 }} value={histHasta} onChange={e => setHistHasta(e.target.value)} />
+                    </div>
+                    <button className="btn-wine" style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => fetchMovimientos(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
+                    <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchMovimientos(histCliente.id!, '', h) }}>Ver todo</button>
                   </div>
-                )}
-              </>
-            )}
+
+                  {/* Resumen */}
+                  {histMovs.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
+                      {[
+                        { label: 'Total cargado', value: totalCargadoHist, color: T.red, bg: T.redBg, border: T.redBd },
+                        { label: 'Total cobrado', value: totalCobradoHist, color: T.green, bg: T.greenBg, border: T.greenBd },
+                        { label: 'Neto período', value: totalCargadoHist - totalCobradoHist, color: totalCargadoHist - totalCobradoHist > 0 ? T.amber : T.dim, bg: T.amberBg, border: T.amberBd },
+                      ].map(s => (
+                        <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: s.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{s.label}</div>
+                          <div style={{ fontSize: 17, fontWeight: 700, color: s.color }}>${s.value.toLocaleString('es-AR')}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {histCargando ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: T.dim, fontSize: 13 }}>Cargando...</div>
+                  ) : histMovs.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: T.dim, fontSize: 13 }}>No hay movimientos en este período</div>
+                  ) : (
+                    <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: T.bg }}>
+                            {['Fecha', 'Tipo', 'Concepto', 'Monto', 'Saldo'].map(h => (
+                              <th key={h} style={{ textAlign: h === 'Monto' || h === 'Saldo' ? 'right' : 'left', padding: '9px 14px', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {histMovs.map(m => {
+                            const esCobro = m.tipo === 'cobro' || m.tipo === 'pago'
+                            return (
+                              <tr key={m.id} className="hist-tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                                <td style={{ padding: '10px 14px', color: T.muted, fontSize: 11 }}>{new Date(m.created_at).toLocaleDateString('es-AR')}</td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <Badge color={esCobro ? T.green : T.red} bg={esCobro ? T.greenBg : T.redBg} border={esCobro ? T.greenBd : T.redBd}>
+                                    {esCobro ? 'Cobro' : 'Cargo'}
+                                  </Badge>
+                                </td>
+                                <td style={{ padding: '10px 14px', color: T.text, fontSize: 13 }}>{m.concepto}</td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: esCobro ? T.green : T.red }}>
+                                  {esCobro ? '-' : '+'}${m.monto.toLocaleString('es-AR')}
+                                </td>
+                                <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: 11 }}>
+                                  {m.saldo_nuevo !== undefined ? `$${m.saldo_nuevo.toLocaleString('es-AR')}` : '—'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Modal confirmar pago de comprobante ──────────────────────────── */}
       {pagoModal && pagoVenta && (
-        <div style={{ ...OVERLAY, zIndex: 60 }} onClick={e => e.target === e.currentTarget && setPagoModal(false)}>
-          <div style={PANEL(400)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Confirmar cobro</h2>
-              <button className="cbtn" style={btn('ghost', { padding: '2px 8px', fontSize: 18, color: C.dim })} onClick={() => setPagoModal(false)}>×</button>
+        <div style={{ ...OVERLAY, zIndex: 110 }} onClick={e => e.target === e.currentTarget && setPagoModal(false)}>
+          <div style={PANEL(420)}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Confirmar cobro</h2>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }} onClick={() => setPagoModal(false)}>×</button>
             </div>
-
-            {/* Resumen del comprobante */}
-            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 13 }}>{pagoVenta.numero}</span>
-                <span style={{ fontSize: 13, color: C.muted }}>{new Date(pagoVenta.created_at!).toLocaleDateString('es-AR')}</span>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Resumen del comprobante */}
+              <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: T.text, fontSize: 13 }}>{pagoVenta.numero}</span>
+                  <span style={{ fontSize: 12, color: T.muted }}>{new Date(pagoVenta.created_at!).toLocaleDateString('es-AR')}</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: T.green }}>${pagoVenta.total.toLocaleString('es-AR')}</div>
+                {pagoVenta.estado_pago === 'cuenta_corriente' && (
+                  <div style={{ fontSize: 11, color: T.amber, marginTop: 6 }}>Se descontará del saldo en cuenta corriente del cliente</div>
+                )}
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: C.green }}>${pagoVenta.total.toLocaleString('es-AR')}</div>
-              {pagoVenta.estado_pago === 'cuenta_corriente' && (
-                <div style={{ fontSize: 11, color: C.amber, marginTop: 6 }}>Se descontará del saldo en cuenta corriente del cliente</div>
-              )}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
+                <input style={INP} value={pagoConcepto} onChange={e => setPagoConcepto(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha de cobro</label>
+                <input type="date" style={INP} value={pagoFecha} onChange={e => setPagoFecha(e.target.value)} />
+              </div>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div><Label>Concepto</Label><input className="cinp" style={INP} value={pagoConcepto} onChange={e => setPagoConcepto(e.target.value)} /></div>
-              <div><Label>Fecha de cobro</Label><input type="date" className="cinp" style={INP} value={pagoFecha} onChange={e => setPagoFecha(e.target.value)} /></div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-              <button className="cbtn" style={btn('default')} onClick={() => setPagoModal(false)}>Cancelar</button>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setPagoModal(false)}>Cancelar</button>
               <button
-                className="cbtn"
-                style={btn('green', { padding: '6px 18px', fontSize: 13, fontWeight: 600, color: C.green, opacity: pagoGuardando ? 0.6 : 1 })}
+                className="btn-green"
+                style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: T.green, cursor: 'pointer', fontFamily: 'inherit', opacity: pagoGuardando ? 0.6 : 1 }}
                 onClick={confirmarPagoVenta}
                 disabled={pagoGuardando}
               >
@@ -714,66 +815,69 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* Modal importar CSV */}
+      {/* ── Modal importar CSV ───────────────────────────────────────────── */}
       {importModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setImportModal(false)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 28, width: '100%', maxWidth: 740, maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Importar clientes desde CSV</h2>
-              <button onClick={() => setImportModal(false)} style={btn('ghost', { fontSize: 18, color: C.dim, padding: '2px 8px' })}>×</button>
+        <div style={{ ...OVERLAY, zIndex: 110 }} onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 760, maxHeight: '90vh', boxShadow: '0 20px 60px rgba(26,18,16,0.18)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Importar clientes desde CSV</h2>
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }} onClick={() => setImportModal(false)}>×</button>
             </div>
-
-            <div style={{ fontSize: 12, color: C.muted, background: C.surface, borderRadius: 6, padding: '10px 14px', border: `1px solid ${C.border}` }}>
-              Abrí el CSV en el block de notas, seleccioná todo (<kbd style={{ background: '#333', padding: '1px 5px', borderRadius: 3 }}>Ctrl+A</kbd>) y pegalo acá abajo. Compatible con separación por tabs o comas.
-            </div>
-
-            <textarea
-              style={{ ...INP, height: 140, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 }}
-              placeholder="Pegá el contenido del CSV acá (incluyendo la línea de encabezados)..."
-              value={importTexto}
-              onChange={e => onImportTexto(e.target.value)}
-            />
-
-            {importPreview.length > 0 && (
-              <div>
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>
-                  Vista previa — <strong style={{ color: C.text }}>{importPreview.length} clientes</strong> detectados
-                </div>
-                <div style={{ maxHeight: 240, overflowY: 'auto', border: `1px solid ${C.border}`, borderRadius: 8 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: C.surface, borderBottom: `1px solid ${C.border}` }}>
-                        {['Razón Social', 'CUIT', 'Teléfono', 'Dirección', 'Tipo'].map(h => (
-                          <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontSize: 11, color: C.dim, fontWeight: 600 }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {importPreview.slice(0, 50).map((r, i) => (
-                        <tr key={i} style={{ borderBottom: `1px solid rgba(42,42,42,0.5)` }}>
-                          <td style={{ padding: '6px 10px', fontWeight: 500 }}>{r.razon_social}</td>
-                          <td style={{ padding: '6px 10px', color: C.muted, fontFamily: 'monospace' }}>{r.cuit || '—'}</td>
-                          <td style={{ padding: '6px 10px', color: C.muted }}>{r.telefono || '—'}</td>
-                          <td style={{ padding: '6px 10px', color: C.muted, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.direccion || '—'}</td>
-                          <td style={{ padding: '6px 10px', color: C.muted }}>{r.tipo}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {importPreview.length > 50 && <div style={{ padding: '8px 10px', fontSize: 11, color: C.dim }}>... y {importPreview.length - 50} más</div>}
-                </div>
+            <div style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ fontSize: 12, color: T.muted, background: T.bg, borderRadius: 8, padding: '10px 14px', border: `1px solid ${T.border}` }}>
+                Abrí el CSV en el block de notas, seleccioná todo (<kbd style={{ background: T.border, padding: '1px 5px', borderRadius: 3, fontSize: 11 }}>Ctrl+A</kbd>) y pegalo acá abajo. Compatible con separación por tabs o comas.
               </div>
-            )}
 
-            {importMsg && (
-              <div style={{ fontSize: 13, color: importMsg.startsWith('✓') ? C.green : C.red, fontWeight: 600 }}>{importMsg}</div>
-            )}
+              <textarea
+                style={{ ...INP, height: 140, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 }}
+                placeholder="Pegá el contenido del CSV acá (incluyendo la línea de encabezados)..."
+                value={importTexto}
+                onChange={e => onImportTexto(e.target.value)}
+              />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setImportModal(false)} style={btn('default', { padding: '7px 16px' })}>Cancelar</button>
-              <button onClick={confirmarImport} disabled={importando || importPreview.length === 0}
-                style={{ ...btn('accent', { padding: '7px 18px', fontSize: 13 }), opacity: importPreview.length === 0 || importando ? 0.5 : 1 }}>
+              {importPreview.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>
+                    Vista previa — <strong style={{ color: T.text }}>{importPreview.length} clientes</strong> detectados
+                  </div>
+                  <div style={{ maxHeight: 240, overflowY: 'auto', border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: T.bg }}>
+                          {['Razón Social', 'CUIT', 'Teléfono', 'Dirección', 'Tipo'].map(h => (
+                            <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, color: T.dim, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.slice(0, 50).map((r, i) => (
+                          <tr key={i} className="import-tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                            <td style={{ padding: '7px 12px', fontWeight: 500, color: T.text }}>{r.razon_social}</td>
+                            <td style={{ padding: '7px 12px', color: T.muted, fontFamily: 'monospace' }}>{r.cuit || '—'}</td>
+                            <td style={{ padding: '7px 12px', color: T.muted }}>{r.telefono || '—'}</td>
+                            <td style={{ padding: '7px 12px', color: T.muted, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.direccion || '—'}</td>
+                            <td style={{ padding: '7px 12px', color: T.muted }}>{r.tipo}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {importPreview.length > 50 && <div style={{ padding: '8px 12px', fontSize: 11, color: T.dim }}>... y {importPreview.length - 50} más</div>}
+                  </div>
+                </div>
+              )}
+
+              {importMsg && (
+                <div style={{ fontSize: 13, color: importMsg.startsWith('✓') ? T.green : T.red, fontWeight: 600 }}>{importMsg}</div>
+              )}
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setImportModal(false)}>Cancelar</button>
+              <button
+                className="btn-wine"
+                style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: importPreview.length === 0 || importando ? 0.5 : 1 }}
+                onClick={confirmarImport}
+                disabled={importando || importPreview.length === 0}
+              >
                 {importando ? 'Importando...' : `Importar ${importPreview.length} clientes`}
               </button>
             </div>
@@ -783,7 +887,7 @@ export default function ClientesPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.card, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: T.surface, border: `1px solid ${T.border}`, color: T.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 8px 32px rgba(26,18,16,0.12)', zIndex: 200 }}>
           {toast}
         </div>
       )}
