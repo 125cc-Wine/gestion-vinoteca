@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
@@ -157,6 +158,9 @@ export default function PickingPage() {
     setScanMsg(`${prod.nombre} no está en ningún remito pendiente de hoy`)
     setTimeout(() => setScanMsg(null), 3000)
   }
+
+  // Pistola lectora (USB/Bluetooth) — solo activa en tab pendiente
+  useBarcodeInput(handleBarcodeScan, tab === 'pendiente' && !scannerOpen)
 
   // KPIs
   // We always need counts for both states; fetch summary from current data plus meta

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
   type LabelPrinterPort, type LabelData,
@@ -418,6 +419,27 @@ export default function VentasPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  async function handleBarcodeDetect(code: string) {
+    setScannerOpen(false)
+    const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
+    const prod: Producto | null = await res.json()
+    if (!prod || !prod.id) { showToast(`Código ${code} no encontrado`); return }
+    setItems(prev => {
+      const ni = [...prev]
+      const emptyIdx = ni.findIndex(i => !i.producto_id)
+      const precio = precioSegunLista(prod, listaPrecios, pctMayorista, pctDistrib)
+      const newItem = { producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio, cantidad: 1, descuento: 0, subtotal: precio }
+      if (emptyIdx >= 0) ni[emptyIdx] = newItem
+      else ni.push(newItem)
+      if (ni[ni.length - 1].producto_id) ni.push({ ...ITEM_EMPTY })
+      return ni
+    })
+    showToast(`✓ ${prod.nombre} agregado`)
+  }
+
+  // Pistola lectora (USB/Bluetooth) — solo activa cuando el modal de venta está abierto
+  useBarcodeInput(handleBarcodeDetect, !!modal && !scannerOpen)
 
   useEffect(() => {
     if (!etiquetaVenta) return
@@ -1017,25 +1039,7 @@ export default function VentasPage() {
         <BarcodeScanner
           titulo="Escanear botella"
           onClose={() => setScannerOpen(false)}
-          onDetect={async (code) => {
-            setScannerOpen(false)
-            const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
-            const prod: Producto | null = await res.json()
-            if (!prod || !prod.id) { showToast(`Código ${code} no encontrado`); return }
-            // Buscar primer item vacío o agregar al final
-            const ni = [...items]
-            const emptyIdx = ni.findIndex(i => !i.producto_id)
-            const precio = precioSegunLista(prod, listaPrecios, pctMayorista, pctDistrib)
-            const newItem = { producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio, cantidad: 1, descuento: 0, subtotal: precio }
-            if (emptyIdx >= 0) {
-              ni[emptyIdx] = newItem
-            } else {
-              ni.push(newItem)
-            }
-            if (ni[ni.length - 1].producto_id) ni.push({ ...ITEM_EMPTY })
-            setItems(ni)
-            showToast(`✓ ${prod.nombre} agregado`)
-          }}
+          onDetect={handleBarcodeDetect}
         />
       )}
 

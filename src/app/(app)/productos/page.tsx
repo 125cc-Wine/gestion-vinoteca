@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -245,6 +246,21 @@ export default function ProductosPage() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function toast_(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
+
+  async function handleBarcodeDetect(code: string) {
+    setScanMode(null)
+    const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
+    const prod = await res.json()
+    if (prod && prod.id) {
+      setBusqueda(prod.nombre)
+      toast_(`Encontrado: ${prod.nombre}`)
+    } else {
+      toast_(`Código ${code} no encontrado`)
+    }
+  }
+
+  // Pistola lectora — busca por código cuando no hay modal abierto
+  useBarcodeInput(handleBarcodeDetect, !scanMode && !fullEditId)
   function toggleSel(id: string) {
     setSeleccionados(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
@@ -496,17 +512,10 @@ export default function ProductosPage() {
           titulo={scanMode === 'buscar' ? 'Buscar producto por código' : 'Asignar código de barras'}
           onClose={() => setScanMode(null)}
           onDetect={async (code) => {
-            setScanMode(null)
             if (scanMode === 'buscar') {
-              const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
-              const prod = await res.json()
-              if (prod && prod.id) {
-                setBusqueda(prod.nombre)
-                toast_(`Encontrado: ${prod.nombre}`)
-              } else {
-                toast_(`Código ${code} no encontrado en productos`)
-              }
+              await handleBarcodeDetect(code)
             } else {
+              setScanMode(null)
               setFullForm(f => ({ ...f, codigo_barras: code }))
               toast_(`Código ${code} asignado`)
             }
