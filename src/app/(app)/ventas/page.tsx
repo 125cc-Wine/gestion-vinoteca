@@ -311,6 +311,8 @@ export default function VentasPage() {
   const [condVenta, setCondVenta] = useState('Contado')
   const [estadoPago, setEstadoPago] = useState('pagado')
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
+  const [listaPrecios, setListaPrecios] = useState<'minorista' | 'mayorista' | 'distribuidor'>('minorista')
+  const [pctDistrib, setPctDistrib] = useState(15)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
   const [previewFactura, setPreviewFactura] = useState<{ venta: Venta; tipo: 1 | 6 } | null>(null)
@@ -468,11 +470,29 @@ export default function VentasPage() {
     setItems(ni)
   }
 
+  function precioSegunLista(prod: Producto, lista: typeof listaPrecios, pct: number): number {
+    if (lista === 'mayorista' && prod.precio_mayorista) return prod.precio_mayorista
+    if (lista === 'distribuidor' && prod.precio_mayorista) return Math.round(prod.precio_mayorista * (1 - pct / 100))
+    return prod.precio_venta
+  }
+
+  function cambiarLista(lista: typeof listaPrecios, pct = pctDistrib) {
+    setListaPrecios(lista)
+    setAplicarMayorista(lista === 'mayorista' || lista === 'distribuidor')
+    const ni = items.map(item => {
+      if (!item.producto_id) return item
+      const prod = productos.find(p => p.id === item.producto_id)
+      if (!prod) return item
+      const updated = { ...item, precio_unitario: precioSegunLista(prod, lista, pct) }
+      return { ...updated, subtotal: calcSub(updated) }
+    })
+    setItems(ni)
+  }
+
   function selProducto(idx: number, prod: Producto | null) {
     const ni = [...items]
     if (!prod) { ni[idx] = { ...ITEM_EMPTY }; setItems(ni); return }
-    const esMay = aplicarMayorista && (clienteTipo === 'mayorista' || clienteTipo === 'revendedor')
-    const precio = esMay && prod.precio_mayorista ? prod.precio_mayorista : prod.precio_venta
+    const precio = precioSegunLista(prod, listaPrecios, pctDistrib)
     ni[idx] = { ...ni[idx], producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio }
     ni[idx].subtotal = calcSub(ni[idx])
     // Auto-agregar línea vacía si era la última
@@ -618,6 +638,8 @@ export default function VentasPage() {
     setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
     setEstadoPago(empresa === 'lavid' && t === 'presupuesto' ? 'cuenta_corriente' : 'pagado')
     setAplicarMayorista(false)
+    setListaPrecios('minorista')
+    setPctDistrib(15)
     setModal(true)
   }
 
@@ -1017,14 +1039,32 @@ export default function VentasPage() {
                 {clienteData.cuit && <span>CUIT: {clienteData.cuit}</span>}
                 {clienteData.direccion && <span>{clienteData.direccion}</span>}
                 {clienteData.telefono && <span>{clienteData.telefono}</span>}
-                {(clienteTipo === 'mayorista' || clienteTipo === 'revendedor') && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 'auto' }}>
-                    <input type="checkbox" checked={aplicarMayorista} onChange={e => toggleAplicarMayorista(e.target.checked)} style={{ accentColor: C.amber, width: 14, height: 14 }} />
-                    <span style={{ color: aplicarMayorista ? C.amber : C.dim, fontWeight: 600 }}>Precio mayorista</span>
-                  </label>
-                )}
               </div>
             )}
+
+            {/* ── Selector lista de precios ── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lista:</span>
+              {(['minorista', 'mayorista', 'distribuidor'] as const).map(l => (
+                <button key={l} className="vbtn"
+                  onClick={() => cambiarLista(l)}
+                  style={{
+                    ...btn(listaPrecios === l ? (l === 'minorista' ? 'accent' : 'green') : 'default', { padding: '4px 12px', fontSize: 12 }),
+                    ...(listaPrecios === l && l === 'mayorista' ? { background: C.amber, borderColor: C.amber, color: '#fff' } : {}),
+                  }}>
+                  {l === 'minorista' ? 'Minorista' : l === 'mayorista' ? 'Mayorista' : 'Distribuidor'}
+                </button>
+              ))}
+              {listaPrecios === 'distribuidor' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 11, color: C.dim }}>−</span>
+                  <input type="number" min={1} max={50} value={pctDistrib}
+                    onChange={e => { const v = Number(e.target.value); setPctDistrib(v); cambiarLista('distribuidor', v) }}
+                    style={{ ...INP, width: 52, padding: '3px 6px', fontSize: 12 }} />
+                  <span style={{ fontSize: 11, color: C.dim }}>%</span>
+                </div>
+              )}
+            </div>
 
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
