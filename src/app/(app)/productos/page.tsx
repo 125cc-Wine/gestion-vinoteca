@@ -510,9 +510,9 @@ export default function ProductosPage() {
         .pill.on { background: ${T.wineBg}; border-color: ${T.wineBd}; color: ${T.wine}; }
         .kbd-tag { display:inline-block; background:${T.bg}; border:1px solid ${T.border}; border-radius:4px; padding:1px 6px; font-size:11px; font-family:monospace; color:${T.muted}; }
         .bar-in { animation: barIn 140ms ease; }
-        @keyframes barIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes barIn { from{opacity:0} to{opacity:1} }
         .pop-in { animation: popIn 100ms ease; }
-        @keyframes popIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes popIn { from{opacity:0} to{opacity:1} }
         ::-webkit-scrollbar { width:5px; height:5px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:${T.border}; border-radius:3px; }
@@ -678,7 +678,7 @@ export default function ProductosPage() {
       )}
 
       {/* ── Table ─────────────────────────────────────────────────── */}
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)', contain: 'layout' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: T.bg }}>

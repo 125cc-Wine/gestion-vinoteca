@@ -329,6 +329,7 @@ export default function PickingPage() {
           </div>
         )}
 
+        <div style={{ contain: 'layout', overflow: 'hidden' }}>
         {!loading && ventas.map(venta => {
           const items: Item[] = venta.items ?? []
           const expanded = expandidos.has(venta.id)
@@ -506,6 +507,7 @@ export default function PickingPage() {
             </div>
           )
         })}
+        </div>
       </div>
     </>
   )

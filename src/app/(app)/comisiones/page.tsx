@@ -543,7 +543,7 @@ export default function ComisionesPage() {
           boxShadow: '0 6px 24px rgba(0,0,0,0.18)', maxWidth: 340,
           animation: 'slideUp 0.22s ease',
         }}>
-          <style>{`@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+          <style>{`@keyframes slideUp { from { opacity: 0; } to { opacity: 1; } }`}</style>
           {toast.msg}
         </div>
       )}

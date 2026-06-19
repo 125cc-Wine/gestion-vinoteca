@@ -142,10 +142,10 @@ export default function DashboardPage() {
     <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        .kpi:hover { box-shadow: 0 4px 16px rgba(26,18,16,0.1); transform: translateY(-1px); }
-        .kpi { transition: box-shadow 0.15s, transform 0.15s; }
-        .qa:hover { background: #F5F1EC !important; border-color: ${T.border2} !important; box-shadow: 0 2px 8px rgba(26,18,16,0.08); transform: translateY(-1px); }
-        .qa { transition: all 0.15s; }
+        .kpi:hover { box-shadow: 0 4px 16px rgba(26,18,16,0.12); }
+        .kpi { transition: box-shadow 0.15s; }
+        .qa:hover { background: #F5F1EC !important; border-color: ${T.border2} !important; box-shadow: 0 2px 8px rgba(26,18,16,0.08); }
+        .qa { transition: background 0.15s, box-shadow 0.15s, border-color 0.15s; }
         .tr:hover { background: #FDFAF6; }
         .lbtn:hover { opacity: 0.6; }
         .ralert:hover { background: rgba(0,0,0,0.025); }
