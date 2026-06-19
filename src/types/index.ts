@@ -9,6 +9,7 @@ export interface Producto {
   categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro'
   region?: string
   sku?: string
+  codigo_barras?: string
   precio_venta: number
   precio_mayorista?: number
   precio_costo?: number

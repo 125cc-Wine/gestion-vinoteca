@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
+import BarcodeScanner from '@/components/BarcodeScanner'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -51,7 +52,7 @@ const KB = [
 const EMPTY_EDIT = {
   nombre: '', bodega: '', varietal: '',
   categoria: 'Tinto' as Producto['categoria'],
-  region: '', sku: '',
+  region: '', sku: '', codigo_barras: '',
   precio_venta: 0, precio_mayorista: 0, precio_costo: 0,
   stock: 0, stock_minimo: 3,
   unidad_medida: 'botella' as 'botella' | 'caja6' | 'caja12',
@@ -138,6 +139,9 @@ export default function ProductosPage() {
   // Full edit modal
   const [fullEditId, setFullEditId] = useState<string|null>(null)
   const [fullForm, setFullForm]     = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
+
+  // Barcode scanner
+  const [scanMode, setScanMode] = useState<'buscar' | 'asignar' | null>(null)
 
   // Lista de precios modal
   interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_mayorista: number }
@@ -486,6 +490,30 @@ export default function ProductosPage() {
         select option { background:${T.surface}; color:${T.text}; }
       `}</style>
 
+      {/* ── Barcode Scanner ──────────────────────────────────────── */}
+      {scanMode && (
+        <BarcodeScanner
+          titulo={scanMode === 'buscar' ? 'Buscar producto por código' : 'Asignar código de barras'}
+          onClose={() => setScanMode(null)}
+          onDetect={async (code) => {
+            setScanMode(null)
+            if (scanMode === 'buscar') {
+              const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
+              const prod = await res.json()
+              if (prod && prod.id) {
+                setBusqueda(prod.nombre)
+                toast_(`Encontrado: ${prod.nombre}`)
+              } else {
+                toast_(`Código ${code} no encontrado en productos`)
+              }
+            } else {
+              setFullForm(f => ({ ...f, codigo_barras: code }))
+              toast_(`Código ${code} asignado`)
+            }
+          }}
+        />
+      )}
+
       {/* ── Page header ────────────────────────────────────────────── */}
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
@@ -536,6 +564,11 @@ export default function ProductosPage() {
           <input ref={searchRef} style={{ ...INP, paddingLeft: 30 }}
             placeholder="Buscar producto, bodega, varietal... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
+        <button onClick={() => setScanMode('buscar')}
+          title="Escanear código de barras"
+          style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 18, flexShrink: 0 }}>
+          📷
+        </button>
         <select style={{ ...INP, width: 'auto', minWidth: 160 }} value={filtroBodega} onChange={e => setFiltroBodega(e.target.value)}>
           <option value="">Todas las bodegas</option>
           {bodegasUnicas.map(b => <option key={b} value={b}>{b}</option>)}
@@ -778,6 +811,18 @@ export default function ProductosPage() {
                     {dl && <datalist id={dl}>{bodegas.map(b => <option key={b.id} value={b.nombre} />)}</datalist>}
                   </div>
                 ))}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Código de barras (EAN)</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input style={{ ...INP, flex: 1 }} value={fullForm.codigo_barras}
+                    onChange={e => setFullForm(f => ({ ...f, codigo_barras: e.target.value }))}
+                    placeholder="Ej: 7790123456789" />
+                  <button type="button" onClick={() => setScanMode('asignar')}
+                    style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '0 14px', cursor: 'pointer', fontSize: 18 }}>
+                    📷
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Categoría</label>

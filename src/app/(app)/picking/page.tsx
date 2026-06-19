@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import BarcodeScanner from '@/components/BarcodeScanner'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
@@ -62,6 +63,9 @@ export default function PickingPage() {
   const [checks, setChecks] = useState<Record<string, Set<number>>>({})
   // marking in-flight
   const [marking, setMarking] = useState<Set<string>>(new Set())
+  // barcode scanner
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanMsg, setScanMsg] = useState<string | null>(null)
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') ?? ''
@@ -124,6 +128,36 @@ export default function PickingPage() {
     }
   }
 
+  async function handleBarcodeScan(code: string) {
+    setScannerOpen(false)
+    setScanMsg(null)
+    const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
+    const prod = await res.json()
+    if (!prod || !prod.id) {
+      setScanMsg(`Sin resultado para código ${code}`)
+      setTimeout(() => setScanMsg(null), 3000)
+      return
+    }
+    // find a pending venta with that producto_id
+    const pendientes = ventas.filter(v => !v.entregado_at)
+    for (const venta of pendientes) {
+      const idx = (venta.items ?? []).findIndex(i => i.producto_id === prod.id)
+      if (idx !== -1) {
+        setExpandidos(prev => new Set(prev).add(venta.id))
+        setChecks(prev => {
+          const set = new Set(prev[venta.id] ?? [])
+          set.add(idx)
+          return { ...prev, [venta.id]: set }
+        })
+        setScanMsg(`✓ ${prod.nombre} — marcado en ${venta.numero}`)
+        setTimeout(() => setScanMsg(null), 3000)
+        return
+      }
+    }
+    setScanMsg(`${prod.nombre} no está en ningún remito pendiente de hoy`)
+    setTimeout(() => setScanMsg(null), 3000)
+  }
+
   // KPIs
   // We always need counts for both states; fetch summary from current data plus meta
   const totalItems = (v: Venta) => (v.items ?? []).reduce((s, i) => s + i.cantidad, 0)
@@ -135,6 +169,26 @@ export default function PickingPage() {
 
   return (
     <>
+      {scannerOpen && (
+        <BarcodeScanner
+          titulo="Escanear producto"
+          onDetect={handleBarcodeScan}
+          onClose={() => setScannerOpen(false)}
+        />
+      )}
+
+      {scanMsg && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: scanMsg.startsWith('✓') ? T.green : T.amber,
+          color: '#fff', padding: '10px 22px', borderRadius: 10,
+          fontSize: 13, fontWeight: 600, zIndex: 200,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+        }}>
+          {scanMsg}
+        </div>
+      )}
+
       {/* Print + base styles */}
       <style>{`
         @media print {
@@ -181,6 +235,13 @@ export default function PickingPage() {
               onChange={e => setFecha(e.target.value)}
               style={{ fontSize: 12, padding: '6px 10px', border: `1px solid ${T.border}`, borderRadius: 7, background: T.surface, color: T.text, fontFamily: 'inherit', cursor: 'pointer' }}
             />
+
+            {/* Escanear */}
+            <button
+              onClick={() => setScannerOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '7px 14px', border: `1px solid ${T.border}`, borderRadius: 7, background: T.surface, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
+              📷 Escanear
+            </button>
 
             {/* Imprimir */}
             <button

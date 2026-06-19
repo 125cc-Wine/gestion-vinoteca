@@ -8,9 +8,24 @@ function otraEmpresa(empresa: string) {
 }
 
 // GET /api/productos?empresa=aroma
+// GET /api/productos?empresa=aroma&barcode=7790123456789
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
+
+  const barcode = req.nextUrl.searchParams.get('barcode')
+  if (barcode) {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('empresa', empresa)
+      .eq('activo', true)
+      .or(`codigo_barras.eq.${barcode},sku.eq.${barcode}`)
+      .limit(1)
+      .single()
+    if (error) return NextResponse.json(null)
+    return NextResponse.json(data)
+  }
 
   const { data, error } = await supabase
     .from('productos')

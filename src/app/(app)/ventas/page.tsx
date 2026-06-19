@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
+import BarcodeScanner from '@/components/BarcodeScanner'
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
   type LabelPrinterPort, type LabelData,
@@ -350,6 +351,7 @@ export default function VentasPage() {
   const [detallePedido, setDetallePedido] = useState<PedidoRecord | null>(null)
 
   const [toast, setToast] = useState('')
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   // ── Modal etiquetas desde venta ──
   const [etiquetaVenta, setEtiquetaVenta] = useState<Venta | null>(null)
@@ -1010,6 +1012,33 @@ export default function VentasPage() {
 
       </div>{/* end content wrapper */}
 
+      {/* ══ SCANNER CÓDIGO DE BARRAS ══ */}
+      {scannerOpen && (
+        <BarcodeScanner
+          titulo="Escanear botella"
+          onClose={() => setScannerOpen(false)}
+          onDetect={async (code) => {
+            setScannerOpen(false)
+            const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
+            const prod: Producto | null = await res.json()
+            if (!prod || !prod.id) { showToast(`Código ${code} no encontrado`); return }
+            // Buscar primer item vacío o agregar al final
+            const ni = [...items]
+            const emptyIdx = ni.findIndex(i => !i.producto_id)
+            const precio = precioSegunLista(prod, listaPrecios, pctMayorista, pctDistrib)
+            const newItem = { producto_id: prod.id!, nombre: `${prod.nombre}${prod.bodega ? ' - ' + prod.bodega : ''}`, precio_unitario: precio, cantidad: 1, descuento: 0, subtotal: precio }
+            if (emptyIdx >= 0) {
+              ni[emptyIdx] = newItem
+            } else {
+              ni.push(newItem)
+            }
+            if (ni[ni.length - 1].producto_id) ni.push({ ...ITEM_EMPTY })
+            setItems(ni)
+            showToast(`✓ ${prod.nombre} agregado`)
+          }}
+        />
+      )}
+
       {/* ══ MODAL VENTA ══ */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
@@ -1110,8 +1139,12 @@ export default function VentasPage() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: C.dim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Productos</div>
-                <button className="vbtn" style={{ ...btn('ghost', { padding: '3px 8px', fontSize: 12 }), color: C.accent }}
-                  onClick={() => setItems([...items, { ...ITEM_EMPTY }])}>+ agregar línea</button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="vbtn" title="Escanear código de barras" onClick={() => setScannerOpen(true)}
+                    style={{ ...btn('default', { padding: '3px 10px', fontSize: 16 }) }}>📷</button>
+                  <button className="vbtn" style={{ ...btn('ghost', { padding: '3px 8px', fontSize: 12 }), color: C.accent }}
+                    onClick={() => setItems([...items, { ...ITEM_EMPTY }])}>+ agregar línea</button>
+                </div>
               </div>
               <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.surface }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
