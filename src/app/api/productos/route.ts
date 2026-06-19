@@ -27,16 +27,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data)
   }
 
-  const { data, error } = await supabase
-    .from('productos')
-    .select('*')
-    .eq('empresa', empresa)
-    .eq('activo', true)
-    .order('nombre')
-    .limit(5000)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  // Supabase tiene max_rows=1000; paginamos hasta traer todos
+  const PAGE = 1000
+  let all: unknown[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('empresa', empresa)
+      .eq('activo', true)
+      .order('nombre')
+      .range(from, from + PAGE - 1)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!data || data.length === 0) break
+    all = all.concat(data)
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return NextResponse.json(all)
 }
 
 // POST /api/productos
