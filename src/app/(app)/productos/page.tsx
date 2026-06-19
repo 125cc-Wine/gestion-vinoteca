@@ -284,7 +284,7 @@ export default function ProductosPage() {
   function openFullEdit(p: Producto) {
     setFullForm({
       nombre: p.nombre, bodega: p.bodega, varietal: p.varietal, categoria: p.categoria,
-      region: p.region||'', sku: p.sku||'',
+      region: p.region||'', sku: p.sku||'', codigo_barras: p.codigo_barras||'',
       precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
       precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
       unidad_medida: (p.unidad_medida||'botella') as 'botella'|'caja6'|'caja12',
