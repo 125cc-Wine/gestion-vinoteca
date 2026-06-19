@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -143,6 +144,7 @@ export default function ProductosPage() {
 
   // Barcode scanner
   const [scanMode, setScanMode] = useState<'buscar' | 'asignar' | null>(null)
+  const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
 
   // Lista de precios modal
   interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_mayorista: number }
@@ -255,8 +257,19 @@ export default function ProductosPage() {
       setBusqueda(prod.nombre)
       toast_(`Encontrado: ${prod.nombre}`)
     } else {
-      toast_(`Código ${code} no encontrado`)
+      setBarcodeNotFound(code)
     }
+  }
+
+  async function handleBarcodeNotFound(prod: Producto, saveBarcode: boolean) {
+    const code = barcodeNotFound!
+    setBarcodeNotFound(null)
+    if (saveBarcode) {
+      await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: prod.id, codigo_barras: code }) })
+      setProductos(prev => prev.map(p => p.id === prod.id ? { ...p, codigo_barras: code } : p))
+      toast_(`Código ${code} guardado en "${prod.nombre}"`)
+    }
+    setBusqueda(prod.nombre)
   }
 
   // Pistola lectora — busca por código cuando no hay modal abierto
@@ -520,6 +533,14 @@ export default function ProductosPage() {
               toast_(`Código ${code} asignado`)
             }
           }}
+        />
+      )}
+      {barcodeNotFound && (
+        <BarcodeNotFoundModal
+          code={barcodeNotFound}
+          empresa={empresa}
+          onSelect={handleBarcodeNotFound}
+          onClose={() => setBarcodeNotFound(null)}
         />
       )}
 

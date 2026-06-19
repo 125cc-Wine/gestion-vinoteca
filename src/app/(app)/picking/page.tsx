@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -67,6 +68,7 @@ export default function PickingPage() {
   // barcode scanner
   const [scannerOpen, setScannerOpen] = useState(false)
   const [scanMsg, setScanMsg] = useState<string | null>(null)
+  const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') ?? ''
@@ -135,14 +137,16 @@ export default function PickingPage() {
     const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
     const prod = await res.json()
     if (!prod || !prod.id) {
-      setScanMsg(`Sin resultado para código ${code}`)
-      setTimeout(() => setScanMsg(null), 3000)
+      setBarcodeNotFound(code)
       return
     }
-    // find a pending venta with that producto_id
+    markProductInPickingById(prod.id, prod.nombre)
+  }
+
+  function markProductInPickingById(productoId: string, nombre: string) {
     const pendientes = ventas.filter(v => !v.entregado_at)
     for (const venta of pendientes) {
-      const idx = (venta.items ?? []).findIndex(i => i.producto_id === prod.id)
+      const idx = (venta.items ?? []).findIndex(i => i.producto_id === productoId)
       if (idx !== -1) {
         setExpandidos(prev => new Set(prev).add(venta.id))
         setChecks(prev => {
@@ -150,13 +154,22 @@ export default function PickingPage() {
           set.add(idx)
           return { ...prev, [venta.id]: set }
         })
-        setScanMsg(`✓ ${prod.nombre} — marcado en ${venta.numero}`)
+        setScanMsg(`✓ ${nombre} — marcado en ${venta.numero}`)
         setTimeout(() => setScanMsg(null), 3000)
         return
       }
     }
-    setScanMsg(`${prod.nombre} no está en ningún remito pendiente de hoy`)
+    setScanMsg(`${nombre} no está en ningún remito pendiente de hoy`)
     setTimeout(() => setScanMsg(null), 3000)
+  }
+
+  async function handleBarcodeNotFound(prod: { id?: string; nombre: string; codigo_barras?: string }, saveBarcode: boolean) {
+    const code = barcodeNotFound!
+    setBarcodeNotFound(null)
+    if (saveBarcode && prod.id) {
+      await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: prod.id, codigo_barras: code }) })
+    }
+    if (prod.id) markProductInPickingById(prod.id, prod.nombre)
   }
 
   // Pistola lectora (USB/Bluetooth) — solo activa en tab pendiente
@@ -178,6 +191,14 @@ export default function PickingPage() {
           titulo="Escanear producto"
           onDetect={handleBarcodeScan}
           onClose={() => setScannerOpen(false)}
+        />
+      )}
+      {barcodeNotFound && (
+        <BarcodeNotFoundModal
+          code={barcodeNotFound}
+          empresa={empresa}
+          onSelect={handleBarcodeNotFound}
+          onClose={() => setBarcodeNotFound(null)}
         />
       )}
 

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
@@ -353,6 +354,7 @@ export default function VentasPage() {
 
   const [toast, setToast] = useState('')
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
 
   // ── Modal etiquetas desde venta ──
   const [etiquetaVenta, setEtiquetaVenta] = useState<Venta | null>(null)
@@ -424,7 +426,11 @@ export default function VentasPage() {
     setScannerOpen(false)
     const res = await fetch(`/api/productos?empresa=${empresa}&barcode=${encodeURIComponent(code)}`)
     const prod: Producto | null = await res.json()
-    if (!prod || !prod.id) { showToast(`Código ${code} no encontrado`); return }
+    if (!prod || !prod.id) { setBarcodeNotFound(code); return }
+    addProductoToItems(prod)
+  }
+
+  function addProductoToItems(prod: Producto) {
     setItems(prev => {
       const ni = [...prev]
       const emptyIdx = ni.findIndex(i => !i.producto_id)
@@ -436,6 +442,16 @@ export default function VentasPage() {
       return ni
     })
     showToast(`✓ ${prod.nombre} agregado`)
+  }
+
+  async function handleBarcodeNotFound(prod: Producto, saveBarcode: boolean) {
+    const code = barcodeNotFound!
+    setBarcodeNotFound(null)
+    if (saveBarcode) {
+      await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: prod.id, codigo_barras: code }) })
+      setProductos(prev => prev.map(p => p.id === prod.id ? { ...p, codigo_barras: code } : p))
+    }
+    addProductoToItems(prod)
   }
 
   // Pistola lectora (USB/Bluetooth) — solo activa cuando el modal de venta está abierto
@@ -1040,6 +1056,14 @@ export default function VentasPage() {
           titulo="Escanear botella"
           onClose={() => setScannerOpen(false)}
           onDetect={handleBarcodeDetect}
+        />
+      )}
+      {barcodeNotFound && (
+        <BarcodeNotFoundModal
+          code={barcodeNotFound}
+          empresa={empresa}
+          onSelect={handleBarcodeNotFound}
+          onClose={() => setBarcodeNotFound(null)}
         />
       )}
 
