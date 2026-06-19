@@ -312,7 +312,7 @@ export default function VentasPage() {
   const [estadoPago, setEstadoPago] = useState('pagado')
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [listaPrecios, setListaPrecios] = useState<'minorista' | 'mayorista' | 'distribuidor'>('minorista')
-  const [pctMayorista, setPctMayorista] = useState(10)
+  const [pctMayorista, setPctMayorista] = useState(35)
   const [pctDistrib, setPctDistrib] = useState(15)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
@@ -667,7 +667,7 @@ export default function VentasPage() {
     setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
     setEstadoPago(empresa === 'lavid' && t === 'presupuesto' ? 'cuenta_corriente' : 'pagado')
     setAplicarMayorista(false)
-    setListaPrecios('minorista'); setPctMayorista(10)
+    setListaPrecios('minorista'); setPctMayorista(35)
     setPctDistrib(15)
     setModal(true)
   }
