@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
   const desde = `${fecha}T00:00:00.000Z`
   const hasta = `${fecha}T23:59:59.999Z`
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('ventas')
-    .select('id, empresa, tipo, numero, cliente_nombre, vendedor_nombre, total, estado_pago, created_at, items, entregado_at, picking_notas')
+    .select('*')
     .eq('empresa', empresa)
     .eq('tipo', 'remito')
     .neq('estado', 'cancelado')
@@ -31,15 +31,17 @@ export async function GET(req: NextRequest) {
     .lte('created_at', hasta)
     .order('created_at', { ascending: true })
 
-  if (estado === 'pendiente') {
-    query = query.is('entregado_at', null)
-  } else if (estado === 'entregado') {
-    query = query.not('entregado_at', 'is', null)
-  }
-
-  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data ?? [])
+
+  // Filtro por estado de entrega en código — tolera que entregado_at no exista aún
+  const rows = (data ?? []) as Record<string, unknown>[]
+  const filtrado = estado === 'pendiente'
+    ? rows.filter(r => !r.entregado_at)
+    : estado === 'entregado'
+    ? rows.filter(r => !!r.entregado_at)
+    : rows
+
+  return NextResponse.json(filtrado)
 }
 
 export async function PUT(req: NextRequest) {
