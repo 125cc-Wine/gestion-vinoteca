@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
     .eq('empresa', empresa)
     .eq('activo', true)
     .order('nombre')
+    .limit(5000)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
