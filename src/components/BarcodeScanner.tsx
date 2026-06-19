@@ -45,7 +45,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
           formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
         })
 
-        async function loop() {
+        const loop = async () => {
           if (stopped || detectedRef.current || !videoRef.current) return
           try {
             const codes = await detector.detect(videoRef.current)
