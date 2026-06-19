@@ -231,19 +231,30 @@ export default function PickingPage() {
         .entregar-btn:hover { opacity: 0.88 !important; }
         .print-btn:hover { background: ${T.bg} !important; border-color: ${T.border2} !important; }
         .firma-row { display: none; }
+        @media (max-width: 767px) {
+          .pk-content { padding: 16px !important; }
+          .pk-header { flex-direction: column !important; align-items: stretch !important; margin-bottom: 16px !important; }
+          .pk-header > div:first-child { margin-bottom: 0 !important; }
+          .pk-header-btns { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .pk-header-btns > * { font-size: 13px !important; }
+          .pk-header-btns select, .pk-header-btns input { width: 100% !important; }
+          .kpi-grid { gap: 8px !important; }
+          .kpi-grid > div { padding: 10px 12px !important; }
+          .card-badge { font-size: 10px !important; padding: 3px 7px !important; }
+        }
       `}</style>
 
-      <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
+      <div className="pk-content" style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
 
         {/* ── Header ── */}
-        <div className="no-print" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div className="no-print pk-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: T.text, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
               <span>📦</span> Orden de Carga
             </h1>
             <p style={{ fontSize: 13, color: T.muted, marginTop: 4 }}>Picking y preparación de remitos</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="pk-header-btns" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             {/* Selector empresa */}
             <select
               value={empresa}
@@ -305,7 +316,7 @@ export default function PickingPage() {
         </div>
 
         {/* ── KPI strip ── */}
-        <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+        <div className="no-print kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
           <KpiCard label="Remitos pendientes" value={kpiPendientes} color={T.amber} bg={T.amberBg} />
           <KpiCard label="Unidades a preparar" value={kpiUnidades} color={T.wine} bg={T.wineBg} />
           <KpiCard label="Entregados hoy" value={kpiEntregados} color={T.green} bg={T.greenBg} />
@@ -521,8 +532,8 @@ function KpiCard({ label, value, color, bg }: { label: string; value: number | s
       borderRadius: 10, padding: '16px 20px',
       boxShadow: '0 1px 3px rgba(26,18,16,0.04)',
     }}>
-      <div style={{ fontSize: 11, color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, color, background: bg, borderRadius: 8, padding: '4px 12px', display: 'inline-block', lineHeight: 1.3 }}>
+      <div style={{ fontSize: 10, color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color, background: bg, borderRadius: 8, padding: '3px 10px', display: 'inline-block', lineHeight: 1.3 }}>
         {value}
       </div>
     </div>

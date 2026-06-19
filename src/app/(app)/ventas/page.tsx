@@ -834,13 +834,31 @@ export default function VentasPage() {
         .tab-active { background: #800000 !important; color: #fff !important; }
         .tab-inactive { background: transparent !important; color: #6B5D55 !important; }
         .tab-inactive:hover { background: rgba(128,0,0,0.06) !important; }
+        @media (max-width: 767px) {
+          .v-header { flex-direction: column !important; align-items: stretch !important; padding: 12px 16px !important; gap: 10px !important; }
+          .v-header-tabs { width: 100% !important; justify-content: stretch !important; }
+          .v-header-tabs button { flex: 1 !important; }
+          .v-header-btns { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; }
+          .v-header-btns button { text-align: center !important; }
+          .v-content { padding: 16px !important; }
+          .v-stats-grid { grid-template-columns: repeat(3,1fr) !important; gap: 8px !important; }
+          .v-stats-grid > div { padding: 12px !important; }
+          .v-stats-grid .stat-val { font-size: 18px !important; }
+          .v-filter-grid { grid-template-columns: 1fr 1fr !important; }
+          .v-table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+          .v-modal-grid { grid-template-columns: 1fr !important; }
+          .v-modal-footer-row { flex-direction: column !important; }
+          .v-modal-footer-row > div:last-child { width: auto !important; }
+          .v-modal-actions { flex-wrap: wrap !important; }
+          .v-modal-actions button { flex: 1 !important; min-width: 0 !important; }
+        }
       `}</style>
 
       {/* Page header */}
-      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="v-header" style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="v-header-tabs" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 2, background: C.bg, borderRadius: 9, padding: 3, border: `1px solid ${C.border}` }}>
+          <div style={{ display: 'flex', gap: 2, background: C.bg, borderRadius: 9, padding: 3, border: `1px solid ${C.border}`, flex: 1 }}>
             {(['comprobantes', 'pedidos'] as const).map(t => (
               <button key={t} className={`vbtn ${tab === t ? 'tab-active' : 'tab-inactive'}`} onClick={() => setTab(t)}
                 style={{ padding: '6px 18px', fontSize: 13, borderRadius: 7, border: 'none', fontWeight: tab === t ? 600 : 400, cursor: 'pointer', transition: 'all 0.12s', fontFamily: 'inherit' }}>
@@ -849,7 +867,7 @@ export default function VentasPage() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="v-header-btns" style={{ display: 'flex', gap: 8 }}>
           {tab === 'comprobantes' && <>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13 })} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13, color: C.blue })} onClick={() => abrirNuevo('devolucion')}>+ Devolución</button>
@@ -861,12 +879,12 @@ export default function VentasPage() {
         </div>
       </div>
 
-      <div style={{ padding: '24px 28px', color: C.text }}>
+      <div className="v-content" style={{ padding: '24px 28px', color: C.text }}>
 
       {/* ══ COMPROBANTES ══ */}
       {tab === 'comprobantes' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+          <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
               { label: 'Total comprobantes', value: String(ventas.length), color: C.text },
               { label: 'Presupuestos', value: String(ventas.filter(v => v.tipo === 'presupuesto').length), color: C.muted },
@@ -874,7 +892,7 @@ export default function VentasPage() {
             ].map(s => (
               <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div className="stat-val" style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -891,7 +909,7 @@ export default function VentasPage() {
           </div>
 
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8 }}>
+            <div className="v-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8 }}>
               <input className="vinp" style={INP} placeholder="Número, cliente..." value={busquedaVentas} onChange={e => setBusquedaVentas(e.target.value)} />
               <select className="vinp" style={INP} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
                 <option value="">Todos los tipos</option>
@@ -922,8 +940,8 @@ export default function VentasPage() {
             )}
           </div>
 
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', contain: 'layout' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div className="v-table-wrap" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', contain: 'layout' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 700 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
                   {['Número', 'Tipo', 'Cliente', 'Vendedor', 'Fecha', 'Estado pago', 'Total', ''].map(h => (
@@ -985,7 +1003,7 @@ export default function VentasPage() {
       {/* ══ PEDIDOS ══ */}
       {tab === 'pedidos' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+          <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
               { label: 'Pendientes', value: String(pedidos.filter(p => p.estado === 'pendiente').length), color: C.amber },
               { label: 'Entregados', value: String(pedidos.filter(p => p.estado === 'entregado').length), color: C.green },
@@ -993,7 +1011,7 @@ export default function VentasPage() {
             ].map(s => (
               <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div className="stat-val" style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -1006,8 +1024,8 @@ export default function VentasPage() {
             <button className="vbtn" style={btn('accent')} onClick={abrirNuevoPedido}>+ Nuevo pedido</button>
           </div>
 
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', contain: 'layout' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div className="v-table-wrap" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', contain: 'layout' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
                   {['Número', 'Cliente', 'Vendedor', 'Items', 'Entrega', 'Estado', ''].map(h => (
@@ -1091,7 +1109,7 @@ export default function VentasPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
+            <div className="v-modal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
               <div>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Cliente</div>
                 <ClienteSearch clientes={clientes} clienteId={clienteId} clienteNombre={clienteNombre} onSelect={selCliente} />
@@ -1222,7 +1240,7 @@ export default function VentasPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+            <div className="v-modal-footer-row" style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Notas</div>
                 <textarea className="vinp" style={{ ...INP, height: 64, resize: 'none', fontSize: 12 }} value={notas} onChange={e => setNotas(e.target.value)} placeholder="Observaciones..." />
@@ -1238,7 +1256,7 @@ export default function VentasPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+            <div className="v-modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
               <button className="vbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
               {!editVentaId && (
                 <button className="vbtn" style={btn('default', { padding: '7px 14px', fontSize: 13 })} onClick={() => guardar(false)}>

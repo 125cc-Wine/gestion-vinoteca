@@ -60,6 +60,7 @@ const NAV_GROUPS = [
     label: 'Catálogo',
     items: [
       { href: '/productos',   label: 'Productos',   icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+      { href: '/stock',       label: 'Stock',       icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
       { href: '/bodegas',     label: 'Bodegas',     icon: 'M3 21V5a2 2 0 012-2h14a2 2 0 012 2v16M9 21V9h6v12' },
       { href: '/etiquetas',   label: 'Etiquetas',   icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
     ]
@@ -84,6 +85,20 @@ const NAV_GROUPS = [
       { href: '/reportes',    label: 'Reportes',    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     ]
   },
+  {
+    label: 'Depósito',
+    items: [
+      { href: '/deposito', label: 'Depósito', icon: 'M3 21V5a2 2 0 012-2h14a2 2 0 012 2v16M9 21V9h6v12M3 5l9-3 9 3' },
+      { href: '/stock',    label: 'Carga rápida', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+    ]
+  },
+]
+
+const BOTTOM_NAV = [
+  { href: '/dashboard', label: 'Inicio',   icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
+  { href: '/ventas',    label: 'Ventas',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+  { href: '/picking',   label: 'Picking',  icon: 'M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM4 7l8-4 8 4M12 12v5m0 0l-2-2m2 2l2-2' },
+  { href: '/deposito',  label: 'Depósito', icon: 'M3 21V5a2 2 0 012-2h14a2 2 0 012 2v16M9 21V9h6v12M3 5l9-3 9 3' },
 ]
 
 const TIPO_ICON: Record<string, string> = { venta: '🧾', cliente: '👤', producto: '🍷' }
@@ -180,13 +195,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .hbg { display: none; }
         .top-search-full { display: flex; }
         .sidebar { transition: transform 0.25s ease; }
+        .bottom-nav { display: none; }
         @media (max-width: 767px) {
           .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; z-index: 100 !important; transform: translateX(-100%); }
           .sidebar.open { transform: translateX(0); }
-          .hbg { display: flex !important; }
+          .hbg { display: none !important; }
           .top-search-full { display: none !important; }
           .top-nueva-venta { display: none !important; }
           .top-badge { display: none !important; }
+          .bottom-nav { display: flex !important; }
+          main { padding-bottom: 72px !important; }
         }
       `}</style>
 
@@ -391,6 +409,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* ── BOTTOM NAV (mobile) ───────────────────────────────────────────── */}
+      <nav className="bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 60,
+        background: T.surface, borderTop: `1px solid ${T.border}`,
+        boxShadow: '0 -1px 6px rgba(0,0,0,0.06)',
+        alignItems: 'stretch',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}>
+        {BOTTOM_NAV.map(n => {
+          const active = pathname.startsWith(n.href)
+          return (
+            <Link key={n.href} href={n.href} style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', padding: '8px 4px 10px',
+              color: active ? T.wine : T.dim,
+              borderTop: `2px solid ${active ? T.wine : 'transparent'}`,
+            }}>
+              <NavIcon d={n.icon} size={20} />
+              <span style={{ fontSize: 10, marginTop: 3, fontWeight: active ? 700 : 400 }}>{n.label}</span>
+            </Link>
+          )
+        })}
+        <button onClick={() => setSidebarOpen(o => !o)} style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '8px 4px 10px', background: 'none', border: 'none',
+          cursor: 'pointer', color: sidebarOpen ? T.wine : T.dim,
+          borderTop: `2px solid ${sidebarOpen ? T.wine : 'transparent'}`,
+        }}>
+          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18M3 12h18M3 18h18" />
+          </svg>
+          <span style={{ fontSize: 10, marginTop: 3 }}>Más</span>
+        </button>
+      </nav>
 
       {/* ── BÚSQUEDA GLOBAL ────────────────────────────────────────────────── */}
       {searchOpen && (
