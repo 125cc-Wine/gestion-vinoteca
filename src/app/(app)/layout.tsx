@@ -183,7 +183,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         @media (max-width: 767px) {
           .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; z-index: 100 !important; transform: translateX(-100%); }
           .sidebar.open { transform: translateX(0); }
-          .sidebar-overlay { display: block !important; }
           .hbg { display: flex !important; }
           .top-search-full { display: none !important; }
           .top-nueva-venta { display: none !important; }
@@ -192,8 +191,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       `}</style>
 
       {/* ── SIDEBAR OVERLAY (mobile) ────────────────────────────────────── */}
-      <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}
-        style={{ display: 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99 }} />
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99 }} />
+      )}
 
       {/* ── SIDEBAR ────────────────────────────────────────────────────────── */}
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`} style={{

@@ -149,11 +149,24 @@ export default function DashboardPage() {
         .tr:hover { background: #FDFAF6; }
         .lbtn:hover { opacity: 0.6; }
         .ralert:hover { background: rgba(0,0,0,0.025); }
+        .dash-header { padding: 20px 32px; }
+        .dash-wrap { padding: 24px 32px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 767px) {
+          .dash-header { padding: 14px 16px; }
+          .dash-wrap { padding: 12px 14px; }
+          .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+          .kpi { padding: 14px !important; }
+          .kpi .kpi-num { font-size: 22px !important; }
+          .qa-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .dash-cols { grid-template-columns: 1fr !important; }
+          .dash-header-row { flex-direction: column; align-items: flex-start !important; gap: 8px; }
+        }
       `}</style>
 
       {/* ── Header de página ─────────────────────────────────────────────── */}
-      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="dash-header" style={{ background: T.surface, borderBottom: `1px solid ${T.border}` }}>
+        <div className="dash-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ fontSize: 12, color: T.dim, marginBottom: 4, textTransform: 'capitalize' }}>{getHoy()}</div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1 }}>
@@ -174,10 +187,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ padding: '24px 32px' }}>
+      <div className="dash-wrap">
 
         {/* ── KPIs ─────────────────────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div className="kpi-grid">
 
           {/* Ventas hoy */}
           <div className="kpi" style={{ background: T.surface, border: `1px solid ${T.wineBd}`, borderRadius: 12, padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.06)' }}>
@@ -186,7 +199,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ventas hoy</div>
               <div style={{ background: T.wineBg, borderRadius: 8, padding: 7, color: T.wine }}><Icon d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 13v-1m0-6V9m-5.5 4h11" size={14} /></div>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color: T.wine, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.ventasHoy.total)}</div>
+            <div className="kpi-num" style={{ fontSize: 30, fontWeight: 800, color: T.wine, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.ventasHoy.total)}</div>
             <div style={{ fontSize: 11, color: T.dim, marginTop: 6 }}>{data.ventasHoy.cantidad} comprobantes · {mesVsHoy}% del mes</div>
           </div>
 
@@ -197,7 +210,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Ventas del mes</div>
               <MiniBar values={fakeWeeks} color={T.gold} />
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color: T.gold, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.ventasMes.total)}</div>
+            <div className="kpi-num" style={{ fontSize: 30, fontWeight: 800, color: T.gold, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.ventasMes.total)}</div>
             <div style={{ fontSize: 11, color: T.dim, marginTop: 6 }}>{data.ventasMes.cantidad} comprobantes emitidos</div>
           </div>
 
@@ -208,7 +221,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Saldo caja hoy</div>
               <div style={{ background: data.caja.saldo >= 0 ? T.greenBg : T.redBg, borderRadius: 8, padding: 7, color: data.caja.saldo >= 0 ? T.green : T.red }}><Icon d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" size={14} /></div>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color: data.caja.saldo >= 0 ? T.green : T.red, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.caja.saldo)}</div>
+            <div className="kpi-num" style={{ fontSize: 30, fontWeight: 800, color: data.caja.saldo >= 0 ? T.green : T.red, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.caja.saldo)}</div>
             <div style={{ fontSize: 11, color: T.dim, marginTop: 6 }}>
               <span style={{ color: T.green }}>↑ {fmt(data.caja.ingresos)}</span>
               {' · '}
@@ -223,7 +236,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Cta. corrientes</div>
               <div style={{ background: T.blueBg, borderRadius: 8, padding: 7, color: T.blue }}><Icon d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" size={14} /></div>
             </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color: T.blue, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.cuentasCorrientes.total)}</div>
+            <div className="kpi-num" style={{ fontSize: 30, fontWeight: 800, color: T.blue, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.cuentasCorrientes.total)}</div>
             <div style={{ fontSize: 11, color: T.dim, marginTop: 6 }}>{data.cuentasCorrientes.cantidad} clientes con saldo pendiente</div>
           </div>
         </div>
@@ -317,7 +330,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Grid principal ─────────────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div className="dash-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
 
           {/* Panel vendedores */}
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
@@ -411,7 +424,7 @@ export default function DashboardPage() {
             <div style={{ padding: '14px 18px', borderBottom: `1px solid ${T.border}` }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>Accesos rápidos</span>
             </div>
-            <div style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className="qa-grid" style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {QUICK_ACTIONS.map((a, i) => (
                 <button key={i} className="qa" onClick={() => router.push(a.href)}
                   style={{
