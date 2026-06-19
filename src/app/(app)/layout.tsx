@@ -103,6 +103,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
 
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -143,6 +144,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }, 280)
   }, [searchQ, empresa])
 
+  useEffect(() => { setSidebarOpen(false) }, [pathname])
+
   function goToResult(r: SearchResult) { router.push(r.href); setSearchOpen(false); setSearchQ(''); setSearchResults([]) }
   function onSearchKey(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') { e.preventDefault(); setSearchSel(s => Math.min(s + 1, searchResults.length - 1)) }
@@ -174,10 +177,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         a { text-decoration: none; }
         button { font-family: inherit; }
         input { font-family: inherit; }
+        .hbg { display: none; }
+        .top-search-full { display: flex; }
+        .sidebar { transition: transform 0.25s ease; }
+        @media (max-width: 767px) {
+          .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; z-index: 100 !important; transform: translateX(-100%); }
+          .sidebar.open { transform: translateX(0); }
+          .sidebar-overlay { display: block !important; }
+          .hbg { display: flex !important; }
+          .top-search-full { display: none !important; }
+          .top-nueva-venta { display: none !important; }
+          .top-badge { display: none !important; }
+        }
       `}</style>
 
+      {/* ── SIDEBAR OVERLAY (mobile) ────────────────────────────────────── */}
+      <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}
+        style={{ display: 'none', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99 }} />
+
       {/* ── SIDEBAR ────────────────────────────────────────────────────────── */}
-      <aside style={{
+      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`} style={{
         width: 240, flexShrink: 0,
         background: T.wine,
         display: 'flex', flexDirection: 'column',
@@ -295,8 +314,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           padding: '0 28px', position: 'sticky', top: 0, zIndex: 40,
           boxShadow: '0 1px 0 rgba(0,0,0,0.06)',
         }}>
-          {/* Título de página */}
+          {/* Hamburguesa (solo mobile) + Título */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="hbg" onClick={() => setSidebarOpen(o => !o)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, color: T.muted, alignItems: 'center', justifyContent: 'center', borderRadius: 7 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M3 6h18M3 12h18M3 18h18"/>
+              </svg>
+            </button>
             {currentNav && (
               <>
                 <span style={{ color: T.dim }}><NavIcon d={currentNav.icon} /></span>
@@ -307,10 +332,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Acciones topbar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Búsqueda */}
-            <button className="top-btn" onClick={() => setSearchOpen(true)}
+            {/* Búsqueda full (desktop) */}
+            <button className="top-btn top-search-full" onClick={() => setSearchOpen(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
+                alignItems: 'center', gap: 8,
                 background: T.bg, border: `1px solid ${T.border}`,
                 borderRadius: 8, padding: '6px 14px', cursor: 'pointer',
                 color: T.muted, fontSize: 12, transition: 'all 0.12s', minWidth: 200,
@@ -320,8 +345,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <kbd style={{ fontSize: 10, color: T.dim, background: T.border, borderRadius: 4, padding: '1px 5px', lineHeight: 1.5 }}>⌘K</kbd>
             </button>
 
+            {/* Búsqueda icono (mobile) */}
+            <button className="top-btn" onClick={() => setSearchOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: T.bg, border: `1px solid ${T.border}`,
+                borderRadius: 8, padding: '7px 10px', cursor: 'pointer',
+                color: T.muted, transition: 'all 0.12s',
+              }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </button>
+
             {/* CTA Nueva venta */}
-            <button
+            <button className="top-nueva-venta"
               onClick={() => router.push('/ventas')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -337,7 +373,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Badge empresa */}
-            <div style={{
+            <div className="top-badge" style={{
               fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 99,
               background: esAroma ? 'rgba(128,0,0,0.08)' : 'rgba(43,94,160,0.08)',
               color: esAroma ? T.wine : T.blue,
