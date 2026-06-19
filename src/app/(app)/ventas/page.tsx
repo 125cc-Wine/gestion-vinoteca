@@ -355,6 +355,19 @@ export default function VentasPage() {
   const [toast, setToast] = useState('')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
+  const [confirmClose, setConfirmClose] = useState<null | 'venta' | 'pedido'>(null)
+
+  const dirtyVenta  = items.some(i => i.producto_id !== '') || clienteId !== ''
+  const dirtyPedido = pItems.some(i => i.producto_id !== '') || pClienteId !== ''
+
+  function tryCloseVenta() {
+    if (dirtyVenta) { setConfirmClose('venta'); return }
+    setModal(false)
+  }
+  function tryClosePedido() {
+    if (dirtyPedido) { setConfirmClose('pedido'); return }
+    setPedidoModal(false)
+  }
 
   // ── Modal etiquetas desde venta ──
   const [etiquetaVenta, setEtiquetaVenta] = useState<Venta | null>(null)
@@ -368,6 +381,16 @@ export default function VentasPage() {
     const e = (localStorage.getItem('empresa') || 'aroma') as 'aroma' | 'lavid'
     setEmpresa(e); cargarTodo(e)
   }, [])
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if ((modal && dirtyVenta) || (pedidoModal && dirtyPedido)) {
+        e.preventDefault(); e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [modal, pedidoModal, dirtyVenta, dirtyPedido])
 
   // Repreciar items cuando cambia la lista o cualquier % de descuento
   useEffect(() => {
@@ -1088,7 +1111,7 @@ export default function VentasPage() {
       {/* ══ MODAL VENTA ══ */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          onClick={e => e.target === e.currentTarget && tryCloseVenta()}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
@@ -1105,7 +1128,7 @@ export default function VentasPage() {
                     </button>
                   ))}
                 </div>
-                <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => setModal(false)}>×</button>
+                <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => tryCloseVenta()}>×</button>
               </div>
             </div>
 
@@ -1274,11 +1297,11 @@ export default function VentasPage() {
       {/* ══ MODAL PEDIDO ══ */}
       {pedidoModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setPedidoModal(false)}>
+          onClick={e => e.target === e.currentTarget && tryClosePedido()}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 680, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Nuevo pedido</h2>
-              <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => setPedidoModal(false)}>×</button>
+              <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => tryClosePedido()}>×</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
@@ -1370,7 +1393,7 @@ export default function VentasPage() {
                 {pStockChecked ? '✓ Stock verificado' : 'Verificar stock'}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="vbtn" style={btn('default')} onClick={() => setPedidoModal(false)}>Cancelar</button>
+                <button className="vbtn" style={btn('default')} onClick={() => tryClosePedido()}>Cancelar</button>
                 <button className="vbtn" style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })} onClick={guardarPedido}>Guardar pedido</button>
               </div>
             </div>
@@ -1676,6 +1699,41 @@ export default function VentasPage() {
       <div id="print-area" style={{ display: 'none' }}>
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
       </div>
+
+      {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
+      {confirmClose && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 28, maxWidth: 360, width: '100%', boxShadow: '0 8px 40px rgba(26,18,16,0.25)', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(192,48,48,0.1)', border: '2px solid rgba(192,48,48,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C03030" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: '0 0 8px' }}>
+              {confirmClose === 'venta' ? 'Salir del presupuesto?' : 'Salir del pedido?'}
+            </h3>
+            <p style={{ fontSize: 13, color: C.dim, margin: '0 0 24px', lineHeight: 1.5 }}>
+              {confirmClose === 'venta'
+                ? 'Tenés productos cargados que no se guardaron. Si salís se pierden.'
+                : 'El pedido no está guardado. Si salís se pierden los datos.'}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="vbtn" style={{ ...btn('default'), flex: 1, fontWeight: 600 }}
+                onClick={() => setConfirmClose(null)}>
+                Volver
+              </button>
+              <button className="vbtn" style={{ ...btn('danger'), flex: 1, fontWeight: 600 }}
+                onClick={() => {
+                  if (confirmClose === 'venta') setModal(false)
+                  else setPedidoModal(false)
+                  setConfirmClose(null)
+                }}>
+                Salir igual
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, background: C.surface, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '12px 20px', borderRadius: 10, boxShadow: '0 4px 20px rgba(26,18,16,0.12)', zIndex: 100 }}>
