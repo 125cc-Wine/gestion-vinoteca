@@ -34,18 +34,12 @@ interface StockLog {
   modo: Modo; timestamp: string; empresa: string
 }
 
-const LOG_KEY = 'deposito_historial'
-
-function loadLogs(): StockLog[] {
-  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]') } catch { return [] }
-}
-function saveLogs(logs: StockLog[]) {
-  localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 100)))
-}
-function addLog(log: Omit<StockLog, 'id' | 'timestamp'>) {
-  const logs = loadLogs()
-  logs.unshift({ ...log, id: Date.now().toString(), timestamp: new Date().toISOString() })
-  saveLogs(logs)
+async function addLog(log: Omit<StockLog, 'id' | 'timestamp'>) {
+  await fetch('/api/deposito/historial', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ empresa: log.empresa, nombre: log.nombre, delta: log.delta, nuevo_stock: log.nuevoStock, modo: log.modo }),
+  })
 }
 
 function fmt(n: number) {
@@ -458,15 +452,26 @@ function CargarTab({ empresa }: { empresa: string }) {
 // ── Historial tab ──────────────────────────────────────────────────────────────
 function HistorialTab({ empresa }: { empresa: string }) {
   const [logs, setLogs] = useState<StockLog[]>([])
+  const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
-    setLogs(loadLogs().filter(l => l.empresa === empresa))
+    setCargando(true)
+    fetch(`/api/deposito/historial?empresa=${empresa}`)
+      .then(r => r.json())
+      .then((data: Array<{ id: string; nombre: string; delta: number; nuevo_stock: number; modo: Modo; created_at: string; empresa: string }>) => {
+        setLogs(data.map(d => ({ id: d.id, nombre: d.nombre, delta: d.delta, nuevoStock: d.nuevo_stock, modo: d.modo, timestamp: d.created_at, empresa: d.empresa })))
+        setCargando(false)
+      })
+      .catch(() => setCargando(false))
   }, [empresa])
 
-  function limpiar() {
-    const all = loadLogs().filter(l => l.empresa !== empresa)
-    saveLogs(all)
+  async function limpiar() {
+    await fetch(`/api/deposito/historial?empresa=${empresa}`, { method: 'DELETE' })
     setLogs([])
+  }
+
+  if (cargando) {
+    return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
   }
 
   if (logs.length === 0) {
