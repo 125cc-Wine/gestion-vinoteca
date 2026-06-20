@@ -34,12 +34,23 @@ interface StockLog {
   modo: Modo; timestamp: string; empresa: string
 }
 
-async function addLog(log: Omit<StockLog, 'id' | 'timestamp'>) {
-  await fetch('/api/deposito/historial', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ empresa: log.empresa, nombre: log.nombre, delta: log.delta, nuevo_stock: log.nuevoStock, modo: log.modo }),
-  })
+async function addLog(log: Omit<StockLog, 'id' | 'timestamp'>): Promise<boolean> {
+  try {
+    const res = await fetch('/api/deposito/historial', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa: log.empresa, nombre: log.nombre, delta: log.delta, nuevo_stock: log.nuevoStock, modo: log.modo }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('addLog error:', err)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error('addLog fetch error:', e)
+    return false
+  }
 }
 
 function fmt(n: number) {
@@ -105,9 +116,9 @@ function ConsultarTab({ empresa }: { empresa: string }) {
       body: JSON.stringify({ id: producto.id, stock: editStock }),
     })
     if (res.ok) {
-      await addLog({ nombre: producto.nombre, delta: editStock - producto.stock, nuevoStock: editStock, modo: 'establecer', empresa })
+      const logged = await addLog({ nombre: producto.nombre, delta: editStock - producto.stock, nuevoStock: editStock, modo: 'establecer', empresa })
       setProducto({ ...producto, stock: editStock })
-      showToast(`Stock actualizado: ${editStock} bot`)
+      showToast(logged ? `Stock actualizado: ${editStock} bot` : `Stock actualizado (error en historial)`, logged)
     } else {
       showToast('Error al guardar', false)
     }
@@ -316,15 +327,20 @@ function CargarTab({ empresa }: { empresa: string }) {
   async function confirmar() {
     if (!items.length) return
     setGuardando(true)
-    let ok = 0; let err = 0
+    let ok = 0; let err = 0; let logErr = 0
     for (const item of items) {
       const delta = totalUnidades(item)
       const nuevoStock = modo === 'establecer' ? delta : item.stockActual + delta
       const res = await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, stock: nuevoStock }) })
-      if (res.ok) { await addLog({ nombre: item.nombre, delta: modo === 'agregar' ? delta : nuevoStock - item.stockActual, nuevoStock, modo, empresa }); ok++ } else err++
+      if (res.ok) {
+        const logged = await addLog({ nombre: item.nombre, delta: modo === 'agregar' ? delta : nuevoStock - item.stockActual, nuevoStock, modo, empresa })
+        if (!logged) logErr++
+        ok++
+      } else err++
     }
     setGuardando(false)
-    if (err === 0) { showToast(`${ok} producto${ok !== 1 ? 's' : ''} actualizado${ok !== 1 ? 's' : ''}`); setItems([]) }
+    if (err === 0 && logErr === 0) { showToast(`${ok} producto${ok !== 1 ? 's' : ''} actualizado${ok !== 1 ? 's' : ''}`); setItems([]) }
+    else if (err === 0) { showToast(`Stock OK pero error en historial (${logErr})`, false); setItems([]) }
     else showToast(`${ok} OK, ${err} con error`, false)
   }
 
