@@ -105,7 +105,7 @@ function ConsultarTab({ empresa }: { empresa: string }) {
       body: JSON.stringify({ id: producto.id, stock: editStock }),
     })
     if (res.ok) {
-      addLog({ nombre: producto.nombre, delta: editStock - producto.stock, nuevoStock: editStock, modo: 'establecer', empresa })
+      await addLog({ nombre: producto.nombre, delta: editStock - producto.stock, nuevoStock: editStock, modo: 'establecer', empresa })
       setProducto({ ...producto, stock: editStock })
       showToast(`Stock actualizado: ${editStock} bot`)
     } else {
@@ -321,7 +321,7 @@ function CargarTab({ empresa }: { empresa: string }) {
       const delta = totalUnidades(item)
       const nuevoStock = modo === 'establecer' ? delta : item.stockActual + delta
       const res = await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, stock: nuevoStock }) })
-      if (res.ok) { addLog({ nombre: item.nombre, delta: modo === 'agregar' ? delta : nuevoStock - item.stockActual, nuevoStock, modo, empresa }); ok++ } else err++
+      if (res.ok) { await addLog({ nombre: item.nombre, delta: modo === 'agregar' ? delta : nuevoStock - item.stockActual, nuevoStock, modo, empresa }); ok++ } else err++
     }
     setGuardando(false)
     if (err === 0) { showToast(`${ok} producto${ok !== 1 ? 's' : ''} actualizado${ok !== 1 ? 's' : ''}`); setItems([]) }
