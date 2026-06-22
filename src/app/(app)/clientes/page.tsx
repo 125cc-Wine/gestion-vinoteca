@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 
 const TIPOS = [
@@ -87,6 +88,7 @@ const INP: React.CSSProperties = {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function ClientesPage() {
+  const router = useRouter()
   const [empresa, setEmpresa] = useState('aroma')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
@@ -462,7 +464,7 @@ export default function ClientesPage() {
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>No hay clientes todavía</td></tr>
               ) : filtrados.map(c => (
-                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s', cursor: 'pointer' }} onClick={() => router.push('/clientes/' + c.id)}>
                   <td style={{ padding: '11px 16px', fontSize: 13 }}>
                     <div style={{ fontWeight: 600, color: T.text }}>{c.nombre} {c.apellido || ''}</div>
                     {c.razon_social && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{c.razon_social}</div>}
@@ -482,7 +484,7 @@ export default function ClientesPage() {
                       : <Badge color={T.dim}   bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">Inactivo</Badge>
                     }
                   </td>
-                  <td style={{ padding: '11px 16px' }}>
+                  <td style={{ padding: '11px 16px' }} onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => abrirEditar(c)}>Editar</button>
                       <button className="btn-wine" style={{ background: T.wine, border: 'none', borderRadius: 6, padding: '4px 9px', fontSize: 11, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }} onClick={() => abrirHistorial(c, 'comprobantes')}>Comprobantes</button>

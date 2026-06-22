@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 const T = {
   bg:      '#F5F1EC',
@@ -45,6 +46,24 @@ interface DashData {
   vendedores: { nombre: string; total: number; cantidad: number }[]
   cuentasCorrientes: { cantidad: number; total: number }
   topProductos: { nombre: string; cantidad: number; total: number }[]
+}
+
+interface ProductoTop {
+  nombre: string
+  cantidad: number
+  total: number
+}
+
+interface ComparativaMes {
+  totalActual: number
+  cantActual: number
+  totalAnterior: number
+  cantAnterior: number
+}
+
+interface ProductoSinMovimiento {
+  nombre: string
+  stock: number
 }
 
 function Icon({ d, size = 15 }: { d: string; size?: number }) {
@@ -100,11 +119,18 @@ export default function DashboardPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const router = useRouter()
 
+  // Nuevas secciones — estado
+  const [topMes, setTopMes] = useState<ProductoTop[]>([])
+  const [comparativa, setComparativa] = useState<ComparativaMes | null>(null)
+  const [sinMovimiento, setSinMovimiento] = useState<ProductoSinMovimiento[]>([])
+  const [loadingExtra, setLoadingExtra] = useState(false)
+
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
     cargar(e)
-    const interval = setInterval(() => cargar(e), 60000)
+    cargarExtra(e)
+    const interval = setInterval(() => { cargar(e); cargarExtra(e) }, 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -114,6 +140,90 @@ export default function DashboardPage() {
     setData(await res.json())
     setLastUpdate(new Date())
     setLoading(false)
+  }
+
+  async function cargarExtra(emp: string) {
+    setLoadingExtra(true)
+    const now = new Date()
+    const inicioMesActual  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const inicioMesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+    const finMesAnterior    = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString()
+    const hace30dias        = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    // ── Sección A: Top 10 productos más vendidos este mes ──
+    const { data: ventasMes } = await supabase
+      .from('ventas')
+      .select('items')
+      .eq('empresa', emp)
+      .neq('estado', 'cancelado')
+      .gte('created_at', inicioMesActual)
+
+    const prodMapMes: Record<string, { nombre: string; cantidad: number; total: number }> = {}
+    for (const v of ventasMes || []) {
+      const items = v.items as { nombre: string; cantidad: number; subtotal: number }[] || []
+      for (const item of items) {
+        const key = item.nombre
+        if (!prodMapMes[key]) prodMapMes[key] = { nombre: item.nombre, cantidad: 0, total: 0 }
+        prodMapMes[key].cantidad += item.cantidad ?? 0
+        prodMapMes[key].total    += item.subtotal  ?? 0
+      }
+    }
+    const top10 = Object.values(prodMapMes)
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 10)
+    setTopMes(top10)
+
+    // ── Sección B: Comparativa mes actual vs mes anterior ──
+    const [{ data: vActual }, { data: vAnterior }] = await Promise.all([
+      supabase
+        .from('ventas')
+        .select('total')
+        .eq('empresa', emp)
+        .neq('estado', 'cancelado')
+        .gte('created_at', inicioMesActual),
+      supabase
+        .from('ventas')
+        .select('total')
+        .eq('empresa', emp)
+        .neq('estado', 'cancelado')
+        .gte('created_at', inicioMesAnterior)
+        .lte('created_at', finMesAnterior),
+    ])
+    const totalActual   = (vActual   || []).reduce((a, v) => a + (v.total ?? 0), 0)
+    const cantActual    = (vActual   || []).length
+    const totalAnterior = (vAnterior || []).reduce((a, v) => a + (v.total ?? 0), 0)
+    const cantAnterior  = (vAnterior || []).length
+    setComparativa({ totalActual, cantActual, totalAnterior, cantAnterior })
+
+    // ── Sección C: Productos sin movimiento en 30 días ──
+    const [{ data: vRecientes }, { data: productos }] = await Promise.all([
+      supabase
+        .from('ventas')
+        .select('items')
+        .eq('empresa', emp)
+        .neq('estado', 'cancelado')
+        .gte('created_at', hace30dias),
+      supabase
+        .from('productos')
+        .select('nombre, stock')
+        .eq('empresa', emp)
+        .eq('activo', true),
+    ])
+
+    const nombresVendidos = new Set<string>()
+    for (const v of vRecientes || []) {
+      const items = v.items as { nombre: string }[] || []
+      for (const item of items) {
+        if (item.nombre) nombresVendidos.add(item.nombre)
+      }
+    }
+    const sinMov = (productos || [])
+      .filter(p => !nombresVendidos.has(p.nombre))
+      .slice(0, 10)
+      .map(p => ({ nombre: p.nombre, stock: p.stock ?? 0 }))
+    setSinMovimiento(sinMov)
+
+    setLoadingExtra(false)
   }
 
   if (loading && !data) return (
@@ -138,6 +248,16 @@ export default function DashboardPage() {
   const mesTotal = data.ventasMes.total
   const fakeWeeks = [mesTotal * 0.2, mesTotal * 0.22, mesTotal * 0.25, mesTotal * 0.33, data.ventasHoy.total]
 
+  // Comparativa — variación porcentual
+  const varPct = comparativa && comparativa.totalAnterior > 0
+    ? Math.round(((comparativa.totalActual - comparativa.totalAnterior) / comparativa.totalAnterior) * 100)
+    : null
+  const varColor = varPct === null ? T.dim : varPct >= 0 ? T.green : T.red
+  const varSymbol = varPct === null ? '' : varPct >= 0 ? '▲' : '▼'
+
+  // Top 10 — máximo para barra de progreso
+  const maxTop = Math.max(...topMes.map(p => p.cantidad), 1)
+
   return (
     <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
       <style>{`
@@ -152,6 +272,8 @@ export default function DashboardPage() {
         .dash-header { padding: 20px 32px; }
         .dash-wrap { padding: 24px 32px; }
         .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+        .analytics-cols { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-top: 24px; }
+        .right-col { display: flex; flex-direction: column; gap: 16px; }
         @media (max-width: 767px) {
           .dash-header { padding: 14px 16px; }
           .dash-wrap { padding: 12px 14px; }
@@ -161,6 +283,7 @@ export default function DashboardPage() {
           .qa-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
           .dash-cols { grid-template-columns: 1fr !important; }
           .dash-header-row { flex-direction: column; align-items: flex-start !important; gap: 8px; }
+          .analytics-cols { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
@@ -179,7 +302,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <button className="lbtn" onClick={() => cargar(empresa)}
+          <button className="lbtn" onClick={() => { cargar(empresa); cargarExtra(empresa) }}
             style={{ display: 'flex', alignItems: 'center', gap: 6, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', cursor: 'pointer', color: T.muted, fontSize: 12, transition: 'opacity 0.15s', fontFamily: 'inherit' }}>
             <Icon d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" size={13} />
             Actualizar
@@ -445,6 +568,169 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Secciones nuevas: analytics ────────────────────────────────────── */}
+        <div className="analytics-cols">
+
+          {/* Sección A — Top 10 productos más vendidos este mes */}
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '20px 24px' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Top 10 productos — este mes</span>
+              {loadingExtra && (
+                <span style={{ fontSize: 11, color: T.dim, fontWeight: 400 }}>Cargando...</span>
+              )}
+            </div>
+
+            {!loadingExtra && topMes.length === 0 ? (
+              <div style={{ fontSize: 13, color: T.dim, textAlign: 'center', padding: '24px 0' }}>Sin ventas este mes</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: T.bg }}>
+                    <th style={{ padding: '7px 12px', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}` }}>#</th>
+                    <th style={{ padding: '7px 8px', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}` }}>Producto</th>
+                    <th style={{ padding: '7px 8px', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'right', borderBottom: `1px solid ${T.border}` }}>Un.</th>
+                    <th style={{ padding: '7px 12px', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'right', borderBottom: `1px solid ${T.border}` }}>Total</th>
+                    <th style={{ padding: '7px 12px 7px 0', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}`, width: 100 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topMes.map((p, i) => (
+                    <tr key={i} className="tr" style={{ borderBottom: i < topMes.length - 1 ? `1px solid ${T.border}` : 'none', transition: 'background 0.1s', cursor: 'default' }}>
+                      <td style={{ padding: '8px 12px' }}>
+                        <div style={{
+                          width: 22, height: 22, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: i === 0 ? T.goldBg : i === 1 ? 'rgba(150,150,150,0.1)' : i === 2 ? 'rgba(150,90,40,0.08)' : 'transparent',
+                          color: i === 0 ? T.gold : i === 1 ? '#909090' : i === 2 ? '#906030' : T.dim,
+                          fontSize: 11, fontWeight: 800,
+                        }}>{i + 1}</div>
+                      </td>
+                      <td style={{ padding: '8px 8px' }}>
+                        <div style={{ fontSize: 12, color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{p.nombre}</div>
+                      </td>
+                      <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: T.muted }}>{p.cantidad}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: T.green, whiteSpace: 'nowrap' }}>{fmt(p.total)}</td>
+                      <td style={{ padding: '8px 12px 8px 8px' }}>
+                        <div style={{ height: 6, background: T.bg, borderRadius: 99, overflow: 'hidden', minWidth: 80 }}>
+                          <div style={{
+                            height: '100%',
+                            borderRadius: 99,
+                            background: `linear-gradient(90deg, ${T.wine}, ${T.wine}99)`,
+                            width: `${Math.round((p.cantidad / maxTop) * 100)}%`,
+                            transition: 'width 0.6s ease',
+                          }} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Columna derecha: Comparativa + Sin movimiento */}
+          <div className="right-col">
+
+            {/* Sección B — Comparativa mes actual vs mes anterior */}
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '20px 24px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>
+                Comparativa mensual
+              </div>
+
+              {loadingExtra ? (
+                <div style={{ fontSize: 13, color: T.dim, textAlign: 'center', padding: '16px 0' }}>Cargando...</div>
+              ) : comparativa ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* Mes actual */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: T.wineBg, border: `1px solid ${T.wineBd}`, borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: T.wine, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Mes actual</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: T.wine, letterSpacing: '-0.02em' }}>{fmt(comparativa.totalActual)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: T.muted }}>{comparativa.cantActual} ventas</div>
+                      <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>
+                        ticket prom. {comparativa.cantActual > 0 ? fmt(Math.round(comparativa.totalActual / comparativa.cantActual)) : '$0'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Variación */}
+                  {varPct !== null && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '6px 0' }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: varColor }}>{varSymbol} {Math.abs(varPct)}%</span>
+                      <span style={{ fontSize: 11, color: T.dim }}>vs. mes anterior</span>
+                    </div>
+                  )}
+
+                  {/* Mes anterior */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>Mes anterior</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: '-0.01em' }}>{fmt(comparativa.totalAnterior)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: T.muted }}>{comparativa.cantAnterior} ventas</div>
+                      <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>
+                        ticket prom. {comparativa.cantAnterior > 0 ? fmt(Math.round(comparativa.totalAnterior / comparativa.cantAnterior)) : '$0'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: T.dim, textAlign: 'center', padding: '16px 0' }}>Sin datos</div>
+              )}
+            </div>
+
+            {/* Sección C — Productos sin movimiento en 30 días */}
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '20px 24px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>
+                Sin movimiento — últimos 30 días
+              </div>
+
+              {loadingExtra ? (
+                <div style={{ fontSize: 13, color: T.dim, textAlign: 'center', padding: '16px 0' }}>Cargando...</div>
+              ) : sinMovimiento.length === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8 }}>
+                  <Icon d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" size={15} />
+                  <span style={{ fontSize: 13, color: T.green, fontWeight: 500 }}>Todos los productos tuvieron movimiento</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0 8px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Producto</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Stock</span>
+                  </div>
+                  {sinMovimiento.map((p, i) => (
+                    <div key={i} className="tr" style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '7px 4px',
+                      borderBottom: i < sinMovimiento.length - 1 ? `1px solid ${T.border}` : 'none',
+                      transition: 'background 0.1s', cursor: 'default',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.amber, flexShrink: 0, display: 'inline-block' }} />
+                        <span style={{ fontSize: 12, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: p.stock <= 0 ? T.red : T.muted,
+                        marginLeft: 8, flexShrink: 0,
+                      }}>
+                        {p.stock <= 0 ? 'sin stock' : `${p.stock} u.`}
+                      </span>
+                    </div>
+                  ))}
+                  {sinMovimiento.length === 10 && (
+                    <div style={{ fontSize: 11, color: T.dim, textAlign: 'right', marginTop: 6 }}>Mostrando primeros 10</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>{/* end right-col */}
+        </div>{/* end analytics-cols */}
+
       </div>
     </div>
   )

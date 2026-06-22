@@ -209,6 +209,14 @@ export default function ProductosPage() {
     toast_(`${ok} productos actualizados`)
   }
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState<'catalogo' | 'rentabilidad'>('catalogo')
+
+  // Rentabilidad sort
+  const [rentSort, setRentSort]     = useState<'margen_pct' | 'margen_abs' | 'precio_venta' | 'nombre'>('margen_pct')
+  const [rentDir, setRentDir]       = useState<'asc' | 'desc'>('desc')
+  const [rentBodega, setRentBodega] = useState('')
+
   // WooCommerce import modal
   const [importModal, setImportModal]       = useState(false)
   const [importLoading, setImportLoading]   = useState(false)
@@ -537,6 +545,41 @@ export default function ProductosPage() {
     setSeleccionados(new Set([...Array.from(dragInitSel.current), ...filtrados.slice(a, b + 1).map(p => p.id!)]))
   }
 
+  // ── Rentabilidad computed ─────────────────────────────────────────────────
+  const rentConCosto   = productos.filter(p => (p.precio_costo ?? 0) > 0 && (p.precio_venta ?? 0) > 0)
+  const rentSinCosto   = productos.filter(p => !p.precio_costo || p.precio_costo === 0)
+  const rentMargenPcts = rentConCosto.map(p => (p.precio_venta - p.precio_costo!) / p.precio_costo! * 100)
+  const rentAvgMargen  = rentMargenPcts.length ? rentMargenPcts.reduce((a, v) => a + v, 0) / rentMargenPcts.length : 0
+  const rentTopProd    = rentConCosto.length ? rentConCosto.reduce((best, p) => {
+    const m  = (p.precio_venta - p.precio_costo!) / p.precio_costo! * 100
+    const bm = (best.precio_venta - best.precio_costo!) / best.precio_costo! * 100
+    return m > bm ? p : best
+  }) : null
+  const rentFiltered = productos.filter(p => !rentBodega || p.bodega === rentBodega)
+  const rentSorted   = [...rentFiltered].sort((a, b) => {
+    const hasCostoA = (a.precio_costo ?? 0) > 0
+    const hasCostoB = (b.precio_costo ?? 0) > 0
+    if (!hasCostoA && hasCostoB) return 1
+    if (hasCostoA && !hasCostoB) return -1
+    function gAbs(p: Producto) { return (p.precio_venta || 0) - (p.precio_costo || 0) }
+    function gPct(p: Producto) { return (!p.precio_costo || p.precio_costo === 0) ? -Infinity : (p.precio_venta - p.precio_costo) / p.precio_costo * 100 }
+    let va = 0, vb = 0
+    if (rentSort === 'margen_pct')    { va = gPct(a);            vb = gPct(b) }
+    else if (rentSort === 'margen_abs') { va = gAbs(a);          vb = gAbs(b) }
+    else if (rentSort === 'precio_venta') { va = a.precio_venta || 0; vb = b.precio_venta || 0 }
+    else { return rentDir === 'asc' ? a.nombre.localeCompare(b.nombre) : b.nombre.localeCompare(a.nombre) }
+    return rentDir === 'asc' ? va - vb : vb - va
+  })
+  function rentThClick(field: 'margen_pct' | 'margen_abs' | 'precio_venta' | 'nombre') {
+    if (rentSort === field) setRentDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setRentSort(field); setRentDir('desc') }
+  }
+  function rentMargenBadge(pct: number): React.CSSProperties {
+    if (pct >= 30) return { background: T.greenBg, color: T.green, border: `1px solid ${T.greenBd}` }
+    if (pct >= 15) return { background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}` }
+    return { background: T.redBg, color: T.red, border: `1px solid ${T.redBd}` }
+  }
+
   // ── Bulk popover config ───────────────────────────────────────────────────
   const BULK_ACTIONS = [
     { key: 'bodega',         label: 'Bodega',     kind: 'select' as const },
@@ -644,6 +687,23 @@ export default function ProductosPage() {
           <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>a precio lista</div>
         </div>
       </div>
+
+      {/* ── Tab nav ───────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 16, borderBottom: `1px solid ${T.border}`, paddingBottom: 0 }}>
+        {([['catalogo', 'Catálogo'], ['rentabilidad', 'Rentabilidad']] as const).map(([tab, label]) => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            style={{
+              background: 'none', border: 'none', padding: '8px 18px 10px', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit', color: activeTab === tab ? T.wine : T.muted,
+              borderBottom: activeTab === tab ? `2px solid ${T.wine}` : '2px solid transparent',
+              marginBottom: -1, transition: 'color 0.12s, border-color 0.12s',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: activeTab === 'catalogo' ? undefined : 'none' }}>
 
       {/* ── Filters ───────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -853,6 +913,104 @@ export default function ProductosPage() {
           </tbody>
         </table>
       </div>
+
+      </div>{/* end catalogo tab */}
+
+      <div style={{ display: activeTab === 'rentabilidad' ? undefined : 'none' }}>
+        {/* KPIs rentabilidad */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+            <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Margen promedio</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: rentAvgMargen >= 30 ? T.green : rentAvgMargen >= 15 ? T.amber : T.red }}>
+              {rentConCosto.length ? rentAvgMargen.toFixed(1) + '%' : '—'}
+            </div>
+            <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>sobre {rentConCosto.length} prods. con costo</div>
+          </div>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+            <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Mayor margen</div>
+            {rentTopProd ? <>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.green }}>
+                {((rentTopProd.precio_venta - rentTopProd.precio_costo!) / rentTopProd.precio_costo! * 100).toFixed(1)}%
+              </div>
+              <div style={{ fontSize: 11, color: T.muted, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rentTopProd.nombre}</div>
+            </> : <div style={{ fontSize: 15, color: T.dim }}>—</div>}
+          </div>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 3px rgba(26,18,16,0.04)' }}>
+            <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Sin precio costo</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: rentSinCosto.length > 0 ? T.amber : T.green }}>{rentSinCosto.length}</div>
+            <div style={{ fontSize: 11, color: T.dim, marginTop: 2 }}>sin costo cargado</div>
+          </div>
+        </div>
+
+        {/* Filtro bodega rentabilidad */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+          <select style={{ ...INP, width: 'auto', minWidth: 180 }} value={rentBodega} onChange={e => setRentBodega(e.target.value)}>
+            <option value="">Todas las bodegas</option>
+            {bodegasUnicas.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <span style={{ fontSize: 12, color: T.dim }}>{rentSorted.length} producto{rentSorted.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {/* Tabla rentabilidad */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                <th onClick={() => rentThClick('nombre')} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: rentSort === 'nombre' ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: 'pointer', userSelect: 'none' }}>
+                  Nombre{rentSort === 'nombre' ? (rentDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>Bodega</th>
+                <th onClick={() => rentThClick('precio_venta')} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: rentSort === 'precio_venta' ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: 'pointer', userSelect: 'none' }}>
+                  Precio venta{rentSort === 'precio_venta' ? (rentDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                </th>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}` }}>Precio costo</th>
+                <th onClick={() => rentThClick('margen_abs')} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: rentSort === 'margen_abs' ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: 'pointer', userSelect: 'none' }}>
+                  Margen ${rentSort === 'margen_abs' ? (rentDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                </th>
+                <th onClick={() => rentThClick('margen_pct')} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: rentSort === 'margen_pct' ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: 'pointer', userSelect: 'none' }}>
+                  Margen %{rentSort === 'margen_pct' ? (rentDir === 'desc' ? ' ↓' : ' ↑') : ''}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Cargando...</td></tr>
+              ) : rentSorted.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Sin productos</td></tr>
+              ) : rentSorted.map(p => {
+                const hasCosto  = (p.precio_costo ?? 0) > 0
+                const margenAbs = hasCosto ? (p.precio_venta || 0) - (p.precio_costo ?? 0) : null
+                const margenPct = hasCosto ? ((p.precio_venta || 0) - (p.precio_costo ?? 0)) / (p.precio_costo ?? 1) * 100 : null
+                return (
+                  <tr key={p.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, opacity: hasCosto ? 1 : 0.7 }}>
+                    <td style={{ padding: '11px 16px', maxWidth: 280 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                      {p.sku && <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{p.sku}</div>}
+                    </td>
+                    <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{p.bodega || <span style={{ color: T.dim }}>—</span>}</td>
+                    <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: T.text }}>
+                      {p.precio_venta ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                    </td>
+                    <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>
+                      {hasCosto
+                        ? `$${(p.precio_costo ?? 0).toLocaleString('es-AR')}`
+                        : <span style={{ ...BADGE_BASE, background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}`, fontSize: 10 }}>Sin costo</span>}
+                    </td>
+                    <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: margenAbs !== null && margenAbs >= 0 ? T.green : T.red }}>
+                      {margenAbs !== null ? `$${margenAbs.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      {margenPct !== null
+                        ? <span style={{ ...BADGE_BASE, ...rentMargenBadge(margenPct) }}>{margenPct.toFixed(1)}%</span>
+                        : <span style={{ color: T.dim, fontSize: 12 }}>—</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>{/* end rentabilidad tab */}
 
       </div>{/* end padding wrapper */}
 
