@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import type { Producto } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
@@ -188,19 +189,11 @@ export default function ProductosPage() {
     const val = parseFloat(masivValor)
     if (!val || masivAfectados.length === 0) return
     setMasivGuardando(true)
-    let ok = 0
-    for (const p of masivAfectados) {
-      let nuevo: number
-      if (masivCampo === 'precio_venta') {
-        if (masivTipo === 'pct') {
-          nuevo = masivDir === 'subir'
-            ? Math.round(p.precio_venta * (1 + val / 100))
-            : Math.round(p.precio_venta * (1 - val / 100))
-        } else {
-          nuevo = masivDir === 'subir' ? p.precio_venta + val : Math.max(0, p.precio_venta - val)
-        }
-      } else {
-        // precio_costo
+
+    if (masivCampo === 'precio_costo') {
+      // Costo: Supabase directo en batches de 20 en paralelo (sin WooCommerce)
+      const updates = masivAfectados.map(p => {
+        let nuevo: number
         if (masivCostoModo === 'pct_venta') {
           nuevo = Math.round((p.precio_venta || 0) * (val / 100))
         } else if (masivCostoModo === 'variacion') {
@@ -211,12 +204,41 @@ export default function ProductosPage() {
         } else {
           nuevo = Math.round(val)
         }
+        return { id: p.id, nuevo }
+      })
+      const BATCH = 20
+      let ok = 0
+      for (let i = 0; i < updates.length; i += BATCH) {
+        const chunk = updates.slice(i, i + BATCH)
+        const results = await Promise.all(
+          chunk.map(({ id, nuevo }) =>
+            supabase.from('productos').update({ precio_costo: nuevo }).eq('id', id)
+          )
+        )
+        ok += results.filter(r => !r.error).length
       }
-      const campo = masivCampo === 'precio_venta' ? { precio_venta: nuevo } : { precio_costo: nuevo }
+      setMasivGuardando(false)
+      setMasivModal(false)
+      await cargar(empresa)
+      toast_(`${ok} productos actualizados`)
+      return
+    }
+
+    // precio_venta: API con WooCommerce sync
+    let ok = 0
+    for (const p of masivAfectados) {
+      let nuevo: number
+      if (masivTipo === 'pct') {
+        nuevo = masivDir === 'subir'
+          ? Math.round(p.precio_venta * (1 + val / 100))
+          : Math.round(p.precio_venta * (1 - val / 100))
+      } else {
+        nuevo = masivDir === 'subir' ? p.precio_venta + val : Math.max(0, p.precio_venta - val)
+      }
       const res = await fetch('/api/productos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: p.id, ...campo }),
+        body: JSON.stringify({ id: p.id, precio_venta: nuevo }),
       })
       if (res.ok) ok++
     }

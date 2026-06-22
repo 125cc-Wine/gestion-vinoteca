@@ -134,10 +134,12 @@ export async function PUT(req: NextRequest) {
     }
   }
 
-  // Si tiene woo_product_id y hay credenciales WooCommerce, sincronizar
+  // Solo sincronizar a WooCommerce si cambió precio_venta o stock
   if (
+    ('precio_venta' in rest || 'stock' in rest) &&
     data.woo_product_id &&
     process.env.WOOCOMMERCE_CONSUMER_KEY &&
+    process.env.WOOCOMMERCE_CONSUMER_KEY !== 'ck_tu_clave_aqui' &&
     data.empresa === 'aroma'
   ) {
     try {
