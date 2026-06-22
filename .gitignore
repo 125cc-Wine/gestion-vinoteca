@@ -17,6 +17,14 @@
 .DS_Store
 *.pem
 
+# Certificados AFIP/ARCA - claves privadas, nunca al repo
+afip-certs/
+
+# Archivos sueltos de datos
+*.csv
+*.sql
+*.txt.csv
+
 # debug
 npm-debug.log*
 yarn-debug.log*
