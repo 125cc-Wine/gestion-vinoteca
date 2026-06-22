@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
+import { supabase } from '@/lib/supabase'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -125,7 +126,14 @@ export default function StockPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: item.id, stock: nuevoStock }),
       })
-      if (res.ok) ok++ ; else err++
+      if (res.ok) {
+        ok++
+        await supabase.from('movimientos_stock').insert([{
+          empresa, nombre: item.nombre,
+          delta: modo === 'agregar' ? delta : nuevoStock - item.stockActual,
+          nuevo_stock: nuevoStock, modo,
+        }])
+      } else err++
     }
     setGuardando(false)
     if (err === 0) {
