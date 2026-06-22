@@ -779,46 +779,9 @@ export default function VentasPage() {
     w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
   }
 
-  function imprimirVenta(venta: Venta, empresaNombre: string) {
-    const w = window.open('', '_blank', 'width=800,height=600')
-    if (!w) return
-    const tipoLabel: Record<string, string> = { venta: 'Comprobante', presupuesto: 'Presupuesto', remito: 'Remito', devolucion: 'Nota de Devolución' }
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${venta.numero}</title><style>
-      body { font-family: Arial, sans-serif; color: #1A1210; padding: 40px; max-width: 720px; margin: 0 auto; }
-      h1 { color: #800000; font-size: 22px; margin: 0; }
-      .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #800000; padding-bottom: 20px; margin-bottom: 24px; }
-      .empresa { font-size: 13px; color: #6B5D55; margin-top: 4px; }
-      .doc-info { text-align: right; font-size: 13px; }
-      .doc-num { font-size: 18px; font-weight: 700; color: #800000; }
-      .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #A89888; letter-spacing: 0.08em; margin-bottom: 8px; margin-top: 20px; }
-      .cliente-box { background: #F5F1EC; border-radius: 6px; padding: 12px 16px; font-size: 13px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-      th { background: #F5F1EC; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; color: #6B5D55; }
-      td { padding: 10px 10px; border-bottom: 1px solid #DDD0C0; font-size: 13px; }
-      .total-row { font-weight: 700; font-size: 16px; text-align: right; border-top: 2px solid #DDD0C0; padding-top: 12px; margin-top: 4px; }
-      .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #A89888; border-top: 1px solid #DDD0C0; padding-top: 16px; }
-      @media print { body { padding: 20px; } }
-    </style></head><body>
-      <div class="header">
-        <div><h1>${empresaNombre}</h1><div class="empresa">Vinoteca</div></div>
-        <div class="doc-info">
-          <div class="doc-num">${venta.numero}</div>
-          <div>${tipoLabel[venta.tipo] || venta.tipo}</div>
-          <div>${new Date(venta.created_at!).toLocaleDateString('es-AR')}</div>
-        </div>
-      </div>
-      <div class="section-title">Cliente</div>
-      <div class="cliente-box">${venta.cliente_nombre || 'Consumidor Final'}${(venta as Venta & { vendedor_nombre?: string }).vendedor_nombre ? ' <span style="color:#6B5D55;margin-left:12px;">Vendedor: ' + (venta as Venta & { vendedor_nombre?: string }).vendedor_nombre + '</span>' : ''}</div>
-      <div class="section-title">Detalle</div>
-      <table><thead><tr><th>Producto</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
-      <tbody>${(venta.items as VentaItem[] || []).map((it: VentaItem) => `<tr><td>${it.nombre}</td><td style="text-align:right">${it.cantidad}</td><td style="text-align:right">$${(it.precio_unitario || 0).toLocaleString('es-AR')}</td><td style="text-align:right">$${(it.subtotal || 0).toLocaleString('es-AR')}</td></tr>`).join('')}
-      </tbody></table>
-      <div class="total-row">Total: $${(venta.total || 0).toLocaleString('es-AR')}</div>
-      ${venta.notas ? '<div class="section-title">Notas</div><p style="font-size:13px;color:#6B5D55">' + venta.notas + '</p>' : ''}
-      <div class="footer">Gracias por su confianza</div>
-    </body></html>`)
-    w.document.close()
-    setTimeout(() => { w.print(); }, 400)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function imprimirVenta(venta: Venta, _empresaNombre: string) {
+    window.open(`/api/print/venta?id=${venta.id}&empresa=${empresa}`, '_blank')
   }
 
   // ── Pedido helpers
