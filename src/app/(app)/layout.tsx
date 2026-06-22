@@ -198,12 +198,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         @media (max-width: 767px) {
           .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; height: 100vh !important; z-index: 100 !important; transform: translateX(-100%); }
           .sidebar.open { transform: translateX(0); }
-          .hbg { display: none !important; }
+          .hbg { display: flex !important; }
           .top-search-full { display: none !important; }
           .top-nueva-venta { display: none !important; }
           .top-badge { display: none !important; }
-          .bottom-nav { display: flex !important; }
-          main { padding-bottom: 72px !important; }
+          .bottom-nav { display: flex !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; transform: translateZ(0) !important; -webkit-transform: translateZ(0) !important; }
+          main { padding-bottom: 72px !important; max-width: 100vw !important; overflow-x: hidden !important; }
         }
       `}</style>
 
@@ -404,7 +404,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content */}
-        <main style={{ flex: 1, minWidth: 0, background: T.bg }}>
+        <main style={{ flex: 1, minWidth: 0, background: T.bg, maxWidth: '100vw', overflowX: 'hidden' }}>
           {children}
         </main>
       </div>
