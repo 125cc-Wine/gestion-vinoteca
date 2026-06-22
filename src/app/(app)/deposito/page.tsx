@@ -18,11 +18,11 @@ const T = {
 const MULT: Record<string, number> = { botella: 1, caja6: 6, caja12: 12 }
 type Unidad = 'botella' | 'caja6' | 'caja12'
 type Modo = 'agregar' | 'establecer'
-type Tab = 'consultar' | 'cargar' | 'historial'
+type Tab = 'consultar' | 'cargar' | 'historial' | 'bodegas'
 
 interface Producto {
   id: string; nombre: string; bodega?: string; varietal?: string
-  stock: number; precio_venta: number; codigo_barras?: string; sku?: string
+  stock: number; stock_minimo?: number; precio_venta: number; codigo_barras?: string; sku?: string
   categoria?: string
 }
 
@@ -112,7 +112,9 @@ function ConsultarTab({ empresa }: { empresa: string }) {
     if (res.ok) {
       const logged = await addLog({ nombre: producto.nombre, delta: editStock - producto.stock, nuevoStock: editStock, modo: 'establecer', empresa })
       setProducto({ ...producto, stock: editStock })
-      showToast(logged ? `Stock actualizado: ${editStock} bot` : `Stock actualizado (error en historial)`, logged)
+      const minimo = producto.stock_minimo ?? 0
+      const msg = logged ? `Stock actualizado: ${editStock} bot` : `Stock actualizado (error en historial)`
+      showToast(minimo > 0 && editStock < minimo ? `Stock bajo mínimo (${editStock}/${minimo})` : msg, !(minimo > 0 && editStock < minimo))
     } else {
       showToast('Error al guardar', false)
     }
@@ -459,6 +461,61 @@ function CargarTab({ empresa }: { empresa: string }) {
   )
 }
 
+// ── Bodegas tab ───────────────────────────────────────────────────────────────
+function BodegasTab({ empresa }: { empresa: string }) {
+  const [rows, setRows] = useState<{ bodega: string; productos: number; stock: number; valor: number }[]>([])
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/productos?empresa=${empresa}`)
+      .then(r => r.json())
+      .then((prods: Producto[]) => {
+        const map: Record<string, { productos: number; stock: number; valor: number }> = {}
+        for (const p of prods) {
+          const b = p.bodega || '(Sin bodega)'
+          if (!map[b]) map[b] = { productos: 0, stock: 0, valor: 0 }
+          map[b].productos++
+          map[b].stock  += p.stock ?? 0
+          map[b].valor  += (p.stock ?? 0) * (p.precio_venta ?? 0)
+        }
+        setRows(Object.entries(map).map(([bodega, d]) => ({ bodega, ...d })).sort((a, b) => b.valor - a.valor))
+        setCargando(false)
+      })
+  }, [empresa])
+
+  const totalStock = rows.reduce((s, r) => s + r.stock, 0)
+  const totalValor = rows.reduce((s, r) => s + r.valor, 0)
+
+  if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto auto', gap: 0 }}>
+          <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: T.dim, borderBottom: `1px solid ${T.border}`, background: T.bg }}>BODEGA</div>
+          <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: T.dim, borderBottom: `1px solid ${T.border}`, background: T.bg, textAlign: 'right' }}>PRODS</div>
+          <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: T.dim, borderBottom: `1px solid ${T.border}`, background: T.bg, textAlign: 'right' }}>STOCK</div>
+          <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: T.dim, borderBottom: `1px solid ${T.border}`, background: T.bg, textAlign: 'right' }}>VALOR</div>
+          {rows.map((r, i) => (
+            <>
+              <div key={`n${i}`} style={{ padding: '12px 14px', fontSize: 14, fontWeight: 600, color: T.text, borderBottom: `1px solid ${T.border}` }}>{r.bodega}</div>
+              <div key={`p${i}`} style={{ padding: '12px 14px', fontSize: 13, color: T.muted, borderBottom: `1px solid ${T.border}`, textAlign: 'right' }}>{r.productos}</div>
+              <div key={`s${i}`} style={{ padding: '12px 14px', fontSize: 13, color: r.stock > 0 ? T.text : T.dim, borderBottom: `1px solid ${T.border}`, textAlign: 'right', fontWeight: r.stock > 0 ? 600 : 400 }}>{r.stock} bot</div>
+              <div key={`v${i}`} style={{ padding: '12px 14px', fontSize: 13, color: T.green, borderBottom: `1px solid ${T.border}`, textAlign: 'right', fontWeight: 600 }}>
+                {fmt(r.valor)}
+              </div>
+            </>
+          ))}
+          <div style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: T.text }}>TOTAL</div>
+          <div style={{ padding: '12px 14px', textAlign: 'right' }} />
+          <div style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: T.text, textAlign: 'right' }}>{totalStock} bot</div>
+          <div style={{ padding: '12px 14px', fontSize: 14, fontWeight: 700, color: T.green, textAlign: 'right' }}>{fmt(totalValor)}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Historial tab ──────────────────────────────────────────────────────────────
 function HistorialTab({ empresa }: { empresa: string }) {
   const [logs, setLogs] = useState<StockLog[]>([])
@@ -549,6 +606,7 @@ export default function DepositoPage() {
   const TABS: { key: Tab; label: string; icon: string }[] = [
     { key: 'consultar', label: 'Consultar', icon: 'M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z' },
     { key: 'cargar',    label: 'Cargar',    icon: 'M12 5v14M5 12h14' },
+    { key: 'bodegas',   label: 'Por bodega', icon: 'M3 21V5a2 2 0 012-2h14a2 2 0 012 2v16M9 21V9h6v12M3 5l9-3 9 3' },
     { key: 'historial', label: 'Historial', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ]
 
@@ -596,6 +654,7 @@ export default function DepositoPage() {
       {/* Tab content */}
       {empresa && tab === 'consultar'  && <ConsultarTab  key={empresa} empresa={empresa} />}
       {empresa && tab === 'cargar'     && <CargarTab     key={empresa} empresa={empresa} />}
+      {empresa && tab === 'bodegas'    && <BodegasTab    key={empresa} empresa={empresa} />}
       {empresa && tab === 'historial'  && <HistorialTab  key={empresa} empresa={empresa} />}
     </div>
   )

@@ -73,6 +73,7 @@ export default function ComprasPage() {
   const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState('')
   const [modal, setModal] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [detalle, setDetalle] = useState<Compra | null>(null)
@@ -90,6 +91,20 @@ export default function ComprasPage() {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e); cargar(e)
   }, [])
+
+  const dirtyCompra = proveedorNombre !== '' || items.some(i => i.nombre !== '')
+
+  function tryCloseCompra() {
+    if (dirtyCompra) { setConfirmClose(true) } else { setModal(false) }
+  }
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (modal && dirtyCompra) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [modal, dirtyCompra])
 
   async function cargar(emp: string) {
     setLoading(true)
@@ -278,11 +293,11 @@ export default function ComprasPage() {
       {/* Modal nueva OC */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          onClick={e => e.target === e.currentTarget && tryCloseCompra()}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nueva orden de compra</h2>
-              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
+              <button onClick={tryCloseCompra} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
 
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -384,11 +399,25 @@ export default function ComprasPage() {
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Total: <span style={{ color: T.green }}>${total.toLocaleString('es-AR')}</span></span>
-                <button onClick={() => setModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                <button onClick={tryCloseCompra} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
                 <button className="btn-wine" onClick={guardar} disabled={saving} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', opacity: saving ? 0.6 : 1 }}>
                   {saving ? 'Guardando...' : 'Crear orden'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm close */}
+      {confirmClose && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: T.surface, borderRadius: 12, padding: 28, maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(26,18,16,0.22)', border: `1px solid ${T.border2}` }}>
+            <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 15, color: T.text }}>¿Salir sin guardar?</p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: T.muted }}>Tenés datos sin guardar en la orden de compra. Si salís ahora se van a perder.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConfirmClose(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Volver</button>
+              <button onClick={() => { setConfirmClose(false); setModal(false) }} style={{ background: T.red, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Salir igual</button>
             </div>
           </div>
         </div>

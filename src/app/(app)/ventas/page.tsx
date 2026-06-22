@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Producto, Cliente, Venta, VentaItem } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import * as XLSX from 'xlsx'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import {
@@ -735,6 +736,19 @@ export default function VentasPage() {
     setModal(true)
   }
 
+  function exportarVentas() {
+    const rows = ventasFiltradas.map(v => ({
+      Número: v.numero, Tipo: v.tipo, Cliente: v.cliente_nombre,
+      Vendedor: v.vendedor_nombre ?? '', Total: v.total,
+      'Estado pago': v.estado_pago ?? '', Estado: v.estado ?? '',
+      Fecha: new Date(v.created_at!).toLocaleDateString('es-AR'),
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Ventas')
+    XLSX.writeFile(wb, `ventas_${empresa}_${new Date().toISOString().slice(0,10)}.xlsx`)
+  }
+
   function whatsappVenta(v: Venta) {
     const vitems = v.items as VentaItem[]
     const fecha = new Date(v.created_at!).toLocaleDateString('es-AR')
@@ -892,6 +906,7 @@ export default function VentasPage() {
         </div>
         <div className="v-header-btns" style={{ display: 'flex', gap: 8 }}>
           {tab === 'comprobantes' && <>
+            <button className="vbtn" style={btn('default', { padding: '7px 12px', fontSize: 13 })} onClick={exportarVentas}>↓ Excel</button>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13 })} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13, color: C.blue })} onClick={() => abrirNuevo('devolucion')}>+ Devolución</button>
             <button className="vbtn" style={btn('accent', { padding: '7px 16px', fontSize: 13, fontWeight: 600 })} onClick={() => abrirNuevo('remito')}>+ Remito</button>

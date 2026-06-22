@@ -254,6 +254,7 @@ export default function ConsignacionesPage() {
 
   // Modal states
   const [modal, setModal] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
   const [detalleModal, setDetalleModal] = useState<Consignacion | null>(null)
   const [liquidarModal, setLiquidarModal] = useState<Consignacion | null>(null)
 
@@ -302,6 +303,20 @@ export default function ConsignacionesPage() {
     setEmpresa(e)
     load(e)
   }, [])
+
+  const dirtyConsignacion = form.cliente_nombre !== '' || form.items.some(i => i.nombre !== '')
+
+  function tryCloseConsignacion() {
+    if (dirtyConsignacion) { setConfirmClose(true) } else { setModal(false); resetForm() }
+  }
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (modal && dirtyConsignacion) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [modal, dirtyConsignacion])
 
   // ─── KPIs ──────────────────────────────────────────────────────────────────
   const activas = consignaciones.filter(c => c.estado === 'activa')
@@ -582,7 +597,7 @@ export default function ConsignacionesPage() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nueva consignación</h2>
-              <button className="cbtn" style={btn('ghost')} onClick={() => setModal(false)}>✕</button>
+              <button className="cbtn" style={btn('ghost')} onClick={tryCloseConsignacion}>✕</button>
             </div>
 
             {/* Row 1: Cliente, Vendedor, Fecha salida */}
@@ -732,9 +747,23 @@ export default function ConsignacionesPage() {
                 Total: <span style={{ color: T.wine }}>{fmt(formTotal)}</span>
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button className="cbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
+                <button className="cbtn" style={btn('default')} onClick={tryCloseConsignacion}>Cancelar</button>
                 <button className="cbtn" style={btn('accent')} onClick={handleGuardar}>Guardar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm close */}
+      {confirmClose && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: T.surface, borderRadius: 12, padding: 28, maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(26,18,16,0.22)', border: `1px solid ${T.border2}` }}>
+            <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 15, color: T.text }}>¿Salir sin guardar?</p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: T.muted }}>Tenés datos sin guardar en la consignación. Si salís ahora se van a perder.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="cbtn" style={btn('default')} onClick={() => setConfirmClose(false)}>Volver</button>
+              <button className="cbtn" style={btn('danger')} onClick={() => { setConfirmClose(false); setModal(false); resetForm() }}>Salir igual</button>
             </div>
           </div>
         </div>

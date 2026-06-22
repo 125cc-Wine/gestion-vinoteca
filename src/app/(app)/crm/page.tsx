@@ -208,7 +208,22 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
   const [clienteSearch, setClienteSearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
+
+  const dirty = form.cliente_nombre !== '' || form.notas !== '' || form.resultado !== ''
+
+  function tryClose() {
+    if (dirty) { setConfirmClose(true) } else { onClose() }
+  }
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (open && dirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [open, dirty])
 
   useEffect(() => {
     if (open) {
@@ -262,6 +277,19 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
   if (!open) return null
 
   return (
+    <>
+    {confirmClose && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: T.surface, borderRadius: 12, padding: 28, maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(26,18,16,0.22)', border: `1px solid ${T.border2}` }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 15, color: T.text }}>¿Salir sin guardar?</p>
+          <p style={{ margin: '0 0 20px', fontSize: 13, color: T.muted }}>Tenés datos sin guardar en la actividad. Si salís ahora se van a perder.</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="cbtn" style={btn('default')} onClick={() => setConfirmClose(false)}>Volver</button>
+            <button className="cbtn" style={btn('danger')} onClick={() => { setConfirmClose(false); onClose() }}>Salir igual</button>
+          </div>
+        </div>
+      </div>
+    )}
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -272,7 +300,7 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: T.text }}>{title}</h2>
-          <button onClick={onClose} style={{ ...btn('ghost'), padding: '4px 8px', fontSize: 18, lineHeight: 1 }}>×</button>
+          <button onClick={tryClose} style={{ ...btn('ghost'), padding: '4px 8px', fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
 
         {/* Row 1: Cliente + Vendedor */}
@@ -412,7 +440,7 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
 
         {/* Buttons */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
-          <button className="cbtn" style={btn('default')} onClick={onClose} disabled={saving}>
+          <button className="cbtn" style={btn('default')} onClick={tryClose} disabled={saving}>
             Cancelar
           </button>
           <button className="cbtn" style={btn('accent')} onClick={handleSave} disabled={saving}>
@@ -421,6 +449,7 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
         </div>
       </div>
     </div>
+    </>
   )
 }
 

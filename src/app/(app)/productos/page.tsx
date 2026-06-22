@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
+import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -152,6 +153,61 @@ export default function ProductosPage() {
   const [listaItems, setListaItems] = useState<ListaItem[]>([])
   const [listaQuery, setListaQuery] = useState('')
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
+
+  // Actualización masiva de precios
+  const [masivModal, setMasivModal]         = useState(false)
+  const [masivBodega, setMasivBodega]       = useState('')
+  const [masivCat, setMasivCat]             = useState('')
+  const [masivTipo, setMasivTipo]           = useState<'pct'|'fijo'>('pct')
+  const [masivValor, setMasivValor]         = useState('')
+  const [masivDir, setMasivDir]             = useState<'subir'|'bajar'>('subir')
+  const [masivGuardando, setMasivGuardando] = useState(false)
+
+  const masivAfectados = productos.filter(p => {
+    if (masivBodega && p.bodega !== masivBodega) return false
+    if (masivCat    && p.categoria !== masivCat) return false
+    return true
+  })
+
+  function exportarExcel() {
+    const rows = filtrados.map(p => ({
+      Nombre: p.nombre, Bodega: p.bodega ?? '', Varietal: p.varietal ?? '',
+      Categoría: p.categoria ?? '', SKU: p.sku ?? '', 'Código de barras': p.codigo_barras ?? '',
+      'Precio venta': p.precio_venta ?? 0, 'Precio costo': p.precio_costo ?? 0,
+      Stock: p.stock ?? 0, 'Stock mínimo': p.stock_minimo ?? 0,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos')
+    XLSX.writeFile(wb, `productos_${empresa}_${new Date().toISOString().slice(0,10)}.xlsx`)
+  }
+
+  async function aplicarMasivo() {
+    const val = parseFloat(masivValor)
+    if (!val || masivAfectados.length === 0) return
+    setMasivGuardando(true)
+    let ok = 0
+    for (const p of masivAfectados) {
+      let nuevo: number
+      if (masivTipo === 'pct') {
+        nuevo = masivDir === 'subir'
+          ? Math.round(p.precio_venta * (1 + val / 100))
+          : Math.round(p.precio_venta * (1 - val / 100))
+      } else {
+        nuevo = masivDir === 'subir' ? p.precio_venta + val : Math.max(0, p.precio_venta - val)
+      }
+      const res = await fetch('/api/productos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: p.id, precio_venta: nuevo }),
+      })
+      if (res.ok) ok++
+    }
+    setMasivGuardando(false)
+    setMasivModal(false)
+    await cargar(empresa)
+    toast_(`${ok} productos actualizados`)
+  }
 
   // WooCommerce import modal
   const [importModal, setImportModal]       = useState(false)
@@ -560,6 +616,8 @@ export default function ProductosPage() {
             <button onClick={syncWoo} disabled={syncing} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{syncing ? '...' : 'Sync Woo'}</button>
           </>}
           <button onClick={calcularCostos} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
+          <button onClick={exportarExcel} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Exportar Excel</button>
+          <button onClick={() => { setMasivBodega(''); setMasivCat(''); setMasivValor(''); setMasivDir('subir'); setMasivModal(true) }} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Actualiz. masiva</button>
           <button onClick={abrirListaModal} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Lista precios</button>
           <button onClick={openNew} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>+ Nuevo producto</button>
         </div>
@@ -1117,6 +1175,77 @@ export default function ProductosPage() {
                   Imprimir lista
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Actualización masiva de precios ──────────────────────── */}
+      {masivModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && setMasivModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Actualización masiva de precios</h2>
+              <button onClick={() => setMasivModal(false)} style={{ background: 'none', border: 'none', color: T.dim, fontSize: 20, cursor: 'pointer' }}>×</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>BODEGA (opcional)</div>
+                <select value={masivBodega} onChange={e => setMasivBodega(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                  <option value="">Todas las bodegas</option>
+                  {bodegasUnicas.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>CATEGORÍA (opcional)</div>
+                <select value={masivCat} onChange={e => setMasivCat(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                  <option value="">Todas</option>
+                  {['Tinto','Blanco','Rosado','Espumante','Otro'].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>OPERACIÓN</div>
+                <select value={masivDir} onChange={e => setMasivDir(e.target.value as 'subir'|'bajar')}
+                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                  <option value="subir">Subir</option>
+                  <option value="bajar">Bajar</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>TIPO</div>
+                <select value={masivTipo} onChange={e => setMasivTipo(e.target.value as 'pct'|'fijo')}
+                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                  <option value="pct">Porcentaje %</option>
+                  <option value="fijo">Monto fijo $</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>{masivTipo === 'pct' ? 'PORCENTAJE' : 'MONTO'}</div>
+                <input type="number" min={0} value={masivValor} onChange={e => setMasivValor(e.target.value)}
+                  placeholder={masivTipo === 'pct' ? '10' : '1000'}
+                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface, boxSizing: 'border-box' }} />
+              </div>
+            </div>
+
+            <div style={{ background: masivAfectados.length > 0 ? T.greenBg : T.redBg, border: `1px solid ${masivAfectados.length > 0 ? 'rgba(45,122,79,0.25)' : 'rgba(192,48,48,0.25)'}`, borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
+              <strong style={{ color: masivAfectados.length > 0 ? T.green : T.red }}>{masivAfectados.length} productos</strong>
+              <span style={{ color: T.muted }}> se van a actualizar
+                {masivValor ? ` (${masivDir === 'subir' ? '+' : '-'}${masivValor}${masivTipo === 'pct' ? '%' : '$'})` : ''}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setMasivModal(false)} style={{ padding: '9px 20px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, color: T.muted, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button onClick={aplicarMasivo} disabled={masivGuardando || masivAfectados.length === 0 || !masivValor}
+                style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: T.wine, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (masivGuardando || masivAfectados.length === 0 || !masivValor) ? 0.5 : 1 }}>
+                {masivGuardando ? 'Actualizando...' : `Aplicar a ${masivAfectados.length} productos`}
+              </button>
             </div>
           </div>
         </div>
