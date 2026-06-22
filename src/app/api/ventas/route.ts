@@ -8,18 +8,26 @@ export async function GET(req: NextRequest) {
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
   const clienteId = req.nextUrl.searchParams.get('cliente_id')
 
-  let query = supabase
-    .from('ventas')
-    .select('*')
-    .eq('empresa', empresa)
-    .neq('estado', 'cancelado')
-    .order('created_at', { ascending: false })
-
-  if (clienteId) query = query.eq('cliente_id', clienteId)
-
-  const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const PAGE = 1000
+  let all: unknown[] = []
+  let from = 0
+  while (true) {
+    let query = supabase
+      .from('ventas')
+      .select('*')
+      .eq('empresa', empresa)
+      .neq('estado', 'cancelado')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1)
+    if (clienteId) query = query.eq('cliente_id', clienteId)
+    const { data, error } = await query
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!data || data.length === 0) break
+    all = all.concat(data)
+    if (data.length < PAGE) break
+    from += PAGE
+  }
+  return NextResponse.json(all)
 }
 
 export async function POST(req: NextRequest) {
