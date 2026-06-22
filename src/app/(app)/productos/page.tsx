@@ -156,11 +156,13 @@ export default function ProductosPage() {
 
   // Actualización masiva de precios
   const [masivModal, setMasivModal]         = useState(false)
+  const [masivCampo, setMasivCampo]         = useState<'precio_venta'|'precio_costo'>('precio_venta')
   const [masivBodega, setMasivBodega]       = useState('')
   const [masivCat, setMasivCat]             = useState('')
   const [masivTipo, setMasivTipo]           = useState<'pct'|'fijo'>('pct')
   const [masivValor, setMasivValor]         = useState('')
   const [masivDir, setMasivDir]             = useState<'subir'|'bajar'>('subir')
+  const [masivCostoModo, setMasivCostoModo] = useState<'pct_venta'|'variacion'|'fijo'>('pct_venta')
   const [masivGuardando, setMasivGuardando] = useState(false)
 
   const masivAfectados = productos.filter(p => {
@@ -189,17 +191,32 @@ export default function ProductosPage() {
     let ok = 0
     for (const p of masivAfectados) {
       let nuevo: number
-      if (masivTipo === 'pct') {
-        nuevo = masivDir === 'subir'
-          ? Math.round(p.precio_venta * (1 + val / 100))
-          : Math.round(p.precio_venta * (1 - val / 100))
+      if (masivCampo === 'precio_venta') {
+        if (masivTipo === 'pct') {
+          nuevo = masivDir === 'subir'
+            ? Math.round(p.precio_venta * (1 + val / 100))
+            : Math.round(p.precio_venta * (1 - val / 100))
+        } else {
+          nuevo = masivDir === 'subir' ? p.precio_venta + val : Math.max(0, p.precio_venta - val)
+        }
       } else {
-        nuevo = masivDir === 'subir' ? p.precio_venta + val : Math.max(0, p.precio_venta - val)
+        // precio_costo
+        if (masivCostoModo === 'pct_venta') {
+          nuevo = Math.round((p.precio_venta || 0) * (val / 100))
+        } else if (masivCostoModo === 'variacion') {
+          const base = p.precio_costo || 0
+          nuevo = masivDir === 'subir'
+            ? Math.round(base * (1 + val / 100))
+            : Math.max(0, Math.round(base * (1 - val / 100)))
+        } else {
+          nuevo = Math.round(val)
+        }
       }
+      const campo = masivCampo === 'precio_venta' ? { precio_venta: nuevo } : { precio_costo: nuevo }
       const res = await fetch('/api/productos', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: p.id, precio_venta: nuevo }),
+        body: JSON.stringify({ id: p.id, ...campo }),
       })
       if (res.ok) ok++
     }
@@ -1338,16 +1355,29 @@ export default function ProductosPage() {
         </div>
       )}
 
-      {/* ── Actualización masiva de precios ──────────────────────── */}
+      {/* ── Actualización masiva de precios / costos ─────────────── */}
       {masivModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={e => e.target === e.currentTarget && setMasivModal(false)}>
-          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Actualización masiva de precios</h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Actualización masiva</h2>
               <button onClick={() => setMasivModal(false)} style={{ background: 'none', border: 'none', color: T.dim, fontSize: 20, cursor: 'pointer' }}>×</button>
             </div>
 
+            {/* Toggle campo */}
+            <div style={{ display: 'flex', background: T.bg, borderRadius: 9, padding: 3, marginBottom: 20, gap: 3 }}>
+              {([['precio_venta', 'Precio de venta'], ['precio_costo', 'Precio de costo']] as const).map(([v, l]) => (
+                <button key={v} onClick={() => { setMasivCampo(v); setMasivValor('') }}
+                  style={{ flex: 1, padding: '7px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, transition: 'all 0.12s',
+                    background: masivCampo === v ? T.wine : 'transparent',
+                    color: masivCampo === v ? '#fff' : T.muted }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Filtros — comunes a ambos campos */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
               <div>
                 <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>BODEGA (opcional)</div>
@@ -1367,35 +1397,90 @@ export default function ProductosPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>OPERACIÓN</div>
-                <select value={masivDir} onChange={e => setMasivDir(e.target.value as 'subir'|'bajar')}
-                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
-                  <option value="subir">Subir</option>
-                  <option value="bajar">Bajar</option>
-                </select>
+            {/* Controles PRECIO VENTA */}
+            {masivCampo === 'precio_venta' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>OPERACIÓN</div>
+                  <select value={masivDir} onChange={e => setMasivDir(e.target.value as 'subir'|'bajar')}
+                    style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                    <option value="subir">Subir</option>
+                    <option value="bajar">Bajar</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>TIPO</div>
+                  <select value={masivTipo} onChange={e => setMasivTipo(e.target.value as 'pct'|'fijo')}
+                    style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                    <option value="pct">Porcentaje %</option>
+                    <option value="fijo">Monto fijo $</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>{masivTipo === 'pct' ? 'PORCENTAJE' : 'MONTO'}</div>
+                  <input type="number" min={0} value={masivValor} onChange={e => setMasivValor(e.target.value)}
+                    placeholder={masivTipo === 'pct' ? '10' : '1000'}
+                    style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface, boxSizing: 'border-box' }} />
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>TIPO</div>
-                <select value={masivTipo} onChange={e => setMasivTipo(e.target.value as 'pct'|'fijo')}
-                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
-                  <option value="pct">Porcentaje %</option>
-                  <option value="fijo">Monto fijo $</option>
-                </select>
+            )}
+
+            {/* Controles PRECIO COSTO */}
+            {masivCampo === 'precio_costo' && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: T.dim, marginBottom: 6, fontWeight: 600 }}>MODO DE CÁLCULO</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                  {([
+                    ['pct_venta',  '% del precio de venta', 'Ej: 50% → costo = precio_venta × 0.50'],
+                    ['variacion',  'Variación % sobre costo actual', 'Subir o bajar el costo existente'],
+                    ['fijo',       'Valor fijo $', 'Establecer un monto exacto'],
+                  ] as const).map(([v, l, desc]) => (
+                    <label key={v} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '9px 12px', borderRadius: 8,
+                      background: masivCostoModo === v ? T.wineBg : T.bg,
+                      border: `1px solid ${masivCostoModo === v ? T.wineBd : T.border}` }}>
+                      <input type="radio" name="costoModo" value={v} checked={masivCostoModo === v}
+                        onChange={() => { setMasivCostoModo(v); setMasivValor('') }}
+                        style={{ marginTop: 2, accentColor: T.wine }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{l}</div>
+                        <div style={{ fontSize: 11, color: T.muted, marginTop: 1 }}>{desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: masivCostoModo === 'variacion' ? '1fr 1fr' : '1fr', gap: 10 }}>
+                  {masivCostoModo === 'variacion' && (
+                    <div>
+                      <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>OPERACIÓN</div>
+                      <select value={masivDir} onChange={e => setMasivDir(e.target.value as 'subir'|'bajar')}
+                        style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
+                        <option value="subir">Subir</option>
+                        <option value="bajar">Bajar</option>
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>
+                      {masivCostoModo === 'pct_venta' ? 'PORCENTAJE DEL PRECIO DE VENTA' : masivCostoModo === 'variacion' ? 'PORCENTAJE' : 'MONTO FIJO $'}
+                    </div>
+                    <input type="number" min={0} max={masivCostoModo === 'pct_venta' ? 100 : undefined}
+                      value={masivValor} onChange={e => setMasivValor(e.target.value)}
+                      placeholder={masivCostoModo === 'fijo' ? '5000' : '50'}
+                      style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface, boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                {masivCostoModo === 'pct_venta' && masivValor && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.muted }}>
+                    Ejemplo: producto $10.000 → costo ${Math.round(10000 * parseFloat(masivValor) / 100).toLocaleString('es-AR')}
+                  </div>
+                )}
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: T.dim, marginBottom: 4, fontWeight: 600 }}>{masivTipo === 'pct' ? 'PORCENTAJE' : 'MONTO'}</div>
-                <input type="number" min={0} value={masivValor} onChange={e => setMasivValor(e.target.value)}
-                  placeholder={masivTipo === 'pct' ? '10' : '1000'}
-                  style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface, boxSizing: 'border-box' }} />
-              </div>
-            </div>
+            )}
 
             <div style={{ background: masivAfectados.length > 0 ? T.greenBg : T.redBg, border: `1px solid ${masivAfectados.length > 0 ? 'rgba(45,122,79,0.25)' : 'rgba(192,48,48,0.25)'}`, borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
               <strong style={{ color: masivAfectados.length > 0 ? T.green : T.red }}>{masivAfectados.length} productos</strong>
-              <span style={{ color: T.muted }}> se van a actualizar
-                {masivValor ? ` (${masivDir === 'subir' ? '+' : '-'}${masivValor}${masivTipo === 'pct' ? '%' : '$'})` : ''}</span>
+              <span style={{ color: T.muted }}> se van a actualizar</span>
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
