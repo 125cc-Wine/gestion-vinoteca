@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
+import { supabase } from '@/lib/supabase'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -35,22 +36,15 @@ interface StockLog {
 }
 
 async function addLog(log: Omit<StockLog, 'id' | 'timestamp'>): Promise<boolean> {
-  try {
-    const res = await fetch('/api/deposito/historial', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa: log.empresa, nombre: log.nombre, delta: log.delta, nuevo_stock: log.nuevoStock, modo: log.modo }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      console.error('addLog error:', err)
-      return false
-    }
-    return true
-  } catch (e) {
-    console.error('addLog fetch error:', e)
-    return false
-  }
+  const { error } = await supabase.from('movimientos_stock').insert([{
+    empresa:     log.empresa,
+    nombre:      log.nombre,
+    delta:       log.delta,
+    nuevo_stock: log.nuevoStock,
+    modo:        log.modo,
+  }])
+  if (error) console.error('addLog error:', error.message)
+  return !error
 }
 
 function fmt(n: number) {
@@ -472,17 +466,24 @@ function HistorialTab({ empresa }: { empresa: string }) {
 
   useEffect(() => {
     setCargando(true)
-    fetch(`/api/deposito/historial?empresa=${empresa}`)
-      .then(r => r.json())
-      .then((data: Array<{ id: string; nombre: string; delta: number; nuevo_stock: number; modo: Modo; created_at: string; empresa: string }>) => {
-        setLogs(data.map(d => ({ id: d.id, nombre: d.nombre, delta: d.delta, nuevoStock: d.nuevo_stock, modo: d.modo, timestamp: d.created_at, empresa: d.empresa })))
+    supabase
+      .from('movimientos_stock')
+      .select('*')
+      .eq('empresa', empresa)
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        setLogs((data ?? []).map(d => ({
+          id: d.id, nombre: d.nombre, delta: d.delta,
+          nuevoStock: d.nuevo_stock, modo: d.modo as Modo,
+          timestamp: d.created_at, empresa: d.empresa,
+        })))
         setCargando(false)
       })
-      .catch(() => setCargando(false))
   }, [empresa])
 
   async function limpiar() {
-    await fetch(`/api/deposito/historial?empresa=${empresa}`, { method: 'DELETE' })
+    await supabase.from('movimientos_stock').delete().eq('empresa', empresa)
     setLogs([])
   }
 
