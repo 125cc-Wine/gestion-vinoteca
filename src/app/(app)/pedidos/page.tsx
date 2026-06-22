@@ -193,6 +193,11 @@ export default function PedidosPage() {
   }
 
   async function cambiarEstado(id: string, estado: string) {
+    if (estado === 'entregado') {
+      const pedido = pedidos.find(p => p.id === id)
+      const nItems = pedido ? (pedido.items as PedidoItem[]).reduce((s, i) => s + i.cantidad, 0) : 0
+      if (!confirm(`¿Marcar como entregado? Se descontarán ${nItems} unidades del stock.`)) return
+    }
     await fetch('/api/pedidos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado }) })
     cargar(empresa); showToast(`Pedido ${estado}`)
   }

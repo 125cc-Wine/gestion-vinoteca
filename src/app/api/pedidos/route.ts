@@ -68,6 +68,39 @@ export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
 
+  // Si se está marcando como entregado, descontar stock (solo una vez)
+  if (rest.estado === 'entregado') {
+    const { data: current } = await supabase
+      .from('pedidos')
+      .select('estado, items, empresa')
+      .eq('id', id)
+      .single()
+
+    if (current && current.estado !== 'entregado') {
+      const items = current.items as { producto_id: string; nombre: string; cantidad: number }[]
+      await Promise.all(
+        items.filter(i => i.producto_id).map(async (item) => {
+          const { data: prod } = await supabase
+            .from('productos')
+            .select('stock')
+            .eq('id', item.producto_id)
+            .single()
+          if (prod) {
+            const nuevoStock = Math.max(0, (prod.stock ?? 0) - item.cantidad)
+            await supabase.from('productos').update({ stock: nuevoStock }).eq('id', item.producto_id)
+            await supabase.from('movimientos_stock').insert([{
+              producto_id: item.producto_id,
+              empresa: current.empresa,
+              tipo: 'salida',
+              cantidad: item.cantidad,
+              motivo: `Pedido entregado — ${id}`,
+            }])
+          }
+        })
+      )
+    }
+  }
+
   const { data, error } = await supabase
     .from('pedidos')
     .update(rest)
