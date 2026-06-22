@@ -69,6 +69,18 @@ interface WooPreview {
   categoria: string; precio_venta: number; stock: number; ya_importado: boolean
 }
 
+interface HistorialPrecio {
+  id: string
+  producto_id: string
+  empresa: string
+  precio_venta_anterior: number | null
+  precio_venta_nuevo: number | null
+  precio_costo_anterior: number | null
+  precio_costo_nuevo: number | null
+  created_at: string
+  usuario?: string | null
+}
+
 // ─── Tiny style helpers ───────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
   background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
@@ -263,6 +275,12 @@ export default function ProductosPage() {
   const [wooSel, setWooSel]                 = useState<Set<number>>(new Set())
   const [soloNuevos, setSoloNuevos]         = useState(true)
   const [importando, setImportando]         = useState(false)
+
+  // Historial de precios modal
+  const [historialModal, setHistorialModal]       = useState(false)
+  const [historialProducto, setHistorialProducto] = useState<{ id: string; nombre: string } | null>(null)
+  const [historialData, setHistorialData]         = useState<HistorialPrecio[]>([])
+  const [historialLoading, setHistorialLoading]   = useState(false)
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -518,6 +536,21 @@ export default function ProductosPage() {
     const d = await res.json()
     if (d.error) { toast_('Error: ' + d.error); return }
     cargar(empresa); toast_(`${d.actualizados} productos actualizados`)
+  }
+
+  async function openHistorial(p: Producto) {
+    setHistorialProducto({ id: p.id!, nombre: p.nombre })
+    setHistorialData([])
+    setHistorialLoading(true)
+    setHistorialModal(true)
+    const { data } = await supabase
+      .from('historial_precios')
+      .select('*')
+      .eq('producto_id', p.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setHistorialData((data as HistorialPrecio[]) || [])
+    setHistorialLoading(false)
   }
 
   async function syncWoo() {
@@ -941,6 +974,7 @@ export default function ProductosPage() {
                   </td>
                   <td style={{ padding: '11px 10px' }} onMouseDown={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4 }}>
+                      <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
                       <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
                       <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
                       <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Eliminar" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
@@ -1511,6 +1545,94 @@ export default function ProductosPage() {
                 style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: T.wine, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (masivGuardando || masivAfectados.length === 0 || !masivValor) ? 0.5 : 1 }}>
                 {masivGuardando ? 'Actualizando...' : `Aplicar a ${masivAfectados.length} productos`}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Historial de precios modal ────────────────────────────── */}
+      {historialModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && setHistorialModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 780, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.22)' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Historial de precios</h2>
+                {historialProducto && (
+                  <p style={{ margin: '3px 0 0', fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 560 }}>
+                    {historialProducto.nombre}
+                  </p>
+                )}
+              </div>
+              <button onClick={() => setHistorialModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1, flexShrink: 0, marginLeft: 16 }}>×</button>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
+              {historialLoading ? (
+                <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando historial...</div>
+              ) : historialData.length === 0 ? (
+                <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Sin historial de cambios</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ position: 'sticky', top: 0, background: T.bg, zIndex: 1 }}>
+                    <tr>
+                      {['Fecha', 'P. Venta anterior', 'P. Venta nuevo', 'Var. venta', 'P. Costo anterior', 'P. Costo nuevo', 'Var. costo'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Fecha' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historialData.map(h => {
+                      const ventaAnterior = h.precio_venta_anterior ?? null
+                      const ventaNuevo    = h.precio_venta_nuevo ?? null
+                      const costoAnterior = h.precio_costo_anterior ?? null
+                      const costoNuevo    = h.precio_costo_nuevo ?? null
+
+                      const diffVenta = (ventaAnterior !== null && ventaNuevo !== null) ? ventaNuevo - ventaAnterior : null
+                      const diffCosto = (costoAnterior !== null && costoNuevo !== null) ? costoNuevo - costoAnterior : null
+
+                      function arrowCell(diff: number | null) {
+                        if (diff === null) return <span style={{ color: T.dim }}>—</span>
+                        if (diff > 0) return <span style={{ color: T.green, fontWeight: 700 }}>▲ ${diff.toLocaleString('es-AR')}</span>
+                        if (diff < 0) return <span style={{ color: T.red, fontWeight: 700 }}>▼ ${Math.abs(diff).toLocaleString('es-AR')}</span>
+                        return <span style={{ color: T.dim }}>= sin cambio</span>
+                      }
+
+                      return (
+                        <tr key={h.id} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td style={{ padding: '11px 14px', color: T.muted, whiteSpace: 'nowrap' }}>
+                            {new Date(h.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.dim }}>
+                            {ventaAnterior !== null ? `$${ventaAnterior.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>
+                            {ventaNuevo !== null ? `$${ventaNuevo.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right' }}>{arrowCell(diffVenta)}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.dim }}>
+                            {costoAnterior !== null ? `$${costoAnterior.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>
+                            {costoNuevo !== null ? `$${costoNuevo.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right' }}>{arrowCell(diffCosto)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: T.dim }}>
+                {historialData.length > 0 ? `${historialData.length} registro${historialData.length !== 1 ? 's' : ''}` : ''}
+              </span>
+              <button onClick={() => setHistorialModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cerrar</button>
             </div>
           </div>
         </div>
