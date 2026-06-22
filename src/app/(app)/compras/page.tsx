@@ -50,6 +50,15 @@ interface Compra {
   items: ItemCompra[]; total: number; notas: string
   fecha_esperada: string | null; estado: 'pendiente' | 'enviado' | 'recibido' | 'cancelado'
   created_at: string
+  // Factura y pagos
+  nro_factura?: string | null
+  fecha_factura?: string | null
+  condicion_pago?: string | null
+  fecha_vencimiento?: string | null
+  estado_pago?: string | null
+  monto_pagado?: number | null
+  fecha_pago?: string | null
+  notas_pago?: string | null
 }
 interface Proveedor { id: string; nombre: string; razon_social?: string }
 interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number }
@@ -65,6 +74,64 @@ const ESTADO_STYLE: Record<string, React.CSSProperties> = {
   cancelado: { background: T.bg,      color: T.dim,   border: `1px solid ${T.border}` },
 }
 
+const ESTADO_PAGO_STYLE: Record<string, React.CSSProperties> = {
+  sin_factura: { background: T.bg,      color: T.dim,   border: `1px solid ${T.border}` },
+  pendiente:   { background: T.amberBg, color: T.amber, border: `1px solid rgba(160,112,16,0.25)` },
+  pagado:      { background: T.greenBg, color: T.green, border: `1px solid rgba(45,122,79,0.25)` },
+}
+const ESTADO_PAGO_LABEL: Record<string, string> = {
+  sin_factura: 'Sin factura',
+  pendiente:   'Pend. pago',
+  pagado:      'Pagado',
+}
+
+const CONDICION_LABEL: Record<string, string> = {
+  contado: 'Contado',
+  '30_dias': '30 días',
+  '60_dias': '60 días',
+  '90_dias': '90 días',
+}
+
+function addDays(dateStr: string, days: number): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function calcVencimiento(condicion: string, fechaFactura: string): string {
+  if (!fechaFactura) return ''
+  if (condicion === 'contado') return fechaFactura
+  if (condicion === '30_dias') return addDays(fechaFactura, 30)
+  if (condicion === '60_dias') return addDays(fechaFactura, 60)
+  if (condicion === '90_dias') return addDays(fechaFactura, 90)
+  return fechaFactura
+}
+
+function hoy(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function vencimientoStyle(vencimiento: string | null | undefined): React.CSSProperties {
+  if (!vencimiento) return { color: T.muted }
+  const hoyD = new Date(); hoyD.setHours(0,0,0,0)
+  const vD = new Date(vencimiento + 'T12:00:00')
+  const diff = (vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24)
+  if (diff < 0) return { color: T.red, fontWeight: 700 }
+  if (diff < 7) return { color: T.amber, fontWeight: 600 }
+  return { color: T.green }
+}
+
+function vencimientoLabel(vencimiento: string | null | undefined): string {
+  if (!vencimiento) return '—'
+  const hoyD = new Date(); hoyD.setHours(0,0,0,0)
+  const vD = new Date(vencimiento + 'T12:00:00')
+  const diff = (vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24)
+  const fechaStr = vD.toLocaleDateString('es-AR')
+  if (diff < 0) return `${fechaStr} — VENCIDO`
+  return fechaStr
+}
+
 export default function ComprasPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [compras, setCompras] = useState<Compra[]>([])
@@ -77,6 +144,19 @@ export default function ComprasPage() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [detalle, setDetalle] = useState<Compra | null>(null)
+
+  // Factura modal state
+  const [facturaModal, setFacturaModal] = useState<Compra | null>(null)
+  const [fNroFactura, setFNroFactura] = useState('')
+  const [fFechaFactura, setFFechaFactura] = useState('')
+  const [fCondicion, setFCondicion] = useState('contado')
+  const [fVencimiento, setFVencimiento] = useState('')
+
+  // Pago modal state
+  const [pagoModal, setPagoModal] = useState<Compra | null>(null)
+  const [pFechaPago, setPFechaPago] = useState('')
+  const [pMonto, setPMonto] = useState(0)
+  const [pNotas, setPNotas] = useState('')
 
   const [proveedorId, setProveedorId] = useState('')
   const [proveedorNombre, setProveedorNombre] = useState('')
@@ -183,17 +263,110 @@ export default function ComprasPage() {
     cargar(empresa); showToast('Cancelada')
   }
 
-  const filtradas = compras.filter(c => {
-    if (c.estado === 'cancelado') return false
-    if (filtroEstado && c.estado !== filtroEstado) return false
-    return true
-  })
+  // --- Factura ---
+  function abrirFacturaModal(c: Compra) {
+    setFNroFactura(c.nro_factura || '')
+    setFFechaFactura(c.fecha_factura || hoy())
+    const cond = c.condicion_pago || 'contado'
+    setFCondicion(cond)
+    const fechaBase = c.fecha_factura || hoy()
+    setFVencimiento(c.fecha_vencimiento || calcVencimiento(cond, fechaBase))
+    setFacturaModal(c)
+  }
 
+  async function guardarFactura() {
+    if (!facturaModal) return
+    setSaving(true)
+    const esContado = fCondicion === 'contado'
+    const body: Record<string, unknown> = {
+      id: facturaModal.id,
+      nro_factura: fNroFactura,
+      fecha_factura: fFechaFactura,
+      condicion_pago: fCondicion,
+      fecha_vencimiento: fVencimiento,
+      estado_pago: esContado ? 'pagado' : 'pendiente',
+    }
+    if (esContado) {
+      body.fecha_pago = fFechaFactura
+      body.monto_pagado = facturaModal.total
+    }
+    const res = await fetch('/api/compras', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json(); setSaving(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setFacturaModal(null)
+    // update detalle if open
+    if (detalle && detalle.id === facturaModal.id) {
+      setDetalle({ ...detalle, ...body, nro_factura: fNroFactura, fecha_factura: fFechaFactura, condicion_pago: fCondicion, fecha_vencimiento: fVencimiento, estado_pago: esContado ? 'pagado' : 'pendiente', fecha_pago: esContado ? fFechaFactura : detalle.fecha_pago, monto_pagado: esContado ? facturaModal.total : detalle.monto_pagado })
+    }
+    cargar(empresa)
+    showToast('Factura cargada')
+  }
+
+  // --- Pago ---
+  function abrirPagoModal(c: Compra) {
+    setPMonto(c.total - (c.monto_pagado || 0))
+    setPFechaPago(hoy())
+    setPNotas('')
+    setPagoModal(c)
+  }
+
+  async function registrarPago() {
+    if (!pagoModal) return
+    setSaving(true)
+    const body = {
+      id: pagoModal.id,
+      estado_pago: 'pagado',
+      monto_pagado: pMonto,
+      fecha_pago: pFechaPago,
+      notas_pago: pNotas,
+    }
+    const res = await fetch('/api/compras', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json(); setSaving(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setPagoModal(null)
+    if (detalle && detalle.id === pagoModal.id) {
+      setDetalle({ ...detalle, estado_pago: 'pagado', monto_pagado: pMonto, fecha_pago: pFechaPago, notas_pago: pNotas })
+    }
+    cargar(empresa)
+    showToast('Pago registrado')
+  }
+
+  // --- Filtrado ---
+  const filtradas = (() => {
+    if (filtroEstado === 'a_pagar') {
+      return compras
+        .filter(c => c.estado === 'recibido' && c.estado_pago === 'pendiente')
+        .sort((a, b) => {
+          const fa = a.fecha_vencimiento || '9999-12-31'
+          const fb = b.fecha_vencimiento || '9999-12-31'
+          return fa.localeCompare(fb)
+        })
+    }
+    return compras.filter(c => {
+      if (c.estado === 'cancelado') return false
+      if (filtroEstado && c.estado !== filtroEstado) return false
+      return true
+    })
+  })()
+
+  // --- KPIs ---
+  const facturasPagar = compras.filter(c => c.estado === 'recibido' && c.estado_pago !== 'pagado' && c.estado_pago !== 'sin_factura')
   const kpis = {
     pendientes: compras.filter(c => c.estado === 'pendiente').length,
     enviadas: compras.filter(c => c.estado === 'enviado').length,
-    total: compras.filter(c => c.estado !== 'cancelado').reduce((a, c) => a + c.total, 0),
+    facturasPagar: facturasPagar.length,
+    totalAPagar: facturasPagar.reduce((a, c) => a + c.total, 0),
   }
+
+  const esVistaPagar = filtroEstado === 'a_pagar'
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
@@ -218,12 +391,13 @@ export default function ComprasPage() {
       </div>
 
       <div style={{ padding: '24px 28px' }}>
-        {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+        {/* KPIs — 4 tarjetas */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
           {[
             { label: 'Pendientes de envío', value: kpis.pendientes, color: T.amber },
             { label: 'Enviadas',            value: kpis.enviadas,   color: T.blue  },
-            { label: 'Total en tránsito',   value: `$${kpis.total.toLocaleString('es-AR')}`, color: T.text },
+            { label: 'Facturas a pagar',    value: kpis.facturasPagar, color: T.red },
+            { label: 'Total a pagar',       value: `$${kpis.totalAPagar.toLocaleString('es-AR')}`, color: T.text },
           ].map(k => (
             <div key={k.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{k.label}</div>
@@ -234,10 +408,10 @@ export default function ComprasPage() {
 
         {/* Filtro estado */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-          {['', 'pendiente', 'enviado', 'recibido'].map(e => (
+          {(['', 'pendiente', 'enviado', 'recibido', 'a_pagar'] as const).map(e => (
             <button key={e} onClick={() => setFiltroEstado(e)}
               style={{ background: filtroEstado === e ? T.wine : T.surface, color: filtroEstado === e ? '#fff' : T.muted, border: `1px solid ${filtroEstado === e ? T.wine : T.border}`, borderRadius: 7, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
-              {e === '' ? 'Todas' : ESTADO_LABEL[e]}
+              {e === '' ? 'Todas' : e === 'a_pagar' ? 'A pagar' : ESTADO_LABEL[e]}
             </button>
           ))}
         </div>
@@ -247,9 +421,14 @@ export default function ComprasPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: T.bg }}>
-                {['N°', 'Proveedor', 'Items', 'Total', 'Estado', 'Fecha esp.', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
+                {esVistaPagar
+                  ? ['N°', 'Proveedor', 'Nro. Factura', 'Total', 'Vencimiento', 'Estado pago', ''].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))
+                  : ['N°', 'Proveedor', 'Items', 'Total', 'Estado', 'Fecha esp.', ''].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))
+                }
               </tr>
             </thead>
             <tbody>
@@ -257,7 +436,25 @@ export default function ComprasPage() {
                 <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtradas.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin órdenes</td></tr>
-              ) : filtradas.map(c => (
+              ) : filtradas.map(c => esVistaPagar ? (
+                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', transition: 'background 0.1s' }} onClick={() => setDetalle(c)}>
+                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{c.proveedor_nombre}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, color: T.muted, fontFamily: 'monospace' }}>{c.nro_factura || '—'}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: T.text }}>${c.total.toLocaleString('es-AR')}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 13, ...vencimientoStyle(c.fecha_vencimiento) }}>{vencimientoLabel(c.fecha_vencimiento)}</td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <span style={{ ...(ESTADO_PAGO_STYLE[c.estado_pago || 'sin_factura'] || {}), padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
+                      {ESTADO_PAGO_LABEL[c.estado_pago || 'sin_factura']}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
+                    <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.wine, fontWeight: 600, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => abrirPagoModal(c)}>
+                      Registrar pago
+                    </button>
+                  </td>
+                </tr>
+              ) : (
                 <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', transition: 'background 0.1s' }} onClick={() => setDetalle(c)}>
                   <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</td>
                   <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{c.proveedor_nombre}</td>
@@ -427,7 +624,7 @@ export default function ComprasPage() {
       {detalle && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={e => e.target === e.currentTarget && setDetalle(null)}>
-          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 540, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{detalle.numero}</h2>
@@ -462,6 +659,59 @@ export default function ComprasPage() {
               <div style={{ fontSize: 13, color: T.muted }}>{detalle.notas}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Total: <span style={{ color: T.green }}>${detalle.total.toLocaleString('es-AR')}</span></div>
             </div>
+
+            {/* Sección factura/pago — solo cuando recibido */}
+            {detalle.estado === 'recibido' && (
+              <div style={{ padding: '0 24px 16px' }}>
+                {(!detalle.estado_pago || detalle.estado_pago === 'sin_factura') && (
+                  <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 2 }}>Factura pendiente de carga</div>
+                      <div style={{ fontSize: 12, color: T.muted }}>Aún no se cargó la factura del proveedor.</div>
+                    </div>
+                    <button className="btn-wine" onClick={() => abrirFacturaModal(detalle)} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', marginLeft: 12 }}>
+                      Cargar factura
+                    </button>
+                  </div>
+                )}
+
+                {detalle.estado_pago === 'pendiente' && (
+                  <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 600, color: T.text }}>Factura:</span> {detalle.nro_factura || '—'}
+                          {' · '}
+                          <span style={{ fontWeight: 600, color: T.text }}>Fecha:</span> {detalle.fecha_factura ? new Date(detalle.fecha_factura + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
+                          {' · '}
+                          <span style={{ fontWeight: 600, color: T.text }}>Condición:</span> {CONDICION_LABEL[detalle.condicion_pago || ''] || detalle.condicion_pago || '—'}
+                        </div>
+                        <div style={{ fontSize: 12, ...vencimientoStyle(detalle.fecha_vencimiento) }}>
+                          <span style={{ color: T.muted, fontWeight: 400 }}>Vencimiento: </span>
+                          {vencimientoLabel(detalle.fecha_vencimiento)}
+                        </div>
+                      </div>
+                      <button className="btn-wine" onClick={() => abrirPagoModal(detalle)} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', marginLeft: 12 }}>
+                        Registrar pago
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {detalle.estado_pago === 'pagado' && (
+                  <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '14px 18px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 4 }}>
+                      ✓ Pagado el {detalle.fecha_pago ? new Date(detalle.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : '—'} — ${(detalle.monto_pagado || 0).toLocaleString('es-AR')}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.muted }}>
+                      Factura: {detalle.nro_factura || '—'}
+                      {detalle.notas_pago && <span> · {detalle.notas_pago}</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               {NEXT_ESTADO[detalle.estado] && (
                 <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s' }} onClick={() => { avanzarEstado(detalle); setDetalle(null) }}>
@@ -469,6 +719,98 @@ export default function ComprasPage() {
                 </button>
               )}
               <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setDetalle(null)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal carga de factura */}
+      {facturaModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setFacturaModal(null)}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Cargar factura — {facturaModal.numero}</h2>
+              <button onClick={() => setFacturaModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Fila 1 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Nro. de factura</label>
+                  <input style={{ ...INP, width: '100%' }} placeholder="0001-00012345" value={fNroFactura} onChange={e => setFNroFactura(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha factura</label>
+                  <input type="date" style={{ ...INP, width: '100%' }} value={fFechaFactura}
+                    onChange={e => {
+                      setFFechaFactura(e.target.value)
+                      setFVencimiento(calcVencimiento(fCondicion, e.target.value))
+                    }} />
+                </div>
+              </div>
+              {/* Fila 2 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Condición de pago</label>
+                  <select style={{ ...INP, width: '100%' }} value={fCondicion}
+                    onChange={e => {
+                      setFCondicion(e.target.value)
+                      setFVencimiento(calcVencimiento(e.target.value, fFechaFactura))
+                    }}>
+                    <option value="contado">Contado</option>
+                    <option value="30_dias">30 días</option>
+                    <option value="60_dias">60 días</option>
+                    <option value="90_dias">90 días</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Vencimiento</label>
+                  <input type="date" style={{ ...INP, width: '100%' }} value={fVencimiento} onChange={e => setFVencimiento(e.target.value)} />
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setFacturaModal(null)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button className="btn-wine" onClick={guardarFactura} disabled={saving} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Guardando...' : 'Guardar factura →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal registro de pago */}
+      {pagoModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setPagoModal(null)}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Registrar pago — {pagoModal.nro_factura || pagoModal.numero}</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Total factura: ${pagoModal.total.toLocaleString('es-AR')}</p>
+              </div>
+              <button onClick={() => setPagoModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto pagado</label>
+                <input type="number" style={{ ...INP, width: '100%' }} min={0} value={pMonto || ''} onChange={e => setPMonto(+e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha de pago</label>
+                <input type="date" style={{ ...INP, width: '100%' }} value={pFechaPago} onChange={e => setPFechaPago(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
+                <input style={{ ...INP, width: '100%' }} placeholder="Ej: transferencia, cheque..." value={pNotas} onChange={e => setPNotas(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setPagoModal(null)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button className="btn-wine" onClick={registrarPago} disabled={saving} style={{ background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Guardando...' : '✓ Registrar pago'}
+              </button>
             </div>
           </div>
         </div>
