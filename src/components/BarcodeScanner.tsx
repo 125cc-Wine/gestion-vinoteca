@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
+import { DecodeHintType, BarcodeFormat } from '@zxing/library'
 
 interface Props {
   onDetect: (code: string) => void
@@ -8,30 +9,54 @@ interface Props {
   titulo?: string
 }
 
+// Formatos relevantes para productos de vinoteca (EAN-13 es el más común)
+const HINTS = new Map<DecodeHintType, unknown>([
+  [DecodeHintType.POSSIBLE_FORMATS, [
+    BarcodeFormat.EAN_13,
+    BarcodeFormat.EAN_8,
+    BarcodeFormat.UPC_A,
+    BarcodeFormat.UPC_E,
+    BarcodeFormat.CODE_128,
+    BarcodeFormat.CODE_39,
+  ]],
+  [DecodeHintType.TRY_HARDER, true],
+])
+
 export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear código de barras' }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
   const [error, setError] = useState('')
   const [hint, setHint] = useState('Apuntá la cámara al código de barras')
   const detectedRef = useRef(false)
+  const onDetectRef = useRef(onDetect)
+  onDetectRef.current = onDetect
 
   useEffect(() => {
     if (!videoRef.current) return
 
-    const reader = new BrowserMultiFormatReader()
+    // 300ms entre intentos: equilibrio entre velocidad y batería
+    const reader = new BrowserMultiFormatReader(HINTS, 300)
 
     async function start() {
       try {
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } },
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width:  { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          },
           videoRef.current!,
-          (result) => {
+          (result, err) => {
             if (detectedRef.current) return
             if (result) {
               detectedRef.current = true
               setHint('✓ Código detectado')
-              onDetect(result.getText())
+              onDetectRef.current(result.getText())
             }
+            // err es NotFoundException en cada frame sin código, se ignora normalmente
+            void err
           }
         )
         controlsRef.current = controls
@@ -52,7 +77,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
     return () => {
       try { controlsRef.current?.stop() } catch { /* ignore */ }
     }
-  }, [onDetect])
+  }, []) // onDetect via ref, no re-monta al cambiar
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 300, display: 'flex', flexDirection: 'column' }}>
