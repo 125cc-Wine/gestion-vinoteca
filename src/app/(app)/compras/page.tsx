@@ -43,7 +43,7 @@ const INP: React.CSSProperties = {
   transition: 'border-color 0.12s',
 }
 
-interface ItemCompra { producto_id: string; nombre: string; cantidad: number; precio_unitario: number; subtotal: number }
+interface ItemCompra { producto_id: string; nombre: string; cantidad: number; precio_unitario: number; subtotal: number; cajas?: number; unidades_por_caja?: number }
 interface Compra {
   id: string; numero: string; empresa: string
   proveedor_id: string | null; proveedor_nombre: string
@@ -60,10 +60,13 @@ interface Compra {
   fecha_pago?: string | null
   notas_pago?: string | null
 }
-interface Proveedor { id: string; nombre: string; razon_social?: string }
-interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number }
+interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string }
+interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number; unidad_medida?: string }
 
-const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0 }
+function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : 1 }
+function upkLabel(upk: number) { return upk > 1 ? `Caja ×${upk}` : 'Botella' }
+
+const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0, cajas: 1, unidades_por_caja: 1 }
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
 const NEXT_ESTADO: Record<string, string> = { pendiente: 'enviado', enviado: 'recibido' }
 
@@ -210,9 +213,11 @@ export default function ComprasPage() {
 
   function selProducto(idx: number, prod: Producto) {
     const ni = [...items]
+    const upk = upkFromUnidad(prod.unidad_medida)
     const costo = prod.precio_costo || Math.round((prod.precio_venta || 0) * 0.5)
-    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: costo }
-    ni[idx].subtotal = ni[idx].cantidad * ni[idx].precio_unitario
+    const cajas = ni[idx].cajas || 1
+    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: costo, unidades_por_caja: upk, cajas, cantidad: cajas * upk }
+    ni[idx].subtotal = ni[idx].cajas! * ni[idx].precio_unitario * upk
     if (idx === ni.length - 1) ni.push({ ...ITEM_EMPTY })
     setItems(ni); setProdSugs(null)
   }
@@ -220,7 +225,10 @@ export default function ComprasPage() {
   function updateItem(idx: number, field: keyof ItemCompra, value: string | number) {
     const ni = [...items]
     ;(ni[idx] as unknown as Record<string, string | number>)[field] = value
-    ni[idx].subtotal = ni[idx].cantidad * ni[idx].precio_unitario
+    const upk = ni[idx].unidades_por_caja || 1
+    const cajas = ni[idx].cajas || 1
+    ni[idx].cantidad = cajas * upk
+    ni[idx].subtotal = cajas * upk * ni[idx].precio_unitario
     setItems(ni)
   }
 
@@ -352,9 +360,14 @@ export default function ComprasPage() {
       `*Proveedor:* ${c.proveedor_nombre}`,
       ``,
       `*Productos solicitados:*`,
-      ...(c.items || []).map(i =>
-        `• ${i.nombre} x ${i.cantidad} u.${i.precio_unitario ? ` — $${i.precio_unitario.toLocaleString('es-AR')} c/u` : ''}`
-      ),
+      ...(c.items || []).map(i => {
+        const upk = i.unidades_por_caja || 1
+        const cajas = i.cajas || i.cantidad
+        if (upk > 1) {
+          return `• ${i.nombre} x ${cajas} caja${cajas !== 1 ? 's' : ''} (${cajas * upk} u.)${i.precio_unitario ? ` — $${(i.precio_unitario * upk).toLocaleString('es-AR')} c/caja` : ''}`
+        }
+        return `• ${i.nombre} x ${i.cantidad} u.${i.precio_unitario ? ` — $${i.precio_unitario.toLocaleString('es-AR')} c/u` : ''}`
+      }),
       ``,
       `*Total: $${c.total.toLocaleString('es-AR')}*`,
     ]
@@ -575,7 +588,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto', 'Cantidad', 'Precio unitario', 'Subtotal', ''].map(h => (
+                        {['Producto', 'Cajas', 'Precio x u.', 'Unidades', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -607,10 +620,17 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 70 }} min={1} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', +e.target.value || 1)} />
+                            <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1}
+                              onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 100 }} min={0} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                            <input type="number" style={{ ...INP, width: 95 }} min={0} value={item.precio_unitario || ''}
+                              onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
+                            {item.unidades_por_caja && item.unidades_por_caja > 1
+                              ? <span title={upkLabel(item.unidades_por_caja)}>{item.cantidad} u.</span>
+                              : <span style={{ color: T.dim }}>—</span>}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'center' }}>
