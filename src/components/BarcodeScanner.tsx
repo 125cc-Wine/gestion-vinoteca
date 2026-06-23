@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
-import { DecodeHintType, BarcodeFormat } from '@zxing/library'
 
 interface Props {
   onDetect: (code: string) => void
@@ -9,84 +8,38 @@ interface Props {
   titulo?: string
 }
 
-const HINTS = new Map<DecodeHintType, unknown>([
-  [DecodeHintType.POSSIBLE_FORMATS, [
-    BarcodeFormat.EAN_13,
-    BarcodeFormat.EAN_8,
-    BarcodeFormat.UPC_A,
-    BarcodeFormat.UPC_E,
-    BarcodeFormat.CODE_128,
-    BarcodeFormat.CODE_39,
-  ]],
-  [DecodeHintType.TRY_HARDER, true],
-])
-
 export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear código de barras' }: Props) {
-  const videoRef   = useRef<HTMLVideoElement>(null)
-  const canvasRef  = useRef<HTMLCanvasElement>(document.createElement('canvas'))
-  const streamRef  = useRef<MediaStream | null>(null)
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null)
-  const activeRef  = useRef(true)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const controlsRef = useRef<{ stop: () => void } | null>(null)
+  const [error, setError] = useState('')
+  const [hint, setHint] = useState('Apuntá la cámara al código de barras')
+  const detectedRef = useRef(false)
   const onDetectRef = useRef(onDetect)
   onDetectRef.current = onDetect
 
-  const [error, setError] = useState('')
-  const [hint, setHint]   = useState('Apuntá la cámara al código de barras')
-
   useEffect(() => {
-    activeRef.current = true
-    const reader = new BrowserMultiFormatReader(HINTS)
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    if (!videoRef.current) return
+
+    const reader = new BrowserMultiFormatReader()
 
     async function start() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width:  { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-        })
-        streamRef.current = stream
-
-        if (!videoRef.current || !activeRef.current) {
-          stream.getTracks().forEach(t => t.stop())
-          return
-        }
-
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-
-        // Escanear un frame cada 400ms en vez de polling continuo
-        timerRef.current = setInterval(async () => {
-          if (!activeRef.current) return
-          const video = videoRef.current
-          if (!video || video.readyState < 2 || !ctx) return
-          const w = video.videoWidth
-          const h = video.videoHeight
-          if (!w || !h) return
-
-          canvas.width  = w
-          canvas.height = h
-          ctx.drawImage(video, 0, 0, w, h)
-
-          try {
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-            const result  = await reader.decodeFromImageUrl(dataUrl)
-            if (result && activeRef.current) {
-              activeRef.current = false
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } },
+          videoRef.current!,
+          (result) => {
+            if (detectedRef.current) return
+            if (result) {
+              detectedRef.current = true
               setHint('✓ Código detectado')
               onDetectRef.current(result.getText())
             }
-          } catch {
-            // NotFoundException en frames sin código — normal
           }
-        }, 400)
-
+        )
+        controlsRef.current = controls
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
-        if (msg.includes('NotAllowed') || msg.includes('Permission')) {
+        if (msg.includes('NotAllowed') || msg.includes('Permission') || msg.includes('ermiso')) {
           setError('Permiso de cámara denegado.\nHabilitalo en Ajustes → Safari → Cámara.')
         } else if (msg.includes('NotFound') || msg.includes('Devices')) {
           setError('No se encontró ninguna cámara en el dispositivo.')
@@ -99,15 +52,12 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
     start()
 
     return () => {
-      activeRef.current = false
-      if (timerRef.current) clearInterval(timerRef.current)
-      streamRef.current?.getTracks().forEach(t => t.stop())
+      try { controlsRef.current?.stop() } catch { /* ignore */ }
     }
   }, [])
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 300, display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'rgba(0,0,0,0.8)', zIndex: 1 }}>
         <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{titulo}</span>
         <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 14 }}>
