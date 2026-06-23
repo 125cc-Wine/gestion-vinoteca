@@ -55,6 +55,7 @@ export async function GET() {
         precio_venta: p.precio_venta ?? 0,
         precio_costo: p.precio_costo ?? 0,
         varietal: p.varietal ?? '',
+        activo: true,
       }
 
       if (mapaId.has(key)) {

@@ -22,40 +22,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No hay productos para importar' }, { status: 400 })
   }
 
-  // Verificar que ninguno esté ya importado
   const ids = productos.map(p => p.woo_product_id)
   const { data: existing } = await supabase
     .from('productos')
-    .select('woo_product_id')
+    .select('woo_product_id, activo')
     .eq('empresa', 'aroma')
     .in('woo_product_id', ids)
 
-  const existingIds = new Set((existing ?? []).map(p => p.woo_product_id))
-  const nuevos = productos.filter(p => !existingIds.has(p.woo_product_id))
+  const existingMap = new Map((existing ?? []).map(p => [p.woo_product_id, p]))
+  const nuevos = productos.filter(p => !existingMap.has(p.woo_product_id))
+  const reactivar = productos.filter(p => existingMap.get(p.woo_product_id)?.activo === false)
 
-  if (nuevos.length === 0) {
+  if (nuevos.length === 0 && reactivar.length === 0) {
     return NextResponse.json({ imported: 0, message: 'Todos ya estaban importados' })
   }
 
-  const rows = nuevos.map(p => ({
-    empresa: 'aroma',
-    nombre: p.nombre,
-    bodega: p.bodega || '',
-    varietal: p.varietal || '',
-    region: p.region || '',
-    sku: p.sku || '',
-    categoria: p.categoria || 'Otro',
-    precio_venta: p.precio_venta || 0,
-    precio_mayorista: 0,
-    precio_costo: 0,
-    stock: p.stock || 0,
-    stock_minimo: 3,
-    woo_product_id: p.woo_product_id,
-    activo: true,
-  }))
+  let imported = 0
 
-  const { data, error } = await supabase.from('productos').insert(rows).select()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (nuevos.length > 0) {
+    const rows = nuevos.map(p => ({
+      empresa: 'aroma',
+      nombre: p.nombre,
+      bodega: p.bodega || '',
+      varietal: p.varietal || '',
+      region: p.region || '',
+      sku: p.sku || '',
+      categoria: p.categoria || 'Otro',
+      precio_venta: p.precio_venta || 0,
+      precio_mayorista: 0,
+      precio_costo: 0,
+      stock: p.stock || 0,
+      stock_minimo: 3,
+      woo_product_id: p.woo_product_id,
+      activo: true,
+    }))
+    const { data, error } = await supabase.from('productos').insert(rows).select()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    imported += data?.length ?? 0
+  }
 
-  return NextResponse.json({ imported: data?.length ?? 0 })
+  if (reactivar.length > 0) {
+    await supabase
+      .from('productos')
+      .update({ activo: true })
+      .eq('empresa', 'aroma')
+      .in('woo_product_id', reactivar.map(p => p.woo_product_id))
+    imported += reactivar.length
+  }
+
+  return NextResponse.json({ imported })
 }

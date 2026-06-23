@@ -147,6 +147,7 @@ export default function ProductosPage() {
   const [toast, setToast]           = useState('')
   const [saving, setSaving]         = useState(false)
   const [syncing, setSyncing]       = useState(false)
+  const [reactivando, setReactivando] = useState(false)
 
   // New-product modal
   const [newModal, setNewModal] = useState(false)
@@ -369,6 +370,17 @@ export default function ProductosPage() {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function toast_(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
+
+  async function reactivarProductos() {
+    if (!confirm('¿Reactivar todos los productos inactivos?')) return
+    setReactivando(true)
+    const res = await fetch('/api/admin/reactivar-productos', { method: 'POST' })
+    const data = await res.json()
+    setReactivando(false)
+    if (data.error) { toast_('Error: ' + data.error); return }
+    toast_(data.mensaje)
+    cargar(empresa)
+  }
 
   async function handleBarcodeDetect(code: string) {
     setScanMode(null)
@@ -734,6 +746,7 @@ export default function ProductosPage() {
           <button onClick={exportarExcel} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Exportar Excel</button>
           <button onClick={() => { setMasivBodega(''); setMasivCat(''); setMasivValor(''); setMasivDir('subir'); setMasivModal(true) }} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Actualiz. masiva</button>
           <button onClick={abrirListaModal} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Lista precios</button>
+          <button onClick={reactivarProductos} disabled={reactivando} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: reactivando ? 'default' : 'pointer', fontFamily: 'inherit', opacity: reactivando ? 0.6 : 1 }}>{reactivando ? '...' : '↺ Reactivar'}</button>
           <button onClick={openNew} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>+ Nuevo producto</button>
         </div>
       </div>
