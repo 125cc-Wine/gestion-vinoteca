@@ -246,14 +246,17 @@ export default function ComprasPage() {
     })
     const data = await res.json(); setSaving(false)
     if (data.error) { showToast('Error: ' + data.error); return }
-    setModal(false); cargar(empresa); showToast('Orden de compra creada')
+    setModal(false)
+    cargar(empresa)
+    // Abrir directamente el modal de WhatsApp con la OC recién creada
+    setWaModal(generarMensajeWA(data))
+    setDetalle(data)
   }
 
   async function avanzarEstado(c: Compra) {
     const nuevoEstado = NEXT_ESTADO[c.estado]
     if (!nuevoEstado) return
-    const label = nuevoEstado === 'recibido' ? 'marcar como RECIBIDO e incrementar stock' : 'marcar como ENVIADO'
-    if (!confirm(`¿Confirmar ${label}?`)) return
+    if (nuevoEstado === 'recibido' && !confirm('¿Marcar como RECIBIDO e incrementar stock?')) return
     const res = await fetch('/api/compras', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -815,9 +818,17 @@ export default function ComprasPage() {
                 style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
                 Copiar texto
               </button>
-              <button onClick={() => {
+              <button onClick={async () => {
                   const det = detalle
-                  if (det) abrirWhatsApp(det)
+                  if (det) {
+                    abrirWhatsApp(det)
+                    // Marcar como enviado si estaba pendiente
+                    if (det.estado === 'pendiente') {
+                      await fetch('/api/compras', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: det.id, estado: 'enviado' }) })
+                      cargar(empresa)
+                      setDetalle(null)
+                    }
+                  }
                   setWaModal('')
                 }}
                 style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
