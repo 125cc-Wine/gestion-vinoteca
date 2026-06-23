@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 
 interface Props {
@@ -9,105 +9,126 @@ interface Props {
 }
 
 export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear código de barras' }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const controlsRef = useRef<{ stop: () => void } | null>(null)
-  const [error, setError] = useState('')
-  const [hint, setHint] = useState('Apuntá la cámara al código de barras')
-  const detectedRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [status, setStatus] = useState<'idle' | 'processing' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
 
-  useEffect(() => {
-    if (!videoRef.current) return
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    const reader = new BrowserMultiFormatReader()
+    setStatus('processing')
+    setErrorMsg('')
 
-    async function start() {
-      try {
-        const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } },
-          videoRef.current!,
-          (result, err) => {
-            if (detectedRef.current) return
-            if (result) {
-              detectedRef.current = true
-              setHint('✓ Código detectado')
-              onDetect(result.getText())
-            }
-            // err es NotFoundException en cada frame sin código — ignorar
-          }
-        )
-        controlsRef.current = controls
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        if (msg.includes('NotAllowed') || msg.includes('Permission') || msg.includes('ermiso')) {
-          setError('Permiso de cámara denegado.\nHabilitalo en Ajustes → Safari → Cámara.')
-        } else if (msg.includes('NotFound') || msg.includes('Devices')) {
-          setError('No se encontró ninguna cámara en el dispositivo.')
-        } else {
-          setError('No se pudo iniciar la cámara: ' + msg)
-        }
-      }
+    const url = URL.createObjectURL(file)
+    try {
+      const reader = new BrowserMultiFormatReader()
+      const result = await reader.decodeFromImageUrl(url)
+      URL.revokeObjectURL(url)
+      onDetect(result.getText())
+    } catch {
+      URL.revokeObjectURL(url)
+      setStatus('error')
+      setErrorMsg('No se detectó ningún código. Intentá de nuevo con mejor luz o más cerca.')
+      // Reset input para permitir nueva foto
+      if (inputRef.current) inputRef.current.value = ''
     }
-
-    start()
-
-    return () => {
-      try { controlsRef.current?.stop() } catch { /* ignore */ }
-    }
-  }, [onDetect])
+  }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 300, display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'rgba(0,0,0,0.8)', zIndex: 1 }}>
-        <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{titulo}</span>
-        <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 14 }}>
-          Cancelar
-        </button>
-      </div>
-
-      {error ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <div style={{ textAlign: 'center', color: '#fff' }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>📷</div>
-            <div style={{ fontSize: 15, marginBottom: 24, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{error}</div>
-            <button onClick={onClose} style={{ background: '#fff', color: '#000', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 15, cursor: 'pointer', fontWeight: 600 }}>
-              Cerrar
-            </button>
-          </div>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360,
+        overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+      }}>
+        {/* Header */}
+        <div style={{ background: '#1A1210', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{titulo}</span>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 13 }}>
+            Cancelar
+          </button>
         </div>
-      ) : (
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            autoPlay
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
 
-          {/* Viewfinder */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)' }} />
-              <div style={{ position: 'relative', width: 280, height: 140, background: 'transparent', boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)', borderRadius: 6 }}>
-                {([
-                  { top: 0, left: 0, borderTop: '3px solid #fff', borderLeft: '3px solid #fff' },
-                  { top: 0, right: 0, borderTop: '3px solid #fff', borderRight: '3px solid #fff' },
-                  { bottom: 0, left: 0, borderBottom: '3px solid #fff', borderLeft: '3px solid #fff' },
-                  { bottom: 0, right: 0, borderBottom: '3px solid #fff', borderRight: '3px solid #fff' },
-                ] as React.CSSProperties[]).map((s, i) => (
-                  <div key={i} style={{ position: 'absolute', width: 20, height: 20, borderRadius: 2, ...s }} />
-                ))}
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 2, background: 'rgba(128,0,0,0.8)', boxShadow: '0 0 8px rgba(128,0,0,0.6)' }} />
-              </div>
+        <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          {/* Icono de código de barras */}
+          <div style={{ width: 80, height: 80, background: 'rgba(128,0,0,0.07)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#800000" strokeWidth="1.5">
+              <path d="M3 9V5a2 2 0 012-2h4M3 15v4a2 2 0 002 2h4M21 9V5a2 2 0 00-2-2h-4M21 15v4a2 2 0 01-2 2h-4" strokeLinecap="round"/>
+              <line x1="7" y1="8" x2="7" y2="16" strokeLinecap="round"/>
+              <line x1="10" y1="8" x2="10" y2="16" strokeLinecap="round"/>
+              <line x1="13" y1="8" x2="13" y2="16" strokeLinecap="round"/>
+              <line x1="16" y1="8" x2="16" y2="12" strokeLinecap="round"/>
+            </svg>
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1A1210', marginBottom: 6 }}>
+              {status === 'processing' ? 'Leyendo código...' : 'Fotografiá el código de barras'}
+            </div>
+            <div style={{ fontSize: 13, color: '#6B5D55', lineHeight: 1.5 }}>
+              {status === 'processing'
+                ? 'Procesando imagen...'
+                : 'Abrí la cámara, enfocá el código\ny sacá la foto'}
             </div>
           </div>
 
-          <div style={{ position: 'absolute', bottom: 40, left: 0, right: 0, textAlign: 'center', color: '#fff', fontSize: 14, textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-            {hint}
-          </div>
+          {status === 'error' && (
+            <div style={{
+              background: 'rgba(192,48,48,0.08)', border: '1px solid rgba(192,48,48,0.22)',
+              borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#C03030',
+              textAlign: 'center', lineHeight: 1.5, width: '100%',
+            }}>
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Input file oculto */}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handlePhoto}
+          />
+
+          {/* Botón principal */}
+          <button
+            disabled={status === 'processing'}
+            onClick={() => inputRef.current?.click()}
+            style={{
+              width: '100%', padding: '14px', fontSize: 15, fontWeight: 700,
+              background: status === 'processing' ? '#DDD0C0' : '#800000',
+              color: '#fff', border: 'none', borderRadius: 12,
+              cursor: status === 'processing' ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              fontFamily: 'inherit',
+            }}
+          >
+            {status === 'processing' ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round"/>
+                </svg>
+                Procesando...
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="13" r="4" strokeLinecap="round"/>
+                </svg>
+                {status === 'error' ? 'Intentar de nuevo' : 'Abrir cámara'}
+              </>
+            )}
+          </button>
+
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
-      )}
+      </div>
     </div>
   )
 }
