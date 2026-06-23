@@ -66,7 +66,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
     ? []
     : productos.filter(p =>
         normalize(`${p.nombre} ${p.bodega ?? ''} ${p.varietal ?? ''}`).includes(normalize(busqueda))
-      ).slice(0, 12)
+      ).slice(0, 50)
 
   async function crearProducto() {
     if (!nombre.trim()) { setError('El nombre es obligatorio'); return }
