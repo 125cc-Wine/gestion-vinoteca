@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
-import { NotFoundException } from '@zxing/library'
 
 interface Props {
   onDetect: (code: string) => void
@@ -17,31 +16,34 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
   const detectedRef = useRef(false)
 
   useEffect(() => {
+    if (!videoRef.current) return
+
     const reader = new BrowserMultiFormatReader()
 
     async function start() {
       try {
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices()
-        const back = devices.find(d => /back|rear|environment/i.test(d.label)) ?? devices[devices.length - 1]
-        const deviceId = back?.deviceId
-
-        const controls = await reader.decodeFromVideoDevice(deviceId, videoRef.current!, (result, err) => {
-          if (detectedRef.current) return
-          if (result) {
-            detectedRef.current = true
-            setHint('✓ Código detectado')
-            onDetect(result.getText())
-          } else if (err && !(err instanceof NotFoundException)) {
-            console.error(err)
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } } },
+          videoRef.current!,
+          (result, err) => {
+            if (detectedRef.current) return
+            if (result) {
+              detectedRef.current = true
+              setHint('✓ Código detectado')
+              onDetect(result.getText())
+            }
+            // err es NotFoundException en cada frame sin código — ignorar
           }
-        })
+        )
         controlsRef.current = controls
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
-        if (msg.includes('Permission') || msg.includes('ermiso') || msg.includes('NotAllowed')) {
-          setError('Permiso de cámara denegado. Habilitalo en Ajustes → Safari → Cámara.')
+        if (msg.includes('NotAllowed') || msg.includes('Permission') || msg.includes('ermiso')) {
+          setError('Permiso de cámara denegado.\nHabilitalo en Ajustes → Safari → Cámara.')
+        } else if (msg.includes('NotFound') || msg.includes('Devices')) {
+          setError('No se encontró ninguna cámara en el dispositivo.')
         } else {
-          setError('No se pudo acceder a la cámara: ' + msg)
+          setError('No se pudo iniciar la cámara: ' + msg)
         }
       }
     }
@@ -67,7 +69,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <div style={{ textAlign: 'center', color: '#fff' }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>📷</div>
-            <div style={{ fontSize: 15, marginBottom: 24, lineHeight: 1.5 }}>{error}</div>
+            <div style={{ fontSize: 15, marginBottom: 24, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{error}</div>
             <button onClick={onClose} style={{ background: '#fff', color: '#000', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 15, cursor: 'pointer', fontWeight: 600 }}>
               Cerrar
             </button>
@@ -75,20 +77,25 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
         </div>
       ) : (
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <video ref={videoRef} playsInline muted autoPlay
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            autoPlay
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
 
           {/* Viewfinder */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)' }} />
               <div style={{ position: 'relative', width: 280, height: 140, background: 'transparent', boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)', borderRadius: 6 }}>
-                {[
+                {([
                   { top: 0, left: 0, borderTop: '3px solid #fff', borderLeft: '3px solid #fff' },
                   { top: 0, right: 0, borderTop: '3px solid #fff', borderRight: '3px solid #fff' },
                   { bottom: 0, left: 0, borderBottom: '3px solid #fff', borderLeft: '3px solid #fff' },
                   { bottom: 0, right: 0, borderBottom: '3px solid #fff', borderRight: '3px solid #fff' },
-                ].map((s, i) => (
+                ] as React.CSSProperties[]).map((s, i) => (
                   <div key={i} style={{ position: 'absolute', width: 20, height: 20, borderRadius: 2, ...s }} />
                 ))}
                 <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 2, background: 'rgba(128,0,0,0.8)', boxShadow: '0 0 8px rgba(128,0,0,0.6)' }} />
