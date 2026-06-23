@@ -35,11 +35,16 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
   const [stock, setStock] = useState('0')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [bodegas, setBodegas] = useState<{ id: string; nombre: string }[]>([])
 
   useEffect(() => {
-    fetch(`/api/productos?empresa=${empresa}`)
-      .then(r => r.json())
-      .then(data => setProductos(Array.isArray(data) ? data : []))
+    Promise.all([
+      fetch(`/api/productos?empresa=${empresa}`).then(r => r.json()),
+      fetch(`/api/bodegas?empresa=${empresa}`).then(r => r.json()),
+    ]).then(([prods, bods]) => {
+      setProductos(Array.isArray(prods) ? prods : [])
+      setBodegas(Array.isArray(bods) ? bods : [])
+    })
     setTimeout(() => inputRef.current?.focus(), 80)
   }, [empresa])
 
@@ -162,7 +167,8 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#6B5D55', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Bodega</label>
-                <input value={bodega} onChange={e => setBodega(e.target.value)} placeholder="Ej: Catena Zapata" style={INP} />
+                <input list="bod-dl-barcode" value={bodega} onChange={e => setBodega(e.target.value)} placeholder="Ej: Catena Zapata" style={INP} />
+                <datalist id="bod-dl-barcode">{bodegas.map(b => <option key={b.id} value={b.nombre} />)}</datalist>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#6B5D55', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Varietal</label>
