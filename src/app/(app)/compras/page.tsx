@@ -1,6 +1,10 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 const T = {
   bg:      '#F5F1EC',
   surface: '#FFFFFF',
@@ -561,14 +565,14 @@ export default function ComprasPage() {
                     onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
                   {provSugsOpen && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
-                      {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).slice(0, 8).map(p => (
+                      {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
                         <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}
                           onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
                           <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
                           {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: T.muted }}> — {p.razon_social}</span>}
                         </div>
                       ))}
-                      {proveedores.filter(p => !proveedorNombre || p.nombre.toLowerCase().includes(proveedorNombre.toLowerCase()) || (p.razon_social || '').toLowerCase().includes(proveedorNombre.toLowerCase())).length === 0 && (
+                      {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).length === 0 && (
                         <div style={{ padding: '8px 12px', fontSize: 12, color: T.dim }}>Sin resultados — se usará el nombre ingresado</div>
                       )}
                     </div>
@@ -608,10 +612,10 @@ export default function ComprasPage() {
                               <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
                                 {(() => {
                                   const porBodega = proveedorNombre
-                                    ? productos.filter(p => p.bodega?.toLowerCase().includes(proveedorNombre.toLowerCase()) || proveedorNombre.toLowerCase().includes((p.bodega || '').toLowerCase()))
+                                    ? productos.filter(p => normalize(p.bodega || '').includes(normalize(proveedorNombre)) || normalize(proveedorNombre).includes(normalize(p.bodega || '')))
                                     : productos
-                                  const filtrados = porBodega.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
-                                  const resultado = filtrados.length > 0 ? filtrados : productos.filter(p => !item.nombre || p.nombre.toLowerCase().includes(item.nombre.toLowerCase()))
+                                  const filtrados = porBodega.filter(p => !item.nombre || normalize(p.nombre).includes(normalize(item.nombre)))
+                                  const resultado = filtrados.length > 0 ? filtrados : productos.filter(p => !item.nombre || normalize(p.nombre).includes(normalize(item.nombre)))
                                   return resultado.slice(0, 12).map(p => (
                                     <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }} onMouseDown={() => selProducto(idx, p)}>
                                       <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>

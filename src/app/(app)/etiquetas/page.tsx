@@ -1,5 +1,9 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
+
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
 import {
   connectPrinter, disconnectPrinter, printCanvas, testPrint,
   renderLabel, PRINTER_W, PRINTER_H, feedNextLabel,
@@ -122,7 +126,7 @@ export default function EtiquetasPage() {
   }
 
   const filtrados = productos
-    .filter(p => `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(busqueda.toLowerCase()))
+    .filter(p => normalize(`${p.nombre} ${p.bodega} ${p.varietal}`).includes(normalize(busqueda)))
     .slice(0, 14)
 
   async function conectar() {

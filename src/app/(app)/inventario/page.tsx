@@ -2,6 +2,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
   text: '#1A1210', muted: '#6B5D55', dim: '#A89888',
@@ -85,7 +89,7 @@ export default function InventarioPage() {
     return productos.filter(p => {
       const matchBodega = filtroBodega === 'todas' || p.bodega === filtroBodega
       const matchBusqueda = busqueda.trim() === '' ||
-        p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+        normalize(p.nombre).includes(normalize(busqueda))
       return matchBodega && matchBusqueda
     })
   }, [productos, filtroBodega, busqueda])

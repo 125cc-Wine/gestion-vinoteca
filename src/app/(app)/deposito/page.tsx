@@ -5,6 +5,10 @@ import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { supabase } from '@/lib/supabase'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
   wine: '#800000', wineDark: '#6A0000', wineBg: 'rgba(128,0,0,0.07)',
@@ -95,8 +99,8 @@ function ConsultarTab({ empresa }: { empresa: string }) {
       setBuscando(true)
       const res = await fetch(`/api/productos?empresa=${empresa}`)
       const all: Producto[] = await res.json()
-      const q = search.toLowerCase()
-      setResultados(all.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 10))
+      const q = normalize(search)
+      setResultados(all.filter(p => normalize(`${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`).includes(q)).slice(0, 10))
       setBuscando(false)
     }, 250)
   }, [search, empresa])
@@ -295,8 +299,8 @@ function CargarTab({ empresa }: { empresa: string }) {
       setBuscando(true)
       const res = await fetch(`/api/productos?empresa=${empresa}`)
       const all: Producto[] = await res.json()
-      const q = search.toLowerCase()
-      setResultados(all.filter(p => p.nombre.toLowerCase().includes(q)).slice(0, 10))
+      const q = normalize(search)
+      setResultados(all.filter(p => normalize(`${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`).includes(q)).slice(0, 10))
       setBuscando(false)
     }, 250)
   }, [search, empresa])

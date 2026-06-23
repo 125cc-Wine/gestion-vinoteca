@@ -7,6 +7,10 @@ import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
   bg:      '#F5F1EC',
@@ -287,8 +291,8 @@ export default function ProductosPage() {
 
   // ── Computed (declared before effects so closures capture them) ───────────
   const filtrados = productos.filter(p => {
-    const q = busqueda.toLowerCase()
-    if (q && !`${p.nombre}${p.bodega}${p.varietal}`.toLowerCase().includes(q)) return false
+    const q = normalize(busqueda)
+    if (q && !normalize(`${p.nombre}${p.bodega}${p.varietal}`).includes(q)) return false
     if (filtroCategoria && p.categoria !== filtroCategoria) return false
     if (filtroBodega && p.bodega !== filtroBodega) return false
     if (filtroSinPrecio && (p.precio_venta || 0) > 0) return false
@@ -1363,7 +1367,7 @@ export default function ProductosPage() {
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 280, overflowY: 'auto', marginTop: 4 }}>
                   {productos
                     .filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
-                      `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase()))
+                      normalize(`${p.nombre} ${p.bodega} ${p.varietal}`).includes(normalize(listaQuery)))
                     .slice(0, 20)
                     .map(p => (
                       <div key={p.id} onMouseDown={() => listaAgregarProducto(p)}
@@ -1377,7 +1381,7 @@ export default function ProductosPage() {
                       </div>
                     ))}
                   {productos.filter(p => p.precio_venta > 0 && !listaItems.find(i => i.id === p.id) &&
-                    `${p.nombre} ${p.bodega} ${p.varietal}`.toLowerCase().includes(listaQuery.toLowerCase())).length === 0 && (
+                    normalize(`${p.nombre} ${p.bodega} ${p.varietal}`).includes(normalize(listaQuery))).length === 0 && (
                     <div style={{ padding: '14px', fontSize: 12, color: T.dim, textAlign: 'center' }}>Sin resultados</div>
                   )}
                 </div>

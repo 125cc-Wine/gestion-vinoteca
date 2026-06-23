@@ -87,7 +87,7 @@ function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default',
 function filtrarProductos(productos: Producto[], q: string) {
   if (!q) return productos.slice(0, 50)
   return productos.filter(p =>
-    `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q.toLowerCase())
+    _normStr(`${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`).includes(_normStr(q))
   ).slice(0, 50)
 }
 

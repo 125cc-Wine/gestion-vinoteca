@@ -2,6 +2,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Producto } from '@/types'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 interface Props {
   code: string
   empresa: string
@@ -21,6 +25,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
 
   // ── Modo buscar ──
   const [productos, setProductos] = useState<Producto[]>([])
+  const [loadingProductos, setLoadingProductos] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [saveBarcode, setSaveBarcode] = useState(true)
   const [selected, setSelected] = useState<Producto | null>(null)
@@ -38,12 +43,17 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
   const [bodegas, setBodegas] = useState<{ id: string; nombre: string }[]>([])
 
   useEffect(() => {
+    setLoadingProductos(true)
     Promise.all([
       fetch(`/api/productos?empresa=${empresa}`).then(r => r.json()),
       fetch(`/api/bodegas?empresa=${empresa}`).then(r => r.json()),
     ]).then(([prods, bods]) => {
       setProductos(Array.isArray(prods) ? prods : [])
       setBodegas(Array.isArray(bods) ? bods : [])
+    }).catch(() => {
+      setProductos([])
+    }).finally(() => {
+      setLoadingProductos(false)
     })
     setTimeout(() => inputRef.current?.focus(), 80)
   }, [empresa])
@@ -55,7 +65,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
   const filtrados = busqueda.trim().length < 2
     ? []
     : productos.filter(p =>
-        `${p.nombre} ${p.bodega ?? ''} ${p.varietal ?? ''}`.toLowerCase().includes(busqueda.toLowerCase())
+        normalize(`${p.nombre} ${p.bodega ?? ''} ${p.varietal ?? ''}`).includes(normalize(busqueda))
       ).slice(0, 12)
 
   async function crearProducto() {
@@ -128,7 +138,10 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
               placeholder="Nombre, bodega, varietal..."
               style={INP}
             />
-            {filtrados.length > 0 && (
+            {busqueda.trim().length >= 2 && loadingProductos && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#A89888', textAlign: 'center' }}>Cargando productos...</div>
+            )}
+            {!loadingProductos && filtrados.length > 0 && (
               <div style={{ marginTop: 6, border: '1px solid #DDD0C0', borderRadius: 8, maxHeight: 220, overflowY: 'auto' }}>
                 {filtrados.map(p => (
                   <div key={p.id} onClick={() => setSelected(p)} style={{
@@ -143,7 +156,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
                 ))}
               </div>
             )}
-            {busqueda.trim().length >= 2 && filtrados.length === 0 && (
+            {!loadingProductos && busqueda.trim().length >= 2 && filtrados.length === 0 && (
               <div style={{ marginTop: 8, fontSize: 12, color: '#A89888', textAlign: 'center' }}>
                 Sin resultados —{' '}
                 <button onClick={() => setMode('crear')} style={{ background: 'none', border: 'none', color: '#800000', cursor: 'pointer', fontWeight: 600, fontSize: 12, fontFamily: 'inherit', textDecoration: 'underline' }}>

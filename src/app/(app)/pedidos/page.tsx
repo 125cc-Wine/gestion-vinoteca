@@ -1,6 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 
+function normalize(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 const T = {
   bg:      '#F5F1EC',
   surface: '#FFFFFF',
@@ -386,7 +390,7 @@ export default function PedidosPage() {
                     const st = stockStatus[item.producto_id]
                     const q = (prodSearches[idx] || '').toLowerCase()
                     const filtered = prodOpen === idx
-                      ? (q ? productos.filter(p => `${p.nombre} ${p.bodega || ''}`.toLowerCase().includes(q)) : productos).slice(0, 25)
+                      ? (q ? productos.filter(p => normalize(`${p.nombre} ${p.bodega || ''}`).includes(normalize(q))) : productos).slice(0, 25)
                       : []
                     return (
                       <div key={idx} style={{ border: `1px solid ${st ? (st.ok ? T.greenBd : T.redBd) : T.border}`, borderRadius: 10, padding: 10, background: st ? (st.ok ? T.greenBg : T.redBg) : 'transparent', transition: 'border-color 0.12s' }}>
