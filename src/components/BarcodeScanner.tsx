@@ -60,7 +60,7 @@ function NativeScanner({ onDetect, onClose, titulo }: Props) {
           formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'],
         })
 
-        async function scan() {
+        const scan = async () => {
           if (!active || detectedRef.current || !videoRef.current) return
           try {
             const codes = await detector.detect(videoRef.current)
