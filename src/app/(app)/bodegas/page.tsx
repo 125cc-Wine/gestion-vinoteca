@@ -64,6 +64,7 @@ export default function BodegasPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
@@ -98,6 +99,17 @@ export default function BodegasPage() {
     showToast(editId ? 'Bodega actualizada' : 'Bodega guardada')
   }
 
+  async function syncDesdeProductos() {
+    setSyncing(true)
+    const res = await fetch('/api/bodegas/sync', { method: 'POST' })
+    const data = await res.json()
+    setSyncing(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    if (data.insertadas === 0) { showToast('Todo ya estaba sincronizado'); return }
+    cargar(empresa)
+    showToast(`${data.insertadas} bodega${data.insertadas !== 1 ? 's' : ''} agregada${data.insertadas !== 1 ? 's' : ''}: ${data.bodegas.join(', ')}`)
+  }
+
   async function eliminar(id: string) {
     if (!confirm('¿Eliminar esta bodega?')) return
     await fetch(`/api/bodegas?id=${id}`, { method: 'DELETE' })
@@ -122,9 +134,14 @@ export default function BodegasPage() {
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Bodegas</h1>
           <p style={{ fontSize: 12, color: T.muted, marginTop: 3, margin: '3px 0 0' }}>{bodegas.length} bodegas registradas</p>
         </div>
-        <button className="btn-act" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-          + Nueva bodega
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-act" onClick={syncDesdeProductos} disabled={syncing} style={{ background: T.surface, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: syncing ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: syncing ? 0.6 : 1 }}>
+            {syncing ? '...' : '↻ Sync desde productos'}
+          </button>
+          <button className="btn-act" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            + Nueva bodega
+          </button>
+        </div>
       </div>
 
       {/* Content */}
