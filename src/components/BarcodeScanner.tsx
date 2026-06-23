@@ -34,8 +34,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
   useEffect(() => {
     if (!videoRef.current) return
 
-    // 300ms entre intentos: equilibrio entre velocidad y batería
-    const reader = new BrowserMultiFormatReader(HINTS, 300)
+    const reader = new BrowserMultiFormatReader(HINTS, { delayBetweenScanAttempts: 300 })
 
     async function start() {
       try {
