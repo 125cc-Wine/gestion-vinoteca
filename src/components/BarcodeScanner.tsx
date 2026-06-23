@@ -11,23 +11,21 @@ interface Props {
 
 export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear código de barras' }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
+  const controlsRef = useRef<{ stop: () => void } | null>(null)
   const [error, setError] = useState('')
   const [hint, setHint] = useState('Apuntá la cámara al código de barras')
   const detectedRef = useRef(false)
 
   useEffect(() => {
     const reader = new BrowserMultiFormatReader()
-    readerRef.current = reader
 
     async function start() {
       try {
-        // Obtener cámara trasera preferentemente
         const devices = await BrowserMultiFormatReader.listVideoInputDevices()
         const back = devices.find(d => /back|rear|environment/i.test(d.label)) ?? devices[devices.length - 1]
         const deviceId = back?.deviceId
 
-        await reader.decodeFromVideoDevice(deviceId, videoRef.current!, (result, err) => {
+        const controls = await reader.decodeFromVideoDevice(deviceId, videoRef.current!, (result, err) => {
           if (detectedRef.current) return
           if (result) {
             detectedRef.current = true
@@ -37,6 +35,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
             console.error(err)
           }
         })
+        controlsRef.current = controls
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         if (msg.includes('Permission') || msg.includes('ermiso') || msg.includes('NotAllowed')) {
@@ -50,7 +49,7 @@ export default function BarcodeScanner({ onDetect, onClose, titulo = 'Escanear c
     start()
 
     return () => {
-      try { reader.reset() } catch { /* ignore */ }
+      try { controlsRef.current?.stop() } catch { /* ignore */ }
     }
   }, [onDetect])
 
