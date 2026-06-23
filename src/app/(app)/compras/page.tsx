@@ -571,7 +571,7 @@ export default function ComprasPage() {
               {/* Ítems */}
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Productos a pedir</div>
-                <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'visible' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
@@ -589,7 +589,7 @@ export default function ComprasPage() {
                               onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
                               onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
                             {prodSugs === idx && (
-                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 20, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
                                 {(() => {
                                   const porBodega = proveedorNombre
                                     ? productos.filter(p => p.bodega?.toLowerCase().includes(proveedorNombre.toLowerCase()) || proveedorNombre.toLowerCase().includes((p.bodega || '').toLowerCase()))
