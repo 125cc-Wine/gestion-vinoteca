@@ -15,16 +15,16 @@ export async function GET(req: NextRequest) {
 
   const barcode = req.nextUrl.searchParams.get('barcode')
   if (barcode) {
-    const { data, error } = await supabase
+    const clean = barcode.trim()
+    const { data } = await supabase
       .from('productos')
       .select('*')
       .eq('empresa', empresa)
       .eq('activo', true)
-      .or(`codigo_barras.eq.${barcode},sku.eq.${barcode}`)
+      .or(`codigo_barras.eq.${clean},sku.eq.${clean}`)
       .limit(1)
-      .single()
-    if (error) return NextResponse.json(null)
-    return NextResponse.json(data)
+      .maybeSingle()
+    return NextResponse.json(data ?? null)
   }
 
   // Supabase tiene max_rows=1000; paginamos hasta traer todos

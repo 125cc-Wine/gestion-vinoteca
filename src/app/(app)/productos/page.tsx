@@ -398,10 +398,16 @@ export default function ProductosPage() {
     const code = barcodeNotFound!
     setBarcodeNotFound(null)
     if (saveBarcode) {
-      await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: prod.id, codigo_barras: code }) })
-      setProductos(prev => prev.map(p => p.id === prod.id ? { ...p, codigo_barras: code } : p))
+      const res = await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: prod.id, codigo_barras: code }) })
+      if (!res.ok) { toast_('Error al guardar el código de barras'); return }
       toast_(`Código ${code} guardado en "${prod.nombre}"`)
     }
+    // Agrega el producto al estado si no estaba (ej: era inactivo cuando cargó la página)
+    setProductos(prev => {
+      const idx = prev.findIndex(p => p.id === prod.id)
+      if (idx >= 0) return prev.map(p => p.id === prod.id ? { ...p, codigo_barras: code } : p)
+      return [...prev, { ...prod, codigo_barras: code }]
+    })
     setBusqueda(prod.nombre)
   }
 

@@ -67,7 +67,7 @@ function NativeScanner({ onDetect, onClose, titulo }: Props) {
             if (codes.length > 0 && !detectedRef.current) {
               detectedRef.current = true
               setHint('✓ Código detectado')
-              onDetectRef.current(codes[0].rawValue)
+              onDetectRef.current(codes[0].rawValue.trim())
               return
             }
           } catch { /* frame sin código */ }
@@ -118,7 +118,7 @@ function ZXingScanner({ onDetect, onClose, titulo }: Props) {
         if (detectedRef.current || !result) return
         detectedRef.current = true
         setHint('✓ Código detectado')
-        onDetectRef.current(result.getText())
+        onDetectRef.current(result.getText().trim())
       }
     )
       .then(c => { controlsRef.current = c })
