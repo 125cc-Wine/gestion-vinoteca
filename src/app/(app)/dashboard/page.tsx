@@ -123,6 +123,8 @@ export default function DashboardPage() {
   const [topMes, setTopMes] = useState<ProductoTop[]>([])
   const [comparativa, setComparativa] = useState<ComparativaMes | null>(null)
   const [sinMovimiento, setSinMovimiento] = useState<ProductoSinMovimiento[]>([])
+  const [chequesVencer, setChequesVencer] = useState<{ nro_cheque?: string; beneficiario: string; monto: number; fecha_pago: string }[]>([])
+  const [facturasVencer, setFacturasVencer] = useState<{ numero: string; proveedor_nombre: string; total: number; fecha_vencimiento: string }[]>([])
   const [loadingExtra, setLoadingExtra] = useState(false)
 
   useEffect(() => {
@@ -222,6 +224,27 @@ export default function DashboardPage() {
       .slice(0, 10)
       .map(p => ({ nombre: p.nombre, stock: p.stock ?? 0 }))
     setSinMovimiento(sinMov)
+
+    // ── Sección D: Cheques emitidos próximos a vencer (≤7 días o ya vencidos) ──
+    const limite7 = new Date(); limite7.setDate(limite7.getDate() + 7)
+    const { data: chequesPronto } = await supabase
+      .from('cheques')
+      .select('nro_cheque, beneficiario, monto, fecha_pago')
+      .eq('empresa', emp)
+      .eq('estado', 'emitido')
+      .lte('fecha_pago', limite7.toISOString().slice(0, 10))
+      .order('fecha_pago', { ascending: true })
+    setChequesVencer(chequesPronto || [])
+
+    // ── Sección E: Facturas de proveedores próximas a vencer ──
+    const { data: factPronto } = await supabase
+      .from('compras')
+      .select('numero, proveedor_nombre, total, fecha_vencimiento')
+      .eq('empresa', emp)
+      .eq('estado_pago', 'pendiente')
+      .lte('fecha_vencimiento', limite7.toISOString().slice(0, 10))
+      .order('fecha_vencimiento', { ascending: true })
+    setFacturasVencer(factPronto || [])
 
     setLoadingExtra(false)
   }
@@ -449,6 +472,81 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── Alertas financieras ────────────────────────────────────────────── */}
+        {(chequesVencer.length > 0 || facturasVencer.length > 0) && (
+          <div style={{ marginBottom: 24, display: 'flex', gap: 12 }}>
+
+            {/* Cheques próximos a vencer */}
+            {chequesVencer.length > 0 && (
+              <div style={{ flex: 1, background: T.surface, border: `1px solid ${T.redBd}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: T.redBg, borderBottom: `1px solid ${T.redBd}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.red }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.red }}>Cheques por vencer — {chequesVencer.length}</span>
+                  </div>
+                  <button className="lbtn" onClick={() => router.push('/cheques')} style={{ fontSize: 11, color: T.red, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', transition: 'opacity 0.15s' }}>Ver cheques →</button>
+                </div>
+                <div style={{ padding: '8px 4px' }}>
+                  {chequesVencer.slice(0, 5).map((c, i) => {
+                    const hoyD = new Date(); hoyD.setHours(0,0,0,0)
+                    const vD = new Date(c.fecha_pago + 'T12:00:00')
+                    const diff = Math.round((vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24))
+                    const clr = diff < 0 ? T.red : diff === 0 ? T.red : T.amber
+                    const label = diff < 0 ? `Vencido hace ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoy' : `Vence en ${diff}d`
+                    return (
+                      <div key={i} className="ralert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '6px 12px', borderRadius: 6, transition: 'background 0.1s', cursor: 'default' }}>
+                        <div>
+                          <span style={{ fontWeight: 600, color: T.text }}>{c.beneficiario}</span>
+                          {c.nro_cheque && <span style={{ color: T.dim }}> · #{c.nro_cheque}</span>}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, color: T.text }}>{fmt(c.monto)}</span>
+                          <span style={{ display: 'block', fontSize: 10, color: clr, fontWeight: 600 }}>{label}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Facturas de proveedores próximas a vencer */}
+            {facturasVencer.length > 0 && (
+              <div style={{ flex: 1, background: T.surface, border: `1px solid ${T.amberBd}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: T.amberBg, borderBottom: `1px solid ${T.amberBd}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.amber }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.amber }}>Facturas por vencer — {facturasVencer.length}</span>
+                  </div>
+                  <button className="lbtn" onClick={() => router.push('/compras')} style={{ fontSize: 11, color: T.amber, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', transition: 'opacity 0.15s' }}>Ver compras →</button>
+                </div>
+                <div style={{ padding: '8px 4px' }}>
+                  {facturasVencer.slice(0, 5).map((f, i) => {
+                    const hoyD = new Date(); hoyD.setHours(0,0,0,0)
+                    const vD = new Date((f.fecha_vencimiento || '') + 'T12:00:00')
+                    const diff = Math.round((vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24))
+                    const clr = diff < 0 ? T.red : diff === 0 ? T.red : T.amber
+                    const label = diff < 0 ? `Vencida hace ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoy' : `Vence en ${diff}d`
+                    return (
+                      <div key={i} className="ralert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '6px 12px', borderRadius: 6, transition: 'background 0.1s', cursor: 'default' }}>
+                        <div>
+                          <span style={{ fontWeight: 600, color: T.text }}>{f.proveedor_nombre}</span>
+                          <span style={{ color: T.dim }}> · {f.numero}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, color: T.text }}>{fmt(f.total)}</span>
+                          <span style={{ display: 'block', fontSize: 10, color: clr, fontWeight: 600 }}>{label}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
