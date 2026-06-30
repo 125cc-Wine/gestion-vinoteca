@@ -27,7 +27,7 @@ type Tab = 'consultar' | 'cargar' | 'historial' | 'bodegas' | 'anadas'
 interface Producto {
   id: string; nombre: string; bodega?: string; varietal?: string
   stock: number; stock_minimo?: number; precio_venta: number; codigo_barras?: string; sku?: string
-  categoria?: string
+  categoria?: string; anada?: string
 }
 
 interface StockItem {
@@ -545,13 +545,17 @@ function fmtPrecio(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
 }
 
-function AnadasTab() {
+function AnadasTab({ empresa }: { empresa: string }) {
   const [anadas, setAnadas] = useState<Anada[]>([])
+  const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof ANADA_EMPTY>({ ...ANADA_EMPTY })
   const [editId, setEditId] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [addVino, setAddVino] = useState<{ id: string; anio: string } | null>(null)
+  const [vinoSearch, setVinoSearch] = useState('')
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000) }
@@ -560,9 +564,15 @@ function AnadasTab() {
 
   async function cargar() {
     setCargando(true)
-    const res = await fetch('/api/anadas')
-    setAnadas(await res.json().catch(() => []))
+    const [aRes, pRes] = await Promise.all([fetch('/api/anadas'), fetch(`/api/productos?empresa=${empresa}`)])
+    setAnadas(await aRes.json().catch(() => []))
+    setProductos(await pRes.json().catch(() => []))
     setCargando(false)
+  }
+
+  async function recargarProductos() {
+    const res = await fetch(`/api/productos?empresa=${empresa}`)
+    setProductos(await res.json().catch(() => []))
   }
 
   function abrirNuevo() { setForm({ ...ANADA_EMPTY }); setEditId(null); setModal(true) }
@@ -579,14 +589,18 @@ function AnadasTab() {
     const res = await fetch('/api/anadas', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error, false); return }
-    setModal(false); cargar()
+    setModal(false)
+    const aRes = await fetch('/api/anadas')
+    setAnadas(await aRes.json().catch(() => []))
     showToast(editId ? 'Añada actualizada' : 'Añada guardada')
   }
 
   async function eliminar(id: string) {
     if (!confirm('¿Eliminar esta añada?')) return
     await fetch(`/api/anadas?id=${id}`, { method: 'DELETE' })
-    cargar(); showToast('Añada eliminada')
+    const aRes = await fetch('/api/anadas')
+    setAnadas(await aRes.json().catch(() => []))
+    showToast('Añada eliminada')
   }
 
   async function sync() {
@@ -596,8 +610,33 @@ function AnadasTab() {
     setSyncing(false)
     if (data.error) { showToast('Error: ' + data.error, false); return }
     if (data.insertadas === 0) { showToast('Todo ya estaba sincronizado'); return }
-    cargar()
+    const aRes = await fetch('/api/anadas')
+    setAnadas(await aRes.json().catch(() => []))
     showToast(`${data.insertadas} añada${data.insertadas !== 1 ? 's' : ''} importada${data.insertadas !== 1 ? 's' : ''}: ${data.anadas.join(', ')}`)
+  }
+
+  async function vincularVino(productoId: string, anio: string) {
+    await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: productoId, anada: anio }) })
+    await recargarProductos()
+    setAddVino(null); setVinoSearch('')
+    showToast('Vino agregado a la añada')
+  }
+
+  async function desvincularVino(productoId: string) {
+    await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: productoId, anada: '' }) })
+    await recargarProductos()
+    showToast('Vino quitado de la añada')
+  }
+
+  function vinosDeAnada(anio: string) {
+    return productos.filter(p => p.anada === anio)
+  }
+
+  function vinosBuscados() {
+    const q = vinoSearch.toLowerCase()
+    return productos
+      .filter(p => !q || `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q))
+      .slice(0, 8)
   }
 
   const totalStock = anadas.reduce((s, a) => s + (a.stock ?? 0), 0)
@@ -646,35 +685,79 @@ function AnadasTab() {
                 diff <= 6 ? { label: 'En punto', color: T.wine,  bg: 'rgba(128,0,0,0.07)', bd: 'rgba(128,0,0,0.18)' } :
                             { label: 'Reserva',  color: T.amber, bg: T.amberBg, bd: T.amberBd }
               const valor = (a.stock ?? 0) * (a.precio ?? 0)
+              const vinos = vinosDeAnada(a.anio)
+              const expandido = expandedId === a.id
               return (
-                <div key={a.id} style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 14px', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{a.anio}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: badge.bg, border: `1px solid ${badge.bd}`, color: badge.color }}>{badge.label}</span>
+                <div key={a.id} style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 8, overflow: 'hidden' }}>
+                  {/* Cabecera de la card */}
+                  <div style={{ padding: '14px 14px 10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{a.anio}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: badge.bg, border: `1px solid ${badge.bd}`, color: badge.color }}>{badge.label}</span>
+                        </div>
+                        {a.descripcion && <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{a.descripcion}</div>}
                       </div>
-                      {a.descripcion && <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{a.descripcion}</div>}
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => abrirEditar(a)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, cursor: 'pointer' }}>Editar</button>
+                        <button onClick={() => eliminar(a.id)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 12, cursor: 'pointer' }}>×</button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => abrirEditar(a)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, cursor: 'pointer' }}>Editar</button>
-                      <button onClick={() => eliminar(a.id)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 12, cursor: 'pointer' }}>×</button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: (a.stock ?? 0) > 0 ? T.text : T.dim }}>{a.stock ?? 0} <span style={{ fontSize: 11, fontWeight: 400 }}>bot</span></div>
+                      </div>
+                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrecio(a.precio ?? 0)}</div>
+                      </div>
+                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: T.green }}>{fmtPrecio(valor)}</div>
+                      </div>
                     </div>
+
+                    {/* Botón vinos */}
+                    <button
+                      onClick={() => setExpandedId(expandido ? null : a.id)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: expandido ? T.wineBg : T.bg, color: expandido ? T.wine : T.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    >
+                      <span>🍷 Vinos ({vinos.length})</span>
+                      <span style={{ fontSize: 11 }}>{expandido ? '▲' : '▼'}</span>
+                    </button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: (a.stock ?? 0) > 0 ? T.text : T.dim }}>{a.stock ?? 0} <span style={{ fontSize: 11, fontWeight: 400 }}>bot</span></div>
+
+                  {/* Panel de vinos expandible */}
+                  {expandido && (
+                    <div style={{ borderTop: `1px solid ${T.border}`, background: '#FDFAF6', padding: '12px 14px' }}>
+                      {vinos.length === 0 ? (
+                        <p style={{ margin: '0 0 10px', fontSize: 13, color: T.dim, textAlign: 'center' }}>Sin vinos asignados a esta añada</p>
+                      ) : (
+                        <div style={{ marginBottom: 10 }}>
+                          {vinos.map(p => (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: '#fff', borderRadius: 8, marginBottom: 6, border: `1px solid ${T.border}` }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                                <div style={{ fontSize: 11, color: T.muted }}>{p.bodega || ''}{p.varietal ? ` · ${p.varietal}` : ''}</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 8 }}>
+                                <span style={{ fontSize: 12, color: p.stock > 0 ? T.green : T.dim, fontWeight: 700 }}>{p.stock} bot</span>
+                                <button onClick={() => desvincularVino(p.id)} style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 11, cursor: 'pointer' }}>Quitar</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => { setAddVino({ id: a.id, anio: a.anio }); setVinoSearch('') }}
+                        style={{ width: '100%', padding: '9px 0', borderRadius: 8, border: `1px dashed ${T.wine}`, background: T.wineBg, color: T.wine, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        + Agregar vino a esta añada
+                      </button>
                     </div>
-                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrecio(a.precio ?? 0)}</div>
-                    </div>
-                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: T.green }}>{fmtPrecio(valor)}</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
@@ -682,7 +765,7 @@ function AnadasTab() {
         </>
       )}
 
-      {/* Modal */}
+      {/* Modal añada */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={e => e.target === e.currentTarget && setModal(false)}>
@@ -718,6 +801,49 @@ function AnadasTab() {
             <div style={{ padding: '14px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8 }}>
               <button onClick={() => setModal(false)} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
               <button onClick={guardar} style={{ flex: 2, padding: '11px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal agregar vino */}
+      {addVino && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={e => e.target === e.currentTarget && setAddVino(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)', overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Agregar vino</div>
+                <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>Añada {addVino.anio}</div>
+              </div>
+              <button onClick={() => setAddVino(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+              <input
+                autoFocus
+                style={INP_A}
+                placeholder="Buscar por nombre, bodega, varietal..."
+                value={vinoSearch}
+                onChange={e => setVinoSearch(e.target.value)}
+              />
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {vinosBuscados().map(p => (
+                <button key={p.id} onClick={() => vincularVino(p.id, addVino.anio)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                    <div style={{ fontSize: 12, color: T.muted, marginTop: 1 }}>
+                      {p.bodega || '—'}{p.varietal ? ` · ${p.varietal}` : ''}
+                      {p.anada ? <span style={{ color: T.amber, fontWeight: 600 }}> · Añada {p.anada}</span> : ''}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, color: T.wine, fontWeight: 700, marginLeft: 10, flexShrink: 0 }}>+ Agregar</span>
+                </button>
+              ))}
+              {vinosBuscados().length === 0 && (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin resultados</div>
+              )}
             </div>
           </div>
         </div>
@@ -872,7 +998,7 @@ export default function DepositoPage() {
       {empresa && tab === 'consultar'  && <ConsultarTab  key={empresa} empresa={empresa} />}
       {empresa && tab === 'cargar'     && <CargarTab     key={empresa} empresa={empresa} />}
       {empresa && tab === 'bodegas'    && <BodegasTab    key={empresa} empresa={empresa} />}
-      {empresa && tab === 'anadas'     && <AnadasTab />}
+      {empresa && tab === 'anadas'     && <AnadasTab empresa={empresa} />}
       {empresa && tab === 'historial'  && <HistorialTab  key={empresa} empresa={empresa} />}
     </div>
   )
