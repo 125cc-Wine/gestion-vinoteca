@@ -22,7 +22,7 @@ const T = {
 const MULT: Record<string, number> = { botella: 1, caja6: 6, caja12: 12 }
 type Unidad = 'botella' | 'caja6' | 'caja12'
 type Modo = 'agregar' | 'establecer'
-type Tab = 'consultar' | 'cargar' | 'historial' | 'bodegas'
+type Tab = 'consultar' | 'cargar' | 'historial' | 'bodegas' | 'anadas'
 
 interface Producto {
   id: string; nombre: string; bodega?: string; varietal?: string
@@ -520,6 +520,218 @@ function BodegasTab({ empresa }: { empresa: string }) {
   )
 }
 
+// ── Añadas tab ────────────────────────────────────────────────────────────────
+interface Anada {
+  id: string
+  anio: string
+  descripcion?: string
+  notas?: string
+  stock: number
+  precio: number
+  activo: boolean
+}
+
+const ANADA_EMPTY = { anio: '', descripcion: '', notas: '', stock: 0, precio: 0 }
+const INP_A: React.CSSProperties = {
+  width: '100%', padding: '10px 12px', border: `1.5px solid ${T.border}`,
+  borderRadius: 9, fontSize: 14, background: '#fff', color: T.text, outline: 'none', boxSizing: 'border-box' as const,
+}
+const LBL_A: React.CSSProperties = {
+  display: 'block', fontSize: 11, fontWeight: 700, color: T.muted,
+  textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4,
+}
+
+function fmtPrecio(n: number) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
+}
+
+function AnadasTab() {
+  const [anadas, setAnadas] = useState<Anada[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [modal, setModal] = useState(false)
+  const [form, setForm] = useState<typeof ANADA_EMPTY>({ ...ANADA_EMPTY })
+  const [editId, setEditId] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+
+  function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000) }
+
+  useEffect(() => { cargar() }, [])
+
+  async function cargar() {
+    setCargando(true)
+    const res = await fetch('/api/anadas')
+    setAnadas(await res.json().catch(() => []))
+    setCargando(false)
+  }
+
+  function abrirNuevo() { setForm({ ...ANADA_EMPTY }); setEditId(null); setModal(true) }
+
+  function abrirEditar(a: Anada) {
+    setForm({ anio: a.anio, descripcion: a.descripcion || '', notas: a.notas || '', stock: a.stock ?? 0, precio: a.precio ?? 0 })
+    setEditId(a.id); setModal(true)
+  }
+
+  async function guardar() {
+    if (!form.anio.trim()) { showToast('El año es obligatorio', false); return }
+    const method = editId ? 'PUT' : 'POST'
+    const body = editId ? { id: editId, ...form } : form
+    const res = await fetch('/api/anadas', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const data = await res.json()
+    if (data.error) { showToast('Error: ' + data.error, false); return }
+    setModal(false); cargar()
+    showToast(editId ? 'Añada actualizada' : 'Añada guardada')
+  }
+
+  async function eliminar(id: string) {
+    if (!confirm('¿Eliminar esta añada?')) return
+    await fetch(`/api/anadas?id=${id}`, { method: 'DELETE' })
+    cargar(); showToast('Añada eliminada')
+  }
+
+  async function sync() {
+    setSyncing(true)
+    const res = await fetch('/api/anadas/sync', { method: 'POST' })
+    const data = await res.json()
+    setSyncing(false)
+    if (data.error) { showToast('Error: ' + data.error, false); return }
+    if (data.insertadas === 0) { showToast('Todo ya estaba sincronizado'); return }
+    cargar()
+    showToast(`${data.insertadas} añada${data.insertadas !== 1 ? 's' : ''} importada${data.insertadas !== 1 ? 's' : ''}: ${data.anadas.join(', ')}`)
+  }
+
+  const totalStock = anadas.reduce((s, a) => s + (a.stock ?? 0), 0)
+  const totalValor = anadas.reduce((s, a) => s + (a.stock ?? 0) * (a.precio ?? 0), 0)
+  const anioActual = new Date().getFullYear()
+
+  if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
+
+  return (
+    <div style={{ padding: 16 }}>
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button onClick={sync} disabled={syncing} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${T.border}`, background: '#fff', color: T.muted, fontSize: 13, fontWeight: 600, cursor: syncing ? 'default' : 'pointer', opacity: syncing ? 0.6 : 1 }}>
+          {syncing ? '...' : '↻ Sync desde productos'}
+        </button>
+        <button onClick={abrirNuevo} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          + Nueva añada
+        </button>
+      </div>
+
+      {anadas.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: T.dim, border: `2px dashed ${T.border}`, borderRadius: 14 }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Sin añadas registradas</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13 }}>Usá "Sync desde productos" o agregá una manualmente</p>
+        </div>
+      ) : (
+        <>
+          {/* Resumen */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock total</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginTop: 2 }}>{totalStock} <span style={{ fontSize: 13, fontWeight: 400, color: T.muted }}>bot</span></div>
+            </div>
+            <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '12px 14px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.amber, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor total</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.text, marginTop: 2 }}>{fmtPrecio(totalValor)}</div>
+            </div>
+          </div>
+
+          {/* Lista */}
+          <div style={{ contain: 'layout', overflow: 'hidden' }}>
+            {anadas.map(a => {
+              const diff = anioActual - parseInt(a.anio)
+              const badge =
+                diff <= 2 ? { label: 'Joven',    color: T.green, bg: T.greenBg, bd: T.greenBd } :
+                diff <= 6 ? { label: 'En punto', color: T.wine,  bg: 'rgba(128,0,0,0.07)', bd: 'rgba(128,0,0,0.18)' } :
+                            { label: 'Reserva',  color: T.amber, bg: T.amberBg, bd: T.amberBd }
+              const valor = (a.stock ?? 0) * (a.precio ?? 0)
+              return (
+                <div key={a.id} style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 14px', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{a.anio}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: badge.bg, border: `1px solid ${badge.bd}`, color: badge.color }}>{badge.label}</span>
+                      </div>
+                      {a.descripcion && <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{a.descripcion}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => abrirEditar(a)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, cursor: 'pointer' }}>Editar</button>
+                      <button onClick={() => eliminar(a.id)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 12, cursor: 'pointer' }}>×</button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: (a.stock ?? 0) > 0 ? T.text : T.dim }}>{a.stock ?? 0} <span style={{ fontSize: 11, fontWeight: 400 }}>bot</span></div>
+                    </div>
+                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrecio(a.precio ?? 0)}</div>
+                    </div>
+                    <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.green }}>{fmtPrecio(valor)}</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Modal */}
+      {modal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{editId ? 'Editar añada' : 'Nueva añada'}</span>
+              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={LBL_A}>Año *</label>
+                <input style={INP_A} type="number" min="1900" max={anioActual} value={form.anio} onChange={e => setForm(f => ({ ...f, anio: e.target.value }))} placeholder={`Ej: ${anioActual - 2}`} />
+              </div>
+              <div>
+                <label style={LBL_A}>Descripción</label>
+                <input style={INP_A} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Ej: Cosecha tardía, año excepcional" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={LBL_A}>Stock (botellas)</label>
+                  <input style={INP_A} type="number" min="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: parseInt(e.target.value) || 0 }))} />
+                </div>
+                <div>
+                  <label style={LBL_A}>Precio unitario</label>
+                  <input style={INP_A} type="number" min="0" step="100" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: parseFloat(e.target.value) || 0 }))} placeholder="0" />
+                </div>
+              </div>
+              <div>
+                <label style={LBL_A}>Notas</label>
+                <textarea style={{ ...INP_A, height: 70, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} placeholder="Condiciones climáticas, características, etc." />
+              </div>
+            </div>
+            <div style={{ padding: '14px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8 }}>
+              <button onClick={() => setModal(false)} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={guardar} style={{ flex: 2, padding: '11px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: toast.ok ? T.green : T.red, color: '#fff', padding: '10px 20px', borderRadius: 30, fontSize: 14, fontWeight: 600, zIndex: 9999, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Historial tab ──────────────────────────────────────────────────────────────
 function HistorialTab({ empresa }: { empresa: string }) {
   const [logs, setLogs] = useState<StockLog[]>([])
@@ -608,10 +820,11 @@ export default function DepositoPage() {
   }, [])
 
   const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: 'consultar', label: 'Consultar', icon: 'M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z' },
-    { key: 'cargar',    label: 'Cargar',    icon: 'M12 5v14M5 12h14' },
+    { key: 'consultar', label: 'Consultar',  icon: 'M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z' },
+    { key: 'cargar',    label: 'Cargar',     icon: 'M12 5v14M5 12h14' },
     { key: 'bodegas',   label: 'Por bodega', icon: 'M3 21V5a2 2 0 012-2h14a2 2 0 012 2v16M9 21V9h6v12M3 5l9-3 9 3' },
-    { key: 'historial', label: 'Historial', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { key: 'anadas',    label: 'Añadas',     icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+    { key: 'historial', label: 'Historial',  icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ]
 
   return (
@@ -659,6 +872,7 @@ export default function DepositoPage() {
       {empresa && tab === 'consultar'  && <ConsultarTab  key={empresa} empresa={empresa} />}
       {empresa && tab === 'cargar'     && <CargarTab     key={empresa} empresa={empresa} />}
       {empresa && tab === 'bodegas'    && <BodegasTab    key={empresa} empresa={empresa} />}
+      {empresa && tab === 'anadas'     && <AnadasTab />}
       {empresa && tab === 'historial'  && <HistorialTab  key={empresa} empresa={empresa} />}
     </div>
   )
