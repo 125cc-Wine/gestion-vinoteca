@@ -125,6 +125,7 @@ export default function DashboardPage() {
   const [sinMovimiento, setSinMovimiento] = useState<ProductoSinMovimiento[]>([])
   const [chequesVencer, setChequesVencer] = useState<{ nro_cheque?: string; beneficiario: string; monto: number; fecha_pago: string }[]>([])
   const [facturasVencer, setFacturasVencer] = useState<{ numero: string; proveedor_nombre: string; total: number; fecha_vencimiento: string }[]>([])
+  const [anadasResumen, setAnadasResumen] = useState<{ total: number; botTotal: number; valorTotal: number } | null>(null)
   const [loadingExtra, setLoadingExtra] = useState(false)
 
   useEffect(() => {
@@ -245,6 +246,21 @@ export default function DashboardPage() {
       .lte('fecha_vencimiento', limite7.toISOString().slice(0, 10))
       .order('fecha_vencimiento', { ascending: true })
     setFacturasVencer(factPronto || [])
+
+    // ── Sección F: Resumen añadas ──
+    const { data: anadasData } = await supabase
+      .from('anadas')
+      .select('id, anada_items(stock, precio)')
+      .eq('activo', true)
+    if (anadasData) {
+      let botTotal = 0; let valorTotal = 0
+      for (const a of anadasData) {
+        for (const i of (a.anada_items as { stock: number; precio: number }[] || [])) {
+          botTotal += i.stock; valorTotal += i.stock * i.precio
+        }
+      }
+      setAnadasResumen({ total: anadasData.length, botTotal, valorTotal })
+    }
 
     setLoadingExtra(false)
   }
@@ -547,6 +563,27 @@ export default function DashboardPage() {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* ── Añadas ─────────────────────────────────────────────────────────── */}
+        {anadasResumen && anadasResumen.total > 0 && (
+          <div style={{ background: T.surface, border: `1px solid ${T.amberBd}`, borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: T.amberBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: T.amber }}>
+              <Icon d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" size={18} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.amber, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Inventario de añadas</div>
+              <div style={{ display: 'flex', gap: 20, marginTop: 4, flexWrap: 'wrap' as const }}>
+                <span style={{ fontSize: 13, color: T.text }}><strong style={{ fontWeight: 700 }}>{anadasResumen.total}</strong> <span style={{ color: T.muted }}>añadas</span></span>
+                <span style={{ fontSize: 13, color: T.text }}><strong style={{ fontWeight: 700 }}>{anadasResumen.botTotal}</strong> <span style={{ color: T.muted }}>botellas</span></span>
+                <span style={{ fontSize: 13, color: T.green, fontWeight: 700 }}>{fmt(anadasResumen.valorTotal)}</span>
+              </div>
+            </div>
+            <button className="lbtn" onClick={() => router.push('/deposito')}
+              style={{ fontSize: 12, color: T.amber, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', transition: 'opacity 0.15s', flexShrink: 0 }}>
+              Ver añadas →
+            </button>
           </div>
         )}
 

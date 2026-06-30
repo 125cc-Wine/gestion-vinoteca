@@ -724,6 +724,11 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
   const [anadas, setAnadas] = useState<AnadaConItems[]>([])
   const [cargando, setCargando] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [filtro, setFiltro] = useState('')
+  const [editItem, setEditItem] = useState<AnadaItem | null>(null)
+  const [editStock, setEditStock] = useState(0)
+  const [editPrecio, setEditPrecio] = useState(0)
+  const [guardando, setGuardando] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000) }
@@ -748,9 +753,42 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
     cargar(); showToast('Añada eliminada')
   }
 
+  function abrirEdicion(item: AnadaItem) {
+    setEditItem(item)
+    setEditStock(item.stock)
+    setEditPrecio(item.precio)
+  }
+
+  async function guardarEdicion() {
+    if (!editItem) return
+    setGuardando(true)
+    const res = await fetch('/api/anadas/items', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editItem.id, stock: editStock, precio: editPrecio }),
+    })
+    setGuardando(false)
+    const data = await res.json()
+    if (data.error) { showToast('Error: ' + data.error, false); return }
+    setEditItem(null)
+    cargar()
+    showToast('Ítem actualizado')
+  }
+
   const anioActual = new Date().getFullYear()
-  const totalGStock = anadas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock, 0), 0)
-  const totalGValor = anadas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock * i.precio, 0), 0)
+
+  const anadasFiltradas = filtro.trim()
+    ? anadas.filter(a => {
+        const q = filtro.toLowerCase()
+        return a.anio.includes(q) ||
+          (a.anada_items ?? []).some(i =>
+            `${i.producto_nombre} ${i.bodega || ''} ${i.varietal || ''}`.toLowerCase().includes(q)
+          )
+      })
+    : anadas
+
+  const totalGStock = anadasFiltradas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock, 0), 0)
+  const totalGValor = anadasFiltradas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock * i.precio, 0), 0)
 
   if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
 
@@ -763,6 +801,15 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
         </div>
       ) : (
         <>
+          {/* Buscador */}
+          <input
+            value={filtro}
+            onChange={e => setFiltro(e.target.value)}
+            placeholder="Buscar por año, vino, bodega..."
+            style={{ ...INP_A, marginBottom: 12 }}
+          />
+
+          {/* Totales */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
             <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '12px 14px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock total</div>
@@ -774,7 +821,13 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
             </div>
           </div>
 
-          {anadas.map(a => {
+          {anadasFiltradas.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '30px 20px', color: T.dim, fontSize: 13 }}>
+              Sin resultados para "{filtro}"
+            </div>
+          )}
+
+          {anadasFiltradas.map(a => {
             const items = a.anada_items ?? []
             const stockTotal = items.reduce((s, i) => s + i.stock, 0)
             const valorTotal = items.reduce((s, i) => s + i.stock * i.precio, 0)
@@ -820,6 +873,8 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
                           <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{item.stock} bot</div>
                           <div style={{ fontSize: 11, color: T.green }}>{fmtPrecio(item.stock * item.precio)}</div>
                         </div>
+                        <button onClick={() => abrirEdicion(item)}
+                          style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>✎</button>
                         <button onClick={() => eliminarItem(item.id)}
                           style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>×</button>
                       </div>
@@ -831,6 +886,53 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
           })}
         </>
       )}
+
+      {/* Modal edición de ítem */}
+      {editItem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={e => e.target === e.currentTarget && setEditItem(null)}>
+          <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 32px', boxShadow: '0 -8px 32px rgba(26,18,16,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{editItem.producto_nombre}</div>
+                <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{[editItem.bodega, editItem.varietal].filter(Boolean).join(' · ')}</div>
+              </div>
+              <button onClick={() => setEditItem(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={LBL_A}>Botellas</label>
+                <div style={{ display: 'flex', border: `1.5px solid ${T.border}`, borderRadius: 9, overflow: 'hidden' }}>
+                  <button onClick={() => setEditStock(s => Math.max(0, s - 1))} style={{ width: 40, height: 44, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 20, color: T.muted }}>−</button>
+                  <input type="number" min={0} value={editStock} onChange={e => setEditStock(parseInt(e.target.value) || 0)}
+                    style={{ flex: 1, height: 44, border: 'none', textAlign: 'center', fontSize: 18, fontWeight: 800, color: T.text, background: '#fff', outline: 'none' }} />
+                  <button onClick={() => setEditStock(s => s + 1)} style={{ width: 40, height: 44, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 20, color: T.muted }}>+</button>
+                </div>
+              </div>
+              <div>
+                <label style={LBL_A}>Precio / bot</label>
+                <input style={{ ...INP_A, height: 44, fontSize: 16 }} type="number" min={0} step={100}
+                  value={editPrecio || ''} placeholder="$ 0"
+                  onChange={e => setEditPrecio(parseFloat(e.target.value) || 0)} />
+              </div>
+            </div>
+            {editStock > 0 && editPrecio > 0 && (
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 14, textAlign: 'center' }}>
+                Total: <strong style={{ color: T.green }}>{fmtPrecio(editStock * editPrecio)}</strong>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setEditItem(null)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 14, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={guardarEdicion} disabled={guardando} style={{ flex: 2, padding: '12px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 14, fontWeight: 700, cursor: guardando ? 'default' : 'pointer', opacity: guardando ? 0.7 : 1 }}>
+                {guardando ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: toast.ok ? T.green : T.red, color: '#fff', padding: '10px 20px', borderRadius: 30, fontSize: 14, fontWeight: 600, zIndex: 9999, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
           {toast.msg}
