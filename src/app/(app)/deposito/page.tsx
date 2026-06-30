@@ -521,17 +521,23 @@ function BodegasTab({ empresa }: { empresa: string }) {
 }
 
 // ── Añadas tab ────────────────────────────────────────────────────────────────
-interface Anada {
+interface AnadaItem {
+  id: string
+  anada_id: string
+  producto_id?: string
+  producto_nombre: string
+  bodega?: string
+  varietal?: string
+  stock: number
+  precio: number
+}
+interface AnadaConItems {
   id: string
   anio: string
   descripcion?: string
-  notas?: string
-  stock: number
-  precio: number
   activo: boolean
+  anada_items: AnadaItem[]
 }
-
-const ANADA_EMPTY = { anio: '', descripcion: '', notas: '', stock: 0, precio: 0 }
 const INP_A: React.CSSProperties = {
   width: '100%', padding: '10px 12px', border: `1.5px solid ${T.border}`,
   borderRadius: 9, fontSize: 14, background: '#fff', color: T.text, outline: 'none', boxSizing: 'border-box' as const,
@@ -545,314 +551,320 @@ function fmtPrecio(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
 }
 
-function AnadasTab({ empresa }: { empresa: string }) {
-  const [anadas, setAnadas] = useState<Anada[]>([])
-  const [productos, setProductos] = useState<Producto[]>([])
+// ── Registrar sub-view ────────────────────────────────────────────────────────
+function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuardado: () => void }) {
+  const [search, setSearch] = useState('')
+  const [resultados, setResultados] = useState<Producto[]>([])
+  const [buscando, setBuscando] = useState(false)
+  const [wine, setWine] = useState<Producto | null>(null)
+  const [anio, setAnio] = useState('')
+  const [anioCustom, setAnioCustom] = useState(false)
+  const [stock, setStock] = useState(1)
+  const [precio, setPrecio] = useState(0)
+  const [guardando, setGuardando] = useState(false)
+  const [ultimo, setUltimo] = useState<string | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const anioActual = new Date().getFullYear()
+  const anios = Array.from({ length: 9 }, (_, i) => String(anioActual - i))
+
+  useEffect(() => {
+    if (search.length < 2) { setResultados([]); return }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setBuscando(true)
+      const res = await fetch(`/api/productos?empresa=${empresa}`)
+      const all: Producto[] = await res.json().catch(() => [])
+      const q = normalize(search)
+      setResultados(all.filter(p => normalize(`${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`).includes(q)).slice(0, 8))
+      setBuscando(false)
+    }, 250)
+  }, [search, empresa])
+
+  async function confirmar() {
+    if (!wine || !anio || stock <= 0) return
+    setGuardando(true)
+    const res = await fetch('/api/anadas/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anio, producto_id: wine.id, producto_nombre: wine.nombre, bodega: wine.bodega, varietal: wine.varietal, stock, precio }),
+    })
+    const data = await res.json()
+    setGuardando(false)
+    if (data.error) return
+    setUltimo(`${wine.nombre} → Añada ${anio} (${stock} bot${precio ? ', ' + fmtPrecio(precio) + ' c/u' : ''})`)
+    setWine(null); setSearch(''); setAnio(''); setStock(1); setPrecio(0); setAnioCustom(false)
+    onGuardado()
+    setTimeout(() => searchRef.current?.focus(), 80)
+  }
+
+  const listo = !!wine && !!anio && stock > 0
+
+  return (
+    <div style={{ padding: 16 }}>
+      {ultimo && (
+        <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: T.green, fontWeight: 600 }}>
+          ✓ {ultimo}
+        </div>
+      )}
+
+      {/* Paso 1: Vino */}
+      <div style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '9px 14px', background: T.bg, borderBottom: `1px solid ${T.border}`, fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+          1 · Seleccioná el vino
+        </div>
+        <div style={{ padding: 12 }}>
+          {!wine ? (
+            <div style={{ position: 'relative' }}>
+              <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar por nombre, bodega, varietal..." autoFocus
+                style={{ ...INP_A, paddingRight: buscando ? 36 : undefined }} />
+              {buscando && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 12 }}>...</span>}
+              {resultados.length > 0 && (
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: 9, overflow: 'hidden', marginTop: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                  {resultados.map(p => (
+                    <button key={p.id} onClick={() => { setWine(p); setSearch(''); setResultados([]) }}
+                      style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '10px 12px', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{p.nombre}</span>
+                      <span style={{ fontSize: 12, color: T.muted }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{wine.nombre}</div>
+                <div style={{ fontSize: 12, color: T.muted }}>{[wine.bodega, wine.varietal].filter(Boolean).join(' · ')}</div>
+              </div>
+              <button onClick={() => { setWine(null); setTimeout(() => searchRef.current?.focus(), 50) }}
+                style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
+                Cambiar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Paso 2: Año */}
+      <div style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 10, overflow: 'hidden', opacity: wine ? 1 : 0.45 }}>
+        <div style={{ padding: '9px 14px', background: T.bg, borderBottom: `1px solid ${T.border}`, fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+          2 · Año de la añada
+        </div>
+        <div style={{ padding: '12px 12px 10px' }}>
+          {!anioCustom ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {anios.map(y => (
+                <button key={y} onClick={() => wine && setAnio(prev => prev === y ? '' : y)} style={{
+                  padding: '7px 14px', borderRadius: 8,
+                  border: `1.5px solid ${anio === y ? T.wine : T.border}`,
+                  background: anio === y ? T.wine : '#fff',
+                  color: anio === y ? '#fff' : T.text,
+                  fontSize: 14, fontWeight: 700, cursor: wine ? 'pointer' : 'default',
+                }}>{y}</button>
+              ))}
+              <button onClick={() => wine && (setAnioCustom(true), setAnio(''))} style={{
+                padding: '7px 12px', borderRadius: 8, border: `1.5px dashed ${T.border}`,
+                background: 'transparent', color: T.muted, fontSize: 13, cursor: wine ? 'pointer' : 'default',
+              }}>Otro...</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input style={{ ...INP_A, flex: 1 }} type="number" autoFocus placeholder={`Ej: ${anioActual - 10}`}
+                value={anio} onChange={e => setAnio(e.target.value)} min="1900" max={anioActual} />
+              <button onClick={() => { setAnioCustom(false); setAnio('') }}
+                style={{ padding: '10px 12px', borderRadius: 9, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, cursor: 'pointer' }}>✕</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Paso 3: Cantidad y precio */}
+      <div style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 14, overflow: 'hidden', opacity: wine && anio ? 1 : 0.45 }}>
+        <div style={{ padding: '9px 14px', background: T.bg, borderBottom: `1px solid ${T.border}`, fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase' as const, letterSpacing: '0.07em' }}>
+          3 · Cantidad y precio
+        </div>
+        <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={LBL_A}>Botellas</label>
+            <div style={{ display: 'flex', border: `1.5px solid ${T.border}`, borderRadius: 9, overflow: 'hidden', maxWidth: 180 }}>
+              <button onClick={() => setStock(s => Math.max(0, s - 1))} style={{ width: 44, height: 46, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 22, color: T.muted }}>−</button>
+              <input type="number" min={0} value={stock} onChange={e => setStock(parseInt(e.target.value) || 0)}
+                style={{ flex: 1, height: 46, border: 'none', textAlign: 'center', fontSize: 20, fontWeight: 800, color: T.text, background: '#fff', outline: 'none' }} />
+              <button onClick={() => setStock(s => s + 1)} style={{ width: 44, height: 46, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 22, color: T.muted }}>+</button>
+            </div>
+          </div>
+          <div>
+            <label style={LBL_A}>Precio por botella</label>
+            <input style={INP_A} type="number" min={0} step={100} value={precio || ''} placeholder="$ 0"
+              onChange={e => setPrecio(parseFloat(e.target.value) || 0)} />
+            {stock > 0 && precio > 0 && (
+              <div style={{ fontSize: 12, color: T.muted, marginTop: 5 }}>
+                Total: <strong style={{ color: T.green }}>{fmtPrecio(stock * precio)}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <button onClick={confirmar} disabled={!listo || guardando} style={{
+        width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
+        background: listo ? T.wine : T.dim, color: '#fff',
+        fontSize: 15, fontWeight: 700, cursor: listo && !guardando ? 'pointer' : 'default',
+      }}>
+        {guardando ? 'Guardando...' : listo ? `✓ Registrar — Añada ${anio} · ${stock} bot` : 'Completá los campos para continuar'}
+      </button>
+    </div>
+  )
+}
+
+// ── Inventario sub-view ───────────────────────────────────────────────────────
+function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadKey: number }) {
+  const [anadas, setAnadas] = useState<AnadaConItems[]>([])
   const [cargando, setCargando] = useState(true)
-  const [modal, setModal] = useState(false)
-  const [form, setForm] = useState<typeof ANADA_EMPTY>({ ...ANADA_EMPTY })
-  const [editId, setEditId] = useState<string | null>(null)
-  const [syncing, setSyncing] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [addVino, setAddVino] = useState<{ id: string; anio: string } | null>(null)
-  const [vinoSearch, setVinoSearch] = useState('')
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000) }
 
-  useEffect(() => { cargar() }, [])
+  useEffect(() => { cargar() }, [reloadKey])
 
   async function cargar() {
     setCargando(true)
-    const [aRes, pRes] = await Promise.all([fetch('/api/anadas'), fetch(`/api/productos?empresa=${empresa}`)])
-    setAnadas(await aRes.json().catch(() => []))
-    setProductos(await pRes.json().catch(() => []))
+    const res = await fetch('/api/anadas')
+    setAnadas(await res.json().catch(() => []))
     setCargando(false)
   }
 
-  async function recargarProductos() {
-    const res = await fetch(`/api/productos?empresa=${empresa}`)
-    setProductos(await res.json().catch(() => []))
+  async function eliminarItem(itemId: string) {
+    await fetch(`/api/anadas/items?id=${itemId}`, { method: 'DELETE' })
+    cargar(); showToast('Vino eliminado')
   }
 
-  function abrirNuevo() { setForm({ ...ANADA_EMPTY }); setEditId(null); setModal(true) }
-
-  function abrirEditar(a: Anada) {
-    setForm({ anio: a.anio, descripcion: a.descripcion || '', notas: a.notas || '', stock: a.stock ?? 0, precio: a.precio ?? 0 })
-    setEditId(a.id); setModal(true)
-  }
-
-  async function guardar() {
-    if (!form.anio.trim()) { showToast('El año es obligatorio', false); return }
-    const method = editId ? 'PUT' : 'POST'
-    const body = editId ? { id: editId, ...form } : form
-    const res = await fetch('/api/anadas', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error, false); return }
-    setModal(false)
-    const aRes = await fetch('/api/anadas')
-    setAnadas(await aRes.json().catch(() => []))
-    showToast(editId ? 'Añada actualizada' : 'Añada guardada')
-  }
-
-  async function eliminar(id: string) {
-    if (!confirm('¿Eliminar esta añada?')) return
+  async function eliminarAnada(id: string) {
+    if (!confirm('¿Eliminar esta añada y todos sus vinos?')) return
     await fetch(`/api/anadas?id=${id}`, { method: 'DELETE' })
-    const aRes = await fetch('/api/anadas')
-    setAnadas(await aRes.json().catch(() => []))
-    showToast('Añada eliminada')
+    cargar(); showToast('Añada eliminada')
   }
 
-  async function sync() {
-    setSyncing(true)
-    const res = await fetch('/api/anadas/sync', { method: 'POST' })
-    const data = await res.json()
-    setSyncing(false)
-    if (data.error) { showToast('Error: ' + data.error, false); return }
-    if (data.insertadas === 0) { showToast('Todo ya estaba sincronizado'); return }
-    const aRes = await fetch('/api/anadas')
-    setAnadas(await aRes.json().catch(() => []))
-    showToast(`${data.insertadas} añada${data.insertadas !== 1 ? 's' : ''} importada${data.insertadas !== 1 ? 's' : ''}: ${data.anadas.join(', ')}`)
-  }
-
-  async function vincularVino(productoId: string, anio: string) {
-    await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: productoId, anada: anio }) })
-    await recargarProductos()
-    setAddVino(null); setVinoSearch('')
-    showToast('Vino agregado a la añada')
-  }
-
-  async function desvincularVino(productoId: string) {
-    await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: productoId, anada: '' }) })
-    await recargarProductos()
-    showToast('Vino quitado de la añada')
-  }
-
-  function vinosDeAnada(anio: string) {
-    return productos.filter(p => p.anada === anio)
-  }
-
-  function vinosBuscados() {
-    const q = vinoSearch.toLowerCase()
-    return productos
-      .filter(p => !q || `${p.nombre} ${p.bodega || ''} ${p.varietal || ''}`.toLowerCase().includes(q))
-      .slice(0, 8)
-  }
-
-  const totalStock = anadas.reduce((s, a) => s + (a.stock ?? 0), 0)
-  const totalValor = anadas.reduce((s, a) => s + (a.stock ?? 0) * (a.precio ?? 0), 0)
   const anioActual = new Date().getFullYear()
+  const totalGStock = anadas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock, 0), 0)
+  const totalGValor = anadas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock * i.precio, 0), 0)
 
   if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
 
   return (
     <div style={{ padding: 16 }}>
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        <button onClick={sync} disabled={syncing} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${T.border}`, background: '#fff', color: T.muted, fontSize: 13, fontWeight: 600, cursor: syncing ? 'default' : 'pointer', opacity: syncing ? 0.6 : 1 }}>
-          {syncing ? '...' : '↻ Sync desde productos'}
-        </button>
-        <button onClick={abrirNuevo} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-          + Nueva añada
-        </button>
-      </div>
-
       {anadas.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: T.dim, border: `2px dashed ${T.border}`, borderRadius: 14 }}>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Sin añadas registradas</p>
-          <p style={{ margin: '4px 0 0', fontSize: 13 }}>Usá "Sync desde productos" o agregá una manualmente</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13 }}>Usá "Registrar" para agregar vinos a una añada</p>
         </div>
       ) : (
         <>
-          {/* Resumen */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
             <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '12px 14px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock total</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginTop: 2 }}>{totalStock} <span style={{ fontSize: 13, fontWeight: 400, color: T.muted }}>bot</span></div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginTop: 2 }}>{totalGStock} <span style={{ fontSize: 13, fontWeight: 400, color: T.muted }}>bot</span></div>
             </div>
             <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '12px 14px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.amber, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor total</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: T.text, marginTop: 2 }}>{fmtPrecio(totalValor)}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: T.text, marginTop: 2 }}>{fmtPrecio(totalGValor)}</div>
             </div>
           </div>
 
-          {/* Lista */}
-          <div style={{ contain: 'layout', overflow: 'hidden' }}>
-            {anadas.map(a => {
-              const diff = anioActual - parseInt(a.anio)
-              const badge =
-                diff <= 2 ? { label: 'Joven',    color: T.green, bg: T.greenBg, bd: T.greenBd } :
-                diff <= 6 ? { label: 'En punto', color: T.wine,  bg: 'rgba(128,0,0,0.07)', bd: 'rgba(128,0,0,0.18)' } :
-                            { label: 'Reserva',  color: T.amber, bg: T.amberBg, bd: T.amberBd }
-              const valor = (a.stock ?? 0) * (a.precio ?? 0)
-              const vinos = vinosDeAnada(a.anio)
-              const expandido = expandedId === a.id
-              return (
-                <div key={a.id} style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 8, overflow: 'hidden' }}>
-                  {/* Cabecera de la card */}
-                  <div style={{ padding: '14px 14px 10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{a.anio}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: badge.bg, border: `1px solid ${badge.bd}`, color: badge.color }}>{badge.label}</span>
-                        </div>
-                        {a.descripcion && <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{a.descripcion}</div>}
-                      </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => abrirEditar(a)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.muted, fontSize: 12, cursor: 'pointer' }}>Editar</button>
-                        <button onClick={() => eliminar(a.id)} style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 12, cursor: 'pointer' }}>×</button>
-                      </div>
+          {anadas.map(a => {
+            const items = a.anada_items ?? []
+            const stockTotal = items.reduce((s, i) => s + i.stock, 0)
+            const valorTotal = items.reduce((s, i) => s + i.stock * i.precio, 0)
+            const diff = anioActual - parseInt(a.anio)
+            const badge = diff <= 2
+              ? { label: 'Joven',    color: T.green, bg: T.greenBg, bd: T.greenBd }
+              : diff <= 6
+              ? { label: 'En punto', color: T.wine,  bg: 'rgba(128,0,0,0.07)', bd: 'rgba(128,0,0,0.18)' }
+              : { label: 'Reserva',  color: T.amber, bg: T.amberBg, bd: T.amberBd }
+            const expandido = expandedId === a.id
+            return (
+              <div key={a.id} style={{ background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 8, overflow: 'hidden' }}>
+                <div onClick={() => setExpandedId(expandido ? null : a.id)}
+                  style={{ padding: '14px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{a.anio}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: badge.bg, border: `1px solid ${badge.bd}`, color: badge.color }}>{badge.label}</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
-                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: (a.stock ?? 0) > 0 ? T.text : T.dim }}>{a.stock ?? 0} <span style={{ fontSize: 11, fontWeight: 400 }}>bot</span></div>
-                      </div>
-                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrecio(a.precio ?? 0)}</div>
-                      </div>
-                      <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px' }}>
-                        <div style={{ fontSize: 10, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valor</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: T.green }}>{fmtPrecio(valor)}</div>
-                      </div>
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12, color: T.muted }}>
+                      <span>{items.length} vino{items.length !== 1 ? 's' : ''}</span>
+                      <span style={{ color: T.text, fontWeight: 600 }}>{stockTotal} bot</span>
+                      <span style={{ color: T.green, fontWeight: 600 }}>{fmtPrecio(valorTotal)}</span>
                     </div>
-
-                    {/* Botón vinos */}
-                    <button
-                      onClick={() => setExpandedId(expandido ? null : a.id)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: expandido ? T.wineBg : T.bg, color: expandido ? T.wine : T.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                    >
-                      <span>🍷 Vinos ({vinos.length})</span>
-                      <span style={{ fontSize: 11 }}>{expandido ? '▲' : '▼'}</span>
-                    </button>
                   </div>
-
-                  {/* Panel de vinos expandible */}
-                  {expandido && (
-                    <div style={{ borderTop: `1px solid ${T.border}`, background: '#FDFAF6', padding: '12px 14px' }}>
-                      {vinos.length === 0 ? (
-                        <p style={{ margin: '0 0 10px', fontSize: 13, color: T.dim, textAlign: 'center' }}>Sin vinos asignados a esta añada</p>
-                      ) : (
-                        <div style={{ marginBottom: 10 }}>
-                          {vinos.map(p => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: '#fff', borderRadius: 8, marginBottom: 6, border: `1px solid ${T.border}` }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
-                                <div style={{ fontSize: 11, color: T.muted }}>{p.bodega || ''}{p.varietal ? ` · ${p.varietal}` : ''}</div>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 8 }}>
-                                <span style={{ fontSize: 12, color: p.stock > 0 ? T.green : T.dim, fontWeight: 700 }}>{p.stock} bot</span>
-                                <button onClick={() => desvincularVino(p.id)} style={{ padding: '3px 8px', borderRadius: 6, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 11, cursor: 'pointer' }}>Quitar</button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        onClick={() => { setAddVino({ id: a.id, anio: a.anio }); setVinoSearch('') }}
-                        style={{ width: '100%', padding: '9px 0', borderRadius: 8, border: `1px dashed ${T.wine}`, background: T.wineBg, color: T.wine, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                      >
-                        + Agregar vino a esta añada
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button onClick={e => { e.stopPropagation(); eliminarAnada(a.id) }}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 11, cursor: 'pointer' }}>×</button>
+                    <span style={{ color: T.dim, fontSize: 13 }}>{expandido ? '▲' : '▼'}</span>
+                  </div>
                 </div>
-              )
-            })}
-          </div>
+                {expandido && (
+                  <div style={{ borderTop: `1px solid ${T.border}`, background: '#FDFAF6' }}>
+                    {items.length === 0 ? (
+                      <div style={{ padding: '20px 14px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin vinos registrados</div>
+                    ) : items.map(item => (
+                      <div key={item.id} style={{ padding: '10px 14px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.producto_nombre}</div>
+                          <div style={{ fontSize: 11, color: T.muted }}>{[item.bodega, item.varietal].filter(Boolean).join(' · ')}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{item.stock} bot</div>
+                          <div style={{ fontSize: 11, color: T.green }}>{fmtPrecio(item.stock * item.precio)}</div>
+                        </div>
+                        <button onClick={() => eliminarItem(item.id)}
+                          style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid rgba(192,48,48,0.22)`, background: T.redBg, color: T.red, fontSize: 11, cursor: 'pointer', flexShrink: 0 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </>
       )}
-
-      {/* Modal añada */}
-      {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)', overflow: 'hidden' }}>
-            <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{editId ? 'Editar añada' : 'Nueva añada'}</span>
-              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1 }}>×</button>
-            </div>
-            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={LBL_A}>Año *</label>
-                <input style={INP_A} type="number" min="1900" max={anioActual} value={form.anio} onChange={e => setForm(f => ({ ...f, anio: e.target.value }))} placeholder={`Ej: ${anioActual - 2}`} />
-              </div>
-              <div>
-                <label style={LBL_A}>Descripción</label>
-                <input style={INP_A} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Ej: Cosecha tardía, año excepcional" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div>
-                  <label style={LBL_A}>Stock (botellas)</label>
-                  <input style={INP_A} type="number" min="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: parseInt(e.target.value) || 0 }))} />
-                </div>
-                <div>
-                  <label style={LBL_A}>Precio unitario</label>
-                  <input style={INP_A} type="number" min="0" step="100" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: parseFloat(e.target.value) || 0 }))} placeholder="0" />
-                </div>
-              </div>
-              <div>
-                <label style={LBL_A}>Notas</label>
-                <textarea style={{ ...INP_A, height: 70, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} placeholder="Condiciones climáticas, características, etc." />
-              </div>
-            </div>
-            <div style={{ padding: '14px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8 }}>
-              <button onClick={() => setModal(false)} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={guardar} style={{ flex: 2, padding: '11px 0', borderRadius: 10, border: 'none', background: T.wine, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Guardar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal agregar vino */}
-      {addVino && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={e => e.target === e.currentTarget && setAddVino(null)}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)', overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Agregar vino</div>
-                <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>Añada {addVino.anio}</div>
-              </div>
-              <button onClick={() => setAddVino(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1 }}>×</button>
-            </div>
-            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
-              <input
-                autoFocus
-                style={INP_A}
-                placeholder="Buscar por nombre, bodega, varietal..."
-                value={vinoSearch}
-                onChange={e => setVinoSearch(e.target.value)}
-              />
-            </div>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {vinosBuscados().map(p => (
-                <button key={p.id} onClick={() => vincularVino(p.id, addVino.anio)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
-                    <div style={{ fontSize: 12, color: T.muted, marginTop: 1 }}>
-                      {p.bodega || '—'}{p.varietal ? ` · ${p.varietal}` : ''}
-                      {p.anada ? <span style={{ color: T.amber, fontWeight: 600 }}> · Añada {p.anada}</span> : ''}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 12, color: T.wine, fontWeight: 700, marginLeft: 10, flexShrink: 0 }}>+ Agregar</span>
-                </button>
-              ))}
-              {vinosBuscados().length === 0 && (
-                <div style={{ padding: '40px 20px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin resultados</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {toast && (
         <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: toast.ok ? T.green : T.red, color: '#fff', padding: '10px 20px', borderRadius: 30, fontSize: 14, fontWeight: 600, zIndex: 9999, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
           {toast.msg}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── AnadasTab wrapper ──────────────────────────────────────────────────────────
+function AnadasTab({ empresa }: { empresa: string }) {
+  const [subView, setSubView] = useState<'registrar' | 'inventario'>('registrar')
+  const [inventarioKey, setInventarioKey] = useState(0)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', background: '#fff', borderBottom: `1px solid ${T.border}` }}>
+        {([['registrar', '+ Registrar'], ['inventario', '≡ Inventario']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setSubView(key)}
+            style={{
+              flex: 1, padding: '12px 8px', border: 'none', background: 'transparent',
+              borderBottom: `2.5px solid ${subView === key ? T.wine : 'transparent'}`,
+              color: subView === key ? T.wine : T.muted,
+              fontSize: 14, fontWeight: subView === key ? 700 : 400, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {subView === 'registrar' && (
+        <RegistrarAnadaView empresa={empresa} onGuardado={() => setInventarioKey(k => k + 1)} />
+      )}
+      {subView === 'inventario' && (
+        <InventarioAnadasView empresa={empresa} reloadKey={inventarioKey} />
       )}
     </div>
   )
