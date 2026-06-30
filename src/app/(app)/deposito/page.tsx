@@ -563,6 +563,9 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
   const [precio, setPrecio] = useState(0)
   const [guardando, setGuardando] = useState(false)
   const [ultimo, setUltimo] = useState<string | null>(null)
+  // Creación rápida de producto
+  const [nuevoVino, setNuevoVino] = useState<{ nombre: string; bodega: string; varietal: string } | null>(null)
+  const [creando, setCreando] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const anioActual = new Date().getFullYear()
@@ -580,6 +583,31 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
       setBuscando(false)
     }, 250)
   }, [search, empresa])
+
+  async function crearYSeleccionar() {
+    if (!nuevoVino || !nuevoVino.nombre.trim()) return
+    setCreando(true)
+    const res = await fetch('/api/productos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa,
+        nombre: nuevoVino.nombre.trim(),
+        bodega: nuevoVino.bodega.trim() || null,
+        varietal: nuevoVino.varietal.trim() || null,
+        activo: true,
+        stock: 0,
+        precio_venta: 0,
+      }),
+    })
+    const data = await res.json()
+    setCreando(false)
+    if (data.error || !data.id) return
+    setWine(data as Producto)
+    setNuevoVino(null)
+    setSearch('')
+    setResultados([])
+  }
 
   async function confirmar() {
     if (!wine || !anio || stock <= 0) return
@@ -615,23 +643,74 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
         </div>
         <div style={{ padding: 12 }}>
           {!wine ? (
-            <div style={{ position: 'relative' }}>
-              <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar por nombre, bodega, varietal..." autoFocus
-                style={{ ...INP_A, paddingRight: buscando ? 36 : undefined }} />
-              {buscando && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 12 }}>...</span>}
-              {resultados.length > 0 && (
-                <div style={{ border: `1px solid ${T.border}`, borderRadius: 9, overflow: 'hidden', marginTop: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-                  {resultados.map(p => (
-                    <button key={p.id} onClick={() => { setWine(p); setSearch(''); setResultados([]) }}
-                      style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '10px 12px', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{p.nombre}</span>
-                      <span style={{ fontSize: 12, color: T.muted }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</span>
-                    </button>
-                  ))}
+            nuevoVino ? (
+              /* ── Formulario creación rápida ── */
+              <div>
+                <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>
+                  Nuevo vino — completá los datos y continuá
                 </div>
-              )}
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div>
+                    <label style={LBL_A}>Nombre *</label>
+                    <input style={INP_A} autoFocus value={nuevoVino.nombre}
+                      onChange={e => setNuevoVino(v => v && ({ ...v, nombre: e.target.value }))}
+                      placeholder="Ej: Reserva Malbec 750ml" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div>
+                      <label style={LBL_A}>Bodega</label>
+                      <input style={INP_A} value={nuevoVino.bodega}
+                        onChange={e => setNuevoVino(v => v && ({ ...v, bodega: e.target.value }))}
+                        placeholder="Ej: Zuccardi" />
+                    </div>
+                    <div>
+                      <label style={LBL_A}>Varietal</label>
+                      <input style={INP_A} value={nuevoVino.varietal}
+                        onChange={e => setNuevoVino(v => v && ({ ...v, varietal: e.target.value }))}
+                        placeholder="Ej: Malbec" />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                    <button onClick={() => { setNuevoVino(null); setTimeout(() => searchRef.current?.focus(), 50) }}
+                      style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 13, cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                    <button onClick={crearYSeleccionar} disabled={creando || !nuevoVino.nombre.trim()}
+                      style={{ flex: 2, padding: '9px 0', borderRadius: 9, border: 'none', background: nuevoVino.nombre.trim() ? T.wine : T.dim, color: '#fff', fontSize: 13, fontWeight: 700, cursor: nuevoVino.nombre.trim() && !creando ? 'pointer' : 'default' }}>
+                      {creando ? 'Creando...' : 'Crear y seleccionar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ── Búsqueda normal ── */
+              <div style={{ position: 'relative' }}>
+                <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre, bodega, varietal..." autoFocus
+                  style={{ ...INP_A, paddingRight: buscando ? 36 : undefined }} />
+                {buscando && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 12 }}>...</span>}
+                {search.length >= 2 && !buscando && (
+                  <div style={{ border: `1px solid ${T.border}`, borderRadius: 9, overflow: 'hidden', marginTop: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                    {resultados.map(p => (
+                      <button key={p.id} onClick={() => { setWine(p); setSearch(''); setResultados([]) }}
+                        style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '10px 12px', border: 'none', borderBottom: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{p.nombre}</span>
+                        <span style={{ fontSize: 12, color: T.muted }}>{[p.bodega, p.varietal].filter(Boolean).join(' · ')}</span>
+                      </button>
+                    ))}
+                    {/* Opción crear nuevo — siempre visible cuando hay texto */}
+                    <button onClick={() => setNuevoVino({ nombre: search, bodega: '', varietal: '' })}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: 'none', background: T.bg, cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ width: 20, height: 20, borderRadius: 6, background: T.wine, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0 }}>+</span>
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.wine }}>Crear "{search}"</span>
+                        <span style={{ fontSize: 11, color: T.muted, display: 'block' }}>Nuevo vino · no está en el catálogo</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
