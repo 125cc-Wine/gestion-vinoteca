@@ -566,6 +566,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
   // Creación rápida de producto
   const [nuevoVino, setNuevoVino] = useState<{ nombre: string; bodega: string; varietal: string } | null>(null)
   const [creando, setCreando] = useState(false)
+  const [errorCrear, setErrorCrear] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const anioActual = new Date().getFullYear()
@@ -587,26 +588,36 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
   async function crearYSeleccionar() {
     if (!nuevoVino || !nuevoVino.nombre.trim()) return
     setCreando(true)
-    const res = await fetch('/api/productos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresa,
-        nombre: nuevoVino.nombre.trim(),
-        bodega: nuevoVino.bodega.trim() || null,
-        varietal: nuevoVino.varietal.trim() || null,
-        activo: true,
-        stock: 0,
-        precio_venta: 0,
-      }),
-    })
-    const data = await res.json()
-    setCreando(false)
-    if (data.error || !data.id) return
-    setWine(data as Producto)
-    setNuevoVino(null)
-    setSearch('')
-    setResultados([])
+    setErrorCrear(null)
+    try {
+      const res = await fetch('/api/productos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa,
+          nombre: nuevoVino.nombre.trim(),
+          bodega: nuevoVino.bodega.trim() || null,
+          varietal: nuevoVino.varietal.trim() || null,
+          activo: true,
+          stock: 0,
+          precio_venta: 0,
+        }),
+      })
+      const data = await res.json()
+      if (data.error || !data.id) {
+        setErrorCrear(data.error ?? 'No se pudo crear el producto')
+        return
+      }
+      setWine(data as Producto)
+      setNuevoVino(null)
+      setErrorCrear(null)
+      setSearch('')
+      setResultados([])
+    } catch {
+      setErrorCrear('Error de conexión, intentá de nuevo')
+    } finally {
+      setCreando(false)
+    }
   }
 
   async function confirmar() {
@@ -670,8 +681,13 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
                         placeholder="Ej: Malbec" />
                     </div>
                   </div>
+                  {errorCrear && (
+                    <div style={{ background: T.redBg, border: `1px solid rgba(192,48,48,0.22)`, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: T.red, fontWeight: 600 }}>
+                      {errorCrear}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-                    <button onClick={() => { setNuevoVino(null); setTimeout(() => searchRef.current?.focus(), 50) }}
+                    <button onClick={() => { setNuevoVino(null); setErrorCrear(null); setTimeout(() => searchRef.current?.focus(), 50) }}
                       style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: `1px solid ${T.border}`, background: T.bg, color: T.muted, fontSize: 13, cursor: 'pointer' }}>
                       Cancelar
                     </button>
