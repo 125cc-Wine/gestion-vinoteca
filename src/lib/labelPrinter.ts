@@ -76,9 +76,10 @@ export function canvasToBitmap(canvas: HTMLCanvasElement) {
 // ── Timing constants ─────────────────────────────────────────────────────
 // Printer thermal head: ~60 mm/s = 460 dot-lines/s = 22 KB/s at 384 dots wide.
 // We throttle Bluetooth writes to ~18 KB/s so the printer buffer never fills.
-const CHUNK_BYTES  = 512   // bytes per write chunk
-const CHUNK_DELAY  = 28    // ms between chunks → 512/28ms ≈ 18 KB/s
-const POST_LABEL_DELAY = 1500 // ms after FF — lets printer finish printing + advance paper
+const CHUNK_BYTES    = 512   // bytes per write chunk
+const CHUNK_DELAY    = 30    // ms between chunks → 512/30ms ≈ 17 KB/s
+const PRE_FF_DELAY   = 900   // ms between último chunk raster y CMD_FF
+const POST_LABEL_DELAY = 2000 // ms after FF before next label
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
@@ -125,10 +126,9 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 /**
  * Scales the 3× render canvas down to printer dots, sends as raster bitmap.
  *
- * Uses chunked throttled writes so the printer buffer doesn't overflow.
- * Waits POST_LABEL_DELAY ms after each label so the next call never arrives
- * while the printer is still running. This fixes truncated last lines and
- * corrupted second labels.
+ * Un solo writer por etiqueta — evita el problema de múltiples getWriter/releaseLock
+ * que deja el stream en estado inconsistente en la segunda etiqueta.
+ * PRE_FF_DELAY garantiza que la impresora terminó de imprimir antes del avance.
  */
 export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   const ph = Math.round(canvas.height / SCALE)
@@ -142,17 +142,24 @@ export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   ctx.drawImage(canvas, 0, 0, PRINTER_W, ph)
 
   const { data, widthBytes, height } = canvasToBitmap(scaled)
+  const raster = cmdRaster(data, widthBytes, height)
 
-  // Raster: chunked to avoid buffer overflow. CMD_INIT se envía UNA vez por sesión
-  // (ver initPrinter), no antes de cada etiqueta para evitar micro-avance de papel.
-  await writeChunked(port, cmdRaster(data, widthBytes, height))
+  // Un solo writer para raster + FF — sin cycling de lock entre etiquetas
+  const w = port.writable!.getWriter()
+  try {
+    for (let off = 0; off < raster.length; off += CHUNK_BYTES) {
+      await w.write(raster.slice(off, Math.min(off + CHUNK_BYTES, raster.length)))
+      if (off + CHUNK_BYTES < raster.length) await sleep(CHUNK_DELAY)
+    }
+    // Esperar que la cabeza térmica termine de imprimir antes de avanzar
+    await sleep(PRE_FF_DELAY)
+    // FF: sensor de gap avanza al inicio de la siguiente etiqueta
+    await w.write(CMD_FF)
+  } finally {
+    w.releaseLock()
+  }
 
-  // FF: el sensor de gap detecta el espacio entre etiquetas y frena exactamente
-  // al inicio de la siguiente. Reemplaza CMD_FEED(n) fijo que no conoce la
-  // separación real entre stickers del rollo.
-  await writeRaw(port, CMD_FF)
-
-  // Wait for the printer to finish before the caller can start the next label.
+  // Esperar avance de papel + impresora lista para siguiente etiqueta
   await sleep(POST_LABEL_DELAY)
 }
 
