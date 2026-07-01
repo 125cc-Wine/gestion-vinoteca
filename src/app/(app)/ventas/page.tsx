@@ -1530,7 +1530,7 @@ export default function VentasPage() {
               </div>
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
-              <PrintDoc venta={previewVenta} empresa={emp} />
+              <PrintDoc venta={previewVenta} empresa={emp} cliente={clientes.find(c => c.id === previewVenta.cliente_id)} />
             </div>
           </div>
         </div>
@@ -1767,7 +1767,7 @@ export default function VentasPage() {
       <canvas ref={etiquetaCanvasRef} style={{ display: 'none' }} />
 
       <div id="print-area" style={{ display: 'none' }}>
-        {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} />}
+        {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} cliente={clientes.find(c => c.id === ventaParaImprimir.cliente_id)} />}
       </div>
 
       {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
@@ -1822,9 +1822,10 @@ function fmtCantBot(qty: number) {
   return <>{qty} bot<br /><span style={{ fontSize: 9, color: '#888' }}>{det}</span></>
 }
 
-function PrintDoc({ venta, empresa }: {
+function PrintDoc({ venta, empresa, cliente }: {
   venta: Venta
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
+  cliente?: { cuit?: string; direccion?: string; telefono?: string; email?: string } | null
 }) {
   const items = venta.items as (VentaItem & { descuento?: number })[]
   const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
@@ -1869,6 +1870,10 @@ function PrintDoc({ venta, empresa }: {
       <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div><strong>Cliente:</strong>&nbsp;&nbsp;{venta.cliente_nombre}</div>
+          {cliente?.cuit && <div style={{ marginTop: '3px' }}><strong>CUIT:</strong>&nbsp;&nbsp;<span style={{ fontFamily: 'monospace' }}>{cliente.cuit}</span></div>}
+          {cliente?.direccion && <div style={{ marginTop: '3px' }}><strong>Dirección:</strong>&nbsp;&nbsp;{cliente.direccion}</div>}
+          {cliente?.telefono && <div style={{ marginTop: '3px' }}><strong>Teléfono:</strong>&nbsp;&nbsp;{cliente.telefono}</div>}
+          {cliente?.email && <div style={{ marginTop: '3px' }}><strong>Email:</strong>&nbsp;&nbsp;{cliente.email}</div>}
           <div style={{ marginTop: '3px' }}>
             <strong>Condición de venta:</strong>&nbsp;&nbsp;
             {esCuentaCorriente ? 'Cuenta Corriente' : esPendiente ? 'Pendiente de pago' : condVenta}

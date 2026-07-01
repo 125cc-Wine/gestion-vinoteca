@@ -52,6 +52,17 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // Fetch client data if linked
+  let cliente: { cuit?: string; direccion?: string; telefono?: string; email?: string } | null = null
+  if (venta.cliente_id) {
+    const { data: cl } = await supabase
+      .from('clientes')
+      .select('cuit, direccion, telefono, email')
+      .eq('id', venta.cliente_id)
+      .single()
+    if (cl) cliente = cl
+  }
+
   const empresa = EMPRESAS_DATA[empresaKey] ?? EMPRESAS_DATA['aroma']
   const tipoLabel = TIPO_LABEL[venta.tipo] ?? venta.tipo ?? 'Comprobante'
 
@@ -389,6 +400,10 @@ export async function GET(req: NextRequest) {
       <label>Cliente</label>
       <span>${venta.cliente_nombre || 'Consumidor Final'}</span>
     </div>
+    ${cliente?.cuit ? `<div class="cliente-field"><label>CUIT</label><span style="font-family:monospace;">${cliente.cuit}</span></div>` : ''}
+    ${cliente?.direccion ? `<div class="cliente-field"><label>Dirección</label><span>${cliente.direccion}</span></div>` : ''}
+    ${cliente?.telefono ? `<div class="cliente-field"><label>Teléfono</label><span>${cliente.telefono}</span></div>` : ''}
+    ${cliente?.email ? `<div class="cliente-field"><label>Email</label><span>${cliente.email}</span></div>` : ''}
     ${venta.condicion_venta ? `<div class="cliente-field"><label>Condición</label><span>${venta.condicion_venta}</span></div>` : ''}
     ${venta.vendedor_nombre ? `<div class="cliente-field"><label>Vendedor</label><span>${venta.vendedor_nombre}</span></div>` : ''}
     ${venta.estado ? `<div class="cliente-field"><label>Estado</label><span>${venta.estado}</span></div>` : ''}
