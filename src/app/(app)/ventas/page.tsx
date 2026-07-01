@@ -1310,12 +1310,30 @@ export default function VentasPage() {
             <div className="v-modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
               <button className="vbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
               {!editVentaId && (
-                <button className="vbtn" style={btn('default', { padding: '7px 14px', fontSize: 13 })} onClick={() => guardar(false)}>
-                  Solo registrar
+                <button className="vbtn" onClick={() => guardar(false)}
+                  style={btn(tipo === 'presupuesto' ? 'danger' : 'default', {
+                    padding: '7px 14px', fontSize: 13, fontWeight: 600,
+                    ...(tipo === 'presupuesto' && { background: '#C03030', border: '1px solid #C03030', color: '#fff' }),
+                  })}>
+                  {tipo === 'presupuesto' ? 'Generar' : 'Solo registrar'}
                 </button>
               )}
-              <button className="vbtn" style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })} onClick={() => guardar(true)}>
-                {editVentaId ? 'Guardar cambios' : `Generar e imprimir`}
+              <button className="vbtn" onClick={() => guardar(true)}
+                style={btn('accent', {
+                  padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                  ...(tipo === 'presupuesto' && !editVentaId && { background: C.blue, border: `1px solid ${C.blue}`, color: '#fff' }),
+                })}>
+                {editVentaId ? 'Guardar cambios' : (
+                  tipo === 'presupuesto' ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" rx="1" />
+                      </svg>
+                      Generar e Imprimir
+                    </span>
+                  ) : 'Generar e imprimir'
+                )}
               </button>
             </div>
           </div>
