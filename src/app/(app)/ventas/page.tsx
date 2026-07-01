@@ -1475,12 +1475,21 @@ export default function VentasPage() {
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Pedido {detallePedido.numero}</h2>
               <button className="vbtn" style={{ ...btn('ghost'), color: C.dim, fontSize: 18 }} onClick={() => setDetallePedido(null)}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div><strong style={{ color: C.text }}>Cliente:</strong> {detallePedido.cliente_nombre}</div>
-              {detallePedido.vendedor_nombre && <div><strong style={{ color: C.text }}>Vendedor:</strong> {detallePedido.vendedor_nombre}</div>}
-              {detallePedido.fecha_entrega && <div><strong style={{ color: C.text }}>Entrega:</strong> {new Date(detallePedido.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</div>}
-              {detallePedido.notas && <div><strong style={{ color: C.text }}>Notas:</strong> {detallePedido.notas}</div>}
-            </div>
+            {(() => {
+              const cp = clientes.find(c => c.id === detallePedido.cliente_id)
+              return (
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div><strong style={{ color: C.text }}>Cliente:</strong> {detallePedido.cliente_nombre}</div>
+                  {cp?.cuit && <div><strong style={{ color: C.text }}>CUIT:</strong> <span style={{ fontFamily: 'monospace' }}>{cp.cuit}</span></div>}
+                  {cp?.direccion && <div><strong style={{ color: C.text }}>Dirección:</strong> {cp.direccion}</div>}
+                  {cp?.telefono && <div><strong style={{ color: C.text }}>Teléfono:</strong> {cp.telefono}</div>}
+                  {cp?.email && <div><strong style={{ color: C.text }}>Email:</strong> {cp.email}</div>}
+                  {detallePedido.vendedor_nombre && <div><strong style={{ color: C.text }}>Vendedor:</strong> {detallePedido.vendedor_nombre}</div>}
+                  {detallePedido.fecha_entrega && <div><strong style={{ color: C.text }}>Entrega:</strong> {new Date(detallePedido.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</div>}
+                  {detallePedido.notas && <div><strong style={{ color: C.text }}>Notas:</strong> {detallePedido.notas}</div>}
+                </div>
+              )
+            })()}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
