@@ -74,15 +74,30 @@ export async function GET(req: NextRequest) {
   const total: number = venta.total ?? 0
   const estadoPago = venta.estado_pago ? (ESTADO_PAGO_LABEL[venta.estado_pago] ?? venta.estado_pago) : null
 
+  // Cantidad → botellas + cajas de 6
+  function fmtCantidad(qty: number): string {
+    const cajas = Math.floor(qty / 6)
+    const resto = qty % 6
+    if (cajas === 0) return `${qty} bot`
+    const detalle = resto === 0 ? `${cajas} caj×6` : `${cajas} caj×6 + ${resto} bot`
+    return `${qty} bot<br><span style="font-size:10px;color:#A89888;">${detalle}</span>`
+  }
+
+  // IVA 21% discriminado sobre el total final
+  const netoGravado = parseFloat((total / 1.21).toFixed(2))
+  const importeIVA  = parseFloat((total - netoGravado).toFixed(2))
+  const moneda = (n: number) => '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
   const itemsRows = items
     .map(
       (it, i) => `
       <tr>
         <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
         <td>${it.nombre ?? ''}</td>
-        <td style="text-align:center;">${it.cantidad}</td>
-        <td style="text-align:right;">$${(it.precio_unitario ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td style="text-align:right;">$${(it.subtotal ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td style="text-align:center;line-height:1.4;">${fmtCantidad(it.cantidad)}</td>
+        <td style="text-align:right;">${moneda(it.precio_unitario ?? 0)}</td>
+        ${(it.descuento ?? 0) > 0 ? `<td style="text-align:center;color:#A07010;">${it.descuento}%</td>` : '<td style="text-align:center;color:#A89888;">—</td>'}
+        <td style="text-align:right;">${moneda(it.subtotal ?? 0)}</td>
       </tr>`,
     )
     .join('')
@@ -90,9 +105,9 @@ export async function GET(req: NextRequest) {
   const descuentoRow =
     descuento > 0
       ? `<tr class="total-line">
-          <td colspan="3"></td>
+          <td colspan="4"></td>
           <td style="text-align:right;color:#6B5D55;">Descuento (${descuento}%):</td>
-          <td style="text-align:right;color:#6B5D55;">-$${((subtotal * descuento) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align:right;color:#6B5D55;">-${moneda((subtotal * descuento) / 100)}</td>
         </tr>`
       : ''
 
@@ -383,15 +398,16 @@ export async function GET(req: NextRequest) {
   <table>
     <thead>
       <tr>
-        <th style="width:32px;text-align:center;">#</th>
+        <th style="width:28px;text-align:center;">#</th>
         <th>Descripción</th>
-        <th style="width:60px;text-align:center;">Cant.</th>
-        <th style="width:110px;text-align:right;">Precio unit.</th>
-        <th style="width:110px;text-align:right;">Subtotal</th>
+        <th style="width:80px;text-align:center;">Cant.</th>
+        <th style="width:100px;text-align:right;">Precio unit.</th>
+        <th style="width:50px;text-align:center;">Desc.</th>
+        <th style="width:100px;text-align:right;">Subtotal</th>
       </tr>
     </thead>
     <tbody>
-      ${itemsRows || '<tr><td colspan="5" style="text-align:center;color:#A89888;padding:20px;">Sin ítems</td></tr>'}
+      ${itemsRows || '<tr><td colspan="6" style="text-align:center;color:#A89888;padding:20px;">Sin ítems</td></tr>'}
     </tbody>
   </table>
 
@@ -401,12 +417,20 @@ export async function GET(req: NextRequest) {
       <tbody>
         <tr class="total-line">
           <td style="color:#6B5D55;">Subtotal:</td>
-          <td style="text-align:right;">$${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align:right;">${moneda(subtotal)}</td>
         </tr>
-        ${descuentoRow ? `<tr class="total-line"><td style="color:#6B5D55;">Descuento (${descuento}%):</td><td style="text-align:right;color:#6B5D55;">-$${((subtotal * descuento) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>` : ''}
+        ${descuento > 0 ? `<tr class="total-line"><td style="color:#6B5D55;">Descuento (${descuento}%):</td><td style="text-align:right;color:#6B5D55;">-${moneda((subtotal * descuento) / 100)}</td></tr>` : ''}
+        <tr class="total-line">
+          <td style="color:#6B5D55;">Neto gravado:</td>
+          <td style="text-align:right;">${moneda(netoGravado)}</td>
+        </tr>
+        <tr class="total-line">
+          <td style="color:#6B5D55;">IVA 21%:</td>
+          <td style="text-align:right;">${moneda(importeIVA)}</td>
+        </tr>
         <tr class="total-final">
           <td>TOTAL:</td>
-          <td style="text-align:right;">$${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="text-align:right;">${moneda(total)}</td>
         </tr>
       </tbody>
     </table>
