@@ -105,17 +105,6 @@ async function writeRaw(port: SerialPort, data: Uint8Array) {
   try { await w.write(data) } finally { w.releaseLock() }
 }
 
-// Throttled writer: sends in CHUNK_BYTES chunks with CHUNK_DELAY between each.
-// Prevents Bluetooth buffer overflow on the printer side.
-async function writeChunked(port: SerialPort, data: Uint8Array) {
-  const w = port.writable!.getWriter()
-  try {
-    for (let off = 0; off < data.length; off += CHUNK_BYTES) {
-      await w.write(data.slice(off, Math.min(off + CHUNK_BYTES, data.length)))
-      if (off + CHUNK_BYTES < data.length) await sleep(CHUNK_DELAY)
-    }
-  } finally { w.releaseLock() }
-}
 
 function concat(...arrays: Uint8Array[]): Uint8Array {
   const total = arrays.reduce((a, c) => a + c.length, 0)
