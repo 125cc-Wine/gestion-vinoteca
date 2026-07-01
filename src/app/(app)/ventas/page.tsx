@@ -1303,6 +1303,17 @@ export default function VentasPage() {
                   <div style={{ fontSize: 12, color: C.muted }}>Subtotal: ${items.reduce((a, i) => a + calcSub(i), 0).toLocaleString('es-AR')}</div>
                   {descuentoGlobal > 0 && <div style={{ fontSize: 12, color: C.red }}>Dto: -{descuentoGlobal}%</div>}
                   <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginTop: 4 }}>TOTAL: ${calcTotal().toLocaleString('es-AR')}</div>
+                  {(() => {
+                    const totalBot = items.reduce((s, it) => s + (it.cantidad || 0), 0)
+                    const cajas = Math.floor(totalBot / 6)
+                    const resto = totalBot % 6
+                    const resumen = cajas === 0
+                      ? `${totalBot} bot`
+                      : resto === 0
+                        ? `${totalBot} bot · ${cajas} caj×6`
+                        : `${totalBot} bot · ${cajas} caj×6 + ${resto}`
+                    return <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{resumen}</div>
+                  })()}
                 </div>
               </div>
             </div>
