@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooUpdateStockAndPrice, wooGetAllProducts, mapWooToProducto } from '@/lib/woocommerce'
+import { wooUpdateProduct, wooGetAllProducts, mapWooToProducto } from '@/lib/woocommerce'
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
