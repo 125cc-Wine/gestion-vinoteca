@@ -1795,6 +1795,14 @@ export default function VentasPage() {
   )
 }
 
+function fmtCantBot(qty: number) {
+  const cajas = Math.floor(qty / 6)
+  const resto = qty % 6
+  if (cajas === 0) return <>{qty} bot</>
+  const det = resto === 0 ? `${cajas} caj×6` : `${cajas} caj×6 + ${resto} bot`
+  return <>{qty} bot<br /><span style={{ fontSize: 9, color: '#888' }}>{det}</span></>
+}
+
 function PrintDoc({ venta, empresa }: {
   venta: Venta
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
@@ -1805,6 +1813,8 @@ function PrintDoc({ venta, empresa }: {
   const esCuentaCorriente = venta.estado_pago === 'cuenta_corriente'
   const esPendiente = venta.estado_pago === 'pendiente'
   const docLabel = venta.tipo === 'presupuesto' ? 'PRESUPUESTO' : 'REMITO'
+  const netoGravado = parseFloat((venta.total / 1.21).toFixed(2))
+  const importeIVA  = parseFloat((venta.total - netoGravado).toFixed(2))
 
   return (
     <div style={{ fontFamily: 'Arial,sans-serif', fontSize: '11px', color: '#000', maxWidth: '800px', margin: '0 auto' }}>
@@ -1876,7 +1886,7 @@ function PrintDoc({ venta, empresa }: {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', lineHeight: 1.4 }}>{fmtCantBot(item.cantidad)}</td>
               <td style={{ padding: '5px 8px' }}>{item.nombre}</td>
               <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento ? `${item.descuento}%` : '—'}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
@@ -1888,14 +1898,28 @@ function PrintDoc({ venta, empresa }: {
 
       {/* Totales */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-        <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 220 }}>
+        <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 240 }}>
           <tbody>
+            <tr>
+              <td style={{ padding: '3px 10px', color: '#555' }}>Subtotal:</td>
+              <td style={{ padding: '3px 10px', textAlign: 'right' }}>${venta.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            </tr>
             {venta.descuento > 0 && (
               <tr>
-                <td style={{ padding: '3px 10px', color: '#555' }}>Descuento global:</td>
-                <td style={{ padding: '3px 10px', textAlign: 'right' }}>{venta.descuento}%</td>
+                <td style={{ padding: '3px 10px', color: '#555' }}>Descuento ({venta.descuento}%):</td>
+                <td style={{ padding: '3px 10px', textAlign: 'right', color: '#888' }}>
+                  -${((venta.subtotal * venta.descuento) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </td>
               </tr>
             )}
+            <tr>
+              <td style={{ padding: '3px 10px', color: '#555' }}>Neto gravado:</td>
+              <td style={{ padding: '3px 10px', textAlign: 'right' }}>${netoGravado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '3px 10px', color: '#555' }}>IVA 21%:</td>
+              <td style={{ padding: '3px 10px', textAlign: 'right' }}>${importeIVA.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            </tr>
             <tr style={{ borderTop: '1.5px solid #000' }}>
               <td style={{ padding: '5px 10px', fontWeight: 'bold', fontSize: '13px' }}>TOTAL:</td>
               <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 'bold', fontSize: '13px' }}>
@@ -2037,7 +2061,7 @@ function PrintFactura({ venta, tipo, empresa }: {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>{item.cantidad}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee', lineHeight: 1.4 }}>{fmtCantBot(item.cantidad)}</td>
               <td style={{ padding: '5px 8px', borderRight: '1px solid #eee' }}>{item.nombre}</td>
               <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>un.</td>
               <td style={{ padding: '5px 8px', textAlign: 'right', borderRight: '1px solid #eee' }}>
