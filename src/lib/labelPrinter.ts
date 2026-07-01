@@ -74,12 +74,14 @@ export function canvasToBitmap(canvas: HTMLCanvasElement) {
 }
 
 // ── Timing constants ─────────────────────────────────────────────────────
-// Printer thermal head: ~60 mm/s = 460 dot-lines/s = 22 KB/s at 384 dots wide.
-// We throttle Bluetooth writes to ~18 KB/s so the printer buffer never fills.
-const CHUNK_BYTES    = 512   // bytes per write chunk
-const CHUNK_DELAY    = 30    // ms between chunks → 512/30ms ≈ 17 KB/s
-const PRE_FF_DELAY   = 900   // ms between último chunk raster y CMD_FF
-const POST_LABEL_DELAY = 2000 // ms after FF before next label
+// DeTong P1: thermal head ~60mm/s = 460 rows/s = 22 KB/s consumo.
+// Web Serial write() no tiene backpressure real — el OS flushea a Bluetooth
+// mucho más rápido que la cabeza térmica puede consumir. Enviamos 1 fila
+// (48 bytes = 384 dots) cada ROW_DELAY ms → ~6 KB/s, bien bajo los 22 KB/s.
+const PRINTER_ROW_BYTES = PRINTER_W / 8   // 48 bytes por fila de 384 dots
+const ROW_DELAY         = 8               // ms entre filas → 48/8ms ≈ 6 KB/s
+const PRE_FF_DELAY      = 500             // ms entre último dato y CMD_FF
+const POST_LABEL_DELAY  = 1500            // ms entre etiquetas
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
@@ -124,11 +126,13 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
 }
 
 /**
- * Scales the 3× render canvas down to printer dots, sends as raster bitmap.
+ * Envía una etiqueta a la impresora fila a fila (48 bytes = 1 fila de 384 dots).
  *
- * Un solo writer por etiqueta — evita el problema de múltiples getWriter/releaseLock
- * que deja el stream en estado inconsistente en la segunda etiqueta.
- * PRE_FF_DELAY garantiza que la impresora terminó de imprimir antes del avance.
+ * Web Serial no tiene backpressure real contra Bluetooth: si mandamos todo de
+ * una vez, el OS lo transmite mucho más rápido de lo que la cabeza térmica
+ * puede consumir → buffer overflow → datos perdidos → etiqueta cortada.
+ * Enviando 1 fila cada ROW_DELAY ms limitamos a ~6 KB/s, seguro bajo los 22 KB/s
+ * del printer. Un solo writer por etiqueta evita el lock-cycling issue.
  */
 export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   const ph = Math.round(canvas.height / SCALE)
@@ -142,24 +146,30 @@ export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
   ctx.drawImage(canvas, 0, 0, PRINTER_W, ph)
 
   const { data, widthBytes, height } = canvasToBitmap(scaled)
-  const raster = cmdRaster(data, widthBytes, height)
 
-  // Un solo writer para raster + FF — sin cycling de lock entre etiquetas
   const w = port.writable!.getWriter()
   try {
-    for (let off = 0; off < raster.length; off += CHUNK_BYTES) {
-      await w.write(raster.slice(off, Math.min(off + CHUNK_BYTES, raster.length)))
-      if (off + CHUNK_BYTES < raster.length) await sleep(CHUNK_DELAY)
+    // Cabecera del comando raster (8 bytes) de una vez
+    await w.write(new Uint8Array([
+      GS, 0x76, 0x30, 0x00,
+      widthBytes & 0xff, (widthBytes >> 8) & 0xff,
+      height & 0xff, (height >> 8) & 0xff,
+    ]))
+
+    // Datos: 1 fila (48 bytes) cada ROW_DELAY ms → ~6 KB/s
+    for (let row = 0; row < height; row++) {
+      const start = row * PRINTER_ROW_BYTES
+      await w.write(data.slice(start, start + PRINTER_ROW_BYTES))
+      await sleep(ROW_DELAY)
     }
-    // Esperar que la cabeza térmica termine de imprimir antes de avanzar
+
+    // Esperar que la cabeza térmica termine antes de avanzar el papel
     await sleep(PRE_FF_DELAY)
-    // FF: sensor de gap avanza al inicio de la siguiente etiqueta
     await w.write(CMD_FF)
   } finally {
     w.releaseLock()
   }
 
-  // Esperar avance de papel + impresora lista para siguiente etiqueta
   await sleep(POST_LABEL_DELAY)
 }
 
