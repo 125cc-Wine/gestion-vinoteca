@@ -5,7 +5,7 @@ function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 import {
-  connectPrinter, disconnectPrinter, printCanvas, testPrint,
+  connectPrinter, disconnectPrinter, initPrinter, printCanvas, testPrint,
   renderLabel, PRINTER_W, PRINTER_H, feedNextLabel,
   type LabelPrinterPort, type LabelData, type LabelFormat,
 } from '@/lib/labelPrinter'
@@ -146,9 +146,9 @@ export default function EtiquetasPage() {
     if (!canvasRef.current) return
     setPrinting(true)
     try {
+      await initPrinter(port)
       for (let i = 0; i < copias; i++) {
         await printCanvas(port, canvasRef.current)
-        if (i < copias - 1) await new Promise(r => setTimeout(r, 700))
       }
       toast$(`${copias} etiqueta${copias !== 1 ? 's' : ''} impresa${copias !== 1 ? 's' : ''} ✓`)
     } catch (e) { toast$('Error: ' + (e as Error).message, true) }

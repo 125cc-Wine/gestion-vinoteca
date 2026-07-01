@@ -78,7 +78,7 @@ export function canvasToBitmap(canvas: HTMLCanvasElement) {
 // We throttle Bluetooth writes to ~18 KB/s so the printer buffer never fills.
 const CHUNK_BYTES  = 512   // bytes per write chunk
 const CHUNK_DELAY  = 28    // ms between chunks → 512/28ms ≈ 18 KB/s
-const POST_LABEL_DELAY = 600  // ms after each label — lets printer finish last lines
+const POST_LABEL_DELAY = 1500 // ms after FF — lets printer finish printing + advance paper
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
 
@@ -90,6 +90,12 @@ export async function connectPrinter(): Promise<SerialPort> {
   return port
 }
 export async function disconnectPrinter(port: SerialPort) { try { await port.close() } catch { /**/ } }
+
+// Inicializar la impresora UNA SOLA VEZ antes de empezar a imprimir etiquetas.
+// No llamar antes de cada etiqueta — CMD_INIT avanza papel en algunos modelos.
+export async function initPrinter(port: SerialPort) {
+  await writeRaw(port, concat(CMD_INIT, CMD_ALIGN_LEFT))
+}
 
 async function writeRaw(port: SerialPort, data: Uint8Array) {
   const w = port.writable!.getWriter()
@@ -137,8 +143,9 @@ export async function printCanvas(port: SerialPort, canvas: HTMLCanvasElement) {
 
   const { data, widthBytes, height } = canvasToBitmap(scaled)
 
-  // Init + raster: chunked to avoid buffer overflow
-  await writeChunked(port, concat(CMD_INIT, CMD_ALIGN_LEFT, cmdRaster(data, widthBytes, height)))
+  // Raster: chunked to avoid buffer overflow. CMD_INIT se envía UNA vez por sesión
+  // (ver initPrinter), no antes de cada etiqueta para evitar micro-avance de papel.
+  await writeChunked(port, cmdRaster(data, widthBytes, height))
 
   // FF: el sensor de gap detecta el espacio entre etiquetas y frena exactamente
   // al inicio de la siguiente. Reemplaza CMD_FEED(n) fijo que no conoce la

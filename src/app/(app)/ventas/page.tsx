@@ -7,7 +7,7 @@ import * as XLSX from 'xlsx'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import {
-  connectPrinter, disconnectPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
+  connectPrinter, disconnectPrinter, initPrinter, printCanvas, testPrint, renderCava, feedNextLabel,
   type LabelPrinterPort, type LabelData,
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
@@ -523,6 +523,7 @@ export default function VentasPage() {
     setEtiquetaPrinting(true)
     const items = etiquetaVenta.items as VentaItem[]
     try {
+      await initPrinter(etiquetaPort)
       for (let i = 0; i < items.length; i++) {
         setEtiquetaPrintIdx(i)
         const prod = productos.find(p => p.id === items[i].producto_id)
@@ -1729,7 +1730,7 @@ export default function VentasPage() {
                         style={btn('default', { fontSize: 12, padding: '5px 10px', opacity: (!etiquetaPort || etiquetaPrinting) ? 0.4 : 1 })}
                         onClick={async () => {
                           setEtiquetaPrinting(true); setEtiquetaPrintIdx(i)
-                          try { await printOneEtiqueta(item, prod, qty); showToast(`${qty} etiqueta${qty > 1 ? 's' : ''} ✓`) }
+                          try { await initPrinter(etiquetaPort!); await printOneEtiqueta(item, prod, qty); showToast(`${qty} etiqueta${qty > 1 ? 's' : ''} ✓`) }
                           catch(e) { showToast('Error: ' + (e as Error).message) }
                           finally { setEtiquetaPrinting(false); setEtiquetaPrintIdx(-1) }
                         }}>
