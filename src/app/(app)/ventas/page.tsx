@@ -512,8 +512,8 @@ export default function VentasPage() {
   async function printOneEtiqueta(item: VentaItem, prod: Producto | undefined, copies: number) {
     if (!etiquetaPort || !etiquetaCanvasRef.current) return
     const d = buildLabelData(item, prod)
+    await renderCava(etiquetaCanvasRef.current, d)
     for (let c = 0; c < copies; c++) {
-      await renderCava(etiquetaCanvasRef.current, d)
       await printCanvas(etiquetaPort, etiquetaCanvasRef.current)
     }
   }
