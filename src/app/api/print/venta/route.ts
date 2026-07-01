@@ -74,19 +74,20 @@ export async function GET(req: NextRequest) {
   const total: number = venta.total ?? 0
   const estadoPago = venta.estado_pago ? (ESTADO_PAGO_LABEL[venta.estado_pago] ?? venta.estado_pago) : null
 
-  // Cantidad → botellas + cajas de 6
-  function fmtCantidad(qty: number): string {
-    const cajas = Math.floor(qty / 6)
-    const resto = qty % 6
-    if (cajas === 0) return `${qty} bot`
-    const detalle = resto === 0 ? `${cajas} caj×6` : `${cajas} caj×6 + ${resto} bot`
-    return `${qty} bot<br><span style="font-size:10px;color:#A89888;">${detalle}</span>`
-  }
-
   // IVA 21% discriminado sobre el total final
   const netoGravado = parseFloat((total / 1.21).toFixed(2))
   const importeIVA  = parseFloat((total - netoGravado).toFixed(2))
   const moneda = (n: number) => '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  // Resumen de unidades al pie de la tabla
+  const totalBot = items.reduce((s, it) => s + (it.cantidad ?? 0), 0)
+  const cajasTotal = Math.floor(totalBot / 6)
+  const restoTotal = totalBot % 6
+  const resumenUnidades = cajasTotal === 0
+    ? `${totalBot} botella${totalBot !== 1 ? 's' : ''}`
+    : restoTotal === 0
+      ? `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6`
+      : `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6 + ${restoTotal} bot`
 
   const itemsRows = items
     .map(
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
       <tr>
         <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
         <td>${it.nombre ?? ''}</td>
-        <td style="text-align:center;line-height:1.4;">${fmtCantidad(it.cantidad)}</td>
+        <td style="text-align:center;">${it.cantidad}</td>
         <td style="text-align:right;">${moneda(it.precio_unitario ?? 0)}</td>
         ${(it.descuento ?? 0) > 0 ? `<td style="text-align:center;color:#A07010;">${it.descuento}%</td>` : '<td style="text-align:center;color:#A89888;">—</td>'}
         <td style="text-align:right;">${moneda(it.subtotal ?? 0)}</td>
@@ -410,6 +411,9 @@ export async function GET(req: NextRequest) {
       ${itemsRows || '<tr><td colspan="6" style="text-align:center;color:#A89888;padding:20px;">Sin ítems</td></tr>'}
     </tbody>
   </table>
+  <div style="text-align:right;font-size:11px;color:#6B5D55;margin-top:4px;margin-bottom:8px;">
+    Total: <strong>${resumenUnidades}</strong>
+  </div>
 
   <!-- TOTALES -->
   <div class="totales">

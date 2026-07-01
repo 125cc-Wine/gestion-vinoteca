@@ -1886,7 +1886,7 @@ function PrintDoc({ venta, empresa }: {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} style={{ borderBottom: '0.5px solid #eee' }}>
-              <td style={{ padding: '5px 8px', textAlign: 'center', lineHeight: 1.4 }}>{fmtCantBot(item.cantidad)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad}</td>
               <td style={{ padding: '5px 8px' }}>{item.nombre}</td>
               <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento ? `${item.descuento}%` : '—'}</td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
@@ -1895,6 +1895,23 @@ function PrintDoc({ venta, empresa }: {
           ))}
         </tbody>
       </table>
+
+      {/* Resumen unidades */}
+      {(() => {
+        const totalBot = items.reduce((s, it) => s + it.cantidad, 0)
+        const cajas = Math.floor(totalBot / 6)
+        const resto = totalBot % 6
+        const resumen = cajas === 0
+          ? `${totalBot} botella${totalBot !== 1 ? 's' : ''}`
+          : resto === 0
+            ? `${totalBot} botellas · ${cajas} caja${cajas !== 1 ? 's' : ''} de 6`
+            : `${totalBot} botellas · ${cajas} caja${cajas !== 1 ? 's' : ''} de 6 + ${resto} bot`
+        return (
+          <div style={{ fontSize: '10px', color: '#555', textAlign: 'right', marginBottom: 8, marginTop: -4 }}>
+            Total: <strong>{resumen}</strong>
+          </div>
+        )
+      })()}
 
       {/* Totales */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
@@ -2061,7 +2078,7 @@ function PrintFactura({ venta, tipo, empresa }: {
         <tbody>
           {items.map((item, i) => (
             <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee', lineHeight: 1.4 }}>{fmtCantBot(item.cantidad)}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>{item.cantidad}</td>
               <td style={{ padding: '5px 8px', borderRight: '1px solid #eee' }}>{item.nombre}</td>
               <td style={{ padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #eee' }}>un.</td>
               <td style={{ padding: '5px 8px', textAlign: 'right', borderRight: '1px solid #eee' }}>
@@ -2081,6 +2098,23 @@ function PrintFactura({ venta, tipo, empresa }: {
           ))}
         </tbody>
       </table>
+
+      {/* Resumen unidades */}
+      {(() => {
+        const totalBot = items.reduce((s, it) => s + it.cantidad, 0)
+        const cajas = Math.floor(totalBot / 6)
+        const resto = totalBot % 6
+        const resumen = cajas === 0
+          ? `${totalBot} botella${totalBot !== 1 ? 's' : ''}`
+          : resto === 0
+            ? `${totalBot} botellas · ${cajas} caja${cajas !== 1 ? 's' : ''} de 6`
+            : `${totalBot} botellas · ${cajas} caja${cajas !== 1 ? 's' : ''} de 6 + ${resto} bot`
+        return (
+          <div style={{ fontSize: '10px', color: '#555', textAlign: 'right', marginBottom: 8, marginTop: -8 }}>
+            Total: <strong>{resumen}</strong>
+          </div>
+        )
+      })()}
 
       {/* ── Totales + IVA ── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
