@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const body = await req.json()
-  const { id, descontarStock: _ds, ...rest } = body
+  const { id, descontarStock: _ds, devolverStock: _dvs, ...rest } = body
 
   const { data, error } = await supabase
     .from('ventas')

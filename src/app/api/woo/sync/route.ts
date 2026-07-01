@@ -32,11 +32,15 @@ export async function GET() {
   }
 }
 
-// POST /api/woo/sync - sincroniza todos los productos de Aroma con WooCommerce
+// POST /api/woo/sync - sincroniza productos de Aroma con WooCommerce
+// body: { mode: 'stock' | 'precio' | 'ambos' }
 export async function POST(req: NextRequest) {
   if (!process.env.WOOCOMMERCE_CONSUMER_KEY) {
     return NextResponse.json({ error: 'WooCommerce no configurado' }, { status: 400 })
   }
+
+  const body = await req.json().catch(() => ({}))
+  const mode: 'stock' | 'precio' | 'ambos' = body.mode ?? 'ambos'
 
   const { data: productos, error } = await supabase
     .from('productos')
@@ -47,11 +51,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const results = { ok: 0, errors: 0, skipped: 0 }
+  const results = { ok: 0, errors: 0 }
 
   for (const prod of productos ?? []) {
     try {
-      await wooUpdateStockAndPrice(prod.woo_product_id, prod.precio_venta, prod.stock)
+      const payload: { regular_price?: string; stock_quantity?: number; manage_stock?: boolean } = {}
+      if (mode === 'precio' || mode === 'ambos') payload.regular_price = String(prod.precio_venta ?? 0)
+      if (mode === 'stock'  || mode === 'ambos') { payload.stock_quantity = prod.stock ?? 0; payload.manage_stock = true }
+      await wooUpdateProduct(prod.woo_product_id, payload)
       results.ok++
     } catch (e) {
       console.error(`Error sync producto ${prod.id}:`, e)
@@ -59,9 +66,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    message: `Sincronización completa`,
-    ...results,
-    total: productos?.length ?? 0,
-  })
+  return NextResponse.json({ message: 'Sincronización completa', ...results, total: productos?.length ?? 0 })
 }

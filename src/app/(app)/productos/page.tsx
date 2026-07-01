@@ -152,6 +152,8 @@ export default function ProductosPage() {
   const [saving, setSaving]         = useState(false)
   const [syncing, setSyncing]       = useState(false)
   const [reactivando, setReactivando] = useState(false)
+  const [syncMenu, setSyncMenu]     = useState(false)
+  const [syncConfirm, setSyncConfirm] = useState<'stock'|'precio'|'ambos'|null>(null)
 
   // New-product modal
   const [newModal, setNewModal] = useState(false)
@@ -575,11 +577,17 @@ export default function ProductosPage() {
     setHistorialLoading(false)
   }
 
-  async function syncWoo() {
+  async function syncWoo(mode: 'stock' | 'precio' | 'ambos') {
+    setSyncConfirm(null)
     setSyncing(true)
-    const res = await fetch('/api/woo/sync', { method: 'POST' })
-    const d = await res.json(); setSyncing(false)
-    toast_(`Sync: ${d.ok} ok, ${d.errors} errores`)
+    const res = await fetch('/api/woo/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    })
+    const d = await res.json()
+    setSyncing(false)
+    toast_(`Sync ${mode}: ${d.ok} ok${d.errors ? `, ${d.errors} errores` : ''}`)
   }
 
   async function openWooImport() {
@@ -750,7 +758,34 @@ export default function ProductosPage() {
           <button onClick={() => setShowKb(true)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '7px 12px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }} title="Atajos de teclado">?</button>
           {empresa === 'aroma' && <>
             <button onClick={openWooImport} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Importar web</button>
-            <button onClick={syncWoo} disabled={syncing} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{syncing ? '...' : 'Sync Woo'}</button>
+            <div style={{ position: 'relative' }}>
+              <button
+                disabled={syncing}
+                onClick={() => setSyncMenu(v => !v)}
+                className="btn-row"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: syncing ? 'default' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, opacity: syncing ? 0.6 : 1 }}>
+                {syncing ? '…' : 'Sync Woo'} <span style={{ fontSize: 10 }}>▾</span>
+              </button>
+              {syncMenu && !syncing && (
+                <div
+                  onMouseLeave={() => setSyncMenu(false)}
+                  style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 200, minWidth: 180, overflow: 'hidden' }}>
+                  {([
+                    ['stock',  '📦 Sync Stock',         'Actualiza el stock en WooCommerce'],
+                    ['precio', '💰 Sync Precio',         'Actualiza los precios en WooCommerce'],
+                    ['ambos',  '🔄 Sync Stock + Precio', 'Actualiza stock y precios'],
+                  ] as const).map(([mode, label, desc]) => (
+                    <button key={mode} onClick={() => { setSyncMenu(false); setSyncConfirm(mode) }}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{label}</div>
+                      <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{desc}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>}
           <button onClick={calcularCostos} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
           <button onClick={exportarExcel} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Exportar Excel</button>
@@ -1278,6 +1313,39 @@ export default function ProductosPage() {
       )}
 
       {/* ── WooCommerce import modal ───────────────────────────────── */}
+      {/* ── Modal confirmación sync WooCommerce ── */}
+      {syncConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && setSyncConfirm(null)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ fontSize: 20, marginBottom: 8 }}>
+              {syncConfirm === 'stock' ? '📦' : syncConfirm === 'precio' ? '💰' : '🔄'}
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: T.text }}>
+              Confirmar sync — {syncConfirm === 'stock' ? 'Stock' : syncConfirm === 'precio' ? 'Precio' : 'Stock + Precio'}
+            </h2>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
+              {syncConfirm === 'stock' && 'Se actualizará el stock de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
+              {syncConfirm === 'precio' && 'Se actualizarán los precios de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
+              {syncConfirm === 'ambos' && 'Se actualizarán el stock y los precios de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
+            </p>
+            <p style={{ margin: '0 0 24px', fontSize: 12, color: T.dim, background: T.bg, borderRadius: 8, padding: '8px 12px' }}>
+              Solo afecta productos con <strong>WooCommerce ID</strong> asignado. No modifica nada en Supabase.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setSyncConfirm(null)}
+                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancelar
+              </button>
+              <button onClick={() => syncWoo(syncConfirm)}
+                style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Confirmar sync
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {importModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setImportModal(false)}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
