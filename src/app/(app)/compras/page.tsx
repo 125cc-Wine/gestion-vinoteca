@@ -160,18 +160,8 @@ export default function ComprasPage() {
   const [fVencimiento, setFVencimiento] = useState('')
   const [fTotal, setFTotal] = useState<number>(0)
 
-  // Deuda directa modal state
+  // Deuda directa modal (comparte items/proveedor/notas con la OC regular)
   const [deudaModal, setDeudaModal] = useState(false)
-  const [dProveedorId, setDProveedorId] = useState('')
-  const [dProveedorNombre, setDProveedorNombre] = useState('')
-  const [dConcepto, setDConcepto] = useState('')
-  const [dNroFactura, setDNroFactura] = useState('')
-  const [dFechaFactura, setDFechaFactura] = useState(hoy())
-  const [dMonto, setDMonto] = useState<number>(0)
-  const [dCondicion, setDCondicion] = useState('contado')
-  const [dVencimiento, setDVencimiento] = useState('')
-  const [dNotas, setDNotas] = useState('')
-  const [dProvSugs, setDProvSugs] = useState(false)
 
   // Pago modal state
   const [pagoModal, setPagoModal] = useState<Compra | null>(null)
@@ -230,35 +220,43 @@ export default function ComprasPage() {
   }
 
   function abrirDeuda() {
-    setDProveedorId(''); setDProveedorNombre(''); setDConcepto('')
-    setDNroFactura(''); setDFechaFactura(hoy()); setDMonto(0)
-    setDCondicion('contado'); setDVencimiento(''); setDNotas('')
+    setProveedorId(''); setProveedorNombre(''); setItems([{ ...ITEM_EMPTY }])
+    setNotas(''); setFTotal(0)
+    setFNroFactura(''); setFFechaFactura(hoy())
+    setFCondicion('contado'); setFVencimiento('')
     setDeudaModal(true)
   }
 
   async function guardarDeuda() {
-    if (!dProveedorNombre.trim()) { showToast('Ingresá el proveedor'); return }
-    if (!dMonto || dMonto <= 0) { showToast('Ingresá el monto'); return }
-    if (!dConcepto.trim()) { showToast('Ingresá el concepto'); return }
+    if (!proveedorNombre.trim()) { showToast('Ingresá el proveedor'); return }
+    const validItems = items.filter(i => i.nombre)
+    if (!validItems.length) { showToast('Agregá al menos un ítem'); return }
+    const totalCalculado = validItems.reduce((a, i) => a + (i.subtotal || 0), 0)
+    const totalFinal = fTotal > 0 ? fTotal : totalCalculado
     setSaving(true)
-    const esContado = dCondicion === 'contado'
+    const esContado = fCondicion === 'contado'
     const res = await fetch('/api/compras', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        empresa, proveedor_id: dProveedorId || null, proveedor_nombre: dProveedorNombre,
-        concepto: dConcepto, nro_factura: dNroFactura || null,
-        fecha_factura: dFechaFactura, condicion_pago: dCondicion,
-        fecha_vencimiento: dVencimiento || null,
+        empresa, proveedor_id: proveedorId || null, proveedor_nombre: proveedorNombre,
+        items: validItems, notas: notas || '',
+        nro_factura: fNroFactura || null, fecha_factura: fFechaFactura,
+        condicion_pago: fCondicion, fecha_vencimiento: fVencimiento || null,
         estado_pago: esContado ? 'pagado' : 'pendiente',
-        monto_pagado: esContado ? dMonto : null,
-        total_manual: dMonto, notas: dNotas || '',
-        deuda_directa: true,
+        monto_pagado: esContado ? totalFinal : null,
+        total_manual: totalFinal, deuda_directa: true,
       }),
     })
     const data = await res.json(); setSaving(false)
     if (data.error) { showToast('Error: ' + data.error); return }
     setDeudaModal(false); cargar(empresa); showToast('Deuda registrada')
+  }
+
+  async function eliminarDeuda(id: string) {
+    if (!confirm('¿Eliminar esta deuda permanentemente?')) return
+    await fetch(`/api/compras?id=${id}&hard=true`, { method: 'DELETE' })
+    setDetalle(null); cargar(empresa); showToast('Deuda eliminada')
   }
 
   function selProducto(idx: number, prod: Producto) {
@@ -846,14 +844,21 @@ export default function ComprasPage() {
 
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setWaModal(generarMensajeWA(detalle))}
-                  style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                  Enviar por WhatsApp
-                </button>
+                {detalle.numero.startsWith('DEU-') ? (
+                  <button onClick={() => eliminarDeuda(detalle.id)}
+                    style={{ background: T.redBg, border: `1px solid ${T.redBd}`, color: T.red, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    🗑 Eliminar deuda
+                  </button>
+                ) : (
+                  <button onClick={() => setWaModal(generarMensajeWA(detalle))}
+                    style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    Enviar por WhatsApp
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {NEXT_ESTADO[detalle.estado] && (
+                {NEXT_ESTADO[detalle.estado] && !detalle.numero.startsWith('DEU-') && (
                   <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s' }} onClick={() => { avanzarEstado(detalle); setDetalle(null) }}>
                     → {ESTADO_LABEL[NEXT_ESTADO[detalle.estado]]}
                   </button>
@@ -912,93 +917,160 @@ export default function ComprasPage() {
         </div>
       )}
 
-      {/* ── Modal deuda directa ── */}
+      {/* ── Modal deuda directa (mismo flujo que OC + datos de factura) ── */}
       {deudaModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={e => e.target === e.currentTarget && setDeudaModal(false)}>
-          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 700, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Cargar deuda / factura a pagar</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Registra una deuda existente sin necesidad de crear una orden de compra</p>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Cargar deuda / factura existente</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Se registra como ya recibido y actualiza el stock igual que una orden recibida</p>
               </div>
               <button onClick={() => setDeudaModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
-            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Proveedor */}
               <div style={{ position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Proveedor *</label>
-                <input style={{ ...INP, width: '100%' }} placeholder="Nombre del proveedor..." value={dProveedorNombre}
-                  onChange={e => { setDProveedorNombre(e.target.value); setDProveedorId(''); setDProvSugs(true) }}
-                  onFocus={() => setDProvSugs(true)} onBlur={() => setTimeout(() => setDProvSugs(false), 150)} />
-                {dProvSugs && dProveedorNombre && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, zIndex: 10, maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', marginTop: 2 }}>
-                    {proveedores.filter(p => normalize(p.razon_social || p.nombre).includes(normalize(dProveedorNombre))).map(p => (
-                      <button key={p.id} className="drop-item" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '9px 14px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: T.text }}
-                        onMouseDown={() => { setDProveedorId(p.id); setDProveedorNombre(p.razon_social || p.nombre); setDProvSugs(false) }}>
-                        {p.razon_social || p.nombre}
-                      </button>
+                <input ref={provRef} style={{ ...INP, width: '100%' }} placeholder="Buscar proveedor..."
+                  value={proveedorNombre}
+                  onFocus={() => setProvSugsOpen(true)}
+                  onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
+                  onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
+                {provSugsOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                    {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
+                      <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}` }}
+                        onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                        <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
+                        {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: T.muted }}> — {p.razon_social}</span>}
+                      </div>
                     ))}
+                    {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).length === 0 && (
+                      <div style={{ padding: '8px 12px', fontSize: 12, color: T.dim }}>Sin resultados — se usará el nombre ingresado</div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Concepto */}
+              {/* Ítems — misma tabla que OC */}
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Concepto *</label>
-                <input style={{ ...INP, width: '100%' }} placeholder="Ej: Compra vinos octubre 2024, Stock inicial..." value={dConcepto} onChange={e => setDConcepto(e.target.value)} />
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Productos / ítems recibidos</div>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'visible' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+                        {['Producto / concepto', 'Cajas', 'Precio x u.', 'Unidades', 'Subtotal', ''].map(h => (
+                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => (
+                        <tr key={idx} style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td style={{ padding: '6px 8px', position: 'relative' }}>
+                            <input style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto o escribir concepto..."
+                              value={item.nombre}
+                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
+                              onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
+                            {prodSugs === idx && (
+                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                                {productos.filter(p => !item.nombre || normalize(p.nombre).includes(normalize(item.nombre))).slice(0, 12).map(p => (
+                                  <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}` }} onMouseDown={() => selProducto(idx, p)}>
+                                    <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
+                                    {p.bodega && <span style={{ color: T.muted }}> — {p.bodega}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1} onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 95 }} min={0} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
+                            {item.unidades_por_caja && item.unidades_por_caja > 1 ? <span>{item.cantidad} u.</span> : <span style={{ color: T.dim }}>—</span>}
+                          </td>
+                          <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                            {items.length > 1 && <button style={{ background: 'transparent', border: 'none', color: T.dim, fontSize: 16, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setItems(items.filter((_, i) => i !== idx))}>×</button>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button className="btn-row" onClick={() => setItems([...items, { ...ITEM_EMPTY }])}
+                  style={{ marginTop: 8, background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 8, padding: '6px 12px', fontSize: 12, color: T.wine, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                  + agregar línea
+                </button>
               </div>
 
-              {/* Nro factura + Fecha */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Nro. de factura</label>
-                  <input style={{ ...INP, width: '100%' }} placeholder="0001-00012345" value={dNroFactura} onChange={e => setDNroFactura(e.target.value)} />
+              {/* Separador — datos de factura */}
+              <div style={{ borderTop: `2px dashed ${T.border}`, paddingTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Datos de la factura</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Nro. de factura</label>
+                    <input style={{ ...INP, width: '100%' }} placeholder="0001-00012345" value={fNroFactura} onChange={e => setFNroFactura(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha factura</label>
+                    <input type="date" style={{ ...INP, width: '100%' }} value={fFechaFactura}
+                      onChange={e => { setFFechaFactura(e.target.value); setFVencimiento(calcVencimiento(fCondicion, e.target.value)) }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Condición de pago</label>
+                    <select style={{ ...INP, width: '100%' }} value={fCondicion}
+                      onChange={e => { setFCondicion(e.target.value); setFVencimiento(calcVencimiento(e.target.value, fFechaFactura)) }}>
+                      <option value="contado">Contado (ya pagado)</option>
+                      <option value="30_dias">30 días</option>
+                      <option value="60_dias">60 días</option>
+                      <option value="90_dias">90 días</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Vencimiento</label>
+                    <input type="date" style={{ ...INP, width: '100%' }} value={fVencimiento} onChange={e => setFVencimiento(e.target.value)} />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha factura</label>
-                  <input type="date" style={{ ...INP, width: '100%' }} value={dFechaFactura}
-                    onChange={e => { setDFechaFactura(e.target.value); setDVencimiento(calcVencimiento(dCondicion, e.target.value)) }} />
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                    Monto final de la factura
+                    <span style={{ fontWeight: 400, color: T.dim, marginLeft: 6 }}>
+                      (calculado: ${items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0).toLocaleString('es-AR')} — dejá en 0 para usar ese valor)
+                    </span>
+                  </label>
+                  <input type="number" min={0} step={0.01} style={{ ...INP, width: '100%', fontWeight: 600, fontSize: 15 }}
+                    value={fTotal || ''} onChange={e => setFTotal(parseFloat(e.target.value) || 0)} placeholder="0" />
                 </div>
-              </div>
-
-              {/* Monto */}
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto total *</label>
-                <input type="number" min={0} step={0.01} style={{ ...INP, width: '100%', fontWeight: 600, fontSize: 15 }} placeholder="0" value={dMonto || ''} onChange={e => setDMonto(parseFloat(e.target.value) || 0)} />
-              </div>
-
-              {/* Condición + Vencimiento */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Condición de pago</label>
-                  <select style={{ ...INP, width: '100%' }} value={dCondicion}
-                    onChange={e => { setDCondicion(e.target.value); setDVencimiento(calcVencimiento(e.target.value, dFechaFactura)) }}>
-                    <option value="contado">Contado (ya pagado)</option>
-                    <option value="30_dias">30 días</option>
-                    <option value="60_dias">60 días</option>
-                    <option value="90_dias">90 días</option>
-                  </select>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
+                  <input style={{ ...INP, width: '100%' }} placeholder="Observaciones..." value={notas} onChange={e => setNotas(e.target.value)} />
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Vencimiento</label>
-                  <input type="date" style={{ ...INP, width: '100%' }} value={dVencimiento} onChange={e => setDVencimiento(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Notas */}
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
-                <input style={{ ...INP, width: '100%' }} placeholder="Observaciones..." value={dNotas} onChange={e => setDNotas(e.target.value)} />
               </div>
 
             </div>
-            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeudaModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
-              <button className="btn-wine" onClick={guardarDeuda} disabled={saving} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'Guardando...' : 'Registrar deuda →'}
-              </button>
+
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
+                Total: <span style={{ color: T.green }}>
+                  ${(fTotal > 0 ? fTotal : items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0)).toLocaleString('es-AR')}
+                </span>
+              </span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setDeudaModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                <button className="btn-wine" onClick={guardarDeuda} disabled={saving} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
+                  {saving ? 'Guardando...' : 'Registrar deuda →'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

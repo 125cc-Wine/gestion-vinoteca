@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
       .from('compras').select('*', { count: 'exact', head: true })
       .eq('empresa', empresa).like('numero', 'DEU-%')
     const numero = `DEU-${String((count || 0) + 1).padStart(5, '0')}`
-    const deudaItems = [{ nombre: concepto || 'Deuda directa', cantidad: 1, precio_unitario: total_manual, subtotal: total_manual }]
+    const deudaTotal = total_manual > 0 ? total_manual : (items ?? []).reduce((a: number, i: { subtotal: number }) => a + (i.subtotal || 0), 0)
     const { data, error } = await supabase.from('compras').insert([{
       empresa, numero, proveedor_id: proveedor_id || null, proveedor_nombre,
-      items: deudaItems, total: total_manual, notas: notas || '',
+      items: items ?? [], total: deudaTotal, notas: notas || '',
       fecha_esperada: null, estado: 'recibido',
       nro_factura: nro_factura || null, fecha_factura: fecha_factura || null,
       condicion_pago: condicion_pago || 'contado',
@@ -44,6 +44,17 @@ export async function POST(req: NextRequest) {
       monto_pagado: monto_pagado || null,
     }]).select().single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    // Actualizar stock igual que al recibir una OC
+    for (const item of (items ?? []) as { producto_id?: string; nombre: string; cantidad: number }[]) {
+      if (!item.producto_id) continue
+      const { data: prod } = await supabase.from('productos').select('id, stock, nombre, empresa').eq('id', item.producto_id).single()
+      if (!prod) continue
+      const nuevoStock = (prod.stock || 0) + item.cantidad
+      await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+      const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+      const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
+      if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+    }
     return NextResponse.json(data)
   }
 
@@ -105,8 +116,14 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
+  const hard = req.nextUrl.searchParams.get('hard') === 'true'
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-  const { error } = await supabase.from('compras').update({ estado: 'cancelado' }).eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (hard) {
+    const { error } = await supabase.from('compras').delete().eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  } else {
+    const { error } = await supabase.from('compras').update({ estado: 'cancelado' }).eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
