@@ -158,6 +158,7 @@ export default function ComprasPage() {
   const [fFechaFactura, setFFechaFactura] = useState('')
   const [fCondicion, setFCondicion] = useState('contado')
   const [fVencimiento, setFVencimiento] = useState('')
+  const [fTotal, setFTotal] = useState<number>(0)
 
   // Pago modal state
   const [pagoModal, setPagoModal] = useState<Compra | null>(null)
@@ -286,6 +287,7 @@ export default function ComprasPage() {
     setFCondicion(cond)
     const fechaBase = c.fecha_factura || hoy()
     setFVencimiento(c.fecha_vencimiento || calcVencimiento(cond, fechaBase))
+    setFTotal(c.total || 0)
     setFacturaModal(c)
   }
 
@@ -300,10 +302,11 @@ export default function ComprasPage() {
       condicion_pago: fCondicion,
       fecha_vencimiento: fVencimiento,
       estado_pago: esContado ? 'pagado' : 'pendiente',
+      total: fTotal,
     }
     if (esContado) {
       body.fecha_pago = fFechaFactura
-      body.monto_pagado = facturaModal.total
+      body.monto_pagado = fTotal
     }
     const res = await fetch('/api/compras', {
       method: 'PUT',
@@ -315,7 +318,7 @@ export default function ComprasPage() {
     setFacturaModal(null)
     // update detalle if open
     if (detalle && detalle.id === facturaModal.id) {
-      setDetalle({ ...detalle, ...body, nro_factura: fNroFactura, fecha_factura: fFechaFactura, condicion_pago: fCondicion, fecha_vencimiento: fVencimiento, estado_pago: esContado ? 'pagado' : 'pendiente', fecha_pago: esContado ? fFechaFactura : detalle.fecha_pago, monto_pagado: esContado ? facturaModal.total : detalle.monto_pagado })
+      setDetalle({ ...detalle, ...body, nro_factura: fNroFactura, fecha_factura: fFechaFactura, condicion_pago: fCondicion, fecha_vencimiento: fVencimiento, estado_pago: esContado ? 'pagado' : 'pendiente', fecha_pago: esContado ? fFechaFactura : detalle.fecha_pago, monto_pagado: esContado ? fTotal : detalle.monto_pagado, total: fTotal })
     }
     cargar(empresa)
     showToast('Factura cargada')
@@ -888,6 +891,22 @@ export default function ComprasPage() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Vencimiento</label>
                   <input type="date" style={{ ...INP, width: '100%' }} value={fVencimiento} onChange={e => setFVencimiento(e.target.value)} />
                 </div>
+              </div>
+              {/* Fila 3 — Monto final */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
+                  Monto final de la factura
+                  <span style={{ fontWeight: 400, color: T.dim, marginLeft: 6 }}>(estimado: ${(facturaModal?.total ?? 0).toLocaleString('es-AR')})</span>
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  style={{ ...INP, width: '100%', fontWeight: 600, fontSize: 15 }}
+                  value={fTotal || ''}
+                  onChange={e => setFTotal(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                />
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
