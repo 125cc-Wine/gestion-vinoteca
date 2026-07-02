@@ -884,6 +884,10 @@ export default function ComprasPage() {
                   style={{ background: T.surface, border: `1px solid ${T.border2}`, color: T.text, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                   ✏️ Editar
                 </button>
+                <button onClick={() => window.open(`/api/print/compra?id=${detalle.id}&empresa=${empresa}`, '_blank')}
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  🖨️ Imprimir
+                </button>
                 {!detalle.numero.startsWith('DEU-') && (
                   <button onClick={() => setWaModal(generarMensajeWA(detalle))}
                     style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
