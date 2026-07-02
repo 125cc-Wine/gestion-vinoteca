@@ -1506,7 +1506,12 @@ export default function VentasPage() {
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                onClick={() => window.open(`/api/print/pedido?id=${detallePedido.id}&empresa=${empresa}`, '_blank')}
+                style={{ background: 'none', border: `1px solid ${C.border}`, color: C.muted, borderRadius: 8, padding: '6px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
+                🖨️ Imprimir
+              </button>
               <button className="vbtn" style={btn('default')} onClick={() => setDetallePedido(null)}>Cerrar</button>
             </div>
           </div>
