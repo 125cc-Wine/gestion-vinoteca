@@ -38,11 +38,28 @@ export async function GET(req: NextRequest) {
   const fecha = pedido.created_at ? new Date(pedido.created_at).toLocaleDateString('es-AR') : ''
   const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR') : null
 
+  const totalBot = items.reduce((s, it) => s + (it.cantidad ?? 0), 0)
+  const cajasTotal = Math.floor(totalBot / 6)
+  const restoTotal = totalBot % 6
+  const resumenUnidades = totalBot === 0 ? '' : cajasTotal === 0
+    ? `${totalBot} botella${totalBot !== 1 ? 's' : ''}`
+    : restoTotal === 0
+      ? `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6`
+      : `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6 + ${restoTotal} bot`
+
+  const ESTADO_COLOR: Record<string, string> = {
+    pendiente:  'background:rgba(160,112,16,0.13);color:#A07010;border:1px solid rgba(160,112,16,0.3)',
+    confirmado: 'background:rgba(43,94,160,0.12);color:#2B5EA0;border:1px solid rgba(43,94,160,0.3)',
+    entregado:  'background:rgba(45,122,79,0.12);color:#2D7A4F;border:1px solid rgba(45,122,79,0.3)',
+    cancelado:  'background:rgba(160,60,60,0.10);color:#8A3030;border:1px solid rgba(160,60,60,0.25)',
+  }
+  const estadoStyle = ESTADO_COLOR[pedido.estado] ?? ESTADO_COLOR['pendiente']
+
   const itemsRows = items.map((it, i) => `
     <tr>
       <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
       <td>${it.nombre ?? ''}</td>
-      <td style="text-align:center;">${it.cantidad}</td>
+      <td style="text-align:center;font-weight:600;">${it.cantidad}</td>
     </tr>`).join('')
 
   const html = `<!DOCTYPE html>
@@ -53,33 +70,57 @@ export async function GET(req: NextRequest) {
   <title>Pedido ${pedido.numero ?? ''}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    @page { size: A4; margin: 15mm; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #1A1210; background: #FFFFFF; margin: 0; padding: 0; }
-    .page { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #800000; padding-bottom: 20px; margin-bottom: 24px; }
-    .empresa-nombre { font-size: 20px; font-weight: 700; color: #800000; margin: 4px 0 2px; }
-    .empresa-sub { font-size: 11px; color: #6B5D55; line-height: 1.5; }
-    .doc-info { text-align: right; }
-    .doc-tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6B5D55; }
-    .doc-num { font-size: 22px; font-weight: 700; color: #800000; margin: 2px 0; }
-    .doc-fecha { font-size: 12px; color: #6B5D55; }
-    .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #A89888; margin: 20px 0 6px; }
-    .cliente-box { background: #F5F1EC; border: 1px solid #DDD0C0; border-radius: 6px; padding: 12px 16px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 24px; }
-    .cliente-field label { display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #A89888; margin-bottom: 2px; }
-    .cliente-field span { color: #1A1210; font-size: 13px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-    thead th { background: #800000; color: #FFFFFF; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; }
-    thead th:first-child { border-radius: 4px 0 0 0; }
-    thead th:last-child { border-radius: 0 4px 0 0; }
-    tbody td { padding: 7px 12px; border-bottom: 1px solid #DDD0C0; font-size: 12px; vertical-align: middle; }
-    tbody tr:nth-child(even) td { background: #F5F1EC; }
-    .estado-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(212,130,10,0.12); color: #A07010; border: 1px solid rgba(212,130,10,0.3); }
+    @page { size: A4 portrait; margin: 16mm 18mm; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1A1210; background: #fff; margin: 0; padding: 0; font-size: 13px; line-height: 1.4; }
+    .page { width: 100%; }
+
+    /* toolbar */
     .toolbar { position: fixed; top: 12px; right: 16px; display: flex; gap: 8px; z-index: 100; }
-    .toolbar button { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 600; }
-    .btn-print { background: #800000; color: #FFF; }
-    .btn-close { background: #F5F1EC; border: 1px solid #DDD0C0 !important; color: #6B5D55; }
-    .footer { margin-top: 32px; border-top: 1px solid #DDD0C0; padding-top: 12px; text-align: center; font-size: 10px; color: #A89888; }
-    @media print { .toolbar { display: none !important; } }
+    .toolbar button { padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 600; }
+    .btn-print { background: #800000; color: #fff; }
+    .btn-close  { background: #F5F1EC; border: 1px solid #DDD0C0 !important; color: #6B5D55; }
+
+    /* header */
+    .header { display: grid; grid-template-columns: 1fr auto; align-items: stretch; border: 2px solid #800000; border-radius: 6px; overflow: hidden; margin-bottom: 14px; }
+    .header-empresa { padding: 14px 18px; border-right: 2px solid #800000; }
+    .empresa-nombre { font-size: 18px; font-weight: 700; color: #800000; margin: 0 0 3px; }
+    .empresa-sub { font-size: 10.5px; color: #6B5D55; line-height: 1.6; }
+    .header-doc { background: #800000; color: #fff; padding: 14px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 160px; }
+    .doc-tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.85; margin-bottom: 4px; }
+    .doc-num  { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 4px; }
+    .doc-fecha { font-size: 11px; opacity: 0.9; }
+    .estado-badge { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; ${estadoStyle}; }
+
+    /* info grid */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .info-box { border: 1px solid #DDD0C0; border-radius: 5px; overflow: hidden; }
+    .info-box-title { background: #F0EBE5; border-bottom: 1px solid #DDD0C0; padding: 4px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8A7068; }
+    .info-box-body { padding: 8px 12px; font-size: 12px; }
+    .info-row { margin-bottom: 3px; }
+    .info-row:last-child { margin-bottom: 0; }
+    .info-label { font-size: 9.5px; color: #8A7068; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .info-val { color: #1A1210; }
+
+    /* table */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #800000; color: #fff; padding: 7px 10px; font-size: 10.5px; font-weight: 600; text-align: left; }
+    thead th:first-child { border-radius: 3px 0 0 0; }
+    thead th:last-child  { border-radius: 0 3px 0 0; }
+    tbody td { padding: 6px 10px; border-bottom: 1px solid #E8E0D8; font-size: 12px; vertical-align: middle; }
+    tbody tr:nth-child(even) td { background: #FAF7F4; }
+    tbody tr:last-child td { border-bottom: none; }
+    .resumen-unidades { font-size: 10.5px; color: #6B5D55; text-align: right; margin-top: 5px; padding-right: 4px; }
+
+    /* firmas */
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    .firma-box { text-align: center; }
+    .firma-linea { border-top: 1px solid #6B5D55; margin-bottom: 5px; }
+    .firma-label { font-size: 10px; color: #6B5D55; }
+
+    /* footer */
+    .footer { margin-top: 24px; border-top: 1px solid #DDD0C0; padding-top: 8px; text-align: center; font-size: 9.5px; color: #A89888; }
+
+    @media print { .toolbar { display: none !important; } body { background: #fff; } }
   </style>
 </head>
 <body>
@@ -91,37 +132,50 @@ export async function GET(req: NextRequest) {
 
 <div class="page">
 
+  <!-- HEADER -->
   <div class="header">
-    <div>
-      <div style="font-size:28px;line-height:1;">🍷</div>
+    <div class="header-empresa">
       <div class="empresa-nombre">${empresa.nombre}</div>
-      <div class="empresa-sub">${empresa.domicilio}<br>Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}</div>
+      <div class="empresa-sub">
+        ${empresa.domicilio}<br>
+        Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}
+      </div>
     </div>
-    <div class="doc-info">
+    <div class="header-doc">
       <div class="doc-tipo">Pedido</div>
       <div class="doc-num">${pedido.numero ?? ''}</div>
-      <div class="doc-fecha">Fecha: ${fecha}</div>
-      ${fechaEntrega ? `<div class="doc-fecha" style="margin-top:4px;">Entrega: <strong>${fechaEntrega}</strong></div>` : ''}
-      <div style="margin-top:8px;"><span class="estado-badge">${pedido.estado ?? ''}</span></div>
+      <div class="doc-fecha">${fecha}</div>
+      <span class="estado-badge">${pedido.estado ?? ''}</span>
     </div>
   </div>
 
-  <div class="section-title">Datos del pedido</div>
-  <div class="cliente-box">
-    <div class="cliente-field"><label>Cliente</label><span>${pedido.cliente_nombre || 'Consumidor Final'}</span></div>
-    ${cliente?.cuit ? `<div class="cliente-field"><label>CUIT</label><span style="font-family:monospace;">${cliente.cuit}</span></div>` : ''}
-    ${cliente?.direccion ? `<div class="cliente-field"><label>Dirección</label><span>${cliente.direccion}</span></div>` : ''}
-    ${cliente?.telefono ? `<div class="cliente-field"><label>Teléfono</label><span>${cliente.telefono}</span></div>` : ''}
-    ${cliente?.email ? `<div class="cliente-field"><label>Email</label><span>${cliente.email}</span></div>` : ''}
-    ${pedido.vendedor_nombre ? `<div class="cliente-field"><label>Vendedor</label><span>${pedido.vendedor_nombre}</span></div>` : ''}
-    ${pedido.notas ? `<div class="cliente-field" style="flex-basis:100%;"><label>Notas</label><span>${pedido.notas}</span></div>` : ''}
+  <!-- INFO GRID -->
+  <div class="info-grid">
+    <div class="info-box">
+      <div class="info-box-title">Cliente</div>
+      <div class="info-box-body">
+        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${pedido.cliente_nombre || 'Consumidor Final'}</span></div>
+        ${cliente?.cuit ? `<div class="info-row"><span class="info-label">CUIT: </span><span class="info-val" style="font-family:monospace;">${cliente.cuit}</span></div>` : ''}
+        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${cliente.direccion}</span></div>` : ''}
+        ${cliente?.telefono ? `<div class="info-row"><span class="info-label">Tel: </span><span class="info-val">${cliente.telefono}</span></div>` : ''}
+        ${cliente?.email ? `<div class="info-row"><span class="info-val">${cliente.email}</span></div>` : ''}
+      </div>
+    </div>
+    <div class="info-box">
+      <div class="info-box-title">Datos del pedido</div>
+      <div class="info-box-body">
+        ${fechaEntrega ? `<div class="info-row"><span class="info-label">Entrega: </span><span class="info-val" style="font-weight:600;">${fechaEntrega}</span></div>` : ''}
+        ${pedido.vendedor_nombre ? `<div class="info-row"><span class="info-label">Vendedor: </span><span class="info-val">${pedido.vendedor_nombre}</span></div>` : ''}
+        ${pedido.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${pedido.notas}</span></div>` : '<div class="info-row" style="color:#A89888;font-size:11px;font-style:italic;">Sin observaciones</div>'}
+      </div>
+    </div>
   </div>
 
-  <div class="section-title">Detalle</div>
+  <!-- TABLA -->
   <table>
     <thead>
       <tr>
-        <th style="width:28px;text-align:center;">#</th>
+        <th style="width:26px;text-align:center;">#</th>
         <th>Descripción</th>
         <th style="width:80px;text-align:center;">Cant.</th>
       </tr>
@@ -130,10 +184,27 @@ export async function GET(req: NextRequest) {
       ${itemsRows || '<tr><td colspan="3" style="text-align:center;color:#A89888;padding:20px;">Sin ítems</td></tr>'}
     </tbody>
   </table>
+  ${resumenUnidades ? `<div class="resumen-unidades">Total: <strong>${resumenUnidades}</strong></div>` : ''}
 
-  <div class="footer">${empresa.nombre} &nbsp;·&nbsp; ${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit}</div>
+  <!-- FIRMAS -->
+  <div class="firmas">
+    <div class="firma-box">
+      <div class="firma-linea"></div>
+      <div class="firma-label">Firma y aclaración del cliente</div>
+    </div>
+    <div class="firma-box">
+      <div class="firma-linea"></div>
+      <div class="firma-label">Firma y sello empresa</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    ${empresa.nombre} &nbsp;·&nbsp; ${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit} &nbsp;·&nbsp; Tel: ${empresa.telefono}
+  </div>
 
 </div>
+<script>window.onload = function() { window.print(); }</script>
 </body>
 </html>`
 
