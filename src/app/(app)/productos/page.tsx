@@ -270,6 +270,10 @@ export default function ProductosPage() {
   // Tabs
   const [activeTab, setActiveTab] = useState<'catalogo' | 'rentabilidad'>('catalogo')
 
+  // Catálogo sort
+  const [sortCampo, setSortCampo] = useState<'nombre' | 'precio_venta' | 'precio_costo' | 'stock' | ''>('')
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc')
+
   // Rentabilidad sort
   const [rentSort, setRentSort]     = useState<'margen_pct' | 'margen_abs' | 'precio_venta' | 'nombre'>('margen_pct')
   const [rentDir, setRentDir]       = useState<'asc' | 'desc'>('desc')
@@ -292,14 +296,23 @@ export default function ProductosPage() {
   const searchRef = useRef<HTMLInputElement>(null)
 
   // ── Computed (declared before effects so closures capture them) ───────────
-  const filtrados = productos.filter(p => {
-    const q = normalize(busqueda)
-    if (q && !normalize(`${p.nombre}${p.bodega}${p.varietal}`).includes(q)) return false
-    if (filtroCategoria && p.categoria !== filtroCategoria) return false
-    if (filtroBodega && p.bodega !== filtroBodega) return false
-    if (filtroSinPrecio && (p.precio_venta || 0) > 0) return false
-    return true
-  })
+  const filtrados = (() => {
+    const base = productos.filter(p => {
+      const q = normalize(busqueda)
+      if (q && !normalize(`${p.nombre}${p.bodega}${p.varietal}`).includes(q)) return false
+      if (filtroCategoria && p.categoria !== filtroCategoria) return false
+      if (filtroBodega && p.bodega !== filtroBodega) return false
+      if (filtroSinPrecio && (p.precio_venta || 0) > 0) return false
+      return true
+    })
+    if (!sortCampo) return base
+    return [...base].sort((a, b) => {
+      let va: number | string = sortCampo === 'nombre' ? (a.nombre ?? '') : (a[sortCampo] ?? 0)
+      let vb: number | string = sortCampo === 'nombre' ? (b.nombre ?? '') : (b[sortCampo] ?? 0)
+      if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
+      return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
+    })
+  })()
   const allCheck      = filtrados.length > 0 && filtrados.every(p => seleccionados.has(p.id!))
   const someCheck     = filtrados.some(p => seleccionados.has(p.id!))
   const totalStock    = productos.reduce((a, p) => a + p.stock, 0)
@@ -856,6 +869,33 @@ export default function ProductosPage() {
         <select style={{ ...INP, width: 'auto', minWidth: 140 }} value={filtroSinPrecio ? 'sinprecio' : ''} onChange={e => setFiltroSinPrecio(e.target.value === 'sinprecio')}>
           <option value="">Todo el stock</option>
           <option value="sinprecio">Sin precio</option>
+        </select>
+        <select style={{ ...INP, width: 'auto', minWidth: 160 }}
+          value={sortCampo ? `${sortCampo}_${sortDir}` : ''}
+          onChange={e => {
+            const v = e.target.value
+            if (!v) { setSortCampo(''); return }
+            const OPTS: Record<string, { campo: typeof sortCampo; dir: typeof sortDir }> = {
+              'nombre_asc':        { campo: 'nombre',        dir: 'asc'  },
+              'nombre_desc':       { campo: 'nombre',        dir: 'desc' },
+              'precio_venta_asc':  { campo: 'precio_venta',  dir: 'asc'  },
+              'precio_venta_desc': { campo: 'precio_venta',  dir: 'desc' },
+              'precio_costo_asc':  { campo: 'precio_costo',  dir: 'asc'  },
+              'precio_costo_desc': { campo: 'precio_costo',  dir: 'desc' },
+              'stock_asc':         { campo: 'stock',         dir: 'asc'  },
+              'stock_desc':        { campo: 'stock',         dir: 'desc' },
+            }
+            const o = OPTS[v]; if (o) { setSortCampo(o.campo); setSortDir(o.dir) }
+          }}>
+          <option value="">Ordenar por...</option>
+          <option value="nombre_asc">Nombre A → Z</option>
+          <option value="nombre_desc">Nombre Z → A</option>
+          <option value="precio_venta_asc">Precio ↑</option>
+          <option value="precio_venta_desc">Precio ↓</option>
+          <option value="precio_costo_asc">Costo ↑</option>
+          <option value="precio_costo_desc">Costo ↓</option>
+          <option value="stock_asc">Stock ↑</option>
+          <option value="stock_desc">Stock ↓</option>
         </select>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           <button className={`pill${!filtroCategoria ? ' on' : ''}`} onClick={() => setFiltroCategoria('')}>Todos</button>
