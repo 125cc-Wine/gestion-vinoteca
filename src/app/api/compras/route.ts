@@ -18,14 +18,42 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { empresa, proveedor_id, proveedor_nombre, items, notas, fecha_esperada } = body
+  const { empresa, proveedor_id, proveedor_nombre, items, notas, fecha_esperada,
+    deuda_directa, concepto, nro_factura, fecha_factura, condicion_pago,
+    fecha_vencimiento, estado_pago, monto_pagado, total_manual } = body
 
-  if (!empresa || !proveedor_nombre || !items?.length) {
+  if (!empresa || !proveedor_nombre) {
+    return NextResponse.json({ error: 'faltan campos' }, { status: 400 })
+  }
+
+  if (deuda_directa) {
+    // Deuda directa: número DEU-, estado recibido, factura ya cargada
+    const { count } = await supabase
+      .from('compras').select('*', { count: 'exact', head: true })
+      .eq('empresa', empresa).like('numero', 'DEU-%')
+    const numero = `DEU-${String((count || 0) + 1).padStart(5, '0')}`
+    const deudaItems = [{ nombre: concepto || 'Deuda directa', cantidad: 1, precio_unitario: total_manual, subtotal: total_manual }]
+    const { data, error } = await supabase.from('compras').insert([{
+      empresa, numero, proveedor_id: proveedor_id || null, proveedor_nombre,
+      items: deudaItems, total: total_manual, notas: notas || '',
+      fecha_esperada: null, estado: 'recibido',
+      nro_factura: nro_factura || null, fecha_factura: fecha_factura || null,
+      condicion_pago: condicion_pago || 'contado',
+      fecha_vencimiento: fecha_vencimiento || null,
+      estado_pago: estado_pago || 'pendiente',
+      monto_pagado: monto_pagado || null,
+    }]).select().single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+  }
+
+  if (!items?.length) {
     return NextResponse.json({ error: 'faltan campos' }, { status: 400 })
   }
 
   const { count } = await supabase
-    .from('compras').select('*', { count: 'exact', head: true }).eq('empresa', empresa)
+    .from('compras').select('*', { count: 'exact', head: true })
+    .eq('empresa', empresa).not('numero', 'like', 'DEU-%')
 
   const numero = `OC-${String((count || 0) + 1).padStart(5, '0')}`
   const total = items.reduce((a: number, i: { subtotal: number }) => a + (i.subtotal || 0), 0)

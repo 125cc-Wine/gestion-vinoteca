@@ -160,6 +160,19 @@ export default function ComprasPage() {
   const [fVencimiento, setFVencimiento] = useState('')
   const [fTotal, setFTotal] = useState<number>(0)
 
+  // Deuda directa modal state
+  const [deudaModal, setDeudaModal] = useState(false)
+  const [dProveedorId, setDProveedorId] = useState('')
+  const [dProveedorNombre, setDProveedorNombre] = useState('')
+  const [dConcepto, setDConcepto] = useState('')
+  const [dNroFactura, setDNroFactura] = useState('')
+  const [dFechaFactura, setDFechaFactura] = useState(hoy())
+  const [dMonto, setDMonto] = useState<number>(0)
+  const [dCondicion, setDCondicion] = useState('contado')
+  const [dVencimiento, setDVencimiento] = useState('')
+  const [dNotas, setDNotas] = useState('')
+  const [dProvSugs, setDProvSugs] = useState(false)
+
   // Pago modal state
   const [pagoModal, setPagoModal] = useState<Compra | null>(null)
   const [pFechaPago, setPFechaPago] = useState('')
@@ -214,6 +227,38 @@ export default function ComprasPage() {
   function abrirNuevo() {
     setProveedorId(''); setProveedorNombre(''); setItems([{ ...ITEM_EMPTY }])
     setNotas(''); setFechaEsperada(''); setModal(true)
+  }
+
+  function abrirDeuda() {
+    setDProveedorId(''); setDProveedorNombre(''); setDConcepto('')
+    setDNroFactura(''); setDFechaFactura(hoy()); setDMonto(0)
+    setDCondicion('contado'); setDVencimiento(''); setDNotas('')
+    setDeudaModal(true)
+  }
+
+  async function guardarDeuda() {
+    if (!dProveedorNombre.trim()) { showToast('Ingresá el proveedor'); return }
+    if (!dMonto || dMonto <= 0) { showToast('Ingresá el monto'); return }
+    if (!dConcepto.trim()) { showToast('Ingresá el concepto'); return }
+    setSaving(true)
+    const esContado = dCondicion === 'contado'
+    const res = await fetch('/api/compras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa, proveedor_id: dProveedorId || null, proveedor_nombre: dProveedorNombre,
+        concepto: dConcepto, nro_factura: dNroFactura || null,
+        fecha_factura: dFechaFactura, condicion_pago: dCondicion,
+        fecha_vencimiento: dVencimiento || null,
+        estado_pago: esContado ? 'pagado' : 'pendiente',
+        monto_pagado: esContado ? dMonto : null,
+        total_manual: dMonto, notas: dNotas || '',
+        deuda_directa: true,
+      }),
+    })
+    const data = await res.json(); setSaving(false)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    setDeudaModal(false); cargar(empresa); showToast('Deuda registrada')
   }
 
   function selProducto(idx: number, prod: Producto) {
@@ -410,8 +455,18 @@ export default function ComprasPage() {
           return fa.localeCompare(fb)
         })
     }
+    if (filtroEstado === 'deudas') {
+      return compras
+        .filter(c => c.numero.startsWith('DEU-'))
+        .sort((a, b) => {
+          const fa = a.fecha_vencimiento || '9999-12-31'
+          const fb = b.fecha_vencimiento || '9999-12-31'
+          return fa.localeCompare(fb)
+        })
+    }
     return compras.filter(c => {
       if (c.estado === 'cancelado') return false
+      if (c.numero.startsWith('DEU-') && filtroEstado === '') return true
       if (filtroEstado && c.estado !== filtroEstado) return false
       return true
     })
@@ -419,14 +474,17 @@ export default function ComprasPage() {
 
   // --- KPIs ---
   const facturasPagar = compras.filter(c => c.estado === 'recibido' && c.estado_pago !== 'pagado' && c.estado_pago !== 'sin_factura')
+  const deudasPendientes = compras.filter(c => c.numero.startsWith('DEU-') && c.estado_pago === 'pendiente')
   const kpis = {
-    pendientes: compras.filter(c => c.estado === 'pendiente').length,
+    pendientes: compras.filter(c => c.estado === 'pendiente' && !c.numero.startsWith('DEU-')).length,
     enviadas: compras.filter(c => c.estado === 'enviado').length,
     facturasPagar: facturasPagar.length,
     totalAPagar: facturasPagar.reduce((a, c) => a + c.total, 0),
+    deudas: deudasPendientes.length,
+    totalDeudas: deudasPendientes.reduce((a, c) => a + c.total, 0),
   }
 
-  const esVistaPagar = filtroEstado === 'a_pagar'
+  const esVistaPagar = filtroEstado === 'a_pagar' || filtroEstado === 'deudas'
 
   return (
     <div style={{ background: T.bg, minHeight: '100vh', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
@@ -445,19 +503,26 @@ export default function ComprasPage() {
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Órdenes de compra</h1>
           <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
         </div>
-        <button className="btn-wine" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s', fontFamily: 'inherit' }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva orden
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={abrirDeuda} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            + Cargar deuda
+          </button>
+          <button className="btn-wine" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s', fontFamily: 'inherit' }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva orden
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: '24px 28px' }}>
         {/* KPIs — 4 tarjetas */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 14, marginBottom: 24 }}>
           {[
             { label: 'Pendientes de envío', value: kpis.pendientes, color: T.amber },
             { label: 'Enviadas',            value: kpis.enviadas,   color: T.blue  },
             { label: 'Facturas a pagar',    value: kpis.facturasPagar, color: T.red },
             { label: 'Total a pagar',       value: `$${kpis.totalAPagar.toLocaleString('es-AR')}`, color: T.text },
+            { label: 'Deudas pendientes',   value: kpis.deudas,     color: T.wine },
+            { label: 'Total deudas',        value: `$${kpis.totalDeudas.toLocaleString('es-AR')}`, color: T.wine },
           ].map(k => (
             <div key={k.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{k.label}</div>
@@ -467,11 +532,11 @@ export default function ComprasPage() {
         </div>
 
         {/* Filtro estado */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-          {(['', 'pendiente', 'enviado', 'recibido', 'a_pagar'] as const).map(e => (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+          {(['', 'pendiente', 'enviado', 'recibido', 'a_pagar', 'deudas'] as const).map(e => (
             <button key={e} onClick={() => setFiltroEstado(e)}
               style={{ background: filtroEstado === e ? T.wine : T.surface, color: filtroEstado === e ? '#fff' : T.muted, border: `1px solid ${filtroEstado === e ? T.wine : T.border}`, borderRadius: 7, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
-              {e === '' ? 'Todas' : e === 'a_pagar' ? 'A pagar' : ESTADO_LABEL[e]}
+              {e === '' ? 'Todas' : e === 'a_pagar' ? 'A pagar' : e === 'deudas' ? 'Deudas directas' : ESTADO_LABEL[e]}
             </button>
           ))}
         </div>
@@ -841,6 +906,98 @@ export default function ComprasPage() {
                 style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                 Abrir en WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal deuda directa ── */}
+      {deudaModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setDeudaModal(false)}>
+          <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Cargar deuda / factura a pagar</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Registra una deuda existente sin necesidad de crear una orden de compra</p>
+              </div>
+              <button onClick={() => setDeudaModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Proveedor */}
+              <div style={{ position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Proveedor *</label>
+                <input style={{ ...INP, width: '100%' }} placeholder="Nombre del proveedor..." value={dProveedorNombre}
+                  onChange={e => { setDProveedorNombre(e.target.value); setDProveedorId(''); setDProvSugs(true) }}
+                  onFocus={() => setDProvSugs(true)} onBlur={() => setTimeout(() => setDProvSugs(false), 150)} />
+                {dProvSugs && dProveedorNombre && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, zIndex: 10, maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.10)', marginTop: 2 }}>
+                    {proveedores.filter(p => normalize(p.razon_social || p.nombre).includes(normalize(dProveedorNombre))).map(p => (
+                      <button key={p.id} className="drop-item" style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '9px 14px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: T.text }}
+                        onMouseDown={() => { setDProveedorId(p.id); setDProveedorNombre(p.razon_social || p.nombre); setDProvSugs(false) }}>
+                        {p.razon_social || p.nombre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Concepto */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Concepto *</label>
+                <input style={{ ...INP, width: '100%' }} placeholder="Ej: Compra vinos octubre 2024, Stock inicial..." value={dConcepto} onChange={e => setDConcepto(e.target.value)} />
+              </div>
+
+              {/* Nro factura + Fecha */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Nro. de factura</label>
+                  <input style={{ ...INP, width: '100%' }} placeholder="0001-00012345" value={dNroFactura} onChange={e => setDNroFactura(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha factura</label>
+                  <input type="date" style={{ ...INP, width: '100%' }} value={dFechaFactura}
+                    onChange={e => { setDFechaFactura(e.target.value); setDVencimiento(calcVencimiento(dCondicion, e.target.value)) }} />
+                </div>
+              </div>
+
+              {/* Monto */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto total *</label>
+                <input type="number" min={0} step={0.01} style={{ ...INP, width: '100%', fontWeight: 600, fontSize: 15 }} placeholder="0" value={dMonto || ''} onChange={e => setDMonto(parseFloat(e.target.value) || 0)} />
+              </div>
+
+              {/* Condición + Vencimiento */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Condición de pago</label>
+                  <select style={{ ...INP, width: '100%' }} value={dCondicion}
+                    onChange={e => { setDCondicion(e.target.value); setDVencimiento(calcVencimiento(e.target.value, dFechaFactura)) }}>
+                    <option value="contado">Contado (ya pagado)</option>
+                    <option value="30_dias">30 días</option>
+                    <option value="60_dias">60 días</option>
+                    <option value="90_dias">90 días</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Vencimiento</label>
+                  <input type="date" style={{ ...INP, width: '100%' }} value={dVencimiento} onChange={e => setDVencimiento(e.target.value)} />
+                </div>
+              </div>
+
+              {/* Notas */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
+                <input style={{ ...INP, width: '100%' }} placeholder="Observaciones..." value={dNotas} onChange={e => setDNotas(e.target.value)} />
+              </div>
+
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setDeudaModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button className="btn-wine" onClick={guardarDeuda} disabled={saving} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Guardando...' : 'Registrar deuda →'}
               </button>
             </div>
           </div>
