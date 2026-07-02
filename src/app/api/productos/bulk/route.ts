@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'eliminar']
+const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'costo_fijo', 'costo_pct_venta', 'eliminar']
 
 export async function POST(req: NextRequest) {
   const { ids, accion, valor } = await req.json()
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const nombres = Array.from(new Set(seleccionados.map(p => p.nombre)))
   const { data: todos, error: todosErr } = await supabase
     .from('productos')
-    .select('id, precio_venta')
+    .select('id, precio_venta, precio_costo')
     .in('nombre', nombres)
     .eq('activo', true)
 
@@ -88,6 +88,30 @@ export async function POST(req: NextRequest) {
         lote.map(p => {
           const nuevo = Math.round((p.precio_venta || 0) * (1 + pct) * 100) / 100
           return supabase.from('productos').update({ precio_venta: nuevo }).eq('id', p.id)
+        })
+      )
+      const errFound = results.find(r => r.error)
+      if (errFound?.error) return NextResponse.json({ error: errFound.error.message }, { status: 500 })
+      afectados += lote.length
+    }
+
+  } else if (accion === 'costo_fijo') {
+    const { count, error } = await supabase
+      .from('productos')
+      .update({ precio_costo: Number(valor) }, { count: 'exact' })
+      .in('id', todosIds)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    afectados = count ?? 0
+
+  } else if (accion === 'costo_pct_venta') {
+    const pct = Number(valor) / 100
+    const BATCH = 50
+    for (let i = 0; i < todos.length; i += BATCH) {
+      const lote = todos.slice(i, i + BATCH)
+      const results = await Promise.all(
+        lote.map(p => {
+          const nuevo = Math.round((p.precio_venta || 0) * pct)
+          return supabase.from('productos').update({ precio_costo: nuevo }).eq('id', p.id)
         })
       )
       const errFound = results.find(r => r.error)

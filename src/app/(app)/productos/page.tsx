@@ -684,10 +684,12 @@ export default function ProductosPage() {
 
   // ── Bulk popover config ───────────────────────────────────────────────────
   const BULK_ACTIONS = [
-    { key: 'bodega',         label: 'Bodega',     kind: 'select' as const },
-    { key: 'varietal',       label: 'Varietal',   kind: 'text'   as const },
-    { key: 'aumento_precio', label: '+ %',        kind: 'number' as const, placeholder: 'Ej: 10' },
-    { key: 'precio_fijo',    label: 'Precio $',   kind: 'number' as const, placeholder: 'Ej: 15000' },
+    { key: 'bodega',          label: 'Bodega',    kind: 'select' as const },
+    { key: 'varietal',        label: 'Varietal',  kind: 'text'   as const },
+    { key: 'aumento_precio',  label: '+ %',       kind: 'number' as const, placeholder: 'Ej: 10' },
+    { key: 'precio_fijo',     label: 'Precio $',  kind: 'number' as const, placeholder: 'Ej: 15000' },
+    { key: 'costo_fijo',      label: 'Costo $',   kind: 'number' as const, placeholder: 'Ej: 8000' },
+    { key: 'costo_pct_venta', label: 'Costo %',   kind: 'number' as const, placeholder: 'Ej: 50' },
   ]
 
   // ── JSX ───────────────────────────────────────────────────────────────────
@@ -892,7 +894,7 @@ export default function ProductosPage() {
               {activeBulk === a.key && (
                 <div className="pop-in" style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 100, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 12, minWidth: 210, boxShadow: '0 12px 32px rgba(26,18,16,0.12)' }}>
                   <div style={{ fontSize: 11, color: T.muted, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {a.key === 'aumento_precio' ? 'Aumentar precio (%)' : a.key === 'precio_fijo' ? 'Precio fijo ($)' : `Asignar ${a.label}`}
+                    {a.key === 'aumento_precio' ? 'Aumentar precio (%)' : a.key === 'precio_fijo' ? 'Precio de venta fijo ($)' : a.key === 'costo_fijo' ? 'Precio de costo fijo ($)' : a.key === 'costo_pct_venta' ? 'Costo = X% del precio de venta' : `Asignar ${a.label}`}
                   </div>
                   {a.kind === 'select' ? (
                     <select style={INP_SM} value={bulkVal} onChange={e => setBulkVal(e.target.value)}>
