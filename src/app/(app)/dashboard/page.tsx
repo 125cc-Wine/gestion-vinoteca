@@ -392,7 +392,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Cuentas corrientes */}
-          <div className="kpi" style={{ background: T.surface, border: `1px solid ${T.blueBd}`, borderRadius: 12, padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.06)' }}>
+          <div className="kpi" onClick={() => router.push('/aging')} style={{ background: T.surface, border: `1px solid ${T.blueBd}`, borderRadius: 12, padding: '20px', position: 'relative', overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.06)', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(43,94,160,0.15)')}
+            onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 1px 4px rgba(26,18,16,0.06)')}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.blue}, #5A8FD0)` }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Cta. corrientes</div>
@@ -400,6 +402,7 @@ export default function DashboardPage() {
             </div>
             <div className="kpi-num" style={{ fontSize: 30, fontWeight: 800, color: T.blue, letterSpacing: '-0.02em', lineHeight: 1 }}>{fmt(data.cuentasCorrientes.total)}</div>
             <div style={{ fontSize: 11, color: T.dim, marginTop: 6 }}>{data.cuentasCorrientes.cantidad} clientes con saldo pendiente</div>
+            <div style={{ fontSize: 10, color: T.blue, marginTop: 8, fontWeight: 600 }}>Ver aging →</div>
           </div>
         </div>
 
