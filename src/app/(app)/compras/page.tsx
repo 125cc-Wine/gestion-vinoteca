@@ -706,7 +706,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto', 'Cajas', 'Precio x u.', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto', 'Cajas', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -742,8 +742,15 @@ export default function ComprasPage() {
                               onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 95 }} min={0} value={item.precio_unitario || ''}
-                              onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                            <input type="number" style={{ ...INP, width: 95 }} min={0}
+                              value={Math.round((item.precio_unitario || 0) * (item.unidades_por_caja || 1)) || ''}
+                              onChange={e => {
+                                const upk = item.unidades_por_caja || 1
+                                updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
+                              }} />
+                            {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
+                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${item.precio_unitario.toLocaleString('es-AR')} /bot</div>
+                            )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
                             {item.unidades_por_caja && item.unidades_por_caja > 1
@@ -1025,7 +1032,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto / concepto', 'Cajas', 'Precio x u.', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto / concepto', 'Cajas', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -1053,7 +1060,15 @@ export default function ComprasPage() {
                             <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1} onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 95 }} min={0} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', +e.target.value)} />
+                            <input type="number" style={{ ...INP, width: 95 }} min={0}
+                              value={Math.round((item.precio_unitario || 0) * (item.unidades_por_caja || 1)) || ''}
+                              onChange={e => {
+                                const upk = item.unidades_por_caja || 1
+                                updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
+                              }} />
+                            {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
+                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${item.precio_unitario.toLocaleString('es-AR')} /bot</div>
+                            )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
                             {item.unidades_por_caja && item.unidades_por_caja > 1 ? <span>{item.cantidad} u.</span> : <span style={{ color: T.dim }}>—</span>}
