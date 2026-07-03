@@ -160,8 +160,9 @@ export default function ComprasPage() {
   const [fVencimiento, setFVencimiento] = useState('')
   const [fTotal, setFTotal] = useState<number>(0)
 
-  // Deuda directa modal (comparte items/proveedor/notas con la OC regular)
+  // Deuda / factura directa modal (comparte items/proveedor/notas con la OC regular)
   const [deudaModal, setDeudaModal] = useState(false)
+  const [deudaModo, setDeudaModo] = useState<'factura' | 'deuda'>('factura')
   const [editandoId, setEditandoId] = useState<string | null>(null)
 
   // Pago modal state
@@ -224,8 +225,17 @@ export default function ComprasPage() {
     setProveedorId(''); setProveedorNombre(''); setItems([{ ...ITEM_EMPTY }])
     setNotas(''); setFTotal(0)
     setFNroFactura(''); setFFechaFactura(hoy())
+    setFCondicion('30_dias'); setFVencimiento('')
+    setEditandoId(null); setDeudaModo('deuda')
+    setDeudaModal(true)
+  }
+
+  function abrirFacturaNueva() {
+    setProveedorId(''); setProveedorNombre(''); setItems([{ ...ITEM_EMPTY }])
+    setNotas(''); setFTotal(0)
+    setFNroFactura(''); setFFechaFactura(hoy())
     setFCondicion('contado'); setFVencimiento('')
-    setEditandoId(null)
+    setEditandoId(null); setDeudaModo('factura')
     setDeudaModal(true)
   }
 
@@ -263,7 +273,7 @@ export default function ComprasPage() {
     const data = await res.json(); setSaving(false)
     if (data.error) { showToast('Error: ' + data.error); return }
     setDeudaModal(false); setEditandoId(null); cargar(empresa)
-    showToast(editandoId ? 'Compra actualizada' : 'Deuda registrada')
+    showToast(editandoId ? 'Compra actualizada' : deudaModo === 'factura' ? 'Factura registrada' : 'Deuda registrada')
   }
 
   async function eliminarCompra(c: Compra) {
@@ -536,6 +546,9 @@ export default function ComprasPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={abrirDeuda} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             + Cargar deuda
+          </button>
+          <button onClick={abrirFacturaNueva} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.text, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            + Nueva factura
           </button>
           <button className="btn-wine" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s', fontFamily: 'inherit' }}>
             <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nueva orden
@@ -965,8 +978,16 @@ export default function ComprasPage() {
             {/* Header */}
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{editandoId ? 'Editar compra' : 'Cargar deuda / factura existente'}</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>{editandoId ? 'Modificá los datos de esta compra' : 'Se registra como ya recibido y actualiza el stock igual que una orden recibida'}</p>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
+                  {editandoId ? 'Editar compra' : deudaModo === 'factura' ? 'Nueva factura recibida' : 'Cargar deuda existente'}
+                </h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
+                  {editandoId
+                    ? 'Modificá los datos de esta compra'
+                    : deudaModo === 'factura'
+                      ? 'Registrá lo que compraste, los precios y los datos de la factura — actualiza el stock automáticamente'
+                      : 'Cargá una deuda anterior al sistema — se registra como recibido y actualiza el stock'}
+                </p>
               </div>
               <button onClick={() => setDeudaModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
@@ -1107,7 +1128,7 @@ export default function ComprasPage() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setDeudaModal(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
                 <button className="btn-wine" onClick={guardarDeuda} disabled={saving} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}>
-                  {saving ? 'Guardando...' : editandoId ? 'Guardar cambios →' : 'Registrar deuda →'}
+                  {saving ? 'Guardando...' : editandoId ? 'Guardar cambios →' : deudaModo === 'factura' ? 'Registrar factura →' : 'Registrar deuda →'}
                 </button>
               </div>
             </div>
