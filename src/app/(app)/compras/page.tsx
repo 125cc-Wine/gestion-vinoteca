@@ -325,7 +325,7 @@ export default function ComprasPage() {
     const upk = ni[idx].unidades_por_caja || 1
     const cajas = ni[idx].cajas || 1
     ni[idx].cantidad = cajas * upk
-    ni[idx].subtotal = cajas * upk * ni[idx].precio_unitario
+    ni[idx].subtotal = Math.round(cajas * upk * ni[idx].precio_unitario * 100) / 100
     setItems(ni)
   }
 
@@ -749,8 +749,8 @@ export default function ComprasPage() {
                               onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 95 }} min={0}
-                              value={Math.round((item.precio_unitario || 0) * (item.unidades_por_caja || 1)) || ''}
+                            <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
+                              value={parseFloat(((item.precio_unitario || 0) * (item.unidades_por_caja || 1)).toFixed(2)) || ''}
                               onChange={e => {
                                 const upk = item.unidades_por_caja || 1
                                 updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
@@ -1067,8 +1067,8 @@ export default function ComprasPage() {
                             <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1} onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 95 }} min={0}
-                              value={Math.round((item.precio_unitario || 0) * (item.unidades_por_caja || 1)) || ''}
+                            <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
+                              value={parseFloat(((item.precio_unitario || 0) * (item.unidades_por_caja || 1)).toFixed(2)) || ''}
                               onChange={e => {
                                 const upk = item.unidades_por_caja || 1
                                 updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
@@ -1297,7 +1297,7 @@ export default function ComprasPage() {
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto pagado</label>
-                <input type="number" style={{ ...INP, width: '100%' }} min={0} value={pMonto || ''} onChange={e => setPMonto(+e.target.value)} />
+                <input type="number" step="any" style={{ ...INP, width: '100%' }} min={0} value={pMonto || ''} onChange={e => setPMonto(parseFloat(e.target.value) || 0)} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha de pago</label>

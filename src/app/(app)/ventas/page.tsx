@@ -1412,7 +1412,7 @@ export default function VentasPage() {
                           <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
-                          <input type="number" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                          <input type="number" step="any" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <input type="number" min="0" max="100" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.descuento || ''} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />

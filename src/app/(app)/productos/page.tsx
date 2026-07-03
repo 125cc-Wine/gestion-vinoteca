@@ -1009,12 +1009,12 @@ export default function ProductosPage() {
                         value={editForm.varietal} onChange={e => setEditForm(f => ({ ...f, varietal: e.target.value }))}
                         placeholder="Varietal"
                         onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
-                      <input type="number" style={INP_SM}
-                        value={editForm.precio_venta || ''} onChange={e => { const pv = +e.target.value; setEditForm(f => ({ ...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
+                      <input type="number" step="any" style={INP_SM}
+                        value={editForm.precio_venta || ''} onChange={e => { const pv = parseFloat(e.target.value) || 0; setEditForm(f => ({ ...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
                         placeholder="$ venta"
                         onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
-                      <input type="number" style={INP_SM}
-                        value={editForm.precio_costo || ''} onChange={e => setEditForm(f => ({ ...f, precio_costo: +e.target.value }))}
+                      <input type="number" step="any" style={INP_SM}
+                        value={editForm.precio_costo || ''} onChange={e => setEditForm(f => ({ ...f, precio_costo: parseFloat(e.target.value) || 0 }))}
                         placeholder="$ costo"
                         onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
                       <input type="number" style={INP_SM}

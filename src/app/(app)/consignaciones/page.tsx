@@ -709,9 +709,10 @@ export default function ConsignacionesPage() {
                             className="cinp"
                             style={{ ...INP, width: 100 }}
                             type="number"
+                            step="any"
                             min={0}
                             value={item.precio_unitario}
-                            onChange={e => setItem(idx, { precio_unitario: Number(e.target.value) || 0 })}
+                            onChange={e => setItem(idx, { precio_unitario: parseFloat(e.target.value) || 0 })}
                           />
                         </td>
                         <td style={{ padding: '8px 10px', width: 100, fontSize: 13, color: T.muted }}>
