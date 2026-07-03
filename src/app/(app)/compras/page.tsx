@@ -311,10 +311,12 @@ export default function ComprasPage() {
   function selProducto(idx: number, prod: Producto) {
     const ni = [...items]
     const upk = upkFromUnidad(prod.unidad_medida)
-    const costo = prod.precio_costo || Math.round((prod.precio_venta || 0) * 0.5)
+    const costoBot = prod.precio_costo || Math.round((prod.precio_venta || 0) * 0.5)
+    // precio_unitario = precio POR CAJA (lo que aparece en la factura del proveedor)
+    const precioCaja = upk > 1 ? costoBot * upk : costoBot
     const cajas = ni[idx].cajas || 1
-    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: costo, unidades_por_caja: upk, cajas, cantidad: cajas * upk }
-    ni[idx].subtotal = ni[idx].cajas! * ni[idx].precio_unitario * upk
+    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: precioCaja, unidades_por_caja: upk, cajas, cantidad: cajas * upk }
+    ni[idx].subtotal = Math.round(cajas * precioCaja * 100) / 100
     if (idx === ni.length - 1) ni.push({ ...ITEM_EMPTY })
     setItems(ni); setProdSugs(null)
   }
@@ -325,7 +327,8 @@ export default function ComprasPage() {
     const upk = ni[idx].unidades_por_caja || 1
     const cajas = ni[idx].cajas || 1
     ni[idx].cantidad = cajas * upk
-    ni[idx].subtotal = Math.round(cajas * upk * ni[idx].precio_unitario * 100) / 100
+    // precio_unitario = precio POR CAJA
+    ni[idx].subtotal = Math.round(cajas * ni[idx].precio_unitario * 100) / 100
     setItems(ni)
   }
 
@@ -750,13 +753,10 @@ export default function ComprasPage() {
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
-                              value={parseFloat(((item.precio_unitario || 0) * (item.unidades_por_caja || 1)).toFixed(2)) || ''}
-                              onChange={e => {
-                                const upk = item.unidades_por_caja || 1
-                                updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
-                              }} />
+                              value={item.precio_unitario || ''}
+                              onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
                             {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
-                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${item.precio_unitario.toLocaleString('es-AR')} /bot</div>
+                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${parseFloat((item.precio_unitario / (item.unidades_por_caja || 1)).toFixed(2)).toLocaleString('es-AR')} /bot</div>
                             )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
@@ -1068,13 +1068,10 @@ export default function ComprasPage() {
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
-                              value={parseFloat(((item.precio_unitario || 0) * (item.unidades_por_caja || 1)).toFixed(2)) || ''}
-                              onChange={e => {
-                                const upk = item.unidades_por_caja || 1
-                                updateItem(idx, 'precio_unitario', upk > 1 ? +e.target.value / upk : +e.target.value)
-                              }} />
+                              value={item.precio_unitario || ''}
+                              onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
                             {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
-                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${item.precio_unitario.toLocaleString('es-AR')} /bot</div>
+                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${parseFloat((item.precio_unitario / (item.unidades_por_caja || 1)).toFixed(2)).toLocaleString('es-AR')} /bot</div>
                             )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
