@@ -300,6 +300,12 @@ export default function VentasPage() {
   const [vendedores, setVendedores] = useState<{ id: string; nombre: string }[]>([])
   const [loading, setLoading] = useState(true)
 
+  // ── Modal selector de comprobante para devolución
+  const [devSelectorModal, setDevSelectorModal] = useState(false)
+  const [devSearch, setDevSearch] = useState('')
+  const [devVentaSel, setDevVentaSel] = useState<Venta | null>(null)
+  const [devItemsSel, setDevItemsSel] = useState<{ checked: boolean; cantidad: number; max: number; nombre: string; producto_id: string; precio_unitario: number; subtotal: number }[]>([])
+
   // ── Venta modal state
   const [modal, setModal] = useState(false)
   const [tipo, setTipo] = useState<'presupuesto' | 'remito' | 'devolucion'>('presupuesto')
@@ -718,6 +724,40 @@ export default function VentasPage() {
     setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
   }
 
+  function abrirSelectorDevolucion() {
+    setDevSearch(''); setDevVentaSel(null); setDevItemsSel([])
+    setDevSelectorModal(true)
+  }
+
+  function seleccionarComprobante(v: Venta) {
+    setDevVentaSel(v)
+    const its = (v.items as (VentaItem & { descuento?: number })[]).map(i => ({
+      checked: true,
+      cantidad: i.cantidad,
+      max: i.cantidad,
+      nombre: i.nombre,
+      producto_id: i.producto_id || '',
+      precio_unitario: i.precio_unitario,
+      subtotal: i.subtotal,
+    }))
+    setDevItemsSel(its)
+  }
+
+  function confirmarDevolucion() {
+    const v = devVentaSel!
+    const selItems = devItemsSel.filter(i => i.checked && i.cantidad > 0).map(i => ({
+      producto_id: i.producto_id,
+      nombre: i.nombre,
+      cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario,
+      descuento: 0,
+      subtotal: Math.round(i.precio_unitario * i.cantidad),
+    }))
+    if (!selItems.length) { alert('Seleccioná al menos un ítem'); return }
+    setDevSelectorModal(false)
+    abrirDevolucion({ ...v, items: selItems })
+  }
+
   function abrirDevolucion(v: Venta) {
     setEditVentaId(null); setTipo('devolucion')
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
@@ -922,7 +962,7 @@ export default function VentasPage() {
           {tab === 'comprobantes' && <>
             <button className="vbtn" style={btn('default', { padding: '7px 12px', fontSize: 13 })} onClick={exportarVentas}>↓ Excel</button>
             <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13 })} onClick={() => abrirNuevo('presupuesto')}>+ Presupuesto</button>
-            <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13, color: C.blue })} onClick={() => abrirNuevo('devolucion')}>+ Devolución</button>
+            <button className="vbtn" style={btn('default', { padding: '7px 16px', fontSize: 13, color: C.blue })} onClick={abrirSelectorDevolucion}>+ Devolución</button>
             <button className="vbtn" style={btn('accent', { padding: '7px 16px', fontSize: 13, fontWeight: 600 })} onClick={() => abrirNuevo('remito')}>+ Remito</button>
           </>}
           {tab === 'pedidos' && (
@@ -1136,6 +1176,107 @@ export default function VentasPage() {
           onClose={() => setBarcodeNotFound(null)}
         />
       )}
+
+      {/* ══ MODAL SELECTOR DEVOLUCIÓN ══ */}
+      {devSelectorModal && (() => {
+        const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        const q = normalize(devSearch)
+        const candidatos = ventas.filter(v =>
+          v.tipo !== 'devolucion' &&
+          (!q || normalize(v.numero || '').includes(q) || normalize(v.cliente_nombre || '').includes(q))
+        ).slice(0, 30)
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+            onClick={e => e.target === e.currentTarget && setDevSelectorModal(false)}>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 660, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 48px rgba(26,18,16,0.18)' }}>
+
+              {/* Header */}
+              <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Nueva devolución</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Buscá el comprobante original y elegí los ítems a devolver</div>
+                </div>
+                <button onClick={() => setDevSelectorModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: C.dim, cursor: 'pointer', fontFamily: 'inherit' }}>×</button>
+              </div>
+
+              {!devVentaSel ? (
+                <>
+                  {/* Búsqueda */}
+                  <div style={{ padding: '14px 22px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+                    <input autoFocus style={{ width: '100%', padding: '9px 12px', border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, background: C.bg, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      placeholder="Buscar por número (REM-001) o cliente..."
+                      value={devSearch} onChange={e => setDevSearch(e.target.value)} />
+                  </div>
+
+                  {/* Lista de comprobantes */}
+                  <div style={{ overflowY: 'auto', flex: 1 }}>
+                    {candidatos.length === 0 ? (
+                      <div style={{ padding: 32, textAlign: 'center', color: C.dim, fontSize: 13 }}>Sin resultados</div>
+                    ) : candidatos.map(v => (
+                      <button key={v.id} onClick={() => seleccionarComprobante(v)}
+                        style={{ display: 'flex', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '12px 22px', cursor: 'pointer', fontFamily: 'inherit', gap: 12, alignItems: 'center' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: C.wine, minWidth: 90 }}>{v.numero}</span>
+                        <span style={{ fontSize: 12, color: C.text, flex: 1 }}>{v.cliente_nombre}</span>
+                        <span style={{ fontSize: 11, color: C.muted }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>${v.total.toLocaleString('es-AR')}</span>
+                        <span style={{ fontSize: 11, color: C.blue }}>Seleccionar →</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Comprobante seleccionado — elegir ítems */}
+                  <div style={{ padding: '12px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: C.wine }}>{devVentaSel.numero}</span>
+                    <span style={{ fontSize: 13, color: C.text }}>{devVentaSel.cliente_nombre}</span>
+                    <button onClick={() => setDevVentaSel(null)} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '3px 10px', fontSize: 11, color: C.muted, cursor: 'pointer', fontFamily: 'inherit' }}>← Cambiar</button>
+                  </div>
+
+                  <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
+                    {devItemsSel.map((it, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px', borderBottom: `1px solid ${C.border}` }}>
+                        <input type="checkbox" checked={it.checked}
+                          onChange={e => setDevItemsSel(prev => prev.map((x, i) => i === idx ? { ...x, checked: e.target.checked } : x))}
+                          style={{ width: 16, height: 16, accentColor: C.wine, cursor: 'pointer', flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: 13, color: it.checked ? C.text : C.dim }}>{it.nombre}</span>
+                        <span style={{ fontSize: 11, color: C.muted, minWidth: 60 }}>${it.precio_unitario.toLocaleString('es-AR')} c/u</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button onClick={() => setDevItemsSel(prev => prev.map((x, i) => i === idx && x.cantidad > 1 ? { ...x, cantidad: x.cantidad - 1, subtotal: Math.round(x.precio_unitario * (x.cantidad - 1)) } : x))}
+                            disabled={!it.checked || it.cantidad <= 1}
+                            style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, cursor: 'pointer', fontSize: 14, color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (!it.checked || it.cantidad <= 1) ? 0.3 : 1 }}>−</button>
+                          <span style={{ minWidth: 28, textAlign: 'center', fontSize: 14, fontWeight: 600, color: it.checked ? C.text : C.dim }}>{it.cantidad}</span>
+                          <button onClick={() => setDevItemsSel(prev => prev.map((x, i) => i === idx && x.cantidad < x.max ? { ...x, cantidad: x.cantidad + 1, subtotal: Math.round(x.precio_unitario * (x.cantidad + 1)) } : x))}
+                            disabled={!it.checked || it.cantidad >= it.max}
+                            style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, cursor: 'pointer', fontSize: 14, color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (!it.checked || it.cantidad >= it.max) ? 0.3 : 1 }}>+</button>
+                        </div>
+                        <span style={{ minWidth: 80, textAlign: 'right', fontSize: 13, fontWeight: 600, color: it.checked ? C.wine : C.dim }}>
+                          ${Math.round(it.precio_unitario * it.cantidad).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer con total y confirmar */}
+                  <div style={{ padding: '14px 22px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+                      Total a devolver: <span style={{ color: C.wine }}>
+                        ${devItemsSel.filter(i => i.checked).reduce((a, i) => a + Math.round(i.precio_unitario * i.cantidad), 0).toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setDevSelectorModal(false)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: C.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                      <button onClick={confirmarDevolucion} style={{ background: C.blue, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Continuar →
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ══ MODAL VENTA ══ */}
       {modal && (
