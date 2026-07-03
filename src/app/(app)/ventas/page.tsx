@@ -1215,7 +1215,7 @@ export default function VentasPage() {
                     ) : candidatos.map(v => (
                       <button key={v.id} onClick={() => seleccionarComprobante(v)}
                         style={{ display: 'flex', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '12px 22px', cursor: 'pointer', fontFamily: 'inherit', gap: 12, alignItems: 'center' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: C.wine, minWidth: 90 }}>{v.numero}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: C.accent, minWidth: 90 }}>{v.numero}</span>
                         <span style={{ fontSize: 12, color: C.text, flex: 1 }}>{v.cliente_nombre}</span>
                         <span style={{ fontSize: 11, color: C.muted }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</span>
                         <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>${v.total.toLocaleString('es-AR')}</span>
@@ -1228,7 +1228,7 @@ export default function VentasPage() {
                 <>
                   {/* Comprobante seleccionado — elegir ítems */}
                   <div style={{ padding: '12px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: C.wine }}>{devVentaSel.numero}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: C.accent }}>{devVentaSel.numero}</span>
                     <span style={{ fontSize: 13, color: C.text }}>{devVentaSel.cliente_nombre}</span>
                     <button onClick={() => setDevVentaSel(null)} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '3px 10px', fontSize: 11, color: C.muted, cursor: 'pointer', fontFamily: 'inherit' }}>← Cambiar</button>
                   </div>
@@ -1238,7 +1238,7 @@ export default function VentasPage() {
                       <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px', borderBottom: `1px solid ${C.border}` }}>
                         <input type="checkbox" checked={it.checked}
                           onChange={e => setDevItemsSel(prev => prev.map((x, i) => i === idx ? { ...x, checked: e.target.checked } : x))}
-                          style={{ width: 16, height: 16, accentColor: C.wine, cursor: 'pointer', flexShrink: 0 }} />
+                          style={{ width: 16, height: 16, accentColor: C.accent, cursor: 'pointer', flexShrink: 0 }} />
                         <span style={{ flex: 1, fontSize: 13, color: it.checked ? C.text : C.dim }}>{it.nombre}</span>
                         <span style={{ fontSize: 11, color: C.muted, minWidth: 60 }}>${it.precio_unitario.toLocaleString('es-AR')} c/u</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1250,7 +1250,7 @@ export default function VentasPage() {
                             disabled={!it.checked || it.cantidad >= it.max}
                             style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, cursor: 'pointer', fontSize: 14, color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (!it.checked || it.cantidad >= it.max) ? 0.3 : 1 }}>+</button>
                         </div>
-                        <span style={{ minWidth: 80, textAlign: 'right', fontSize: 13, fontWeight: 600, color: it.checked ? C.wine : C.dim }}>
+                        <span style={{ minWidth: 80, textAlign: 'right', fontSize: 13, fontWeight: 600, color: it.checked ? C.accent : C.dim }}>
                           ${Math.round(it.precio_unitario * it.cantidad).toLocaleString('es-AR')}
                         </span>
                       </div>
@@ -1260,7 +1260,7 @@ export default function VentasPage() {
                   {/* Footer con total y confirmar */}
                   <div style={{ padding: '14px 22px', borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
-                      Total a devolver: <span style={{ color: C.wine }}>
+                      Total a devolver: <span style={{ color: C.accent }}>
                         ${devItemsSel.filter(i => i.checked).reduce((a, i) => a + Math.round(i.precio_unitario * i.cantidad), 0).toLocaleString('es-AR')}
                       </span>
                     </div>
