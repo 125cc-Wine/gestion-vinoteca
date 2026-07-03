@@ -166,6 +166,7 @@ export default function ComprasPage() {
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [incluyeIva, setIncluyeIva] = useState(false)
   const [incluyePercIva, setIncluyePercIva] = useState(false)
+  const [pctIIBB, setPctIIBB] = useState<number>(0)
 
   // Pago modal state
   const [pagoModal, setPagoModal] = useState<Compra | null>(null)
@@ -229,7 +230,7 @@ export default function ComprasPage() {
     setFNroFactura(''); setFFechaFactura(hoy())
     setFCondicion('30_dias'); setFVencimiento('')
     setEditandoId(null); setDeudaModo('deuda')
-    setIncluyeIva(false); setIncluyePercIva(false)
+    setIncluyeIva(false); setIncluyePercIva(false); setPctIIBB(0)
     setDeudaModal(true)
   }
 
@@ -239,7 +240,7 @@ export default function ComprasPage() {
     setFNroFactura(''); setFFechaFactura(hoy())
     setFCondicion('contado'); setFVencimiento('')
     setEditandoId(null); setDeudaModo('factura')
-    setIncluyeIva(false); setIncluyePercIva(false)
+    setIncluyeIva(false); setIncluyePercIva(false); setPctIIBB(0)
     setDeudaModal(true)
   }
 
@@ -250,7 +251,8 @@ export default function ComprasPage() {
     const totalCalculado = validItems.reduce((a, i) => a + (i.subtotal || 0), 0)
     const montoIva = incluyeIva ? Math.round(totalCalculado * 0.21) : 0
     const montoPercIva = incluyePercIva ? Math.round(totalCalculado * 0.03) : 0
-    const totalConImpuestos = totalCalculado + montoIva + montoPercIva
+    const montoIIBB = pctIIBB > 0 ? Math.round(totalCalculado * pctIIBB / 100 * 100) / 100 : 0
+    const totalConImpuestos = totalCalculado + montoIva + montoPercIva + montoIIBB
     const totalFinal = fTotal > 0 ? fTotal : totalConImpuestos
     setSaving(true)
     const esContado = fCondicion === 'contado'
@@ -1144,18 +1146,37 @@ export default function ComprasPage() {
                         </span>
                       )}
                     </label>
+                    {/* IIBB — porcentaje variable */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 16, height: 16, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: T.text, flex: 1 }}>Perc. IIBB</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <input type="number" step="any" min={0} max={100} placeholder="0"
+                          style={{ ...INP, width: 64, textAlign: 'right', fontSize: 13 }}
+                          value={pctIIBB || ''}
+                          onChange={e => setPctIIBB(parseFloat(e.target.value) || 0)} />
+                        <span style={{ fontSize: 13, color: T.muted }}>%</span>
+                        {pctIIBB > 0 && (
+                          <span style={{ fontSize: 13, fontWeight: 600, color: T.muted, fontFamily: 'monospace', minWidth: 80, textAlign: 'right' }}>
+                            + ${Math.round(items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0) * pctIIBB / 100).toLocaleString('es-AR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   {/* Resumen totales */}
-                  {(incluyeIva || incluyePercIva) && (() => {
+                  {(incluyeIva || incluyePercIva || pctIIBB > 0) && (() => {
                     const neto = items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0)
                     const iva = incluyeIva ? Math.round(neto * 0.21) : 0
                     const perc = incluyePercIva ? Math.round(neto * 0.03) : 0
+                    const iibb = pctIIBB > 0 ? Math.round(neto * pctIIBB / 100 * 100) / 100 : 0
                     return (
                       <div style={{ borderTop: `1px solid ${T.border}`, padding: '10px 14px', background: T.bg }}>
                         {[
                           { label: 'Neto', val: neto },
                           incluyeIva ? { label: 'IVA 21%', val: iva } : null,
                           incluyePercIva ? { label: 'Perc. IVA 3%', val: perc } : null,
+                          iibb > 0 ? { label: `Perc. IIBB ${pctIIBB}%`, val: iibb } : null,
                         ].filter(Boolean).map(row => (
                           <div key={row!.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.muted, marginBottom: 3 }}>
                             <span>{row!.label}</span>
@@ -1164,7 +1185,7 @@ export default function ComprasPage() {
                         ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: T.text, marginTop: 6, paddingTop: 6, borderTop: `1px solid ${T.border2}` }}>
                           <span>Total con impuestos</span>
-                          <span style={{ color: T.wine, fontFamily: 'monospace' }}>${(neto + iva + perc).toLocaleString('es-AR')}</span>
+                          <span style={{ color: T.wine, fontFamily: 'monospace' }}>${(neto + iva + perc + iibb).toLocaleString('es-AR')}</span>
                         </div>
                       </div>
                     )
@@ -1191,7 +1212,7 @@ export default function ComprasPage() {
                 Total: <span style={{ color: T.green }}>
                   {(() => {
                     const neto = items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0)
-                    const conImp = neto + (incluyeIva ? Math.round(neto * 0.21) : 0) + (incluyePercIva ? Math.round(neto * 0.03) : 0)
+                    const conImp = neto + (incluyeIva ? Math.round(neto * 0.21) : 0) + (incluyePercIva ? Math.round(neto * 0.03) : 0) + (pctIIBB > 0 ? Math.round(neto * pctIIBB / 100 * 100) / 100 : 0)
                     return '$' + (fTotal > 0 ? fTotal : conImp).toLocaleString('es-AR')
                   })()}
                 </span>
