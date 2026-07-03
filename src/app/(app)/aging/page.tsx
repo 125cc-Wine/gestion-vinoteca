@@ -63,6 +63,8 @@ interface AgingRow {
 
 interface VentaDetalle {
   id: string
+  numero?: string
+  tipo: string
   total: number
   created_at: string
   dias: number
@@ -132,12 +134,14 @@ export default function AgingPage() {
       )
       const data = await res.json()
       const now = Date.now()
-      const raw: { id: string; total: number; created_at: string; tipo?: string; estado_pago?: string }[] =
+      const raw: { id: string; numero?: string; total: number; created_at: string; tipo?: string; estado_pago?: string }[] =
         Array.isArray(data) ? data : data.ventas ?? []
       const ventas: VentaDetalle[] = raw
-        .filter(v => v.tipo === 'remito' && v.estado_pago === 'cuenta_corriente')
+        .filter(v => (v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente')
         .map(v => ({
           id: v.id,
+          numero: v.numero,
+          tipo: v.tipo ?? 'remito',
           total: v.total,
           created_at: v.created_at,
           dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
@@ -184,7 +188,7 @@ export default function AgingPage() {
             Aging · Cuenta Corriente
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: T.muted }}>
-            Antigüedad de deuda por cliente — ordenado por vencimiento
+            Solo comprobantes <strong>pendientes de cobro</strong> — ordenado por antigüedad
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -228,7 +232,7 @@ export default function AgingPage() {
           borderRadius: 12, padding: '16px 20px', flex: 1, minWidth: 160,
         }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.wine, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 6 }}>
-            Total deuda
+            Total pendiente
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, color: T.wine }}>
             {fmt(totalGeneral)}
@@ -426,7 +430,8 @@ export default function AgingPage() {
                   {modalCliente.cliente_nombre}
                 </div>
                 <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>
-                  Ventas pendientes en cuenta corriente · Saldo {fmt(modalCliente.saldo_total)}
+                  Comprobantes <strong>pendientes de cobro</strong> · Saldo adeudado:{' '}
+                  <span style={{ color: T.wine, fontWeight: 700 }}>{fmt(modalCliente.saldo_total)}</span>
                 </div>
               </div>
               <button
@@ -455,7 +460,7 @@ export default function AgingPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: T.bg }}>
-                      {['Fecha', 'Remito', 'Monto', 'Días vencido', 'Estado'].map(h => (
+                      {['Fecha', 'Comprobante', 'Monto', 'Días', 'Antigüedad'].map(h => (
                         <th key={h} style={{
                           padding: '8px 16px', textAlign: h === 'Fecha' || h === 'Remito' ? 'left' : 'right',
                           fontSize: 11, fontWeight: 700, color: T.muted,
@@ -482,10 +487,23 @@ export default function AgingPage() {
                           <td style={{ padding: '10px 16px', color: T.muted }}>
                             {fmtDate(v.created_at)}
                           </td>
-                          <td style={{ padding: '10px 16px', color: T.dim, fontSize: 11 }}>
-                            #{v.id.slice(0, 8).toUpperCase()}
+                          <td style={{ padding: '10px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{
+                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                                background: v.tipo === 'factura' ? 'rgba(0,80,180,0.09)' : T.wineBg,
+                                color: v.tipo === 'factura' ? '#0050b4' : T.wine,
+                                border: `1px solid ${v.tipo === 'factura' ? 'rgba(0,80,180,0.25)' : 'rgba(128,0,0,0.25)'}`,
+                                textTransform: 'uppercase' as const,
+                              }}>
+                                {v.tipo}
+                              </span>
+                              <span style={{ color: T.dim, fontSize: 11 }}>
+                                {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
+                              </span>
+                            </div>
                           </td>
-                          <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: T.text }}>
+                          <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.text }}>
                             {fmt(v.total)}
                           </td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: diasColor }}>
@@ -508,9 +526,9 @@ export default function AgingPage() {
                   <tfoot>
                     <tr style={{ background: T.bg, borderTop: `2px solid ${T.border2}` }}>
                       <td colSpan={2} style={{ padding: '10px 16px', fontWeight: 700, color: T.muted, fontSize: 12 }}>
-                        {detalleVentas.length} ventas
+                        {detalleVentas.length} comprobante{detalleVentas.length !== 1 ? 's' : ''} pendiente{detalleVentas.length !== 1 ? 's' : ''}
                       </td>
-                      <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.text }}>
+                      <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.wine }}>
                         {fmt(detalleVentas.reduce((s, v) => s + v.total, 0))}
                       </td>
                       <td colSpan={2} />
