@@ -206,7 +206,7 @@ export default function ComprasPage() {
     try {
       const [cRes, provRes, prodRes] = await Promise.all([
         fetch(`/api/compras?empresa=${emp}`),
-        fetch(`/api/proveedores?empresa=${emp}`),
+        fetch('/api/proveedores'),
         fetch(`/api/productos?empresa=${emp}`),
       ])
       const [cData, provData, prodData] = await Promise.all([cRes.json(), provRes.json(), prodRes.json()])

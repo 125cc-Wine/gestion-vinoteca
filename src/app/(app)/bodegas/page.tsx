@@ -73,7 +73,7 @@ export default function BodegasPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const [bRes, pRes] = await Promise.all([fetch('/api/bodegas'), fetch(`/api/proveedores?empresa=${emp}`)])
+    const [bRes, pRes] = await Promise.all([fetch('/api/bodegas'), fetch('/api/proveedores')])
     setBodegas(await bRes.json().catch(() => []))
     setProveedores(await pRes.json().catch(() => []))
     setLoading(false)

@@ -2,14 +2,10 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-export async function GET(req: NextRequest) {
-  const empresa = req.nextUrl.searchParams.get('empresa')
-  if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
-
+export async function GET(_req: NextRequest) {
   const { data, error } = await supabase
     .from('proveedores')
     .select('*')
-    .eq('empresa', empresa)
     .eq('activo', true)
     .order('nombre')
 

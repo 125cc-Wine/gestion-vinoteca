@@ -84,7 +84,7 @@ export default function ProveedoresPage() {
   async function cargar(emp: string) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/proveedores?empresa=${emp}`)
+      const res = await fetch('/api/proveedores')
       const data = await res.json()
       setProveedores(Array.isArray(data) ? data : [])
     } finally { setLoading(false) }
