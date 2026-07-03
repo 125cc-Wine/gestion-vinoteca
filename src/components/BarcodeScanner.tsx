@@ -261,15 +261,19 @@ function LiveScanner({ onDetect, onClose, titulo }: Props) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
 
-        const scan = async () => {
+        const canvas = document.createElement('canvas')
+        const scan = () => {
           if (!active || detectedRef.current || !videoRef.current) return
-          // Esperar a que el video tenga datos
-          if (videoRef.current.readyState < 2) {
+          const video = videoRef.current
+          if (video.readyState < 2 || video.videoWidth === 0) {
             rafRef.current = requestAnimationFrame(scan)
             return
           }
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+          canvas.getContext('2d')!.drawImage(video, 0, 0)
           try {
-            const result = await reader.decodeFromVideoElement(videoRef.current)
+            const result = reader.decodeFromCanvas(canvas)
             if (!detectedRef.current) {
               detectedRef.current = true
               setHint('✓ Código detectado')
