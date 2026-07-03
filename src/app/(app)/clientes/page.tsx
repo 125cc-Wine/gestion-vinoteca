@@ -141,7 +141,7 @@ export default function ClientesPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const res = await fetch(`/api/clientes?empresa=${emp}`)
+    const res = await fetch('/api/clientes')
     const data = await res.json()
     setClientes(Array.isArray(data) ? data : [])
     setLoading(false)

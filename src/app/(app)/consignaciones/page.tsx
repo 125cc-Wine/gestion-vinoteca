@@ -284,7 +284,7 @@ export default function ConsignacionesPage() {
     setLoading(true)
     const [cRes, clRes, pRes, vRes] = await Promise.all([
       fetch(`/api/consignaciones?empresa=${e}`),
-      fetch(`/api/clientes?empresa=${e}`),
+      fetch('/api/clientes'),
       fetch(`/api/productos?empresa=${e}`),
       fetch(`/api/vendedores?empresa=${e}`),
     ])

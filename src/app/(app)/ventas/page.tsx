@@ -428,7 +428,7 @@ export default function VentasPage() {
       const [vRes, pRes, cRes, vendRes, pedRes] = await Promise.all([
         fetch(`/api/ventas?empresa=${emp}`),
         fetch(`/api/productos?empresa=${emp}`),
-        fetch(`/api/clientes?empresa=${emp}`),
+        fetch('/api/clientes'),
         fetch(`/api/vendedores?empresa=${emp}`),
         fetch(`/api/pedidos?empresa=${emp}`),
       ])
