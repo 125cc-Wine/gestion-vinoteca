@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   if (!ventas || ventas.length === 0) return NextResponse.json([])
 
   // 2. Devoluciones pendientes de netear (tipo='devolucion', mismo cliente)
-  const clienteIdsConVentas = [...new Set(ventas.map(v => v.cliente_id))]
+  const clienteIdsConVentas = Array.from(new Set(ventas.map(v => v.cliente_id)))
   const { data: devoluciones } = await supabase
     .from('ventas')
     .select('id, cliente_id, total')
