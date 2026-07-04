@@ -898,6 +898,8 @@ export default function VentasPage() {
   // ── Derived
   const emp = EMPRESAS_DATA[empresa]
   const totalRemitos = ventas.filter(v => v.tipo === 'remito' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
+  const totalPresupuestos = ventas.filter(v => v.tipo === 'presupuesto' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
+  const totalGeneral = totalRemitos + totalPresupuestos
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
     if (q && !`${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)) return false
@@ -978,9 +980,9 @@ export default function VentasPage() {
         <>
           <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
-              { label: 'Total comprobantes', value: String(ventas.length), color: C.text },
-              { label: 'Presupuestos', value: String(ventas.filter(v => v.tipo === 'presupuesto').length), color: C.muted },
-              { label: 'Total remitos', value: `$${totalRemitos.toLocaleString('es-AR')}`, color: C.green },
+              { label: 'Total general', value: `$${totalGeneral.toLocaleString('es-AR')}`, color: C.text },
+              { label: 'Remitos', value: `$${totalRemitos.toLocaleString('es-AR')}`, color: C.green },
+              { label: 'Presupuestos', value: `$${totalPresupuestos.toLocaleString('es-AR')}`, color: C.blue },
             ].map(s => (
               <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
