@@ -137,7 +137,7 @@ export default function AgingPage() {
       const raw: { id: string; numero?: string; total: number; created_at: string; tipo?: string; estado_pago?: string }[] =
         Array.isArray(data) ? data : data.ventas ?? []
       const ventas: VentaDetalle[] = raw
-        .filter(v => (v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente')
+        .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente')
         .map(v => ({
           id: v.id,
           numero: v.numero,
@@ -153,6 +153,19 @@ export default function AgingPage() {
     } finally {
       setDetalleLoading(false)
     }
+  }
+
+  async function marcarPagado(v: VentaDetalle) {
+    if (!confirm(`¿Marcar ${v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()} (${fmt(v.total)}) como pagado?`)) return
+    const res = await fetch('/api/ventas/cobrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ venta_id: v.id, empresa }),
+    })
+    const data = await res.json()
+    if (data.error) { alert('Error: ' + data.error); return }
+    setDetalleVentas(prev => prev.filter(x => x.id !== v.id))
+    setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - v.total) } : prev)
+    load(empresa)
   }
 
   // KPI totals
@@ -460,7 +473,7 @@ export default function AgingPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: T.bg }}>
-                      {['Fecha', 'Comprobante', 'Monto', 'Días', 'Antigüedad'].map(h => (
+                      {['Fecha', 'Comprobante', 'Monto', 'Días', 'Antigüedad', ''].map(h => (
                         <th key={h} style={{
                           padding: '8px 16px', textAlign: h === 'Fecha' || h === 'Remito' ? 'left' : 'right',
                           fontSize: 11, fontWeight: 700, color: T.muted,
@@ -519,6 +532,19 @@ export default function AgingPage() {
                               {diasLabel}
                             </span>
                           </td>
+                          <td style={{ padding: '10px 16px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => marcarPagado(v)}
+                              style={{
+                                background: T.greenBg, border: `1px solid ${T.greenBd}`,
+                                borderRadius: 6, padding: '4px 10px', fontSize: 11,
+                                color: T.green, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Marcar pagado
+                            </button>
+                          </td>
                         </tr>
                       )
                     })}
@@ -531,7 +557,7 @@ export default function AgingPage() {
                       <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.wine }}>
                         {fmt(detalleVentas.reduce((s, v) => s + v.total, 0))}
                       </td>
-                      <td colSpan={2} />
+                      <td colSpan={3} />
                     </tr>
                   </tfoot>
                 </table>

@@ -175,6 +175,13 @@ export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, descontarStock: _ds, devolverStock: _dvs, ...rest } = body
 
+  const { data: anterior, error: errAnterior } = await supabase
+    .from('ventas')
+    .select('estado_pago, total, cliente_id, empresa, numero, tipo')
+    .eq('id', id)
+    .single()
+  if (errAnterior || !anterior) return NextResponse.json({ error: errAnterior?.message || 'Venta no encontrada' }, { status: 404 })
+
   const { data, error } = await supabase
     .from('ventas')
     .update(rest)
@@ -183,6 +190,53 @@ export async function PUT(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Reconciliar cuenta corriente: si el estado de pago o el total cambiaron
+  // al editar, hay que ajustar clientes.saldo y dejar registro en
+  // movimientos_cta_cte — antes esto solo pasaba al crear o al cobrar desde
+  // /api/ventas/cobrar, así que editar el estado a mano dejaba el saldo del
+  // cliente desactualizado (comprobantes ya pagados seguían sumando deuda).
+  const clienteId = rest.cliente_id ?? anterior.cliente_id
+  const totalNuevo = rest.total ?? anterior.total
+  const estadoAnterior = anterior.estado_pago
+  const estadoNuevo = rest.estado_pago ?? estadoAnterior
+  const eraCC = estadoAnterior === 'cuenta_corriente'
+  const esCC = estadoNuevo === 'cuenta_corriente'
+
+  if (clienteId && (eraCC !== esCC || (eraCC && esCC && totalNuevo !== anterior.total))) {
+    let delta = 0
+    let tipoMov: 'cargo' | 'cobro' | null = null
+    const label = anterior.tipo === 'presupuesto' ? 'Presupuesto' : anterior.tipo === 'remito' ? 'Remito' : anterior.tipo
+
+    if (eraCC && !esCC) {
+      delta = -anterior.total
+      tipoMov = 'cobro'
+    } else if (!eraCC && esCC) {
+      delta = totalNuevo
+      tipoMov = 'cargo'
+    } else if (eraCC && esCC && totalNuevo !== anterior.total) {
+      delta = totalNuevo - anterior.total
+      tipoMov = delta > 0 ? 'cargo' : 'cobro'
+    }
+
+    if (tipoMov && delta !== 0) {
+      const { data: cliente } = await supabase.from('clientes').select('saldo').eq('id', clienteId).single()
+      const saldoAnterior = cliente?.saldo || 0
+      const saldoNuevo = Math.max(0, saldoAnterior + delta)
+      await supabase.from('clientes').update({ saldo: saldoNuevo }).eq('id', clienteId)
+      await supabase.from('movimientos_cta_cte').insert([{
+        cliente_id: clienteId,
+        empresa: rest.empresa ?? anterior.empresa,
+        tipo: tipoMov,
+        concepto: `${label} ${anterior.numero} (ajuste al editar)`,
+        monto: Math.abs(delta),
+        saldo_anterior: saldoAnterior,
+        saldo_nuevo: saldoNuevo,
+        referencia_id: id,
+      }])
+    }
+  }
+
   return NextResponse.json(data)
 }
 

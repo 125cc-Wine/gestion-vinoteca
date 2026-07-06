@@ -12,13 +12,13 @@ export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
 
-  // 1. Ventas pendientes en cuenta corriente (remito y factura)
+  // 1. Ventas pendientes en cuenta corriente (presupuesto, remito y factura)
   //    NO filtramos por clientes.saldo — usamos las ventas como fuente de verdad
   const { data: ventas, error: errVentas } = await supabase
     .from('ventas')
     .select('id, numero, cliente_id, cliente_nombre, total, created_at, tipo')
     .eq('empresa', empresa)
-    .in('tipo', ['remito', 'factura'])
+    .in('tipo', ['presupuesto', 'remito', 'factura'])
     .eq('estado_pago', 'cuenta_corriente')
     .order('created_at', { ascending: false })
 
