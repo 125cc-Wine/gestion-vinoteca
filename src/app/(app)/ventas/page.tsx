@@ -310,6 +310,7 @@ export default function VentasPage() {
   const [modal, setModal] = useState(false)
   const [tipo, setTipo] = useState<'presupuesto' | 'remito' | 'devolucion'>('presupuesto')
   const [editVentaId, setEditVentaId] = useState<string | null>(null)
+  const [ventaEmpresa, setVentaEmpresa] = useState<'aroma' | 'lavid'>('aroma')
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
   const [clienteData, setClienteData] = useState<Cliente | null>(null)
@@ -619,7 +620,7 @@ export default function VentasPage() {
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
     const subtotal = items.reduce((a, i) => a + calcSub(i), 0)
     const ventaData = {
-      empresa, tipo, vendedor_nombre: vendedorNombre || null,
+      empresa: ventaEmpresa, tipo, vendedor_nombre: vendedorNombre || null,
       cliente_id: clienteId || null, cliente_nombre: clienteNombre,
       items: items.filter(i => i.nombre).map(i => ({
         producto_id: i.producto_id || null, nombre: i.nombre,
@@ -694,6 +695,7 @@ export default function VentasPage() {
 
   function editarVenta(v: Venta) {
     setEditVentaId(v.id!); setTipo(v.tipo as 'presupuesto' | 'remito' | 'devolucion')
+    setVentaEmpresa((v.empresa as 'aroma' | 'lavid') || empresa)
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
     const c = clientes.find(c => c.id === v.cliente_id)
     setClienteData(c || null); setClienteTipo(c?.tipo || '')
@@ -710,6 +712,7 @@ export default function VentasPage() {
 
   function duplicarVenta(v: Venta) {
     setEditVentaId(null); setTipo(v.tipo as 'presupuesto' | 'remito' | 'devolucion')
+    setVentaEmpresa((v.empresa as 'aroma' | 'lavid') || empresa)
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
     const c = clientes.find(cl => cl.id === v.cliente_id)
     setClienteData(c || null); setClienteTipo(c?.tipo || '')
@@ -760,6 +763,7 @@ export default function VentasPage() {
 
   function abrirDevolucion(v: Venta) {
     setEditVentaId(null); setTipo('devolucion')
+    setVentaEmpresa((v.empresa as 'aroma' | 'lavid') || empresa)
     setClienteId(v.cliente_id || ''); setClienteNombre(v.cliente_nombre)
     const c = clientes.find(cl => cl.id === v.cliente_id)
     setClienteData(c || null); setClienteTipo(c?.tipo || '')
@@ -774,7 +778,7 @@ export default function VentasPage() {
   }
 
   function abrirNuevo(t: 'presupuesto' | 'remito' | 'devolucion') {
-    setEditVentaId(null); setTipo(t)
+    setEditVentaId(null); setTipo(t); setVentaEmpresa(empresa)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
     setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
@@ -1302,6 +1306,23 @@ export default function VentasPage() {
                 </div>
                 <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18, lineHeight: 1 }), color: C.dim }} onClick={() => tryCloseVenta()}>×</button>
               </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Empresa</div>
+              <div style={{ display: 'flex', background: C.surface, borderRadius: 7, padding: 3, border: `1px solid ${C.border}`, width: 'fit-content' }}>
+                {(['aroma', 'lavid'] as const).map(e => (
+                  <button key={e} className="vbtn" onClick={() => setVentaEmpresa(e)}
+                    style={{ ...btn(ventaEmpresa === e ? 'accent' : 'ghost', { padding: '4px 14px', fontSize: 12, borderRadius: 5 }), border: 'none' }}>
+                    {EMPRESAS_DATA[e].nombre}
+                  </button>
+                ))}
+              </div>
+              {editVentaId && ventaEmpresa !== empresa && (
+                <div style={{ fontSize: 11, color: C.amber, marginTop: 4 }}>
+                  Al guardar, este comprobante pasa a {EMPRESAS_DATA[ventaEmpresa].nombre} y va a dejar de verse en esta lista.
+                </div>
+              )}
             </div>
 
             <div className="v-modal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
