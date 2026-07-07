@@ -101,7 +101,7 @@ function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [hi, setHi] = useState(0)
-  const [pos, setPos] = useState({ top: 0, left: 0, w: 0 })
+  const [pos, setPos] = useState({ top: 0, left: 0, w: 0, maxH: 320 })
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -130,7 +130,19 @@ function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
   function openDropdown() {
     const rect = inputRef.current?.getBoundingClientRect()
     if (!rect) return
-    setPos({ top: rect.bottom + 2, left: rect.left, w: Math.max(rect.width, 400) })
+    const margin = 8
+    const desired = 320
+    const spaceBelow = window.innerHeight - rect.bottom - margin
+    const spaceAbove = rect.top - margin
+    let top: number, maxH: number
+    if (spaceBelow >= 160 || spaceBelow >= spaceAbove) {
+      top = rect.bottom + 2
+      maxH = Math.max(120, Math.min(desired, spaceBelow))
+    } else {
+      maxH = Math.max(120, Math.min(desired, spaceAbove))
+      top = rect.top - maxH - 2
+    }
+    setPos({ top, left: rect.left, w: Math.max(rect.width, 400), maxH })
     setOpen(true); setQuery(''); setHi(0)
   }
 
@@ -153,7 +165,7 @@ function ProductoSearch({ productos, productoId, clienteTipo, onSelect }: {
       position: 'fixed', top: pos.top, left: pos.left, width: pos.w,
       zIndex: 9999, background: '#FFFFFF', border: '1px solid #C8BAA8',
       borderRadius: 8, boxShadow: '0 16px 40px rgba(26,18,16,0.18)',
-      maxHeight: 320, overflowY: 'auto',
+      maxHeight: pos.maxH, overflowY: 'auto',
     }}>
       {filtered.length === 0
         ? <div style={{ padding: '16px 12px', fontSize: 12, color: '#A89888', textAlign: 'center' }}>
@@ -1471,7 +1483,7 @@ export default function VentasPage() {
                     const total = calcTotal()
                     const neto = parseFloat((total / 1.21).toFixed(2))
                     const iva  = parseFloat((total - neto).toFixed(2))
-                    const totalBot = items.reduce((s, it) => s + (it.cantidad || 0), 0)
+                    const totalBot = items.reduce((s, it) => s + (it.nombre ? (it.cantidad || 0) : 0), 0)
                     const cajas = Math.floor(totalBot / 6)
                     const resto = totalBot % 6
                     const resumen = cajas === 0
