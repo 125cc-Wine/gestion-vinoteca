@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
   const { data: ventas, error } = await q
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const list = ventas || []
+  // Las devoluciones no son ventas — si se incluyen acá, la mercadería
+  // devuelta se contaba dos veces: como venta original y como "venta" de
+  // la propia devolución (con total y cantidades positivas).
+  const list = (ventas || []).filter(v => v.tipo !== 'devolucion')
 
   // 1. Ventas por día
   const porDia: Record<string, number> = {}

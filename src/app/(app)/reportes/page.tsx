@@ -108,7 +108,7 @@ function ventasPorMes(ventasArr: Venta[], anio: number): number[] {
   const meses = Array(12).fill(0)
   ventasArr.forEach(v => {
     const d = new Date(v.created_at!)
-    if (d.getFullYear() === anio && v.tipo === 'remito') {
+    if (d.getFullYear() === anio && (v.tipo === 'remito' || v.tipo === 'presupuesto')) {
       meses[d.getMonth()] += v.total
     }
   })
