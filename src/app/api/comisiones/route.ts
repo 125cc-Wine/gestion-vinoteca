@@ -29,8 +29,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
 // ── GET ?empresa=&periodo=YYYY-MM ──────────────────────────────────────────
-// Para cada vendedor activo: calcula total ventas tipo='remito' del período
-// y combina con el registro guardado en comisiones_vendedor (si existe).
+// Para cada vendedor activo: calcula total ventas tipo='remito' o
+// 'presupuesto' del período (ambos son ventas reales — La Vid Consultora
+// factura mayormente por presupuesto en cuenta corriente) y combina con el
+// registro guardado en comisiones_vendedor (si existe).
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   const periodo  = req.nextUrl.searchParams.get('periodo') // YYYY-MM
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   if (errV) return NextResponse.json({ error: errV.message }, { status: 500 })
 
-  // 2. Obtener ventas tipo='remito' del período (por fechas del mes)
+  // 2. Obtener ventas tipo='remito' o 'presupuesto' del período (por fechas del mes)
   const [anio, mes] = periodo.split('-').map(Number)
   const desde = new Date(anio, mes - 1, 1).toISOString()
   const hasta  = new Date(anio, mes, 0, 23, 59, 59).toISOString()
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
     .from('ventas')
     .select('vendedor_nombre, total')
     .eq('empresa', empresa)
-    .eq('tipo', 'remito')
+    .in('tipo', ['remito', 'presupuesto'])
     .neq('estado', 'cancelado')
     .gte('created_at', desde)
     .lte('created_at', hasta)
