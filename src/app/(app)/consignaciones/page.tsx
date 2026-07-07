@@ -1,5 +1,19 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+
+interface DropPos { top: number; left: number; width: number; maxH: number }
+function computeDropPos(el: HTMLElement, desired: number): DropPos {
+  const rect = el.getBoundingClientRect()
+  const margin = 8
+  const spaceBelow = window.innerHeight - rect.bottom - margin
+  const spaceAbove = rect.top - margin
+  if (spaceBelow >= 160 || spaceBelow >= spaceAbove) {
+    return { top: rect.bottom + 2, left: rect.left, width: rect.width, maxH: Math.max(120, Math.min(desired, spaceBelow)) }
+  }
+  const maxH = Math.max(120, Math.min(desired, spaceAbove))
+  return { top: rect.top - maxH - 2, left: rect.left, width: rect.width, maxH }
+}
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -124,7 +138,9 @@ function ClienteSearch({
 }) {
   const [q, setQ] = useState(value)
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxH: 220 })
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const filtered = clientes.filter(c => {
     const full = `${c.nombre || ''} ${c.apellido || ''} ${c.razon_social || ''}`.toLowerCase()
@@ -135,27 +151,34 @@ function ClienteSearch({
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!inputRef.current?.contains(t) && !listRef.current?.contains(t)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  function openAt(el: HTMLInputElement) {
+    setPos(computeDropPos(el, 220))
+    setOpen(true)
+  }
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <input
+        ref={inputRef}
         className="cinp"
         style={INP}
         placeholder="Buscar cliente..."
         value={q}
-        onChange={e => { setQ(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
+        onChange={e => { setQ(e.target.value); openAt(e.currentTarget) }}
+        onFocus={e => openAt(e.currentTarget)}
       />
-      {open && filtered.length > 0 && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+      {open && filtered.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div ref={listRef} style={{
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999,
           background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
-          boxShadow: '0 4px 16px rgba(26,18,16,0.10)', maxHeight: 220, overflowY: 'auto',
+          boxShadow: '0 4px 16px rgba(26,18,16,0.10)', maxHeight: pos.maxH, overflowY: 'auto',
         }}>
           {filtered.map(c => {
             const label = c.razon_social || `${c.nombre}${c.apellido ? ' ' + c.apellido : ''}`
@@ -174,7 +197,7 @@ function ClienteSearch({
               </div>
             )
           })}
-        </div>
+        </div>, document.body
       )}
     </div>
   )
@@ -190,7 +213,9 @@ function ProductoSearch({
 }) {
   const [q, setQ] = useState(value)
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<DropPos>({ top: 0, left: 0, width: 260, maxH: 220 })
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setQ(value) }, [value])
 
@@ -200,27 +225,35 @@ function ProductoSearch({
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!inputRef.current?.contains(t) && !listRef.current?.contains(t)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  function openAt(el: HTMLInputElement) {
+    const p = computeDropPos(el, 220)
+    setPos({ ...p, width: Math.max(p.width, 260) })
+    setOpen(true)
+  }
+
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <input
+        ref={inputRef}
         className="cinp"
         style={{ ...INP, minWidth: 180 }}
         placeholder="Buscar producto..."
         value={q}
-        onChange={e => { setQ(e.target.value); setOpen(true) }}
-        onFocus={() => setOpen(true)}
+        onChange={e => { setQ(e.target.value); openAt(e.currentTarget) }}
+        onFocus={e => openAt(e.currentTarget)}
       />
-      {open && filtered.length > 0 && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, zIndex: 300, minWidth: 260,
+      {open && filtered.length > 0 && typeof document !== 'undefined' && createPortal(
+        <div ref={listRef} style={{
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999,
           background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7,
-          boxShadow: '0 4px 16px rgba(26,18,16,0.10)', maxHeight: 220, overflowY: 'auto',
+          boxShadow: '0 4px 16px rgba(26,18,16,0.10)', maxHeight: pos.maxH, overflowY: 'auto',
         }}>
           {filtered.map(p => (
             <div
@@ -237,7 +270,7 @@ function ProductoSearch({
               {p.bodega && <span style={{ color: T.dim, marginLeft: 6 }}>{p.bodega}</span>}
             </div>
           ))}
-        </div>
+        </div>, document.body
       )}
     </div>
   )

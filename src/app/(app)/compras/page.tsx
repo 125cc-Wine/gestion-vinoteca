@@ -1,8 +1,22 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+interface DropPos { top: number; left: number; width: number; maxH: number }
+function computeDropPos(el: HTMLElement, desired: number): DropPos {
+  const rect = el.getBoundingClientRect()
+  const margin = 8
+  const spaceBelow = window.innerHeight - rect.bottom - margin
+  const spaceAbove = rect.top - margin
+  if (spaceBelow >= 160 || spaceBelow >= spaceAbove) {
+    return { top: rect.bottom + 2, left: rect.left, width: rect.width, maxH: Math.max(120, Math.min(desired, spaceBelow)) }
+  }
+  const maxH = Math.max(120, Math.min(desired, spaceAbove))
+  return { top: rect.top - maxH - 2, left: rect.left, width: rect.width, maxH }
 }
 
 const T = {
@@ -182,6 +196,8 @@ export default function ComprasPage() {
   const [prodSugs, setProdSugs] = useState<number | null>(null)
   const [provSugsOpen, setProvSugsOpen] = useState(false)
   const provRef = useRef<HTMLInputElement>(null)
+  const [provPos, setProvPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxH: 180 })
+  const [prodPos, setProdPos] = useState<DropPos>({ top: 0, left: 0, width: 0, maxH: 200 })
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
@@ -683,11 +699,11 @@ export default function ComprasPage() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Proveedor</label>
                   <input ref={provRef} style={{ ...INP, width: '100%' }}
                     placeholder="Buscar proveedor..." value={proveedorNombre}
-                    onFocus={() => setProvSugsOpen(true)}
+                    onFocus={e => { setProvSugsOpen(true); setProvPos(computeDropPos(e.currentTarget, 180)) }}
                     onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
-                    onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
-                  {provSugsOpen && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                    onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true); setProvPos(computeDropPos(e.currentTarget, 180)) }} />
+                  {provSugsOpen && typeof document !== 'undefined' && createPortal(
+                    <div style={{ position: 'fixed', top: provPos.top, left: provPos.left, width: provPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: provPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                       {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
                         <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}
                           onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
@@ -698,7 +714,7 @@ export default function ComprasPage() {
                       {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).length === 0 && (
                         <div style={{ padding: '8px 12px', fontSize: 12, color: T.dim }}>Sin resultados — se usará el nombre ingresado</div>
                       )}
-                    </div>
+                    </div>, document.body
                   )}
                 </div>
                 <div>
@@ -729,10 +745,10 @@ export default function ComprasPage() {
                           <td style={{ padding: '6px 8px', position: 'relative' }}>
                             <input style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto..."
                               value={item.nombre}
-                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
-                              onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
-                            {prodSugs === idx && (
-                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx); setProdPos(computeDropPos(e.currentTarget, 200)) }}
+                              onFocus={e => { setProdSugs(idx); setProdPos(computeDropPos(e.currentTarget, 200)) }} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
+                            {prodSugs === idx && typeof document !== 'undefined' && createPortal(
+                              <div style={{ position: 'fixed', top: prodPos.top, left: prodPos.left, width: prodPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: prodPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                                 {(() => {
                                   const porBodega = proveedorNombre
                                     ? productos.filter(p => normalize(p.bodega || '').includes(normalize(proveedorNombre)) || normalize(proveedorNombre).includes(normalize(p.bodega || '')))
@@ -746,7 +762,7 @@ export default function ComprasPage() {
                                     </div>
                                   ))
                                 })()}
-                              </div>
+                              </div>, document.body
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
@@ -1015,11 +1031,11 @@ export default function ComprasPage() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Proveedor *</label>
                 <input ref={provRef} style={{ ...INP, width: '100%' }} placeholder="Buscar proveedor..."
                   value={proveedorNombre}
-                  onFocus={() => setProvSugsOpen(true)}
+                  onFocus={e => { setProvSugsOpen(true); setProvPos(computeDropPos(e.currentTarget, 180)) }}
                   onBlur={() => setTimeout(() => setProvSugsOpen(false), 200)}
-                  onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true) }} />
-                {provSugsOpen && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 30, maxHeight: 180, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                  onChange={e => { setProveedorNombre(e.target.value); setProveedorId(''); setProvSugsOpen(true); setProvPos(computeDropPos(e.currentTarget, 180)) }} />
+                {provSugsOpen && typeof document !== 'undefined' && createPortal(
+                  <div style={{ position: 'fixed', top: provPos.top, left: provPos.left, width: provPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: provPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                     {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
                       <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}` }}
                         onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
@@ -1030,7 +1046,7 @@ export default function ComprasPage() {
                     {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).length === 0 && (
                       <div style={{ padding: '8px 12px', fontSize: 12, color: T.dim }}>Sin resultados — se usará el nombre ingresado</div>
                     )}
-                  </div>
+                  </div>, document.body
                 )}
               </div>
 
@@ -1052,17 +1068,17 @@ export default function ComprasPage() {
                           <td style={{ padding: '6px 8px', position: 'relative' }}>
                             <input style={{ ...INP, minWidth: 200 }} placeholder="Buscar producto o escribir concepto..."
                               value={item.nombre}
-                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx) }}
-                              onFocus={() => setProdSugs(idx)} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
-                            {prodSugs === idx && (
-                              <div style={{ position: 'absolute', top: '100%', left: 8, right: 8, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)', marginTop: 2 }}>
+                              onChange={e => { updateItem(idx, 'nombre', e.target.value); updateItem(idx, 'producto_id', ''); setProdSugs(idx); setProdPos(computeDropPos(e.currentTarget, 200)) }}
+                              onFocus={e => { setProdSugs(idx); setProdPos(computeDropPos(e.currentTarget, 200)) }} onBlur={() => setTimeout(() => setProdSugs(null), 200)} />
+                            {prodSugs === idx && typeof document !== 'undefined' && createPortal(
+                              <div style={{ position: 'fixed', top: prodPos.top, left: prodPos.left, width: prodPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: prodPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                                 {productos.filter(p => !item.nombre || normalize(p.nombre).includes(normalize(item.nombre))).slice(0, 12).map(p => (
                                   <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}` }} onMouseDown={() => selProducto(idx, p)}>
                                     <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
                                     {p.bodega && <span style={{ color: T.muted }}> — {p.bodega}</span>}
                                   </div>
                                 ))}
-                              </div>
+                              </div>, document.body
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
