@@ -452,6 +452,40 @@ export default function ProductosPage() {
     setNewModal(true)
   }
 
+  // Incrementa el número final del SKU (ej: "MR003" -> "MR004", "11921" -> "11922"),
+  // saltando SKUs ya usados. Si el SKU no termina en números, no hay forma de
+  // calcular un "siguiente" — se deja en blanco para que lo asignen a mano.
+  function siguienteSku(sku: string, existentes: Set<string>): string {
+    const m = sku.match(/^(.*?)(\d+)$/)
+    if (!m) return ''
+    const [, prefix, digits] = m
+    let n = parseInt(digits, 10) + 1
+    let candidato = prefix + String(n).padStart(digits.length, '0')
+    let guard = 0
+    while (existentes.has(candidato) && guard < 500) {
+      n++
+      candidato = prefix + String(n).padStart(digits.length, '0')
+      guard++
+    }
+    return candidato
+  }
+
+  function duplicarProducto(p: Producto) {
+    const existentes = new Set(productos.map(x => x.sku).filter(Boolean) as string[])
+    const nuevoSku = p.sku ? siguienteSku(p.sku, existentes) : ''
+    setNewForm({
+      nombre: p.nombre, bodega: p.bodega, varietal: p.varietal, categoria: p.categoria,
+      region: p.region || '', sku: nuevoSku, codigo_barras: '',
+      precio_venta: p.precio_venta || 0, precio_mayorista: p.precio_mayorista || 0,
+      precio_costo: p.precio_costo || 0, stock: 0, stock_minimo: p.stock_minimo,
+      unidad_medida: (p.unidad_medida || 'botella') as 'botella' | 'caja6' | 'caja12',
+      woo_product_id: undefined,
+      empresa,
+    })
+    setNewModal(true)
+    toast_(nuevoSku ? `Duplicado — SKU sugerido: ${nuevoSku}` : 'Duplicado — asigná un SKU')
+  }
+
   function openFullEdit(p: Producto) {
     setFullForm({
       nombre: p.nombre, bodega: p.bodega, varietal: p.varietal, categoria: p.categoria,
@@ -1076,6 +1110,7 @@ export default function ProductosPage() {
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
                       <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
+                      <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
                       <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
                       <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Eliminar" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
                     </div>
