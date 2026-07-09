@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
     varietal: data.varietal,
     bodega: data.bodega,
     proveedor_nombre: data.proveedor_nombre,
+    codigo_barras: data.codigo_barras,
+    sku: data.sku,
   }
 
   const { data: contraparte } = await supabase
@@ -104,7 +106,7 @@ export async function PUT(req: NextRequest) {
   // Sincronizar con la otra empresa
   const otra = otraEmpresa(data.empresa)
   const camposSync: Record<string, unknown> = {}
-  for (const k of ['precio_venta', 'precio_costo', 'stock', 'varietal', 'bodega', 'proveedor_nombre'] as const) {
+  for (const k of ['precio_venta', 'precio_costo', 'stock', 'varietal', 'bodega', 'proveedor_nombre', 'codigo_barras', 'sku'] as const) {
     if (k in rest) camposSync[k] = (rest as Record<string, unknown>)[k]
   }
 
