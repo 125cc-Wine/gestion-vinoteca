@@ -49,7 +49,7 @@ const BUCKET_STYLES: Record<BucketColor, { bg: string; bd: string; color: string
 }
 
 interface AgingRow {
-  cliente_id: string
+  cliente_id: string | null
   cliente_nombre: string
   telefono: string | null
   saldo_total: number
@@ -129,15 +129,20 @@ export default function AgingPage() {
     setDetalleLoading(true)
     setDetalleVentas([])
     try {
-      const res = await fetch(
-        `/api/ventas?empresa=${empresa}&cliente_id=${row.cliente_id}`
-      )
+      // Ventas de "Consumidor Final" no tienen cliente_id — pedir todas las
+      // de la empresa y filtrar acá las que no tengan cliente asignado, en
+      // vez de mandar cliente_id=null (nunca matcheaba nada).
+      const url = row.cliente_id
+        ? `/api/ventas?empresa=${empresa}&cliente_id=${row.cliente_id}`
+        : `/api/ventas?empresa=${empresa}`
+      const res = await fetch(url)
       const data = await res.json()
       const now = Date.now()
-      const raw: { id: string; numero?: string; total: number; created_at: string; tipo?: string; estado_pago?: string }[] =
+      const raw: { id: string; numero?: string; total: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
         Array.isArray(data) ? data : data.ventas ?? []
       const ventas: VentaDetalle[] = raw
-        .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente')
+        .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente'
+          && (row.cliente_id ? true : !v.cliente_id))
         .map(v => ({
           id: v.id,
           numero: v.numero,
@@ -299,7 +304,7 @@ export default function AgingPage() {
                     const bs = BUCKET_STYLES[bColor]
                     return (
                       <tr
-                        key={row.cliente_id}
+                        key={row.cliente_id ?? 'sin-cliente'}
                         className="aging-tr"
                         style={{
                           borderBottom: i < rows.length - 1 ? `1px solid ${T.border}` : 'none',

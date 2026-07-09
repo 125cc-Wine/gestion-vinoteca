@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     .eq('empresa', empresa)
     .in('tipo', ['presupuesto', 'remito', 'factura'])
     .eq('estado_pago', 'cuenta_corriente')
+    .neq('estado', 'cancelado')
     .order('created_at', { ascending: false })
 
   if (errVentas) return NextResponse.json({ error: errVentas.message }, { status: 500 })
@@ -32,12 +33,14 @@ export async function GET(req: NextRequest) {
     .select('id, cliente_id, total')
     .eq('empresa', empresa)
     .eq('tipo', 'devolucion')
+    .neq('estado', 'cancelado')
     .in('cliente_id', clienteIdsConVentas)
 
   // monto devuelto por cliente
   const devPorCliente: Record<string, number> = {}
   for (const d of (devoluciones ?? [])) {
-    devPorCliente[d.cliente_id] = (devPorCliente[d.cliente_id] || 0) + Math.abs(d.total || 0)
+    const key = d.cliente_id || '__sin_cliente__'
+    devPorCliente[key] = (devPorCliente[key] || 0) + Math.abs(d.total || 0)
   }
 
   // 3. Datos de contacto de los clientes
@@ -50,14 +53,23 @@ export async function GET(req: NextRequest) {
   for (const c of (clientes ?? [])) telPorCliente[c.id] = c.telefono
 
   // 4. Agrupar por cliente y calcular buckets
+  //    Ojo: v.cliente_id puede ser null (venta a "Consumidor Final" sin
+  //    cliente asignado). Usar ese valor directo como clave de objeto lo
+  //    convierte en el string "null" — después el frontend mandaba
+  //    cliente_id=null a /api/ventas y la búsqueda nunca encontraba nada
+  //    (comparaba contra el texto "null", no contra un cliente_id vacío).
+  //    Por eso agrupamos con una clave interna separada y devolvemos el
+  //    cliente_id real (string o null) en la respuesta.
   type VentaItem = { id: string; numero?: string; total: number; created_at: string; dias: number; tipo: string }
-  const ventasPorCliente: Record<string, { nombre: string; items: VentaItem[] }> = {}
+  const SIN_CLIENTE = '__sin_cliente__'
+  const ventasPorCliente: Record<string, { nombre: string; items: VentaItem[]; clienteId: string | null }> = {}
 
   for (const v of ventas) {
-    if (!ventasPorCliente[v.cliente_id]) {
-      ventasPorCliente[v.cliente_id] = { nombre: v.cliente_nombre, items: [] }
+    const key = v.cliente_id || SIN_CLIENTE
+    if (!ventasPorCliente[key]) {
+      ventasPorCliente[key] = { nombre: v.cliente_nombre, items: [], clienteId: v.cliente_id }
     }
-    ventasPorCliente[v.cliente_id].items.push({
+    ventasPorCliente[key].items.push({
       id: v.id,
       numero: v.numero,
       total: v.total,
@@ -68,7 +80,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 5. Construir resultado — saldo_total calculado desde ventas, no desde clientes.saldo
-  const result = Object.entries(ventasPorCliente).map(([clienteId, { nombre, items }]) => {
+  const result = Object.values(ventasPorCliente).map(({ nombre, items, clienteId }) => {
     let bucket_30 = 0
     let bucket_60 = 0
     let bucket_90 = 0
@@ -87,7 +99,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Netear devoluciones del bucket más antiguo con saldo
-    let devPendiente = devPorCliente[clienteId] || 0
+    let devPendiente = devPorCliente[clienteId ?? SIN_CLIENTE] || 0
     if (devPendiente > 0) {
       const descuento = (bucket: number) => {
         const aplicado = Math.min(bucket, devPendiente)
@@ -106,7 +118,7 @@ export async function GET(req: NextRequest) {
     return {
       cliente_id: clienteId,
       cliente_nombre: nombre,
-      telefono: telPorCliente[clienteId] ?? null,
+      telefono: clienteId ? (telPorCliente[clienteId] ?? null) : null,
       saldo_total,
       bucket_30,
       bucket_60,
