@@ -185,6 +185,20 @@ export default function ReportesPage() {
           <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            type="month"
+            style={INP}
+            value={desde.slice(0, 7)}
+            title="Elegir mes"
+            onChange={e => {
+              if (!e.target.value) return
+              const [y, m] = e.target.value.split('-').map(Number)
+              const d = `${e.target.value}-01`
+              const h = new Date(y, m, 0).toISOString().split('T')[0]
+              setDesde(d); setHasta(h); cargar(empresa, d, h)
+            }}
+          />
+          <span style={{ color: T.dim, fontSize: 13 }}>o rango:</span>
           <input type="date" style={INP} value={desde} onChange={e => { setDesde(e.target.value); cargar(empresa, e.target.value, hasta) }} />
           <span style={{ color: T.dim, fontSize: 13 }}>—</span>
           <input type="date" style={INP} value={hasta} onChange={e => { setHasta(e.target.value); cargar(empresa, desde, e.target.value) }} />
