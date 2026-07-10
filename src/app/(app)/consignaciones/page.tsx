@@ -733,8 +733,9 @@ export default function ConsignacionesPage() {
                             style={{ ...INP, width: 60 }}
                             type="number"
                             min={1}
-                            value={item.cantidad}
-                            onChange={e => setItem(idx, { cantidad: Number(e.target.value) || 1 })}
+                            placeholder="1"
+                            value={item.cantidad || ''}
+                            onChange={e => setItem(idx, { cantidad: e.target.value === '' ? 0 : (Number(e.target.value) || 0) })}
                           />
                         </td>
                         <td style={{ padding: '8px 10px', width: 110 }}>
@@ -744,7 +745,8 @@ export default function ConsignacionesPage() {
                             type="number"
                             step="any"
                             min={0}
-                            value={item.precio_unitario}
+                            placeholder="0"
+                            value={item.precio_unitario || ''}
                             onChange={e => setItem(idx, { precio_unitario: parseFloat(e.target.value) || 0 })}
                           />
                         </td>
@@ -854,9 +856,10 @@ export default function ConsignacionesPage() {
                             type="number"
                             min={0}
                             max={item.cantidad}
-                            value={vendido}
+                            placeholder="0"
+                            value={vendido || ''}
                             onChange={e => {
-                              const v = Math.min(Number(e.target.value) || 0, item.cantidad)
+                              const v = e.target.value === '' ? 0 : Math.min(Number(e.target.value) || 0, item.cantidad)
                               setLiqItems(prev => prev.map((it, i) => i === idx ? { ...it, cantidad_vendida: v } : it))
                             }}
                           />

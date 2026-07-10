@@ -766,8 +766,8 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1}
-                              onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
+                            <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''}
+                              onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                             <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>
@@ -1081,7 +1081,7 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1} onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
+                            <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''} onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                             <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>

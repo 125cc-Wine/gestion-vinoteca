@@ -315,7 +315,7 @@ export default function ProveedoresPage() {
               <div><Label>Teléfono</Label><input className="pinp" style={INP} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
               <div><Label>Email</Label><input className="pinp" style={INP} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Dirección</Label><input className="pinp" style={INP} value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
-              <div style={{ gridColumn: '1/-1' }}><Label>Saldo (negativo = deuda)</Label><input className="pinp" type="number" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
+              <div style={{ gridColumn: '1/-1' }}><Label>Saldo (negativo = deuda)</Label><input className="pinp" type="number" style={INP} placeholder="0" value={form.saldo || ''} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Notas</Label><textarea className="pinp" style={{ ...INP, height: 72, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
             </div>
 

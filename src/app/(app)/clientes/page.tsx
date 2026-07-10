@@ -548,11 +548,11 @@ export default function ClientesPage() {
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Saldo cta. corriente ($)</label>
-                <input type="number" style={INP} value={form.saldo} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} />
+                <input type="number" style={INP} placeholder="0" value={form.saldo || ''} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Límite de crédito ($)</label>
-                <input type="number" style={INP} value={form.limite_credito} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} />
+                <input type="number" style={INP} placeholder="0" value={form.limite_credito || ''} onChange={e => setForm(f => ({ ...f, limite_credito: parseFloat(e.target.value) || 0 }))} />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Notas</label>

@@ -636,8 +636,8 @@ export default function VentasPage() {
       cliente_id: clienteId || null, cliente_nombre: clienteNombre,
       items: items.filter(i => i.nombre).map(i => ({
         producto_id: i.producto_id || null, nombre: i.nombre,
-        cantidad: i.cantidad, precio_unitario: i.precio_unitario,
-        descuento: i.descuento, subtotal: calcSub(i),
+        cantidad: i.cantidad || 1, precio_unitario: i.precio_unitario,
+        descuento: i.descuento, subtotal: calcSub({ ...i, cantidad: i.cantidad || 1 }),
       })),
       subtotal, descuento: descuentoGlobal, total: calcTotal(),
       estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
@@ -869,7 +869,7 @@ export default function VentasPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         empresa, cliente_id: pClienteId || null, cliente_nombre: pClienteNombre,
-        vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id),
+        vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
         notas: pNotas, fecha_entrega: pFecha || null, estado: 'pendiente',
         verificarStock: true, _dryRun: true,
       }),
@@ -884,7 +884,7 @@ export default function VentasPage() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         empresa, cliente_id: pClienteId || null, cliente_nombre: pClienteNombre,
-        vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id),
+        vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
         notas: pNotas, fecha_entrega: pFecha || null, estado: 'pendiente',
       }),
     })
@@ -1444,7 +1444,7 @@ export default function VentasPage() {
                           />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
-                          <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                          <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} placeholder="1" value={item.cantidad || ''} onChange={e => updateItem(idx, 'cantidad', e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))} />
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <input type="number" step="any" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
@@ -1475,7 +1475,7 @@ export default function VentasPage() {
               </div>
               <div style={{ width: 200 }}>
                 <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Descuento global (%)</div>
-                <input type="number" min="0" max="100" className="vinp" style={INP} value={descuentoGlobal} onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)} />
+                <input type="number" min="0" max="100" className="vinp" style={INP} placeholder="0" value={descuentoGlobal || ''} onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)} />
                 <div style={{ marginTop: 10, textAlign: 'right' }}>
                   <div style={{ fontSize: 12, color: C.muted }}>Subtotal: ${items.reduce((a, i) => a + calcSub(i), 0).toLocaleString('es-AR')}</div>
                   {descuentoGlobal > 0 && <div style={{ fontSize: 12, color: C.red }}>Dto: -{descuentoGlobal}%</div>}
@@ -1602,7 +1602,7 @@ export default function VentasPage() {
                           </td>
                           <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                             <input type="number" min="1" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }}
-                              value={item.cantidad} onChange={e => { const ni = [...pItems]; ni[idx] = { ...ni[idx], cantidad: parseInt(e.target.value) || 1 }; setPItems(ni); setPStockChecked(false) }} />
+                              placeholder="1" value={item.cantidad || ''} onChange={e => { const ni = [...pItems]; ni[idx] = { ...ni[idx], cantidad: e.target.value === '' ? 0 : (parseInt(e.target.value) || 0) }; setPItems(ni); setPStockChecked(false) }} />
                           </td>
                           <td style={{ padding: '6px 6px', textAlign: 'center' }}>
                             {pItems.length > 1 && (

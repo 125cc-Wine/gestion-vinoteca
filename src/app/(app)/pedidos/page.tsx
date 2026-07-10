@@ -169,7 +169,7 @@ export default function PedidosPage() {
       body: JSON.stringify({
         empresa, cliente_id: clienteId || null, cliente_nombre: clienteNombre || 'Sin cliente',
         vendedor_nombre: vendedorNombre || null,
-        items: items.filter(i => i.producto_id),
+        items: items.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
         notas, fecha_entrega: fechaEntrega || null,
         estado: 'pendiente', verificarStock: true, _dryRun: true,
       }),
@@ -186,7 +186,7 @@ export default function PedidosPage() {
       body: JSON.stringify({
         empresa, cliente_id: clienteId || null, cliente_nombre: clienteNombre || 'Sin cliente',
         vendedor_nombre: vendedorNombre || null,
-        items: items.filter(i => i.producto_id),
+        items: items.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
         notas, fecha_entrega: fechaEntrega || null, estado: 'pendiente',
       }),
     })
@@ -427,9 +427,9 @@ export default function PedidosPage() {
                           <input
                             type="number" min="1"
                             style={{ ...INP, width: 80, textAlign: 'center' }}
-                            value={item.cantidad}
-                            onChange={e => updateItem(idx, 'cantidad', parseInt(e.target.value) || 1)}
-                            placeholder="Cant."
+                            value={item.cantidad || ''}
+                            onChange={e => updateItem(idx, 'cantidad', e.target.value === '' ? 0 : (parseInt(e.target.value) || 0))}
+                            placeholder="1"
                           />
                           {items.length > 1 && (
                             <button onClick={() => removeItem(idx)}

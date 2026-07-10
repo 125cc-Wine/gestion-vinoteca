@@ -1289,9 +1289,9 @@ export default function ProductosPage() {
                 {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (
                   <div key={k}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
-                    <input type="number" min="0" style={INP}
+                    <input type="number" min="0" style={INP} placeholder="0"
                       value={(fullForm as Record<string, unknown>)[k] as number || ''}
-                      onChange={e => setFullForm(f => ({ ...f, [k]: +e.target.value }))} />
+                      onChange={e => setFullForm(f => ({ ...f, [k]: +e.target.value || 0 }))} />
                   </div>
                 ))}
                 <div>
@@ -1358,9 +1358,9 @@ export default function ProductosPage() {
                 {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (
                   <div key={k}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
-                    <input type="number" min="0" style={INP}
-                      value={(newForm as Record<string, unknown>)[k] as number}
-                      onChange={e => setNewForm(f => ({ ...f, [k]: +e.target.value }))} />
+                    <input type="number" min="0" style={INP} placeholder="0"
+                      value={((newForm as Record<string, unknown>)[k] as number) || ''}
+                      onChange={e => setNewForm(f => ({ ...f, [k]: +e.target.value || 0 }))} />
                   </div>
                 ))}
                 <div>

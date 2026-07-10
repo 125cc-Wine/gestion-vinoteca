@@ -886,9 +886,10 @@ export default function CrmPage() {
                             className="cinp"
                             type="number"
                             min={0}
+                            placeholder="0"
                             style={{ ...INP, width: 160 }}
-                            value={monto}
-                            onChange={e => setObjInputs(prev => ({ ...prev, [vend.nombre]: Number(e.target.value) }))}
+                            value={monto || ''}
+                            onChange={e => setObjInputs(prev => ({ ...prev, [vend.nombre]: Number(e.target.value) || 0 }))}
                           />
                           <button
                             className="cbtn"

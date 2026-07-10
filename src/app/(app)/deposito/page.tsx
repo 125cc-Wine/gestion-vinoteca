@@ -216,7 +216,8 @@ function ConsultarTab({ empresa }: { empresa: string }) {
               }}>−</button>
               <input
                 type="number" min={0}
-                value={editStock ?? ''}
+                placeholder="0"
+                value={editStock || ''}
                 onChange={e => setEditStock(parseInt(e.target.value) || 0)}
                 style={{ flex: 1, height: 56, border: 'none', textAlign: 'center', fontSize: 28, fontWeight: 800, color: T.text, background: T.surface, outline: 'none', minWidth: 0 }}
               />
@@ -410,7 +411,7 @@ function CargarTab({ empresa }: { empresa: string }) {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ display: 'flex', border: `1.5px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
                   <button onClick={() => setItems(p => p.map(i => i.id === item.id ? { ...i, qty: Math.max(0, i.qty - 1) } : i))} style={{ width: 36, height: 40, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 18, color: T.muted }}>−</button>
-                  <input type="number" value={item.qty} min={0}
+                  <input type="number" value={item.qty || ''} min={0} placeholder="0"
                     onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, qty: parseInt(e.target.value) || 0 } : i))}
                     style={{ width: 52, height: 40, border: 'none', textAlign: 'center', fontSize: 16, fontWeight: 700, color: T.text, background: T.surface, outline: 'none' }} />
                   <button onClick={() => setItems(p => p.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i))} style={{ width: 36, height: 40, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 18, color: T.muted }}>+</button>
@@ -786,7 +787,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
             <label style={LBL_A}>Botellas</label>
             <div style={{ display: 'flex', border: `1.5px solid ${T.border}`, borderRadius: 9, overflow: 'hidden', maxWidth: 180 }}>
               <button onClick={() => setStock(s => Math.max(0, s - 1))} style={{ width: 44, height: 46, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 22, color: T.muted }}>−</button>
-              <input type="number" min={0} value={stock} onChange={e => setStock(parseInt(e.target.value) || 0)}
+              <input type="number" min={0} placeholder="0" value={stock || ''} onChange={e => setStock(parseInt(e.target.value) || 0)}
                 style={{ flex: 1, height: 46, border: 'none', textAlign: 'center', fontSize: 20, fontWeight: 800, color: T.text, background: '#fff', outline: 'none' }} />
               <button onClick={() => setStock(s => s + 1)} style={{ width: 44, height: 46, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 22, color: T.muted }}>+</button>
             </div>
@@ -1000,7 +1001,7 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
                 <label style={LBL_A}>Botellas</label>
                 <div style={{ display: 'flex', border: `1.5px solid ${T.border}`, borderRadius: 9, overflow: 'hidden' }}>
                   <button onClick={() => setEditStock(s => Math.max(0, s - 1))} style={{ width: 40, height: 44, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 20, color: T.muted }}>−</button>
-                  <input type="number" min={0} value={editStock} onChange={e => setEditStock(parseInt(e.target.value) || 0)}
+                  <input type="number" min={0} placeholder="0" value={editStock || ''} onChange={e => setEditStock(parseInt(e.target.value) || 0)}
                     style={{ flex: 1, height: 44, border: 'none', textAlign: 'center', fontSize: 18, fontWeight: 800, color: T.text, background: '#fff', outline: 'none' }} />
                   <button onClick={() => setEditStock(s => s + 1)} style={{ width: 40, height: 44, border: 'none', background: T.bg, cursor: 'pointer', fontSize: 20, color: T.muted }}>+</button>
                 </div>
