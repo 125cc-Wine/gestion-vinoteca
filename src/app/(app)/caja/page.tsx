@@ -74,6 +74,10 @@ export default function CajaPage() {
   const [toast, setToast] = useState('')
   const [pageTab, setPageTab] = useState<PageTab>('movimientos')
 
+  // Filtro de fecha en la pestaña Movimientos — arranca en hoy
+  const [filtroDesde, setFiltroDesde] = useState(() => new Date().toISOString().split('T')[0])
+  const [filtroHasta, setFiltroHasta] = useState(() => new Date().toISOString().split('T')[0])
+
   // Cierre del día
   const today = new Date().toISOString().split('T')[0]
   const [cierreFecha, setCierreFecha] = useState(today)
@@ -164,8 +168,13 @@ export default function CajaPage() {
     cargar(empresa); showToast('Movimiento eliminado')
   }
 
-  const totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((a, m) => a + m.monto, 0)
-  const totalEgresos  = movimientos.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
+  // Solo afecta la pestaña Movimientos — Cierre del día sigue mirando
+  // `movimientos` completo, que ya se filtra por fecha por su cuenta.
+  const movimientosFiltrados = movimientos.filter(m =>
+    (!filtroDesde || m.fecha >= filtroDesde) && (!filtroHasta || m.fecha <= filtroHasta)
+  )
+  const totalIngresos = movimientosFiltrados.filter(m => m.tipo === 'ingreso').reduce((a, m) => a + m.monto, 0)
+  const totalEgresos  = movimientosFiltrados.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
   const saldo = totalIngresos - totalEgresos
 
   // Efectivo del día seleccionado para cierre
@@ -239,6 +248,19 @@ export default function CajaPage() {
         {/* ── MOVIMIENTOS tab ── */}
         {pageTab === 'movimientos' && (
           <>
+            {/* Filtro de fecha */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
+              <input type="date" style={{ ...INP, width: 'auto' }} value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} />
+              <span style={{ color: T.dim, fontSize: 13 }}>—</span>
+              <input type="date" style={{ ...INP, width: 'auto' }} value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} />
+              {(filtroDesde || filtroHasta) && (
+                <button
+                  onClick={() => { setFiltroDesde(''); setFiltroHasta('') }}
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontWeight: 500 }}
+                >Ver todo</button>
+              )}
+            </div>
+
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
               {[
@@ -267,9 +289,11 @@ export default function CajaPage() {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
-                  ) : movimientos.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>No hay movimientos todavía</td></tr>
-                  ) : movimientos.map(m => (
+                  ) : movimientosFiltrados.length === 0 ? (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>
+                      {movimientos.length === 0 ? 'No hay movimientos todavía' : 'Sin movimientos en ese rango de fechas'}
+                    </td></tr>
+                  ) : movimientosFiltrados.map(m => (
                     <tr key={m.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'default', transition: 'background 0.1s' }}>
                       <td style={{ padding: '10px 16px', color: T.dim, fontSize: 12 }}>{m.fecha}</td>
                       <td style={{ padding: '10px 16px' }}>
