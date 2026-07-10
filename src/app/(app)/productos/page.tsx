@@ -63,7 +63,7 @@ const EMPTY_EDIT = {
   region: '', sku: '', codigo_barras: '',
   precio_venta: 0, precio_mayorista: 0, precio_costo: 0,
   stock: 0, stock_minimo: 3,
-  unidad_medida: 'botella' as 'botella' | 'caja6' | 'caja12',
+  unidad_medida: 'botella' as 'botella' | 'caja4' | 'caja6' | 'caja12',
   woo_product_id: undefined as number | undefined,
 }
 
@@ -442,7 +442,7 @@ export default function ProductosPage() {
       region: p.region||'', sku: p.sku||'', codigo_barras: p.codigo_barras||'',
       precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
       precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
-      unidad_medida: (p.unidad_medida || 'botella') as 'botella'|'caja6'|'caja12',
+      unidad_medida: (p.unidad_medida || 'botella') as 'botella'|'caja4'|'caja6'|'caja12',
       woo_product_id: p.woo_product_id })
     setActiveRow(p.id!)
   }
@@ -478,7 +478,7 @@ export default function ProductosPage() {
       region: p.region || '', sku: nuevoSku, codigo_barras: '',
       precio_venta: p.precio_venta || 0, precio_mayorista: p.precio_mayorista || 0,
       precio_costo: p.precio_costo || 0, stock: 0, stock_minimo: p.stock_minimo,
-      unidad_medida: (p.unidad_medida || 'botella') as 'botella' | 'caja6' | 'caja12',
+      unidad_medida: (p.unidad_medida || 'botella') as 'botella' | 'caja4' | 'caja6' | 'caja12',
       woo_product_id: undefined,
       empresa,
     })
@@ -492,7 +492,7 @@ export default function ProductosPage() {
       region: p.region||'', sku: p.sku||'', codigo_barras: p.codigo_barras||'',
       precio_venta: p.precio_venta||0, precio_mayorista: p.precio_mayorista||0,
       precio_costo: p.precio_costo||0, stock: p.stock, stock_minimo: p.stock_minimo,
-      unidad_medida: (p.unidad_medida||'botella') as 'botella'|'caja6'|'caja12',
+      unidad_medida: (p.unidad_medida||'botella') as 'botella'|'caja4'|'caja6'|'caja12',
       woo_product_id: p.woo_product_id,
       empresa: p.empresa,
     })
@@ -1059,8 +1059,9 @@ export default function ProductosPage() {
                         value={editForm.stock_minimo || ''} onChange={e => setEditForm(f => ({ ...f, stock_minimo: +e.target.value }))}
                         placeholder="Mín."
                         onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
-                      <select style={INP_SM} value={editForm.unidad_medida || 'botella'} onChange={e => setEditForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
+                      <select style={INP_SM} value={editForm.unidad_medida || 'botella'} onChange={e => setEditForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja4' | 'caja6' | 'caja12' }))}>
                         <option value="botella">Botella</option>
+                        <option value="caja4">Caja ×4</option>
                         <option value="caja6">Caja ×6</option>
                         <option value="caja12">Caja ×12</option>
                       </select>
@@ -1295,8 +1296,9 @@ export default function ProductosPage() {
                 ))}
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Unidad de medida</label>
-                  <select style={INP} value={fullForm.unidad_medida || 'botella'} onChange={e => setFullForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
+                  <select style={INP} value={fullForm.unidad_medida || 'botella'} onChange={e => setFullForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja4' | 'caja6' | 'caja12' }))}>
                     <option value="botella">Botella (×1)</option>
+                    <option value="caja4">Caja ×4</option>
                     <option value="caja6">Caja ×6</option>
                     <option value="caja12">Caja ×12</option>
                   </select>
@@ -1363,8 +1365,9 @@ export default function ProductosPage() {
                 ))}
                 <div>
                   <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Unidad de medida</label>
-                  <select style={INP} value={newForm.unidad_medida || 'botella'} onChange={e => setNewForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja6' | 'caja12' }))}>
+                  <select style={INP} value={newForm.unidad_medida || 'botella'} onChange={e => setNewForm(f => ({ ...f, unidad_medida: e.target.value as 'botella' | 'caja4' | 'caja6' | 'caja12' }))}>
                     <option value="botella">Botella (×1)</option>
+                    <option value="caja4">Caja ×4</option>
                     <option value="caja6">Caja ×6</option>
                     <option value="caja12">Caja ×12</option>
                   </select>

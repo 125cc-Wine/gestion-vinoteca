@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           .eq('id', item.producto_id)
           .single()
         if (prod) {
-          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : 1
+          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : prod.unidad_medida === 'caja4' ? 4 : 1
           const nuevoStock = (prod.stock || 0) + item.cantidad * factor
           await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
           const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           .single()
 
         if (prod) {
-          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : 1
+          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : prod.unidad_medida === 'caja4' ? 4 : 1
           const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad * factor)
           await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
 

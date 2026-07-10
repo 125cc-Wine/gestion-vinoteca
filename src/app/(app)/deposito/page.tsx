@@ -19,8 +19,8 @@ const T = {
   blue: '#2B5EA0', blueBg: 'rgba(43,94,160,0.08)',
 }
 
-const MULT: Record<string, number> = { botella: 1, caja6: 6, caja12: 12 }
-type Unidad = 'botella' | 'caja6' | 'caja12'
+const MULT: Record<string, number> = { botella: 1, caja4: 4, caja6: 6, caja12: 12 }
+type Unidad = 'botella' | 'caja4' | 'caja6' | 'caja12'
 type Modo = 'agregar' | 'establecer'
 type Tab = 'consultar' | 'cargar' | 'historial' | 'bodegas' | 'anadas'
 
@@ -418,6 +418,7 @@ function CargarTab({ empresa }: { empresa: string }) {
                 <select value={item.unit} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, unit: e.target.value as Unidad } : i))}
                   style={{ flex: 1, height: 40, padding: '0 10px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 14, color: T.text, background: T.surface, cursor: 'pointer', outline: 'none' }}>
                   <option value="botella">Botella ×1</option>
+                  <option value="caja4">Caja ×4</option>
                   <option value="caja6">Caja ×6</option>
                   <option value="caja12">Caja ×12</option>
                 </select>

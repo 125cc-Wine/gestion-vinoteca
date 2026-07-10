@@ -81,7 +81,7 @@ interface Compra {
 interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string }
 interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number; unidad_medida?: string }
 
-function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : 1 }
+function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : u === 'caja4' ? 4 : 1 }
 function upkLabel(upk: number) { return upk > 1 ? `Caja ×${upk}` : 'Botella' }
 
 const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0, cajas: 1, unidades_por_caja: 1 }
@@ -768,6 +768,7 @@ export default function ComprasPage() {
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1}
                               onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
+                            <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
@@ -778,9 +779,7 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
-                            {item.unidades_por_caja && item.unidades_por_caja > 1
-                              ? <span title={upkLabel(item.unidades_por_caja)}>{item.cantidad} u.</span>
-                              : <span style={{ color: T.dim }}>—</span>}
+                            {item.cantidad} u.
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'center' }}>
@@ -1083,6 +1082,7 @@ export default function ComprasPage() {
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" style={{ ...INP, width: 65 }} min={1} value={item.cajas || 1} onChange={e => updateItem(idx, 'cajas', +e.target.value || 1)} />
+                            <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
@@ -1093,7 +1093,7 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
-                            {item.unidades_por_caja && item.unidades_por_caja > 1 ? <span>{item.cantidad} u.</span> : <span style={{ color: T.dim }}>—</span>}
+                            {item.cantidad} u.
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'center' }}>

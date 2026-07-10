@@ -16,7 +16,7 @@ export interface Producto {
   stock: number
   stock_minimo: number
   woo_product_id?: number
-  unidad_medida?: 'botella' | 'caja6' | 'caja12'
+  unidad_medida?: 'botella' | 'caja4' | 'caja6' | 'caja12'
   activo: boolean
   created_at?: string
   updated_at?: string
