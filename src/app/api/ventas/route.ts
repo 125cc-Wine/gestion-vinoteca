@@ -3,6 +3,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { wooUpdateStockAndPrice } from '@/lib/woocommerce'
 
+// condicion_venta (ventas) -> medio_pago (caja) — son dos listas separadas
+// que nunca se cruzaron, así que el Cierre del día (que agrupa por
+// medio_pago) nunca veía nada de lo vendido desde Ventas.
+function medioPagoDesdeCondicion(condicion?: string | null): string | undefined {
+  const map: Record<string, string> = {
+    'Contado': 'Efectivo',
+    'Cta. Cte.': 'Cta.Cte.',
+    'Transferencia': 'Transferencia',
+    'Tarjeta Débito': 'Tarjeta Débito',
+    'Tarjeta Crédito': 'Tarjeta Crédito',
+    'QR': 'QR',
+    'Billetera Virtual MercadoPago': 'MercadoPago',
+  }
+  return condicion ? map[condicion] : undefined
+}
+
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
@@ -78,7 +94,9 @@ export async function POST(req: NextRequest) {
         empresa: venta.empresa, tipo: 'egreso',
         concepto: `Devolución ${venta.numero} - ${venta.cliente_nombre}`,
         monto: venta.total, fecha: new Date().toISOString().split('T')[0],
-        categoria: 'Devoluciones', referencia_id: data.id,
+        categoria: 'Devoluciones',
+        medio_pago: medioPagoDesdeCondicion(venta.condicion_venta) || 'Efectivo',
+        referencia_id: data.id,
       }])
     }
     return NextResponse.json(data)
@@ -139,6 +157,7 @@ export async function POST(req: NextRequest) {
       monto: venta.total,
       fecha: new Date().toISOString().split('T')[0],
       categoria: `Ventas - ${condicion}`,
+      medio_pago: venta.estado_pago === 'cuenta_corriente' ? 'Cta.Cte.' : medioPagoDesdeCondicion(condicion),
       referencia_id: data.id,
     }])
   }

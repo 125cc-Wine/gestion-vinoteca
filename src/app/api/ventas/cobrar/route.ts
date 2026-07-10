@@ -2,6 +2,22 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// condicion_venta (ventas) -> medio_pago (caja), igual que en /api/ventas —
+// si no hay match (ej: cobro de una cta. cte. sin condición definida) se
+// asume Efectivo, que es el caso más común al cobrar una deuda en el local.
+function medioPagoDesdeCondicion(condicion?: string | null): string {
+  const map: Record<string, string> = {
+    'Contado': 'Efectivo',
+    'Cta. Cte.': 'Cta.Cte.',
+    'Transferencia': 'Transferencia',
+    'Tarjeta Débito': 'Tarjeta Débito',
+    'Tarjeta Crédito': 'Tarjeta Crédito',
+    'QR': 'QR',
+    'Billetera Virtual MercadoPago': 'MercadoPago',
+  }
+  return (condicion && map[condicion]) || 'Efectivo'
+}
+
 // POST { venta_id, empresa, concepto?, fecha? }
 // Marca la venta como pagada y registra los movimientos contables correspondientes.
 export async function POST(req: NextRequest) {
@@ -64,6 +80,7 @@ export async function POST(req: NextRequest) {
       monto: venta.total,
       fecha: fechaCobro,
       categoria: 'Ventas - Cobro',
+      medio_pago: medioPagoDesdeCondicion(venta.condicion_venta),
       referencia_id: venta_id,
     }])
   }
