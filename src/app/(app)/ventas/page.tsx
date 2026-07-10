@@ -350,10 +350,10 @@ export default function VentasPage() {
   const [factLoading, setFactLoading] = useState(false)
   const [factError, setFactError] = useState('')
 
-  // ── Filtros comprobantes
+  // ── Filtros comprobantes — arrancan mostrando solo hoy
   const [busquedaVentas, setBusquedaVentas] = useState('')
-  const [filtroDesde, setFiltroDesde] = useState('')
-  const [filtroHasta, setFiltroHasta] = useState('')
+  const [filtroDesde, setFiltroDesde] = useState(() => new Date().toISOString().split('T')[0])
+  const [filtroHasta, setFiltroHasta] = useState(() => new Date().toISOString().split('T')[0])
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroEstadoPago, setFiltroEstadoPago] = useState('')
