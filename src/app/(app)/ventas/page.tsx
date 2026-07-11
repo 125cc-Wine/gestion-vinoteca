@@ -926,9 +926,12 @@ export default function VentasPage() {
 
   // ── Derived
   const emp = EMPRESAS_DATA[empresa]
-  const totalRemitos = ventas.filter(v => v.tipo === 'remito' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
-  const totalPresupuestos = ventas.filter(v => v.tipo === 'presupuesto' && v.estado !== 'cancelado').reduce((a, v) => a + v.total, 0)
-  const totalGeneral = totalRemitos + totalPresupuestos
+  // Remitos y presupuestos son ambos ventas reales — se suman en un solo
+  // total y se separan por si ya se cobraron, no por tipo de comprobante.
+  const ventasParaKpi = ventas.filter(v => (v.tipo === 'remito' || v.tipo === 'presupuesto') && v.estado !== 'cancelado')
+  const totalGeneral = ventasParaKpi.reduce((a, v) => a + v.total, 0)
+  const totalCobrado = ventasParaKpi.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
+  const totalPorCobrar = totalGeneral - totalCobrado
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
     if (q && !`${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)) return false
@@ -1010,8 +1013,8 @@ export default function VentasPage() {
           <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
               { label: 'Total general', value: `$${totalGeneral.toLocaleString('es-AR')}`, color: C.text },
-              { label: 'Remitos', value: `$${totalRemitos.toLocaleString('es-AR')}`, color: C.green },
-              { label: 'Presupuestos', value: `$${totalPresupuestos.toLocaleString('es-AR')}`, color: C.blue },
+              { label: 'Cobrado', value: `$${totalCobrado.toLocaleString('es-AR')}`, color: C.green },
+              { label: 'Por cobrar', value: `$${totalPorCobrar.toLocaleString('es-AR')}`, color: C.amber },
             ].map(s => (
               <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
