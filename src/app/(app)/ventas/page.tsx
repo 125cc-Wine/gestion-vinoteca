@@ -377,6 +377,8 @@ export default function VentasPage() {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
   const [confirmClose, setConfirmClose] = useState<null | 'venta' | 'pedido'>(null)
+  const [porCobrarModal, setPorCobrarModal] = useState(false)
+  const [cobrandoId, setCobrandoId] = useState<string | null>(null)
 
   const dirtyVenta  = items.some(i => i.producto_id !== '') || clienteId !== ''
   const dirtyPedido = pItems.some(i => i.producto_id !== '') || pClienteId !== ''
@@ -932,6 +934,23 @@ export default function VentasPage() {
   const totalGeneral = ventasParaKpi.reduce((a, v) => a + v.total, 0)
   const totalCobrado = ventasParaKpi.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
   const totalPorCobrar = totalGeneral - totalCobrado
+  const ventasPorCobrar = ventasParaKpi
+    .filter(v => v.estado_pago !== 'pagado')
+    .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+
+  async function marcarPagadoDesdeResumen(v: Venta) {
+    if (!confirm(`¿Marcar ${v.numero} (${v.cliente_nombre} — $${v.total.toLocaleString('es-AR')}) como pagado?`)) return
+    setCobrandoId(v.id!)
+    const res = await fetch('/api/ventas/cobrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ venta_id: v.id, empresa: v.empresa }),
+    })
+    const data = await res.json()
+    setCobrandoId(null)
+    if (data.error) { showToast('Error: ' + data.error); return }
+    showToast(`${v.numero} marcado como pagado`)
+    await cargarTodo(empresa)
+  }
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
     if (q && !`${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)) return false
@@ -1012,12 +1031,19 @@ export default function VentasPage() {
         <>
           <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
-              { label: 'Total general', value: `$${totalGeneral.toLocaleString('es-AR')}`, color: C.text },
-              { label: 'Cobrado', value: `$${totalCobrado.toLocaleString('es-AR')}`, color: C.green },
-              { label: 'Por cobrar', value: `$${totalPorCobrar.toLocaleString('es-AR')}`, color: C.amber },
+              { label: 'Total general', value: `$${totalGeneral.toLocaleString('es-AR')}`, color: C.text, onClick: undefined },
+              { label: 'Cobrado', value: `$${totalCobrado.toLocaleString('es-AR')}`, color: C.green, onClick: undefined },
+              { label: 'Por cobrar', value: `$${totalPorCobrar.toLocaleString('es-AR')}`, color: C.amber, onClick: () => setPorCobrarModal(true) },
             ].map(s => (
-              <div key={s.label} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
+              <div key={s.label} className={s.onClick ? 'vbtn' : undefined} onClick={s.onClick}
+                style={{
+                  background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '16px 20px',
+                  cursor: s.onClick ? 'pointer' : 'default', transition: 'border-color 0.12s',
+                }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {s.label}
+                  {s.onClick && <span style={{ fontSize: 10, color: C.amber }}>· ver detalle</span>}
+                </div>
                 <div className="stat-val" style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
               </div>
             ))}
@@ -1195,6 +1221,64 @@ export default function VentasPage() {
       </div>{/* end content wrapper */}
 
       {/* ══ SCANNER CÓDIGO DE BARRAS ══ */}
+      {porCobrarModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={e => e.target === e.currentTarget && setPorCobrarModal(false)}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(26,18,16,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: `1px solid ${C.border}` }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text }}>Por cobrar</h2>
+                <div style={{ fontSize: 12, color: C.dim, marginTop: 2 }}>
+                  {ventasPorCobrar.length} comprobante{ventasPorCobrar.length !== 1 ? 's' : ''} · ${totalPorCobrar.toLocaleString('es-AR')}
+                </div>
+              </div>
+              <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18 }), color: C.dim }} onClick={() => setPorCobrarModal(false)}>×</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {ventasPorCobrar.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: C.dim, fontSize: 13 }}>No hay nada pendiente de cobro 🎉</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: C.surface }}>
+                      {['Fecha', 'Comprobante', 'Cliente', 'Estado', 'Monto', ''].map(h => (
+                        <th key={h} style={{ padding: '8px 16px', textAlign: h === 'Monto' ? 'right' : 'left', fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ventasPorCobrar.map(v => (
+                      <tr key={v.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                        <td style={{ padding: '10px 16px', color: C.dim, fontSize: 12 }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('es-AR') : '—'}</td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 12 }}>{v.numero}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10, color: C.dim, textTransform: 'uppercase' }}>{v.tipo}</span>
+                        </td>
+                        <td style={{ padding: '10px 16px', color: C.text }}>{v.cliente_nombre}</td>
+                        <td style={{ padding: '10px 16px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, background: v.estado_pago === 'cuenta_corriente' ? C.blueBg : C.amberBg, color: v.estado_pago === 'cuenta_corriente' ? C.blue : C.amber, border: `1px solid ${v.estado_pago === 'cuenta_corriente' ? 'rgba(43,94,160,0.28)' : 'rgba(160,112,16,0.28)'}` }}>
+                            {v.estado_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 'Pendiente'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                          <button
+                            disabled={cobrandoId === v.id}
+                            onClick={() => marcarPagadoDesdeResumen(v)}
+                            style={{ background: C.greenBg, border: '1px solid rgba(45,122,79,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: C.green, cursor: cobrandoId === v.id ? 'default' : 'pointer', fontFamily: 'inherit', fontWeight: 600, opacity: cobrandoId === v.id ? 0.6 : 1, whiteSpace: 'nowrap' }}
+                          >
+                            {cobrandoId === v.id ? '...' : 'Marcar pagado'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {scannerOpen && (
         <BarcodeScanner
           titulo="Escanear botella"
