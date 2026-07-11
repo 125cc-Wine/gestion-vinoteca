@@ -323,6 +323,7 @@ export default function VentasPage() {
   const [tipo, setTipo] = useState<'presupuesto' | 'remito' | 'devolucion'>('presupuesto')
   const [editVentaId, setEditVentaId] = useState<string | null>(null)
   const [ventaEmpresa, setVentaEmpresa] = useState<'aroma' | 'lavid'>('aroma')
+  const [saving, setSaving] = useState(false)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
   const [clienteData, setClienteData] = useState<Cliente | null>(null)
@@ -629,31 +630,37 @@ export default function VentasPage() {
   }
 
   async function guardar(imprimir = true) {
+    if (saving) return // evita doble click / doble comprobante mientras espera la respuesta
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
-    const subtotal = items.reduce((a, i) => a + calcSub(i), 0)
-    const ventaData = {
-      empresa: ventaEmpresa, tipo, vendedor_nombre: vendedorNombre || null,
-      cliente_id: clienteId || null, cliente_nombre: clienteNombre,
-      items: items.filter(i => i.nombre).map(i => ({
-        producto_id: i.producto_id || null, nombre: i.nombre,
-        cantidad: i.cantidad || 1, precio_unitario: i.precio_unitario,
-        descuento: i.descuento, subtotal: calcSub({ ...i, cantidad: i.cantidad || 1 }),
-      })),
-      subtotal, descuento: descuentoGlobal, total: calcTotal(),
-      estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
-      descontarStock: tipo === 'remito' && !editVentaId,
-      devolverStock: tipo === 'devolucion' && !editVentaId,
+    setSaving(true)
+    try {
+      const subtotal = items.reduce((a, i) => a + calcSub(i), 0)
+      const ventaData = {
+        empresa: ventaEmpresa, tipo, vendedor_nombre: vendedorNombre || null,
+        cliente_id: clienteId || null, cliente_nombre: clienteNombre,
+        items: items.filter(i => i.nombre).map(i => ({
+          producto_id: i.producto_id || null, nombre: i.nombre,
+          cantidad: i.cantidad || 1, precio_unitario: i.precio_unitario,
+          descuento: i.descuento, subtotal: calcSub({ ...i, cantidad: i.cantidad || 1 }),
+        })),
+        subtotal, descuento: descuentoGlobal, total: calcTotal(),
+        estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
+        descontarStock: tipo === 'remito' && !editVentaId,
+        devolverStock: tipo === 'devolucion' && !editVentaId,
+      }
+      const res = editVentaId
+        ? await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
+        : await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
+      const data = await res.json()
+      if (data.error) { showToast('Error: ' + data.error); return }
+      setModal(false)
+      await cargarTodo(empresa)
+      const tipoLabel = tipo === 'presupuesto' ? 'Presupuesto' : tipo === 'devolucion' ? 'Devolución' : 'Remito'
+      showToast(editVentaId ? 'Comprobante actualizado' : `${tipoLabel} ${data.numero} generado`)
+      if (!editVentaId && imprimir) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
+    } finally {
+      setSaving(false)
     }
-    const res = editVentaId
-      ? await fetch('/api/ventas', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editVentaId, ...ventaData }) })
-      : await fetch('/api/ventas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ventaData) })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setModal(false)
-    await cargarTodo(empresa)
-    const tipoLabel = tipo === 'presupuesto' ? 'Presupuesto' : tipo === 'devolucion' ? 'Devolución' : 'Remito'
-    showToast(editVentaId ? 'Comprobante actualizado' : `${tipoLabel} ${data.numero} generado`)
-    if (!editVentaId && imprimir) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
   }
 
   async function eliminarVenta(id: string) {
@@ -879,18 +886,24 @@ export default function VentasPage() {
   }
 
   async function guardarPedido() {
+    if (saving) return
     if (pItems.every(i => !i.producto_id)) { showToast('Agregá al menos un producto'); return }
-    const res = await fetch('/api/pedidos', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresa, cliente_id: pClienteId || null, cliente_nombre: pClienteNombre,
-        vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
-        notas: pNotas, fecha_entrega: pFecha || null, estado: 'pendiente',
-      }),
-    })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setPedidoModal(false); cargarTodo(empresa); showToast(`Pedido ${data.numero} creado`)
+    setSaving(true)
+    try {
+      const res = await fetch('/api/pedidos', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa, cliente_id: pClienteId || null, cliente_nombre: pClienteNombre,
+          vendedor_nombre: pVendedor || null, items: pItems.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
+          notas: pNotas, fecha_entrega: pFecha || null, estado: 'pendiente',
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { showToast('Error: ' + data.error); return }
+      setPedidoModal(false); cargarTodo(empresa); showToast(`Pedido ${data.numero} creado`)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function cambiarEstadoPedido(id: string, estado: string) {
@@ -1505,20 +1518,22 @@ export default function VentasPage() {
             <div className="v-modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
               <button className="vbtn" style={btn('default')} onClick={() => setModal(false)}>Cancelar</button>
               {!editVentaId && (
-                <button className="vbtn" onClick={() => guardar(false)}
+                <button className="vbtn" disabled={saving} onClick={() => guardar(false)}
                   style={btn('default', {
                     padding: '7px 14px', fontSize: 13, fontWeight: 600,
+                    opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer',
                     ...(tipo !== 'devolucion' && { background: '#C03030', border: '1px solid #C03030', color: '#fff' }),
                   })}>
-                  {tipo !== 'devolucion' ? 'Generar' : 'Solo registrar'}
+                  {saving ? 'Guardando...' : (tipo !== 'devolucion' ? 'Generar' : 'Solo registrar')}
                 </button>
               )}
-              <button className="vbtn" onClick={() => guardar(true)}
+              <button className="vbtn" disabled={saving} onClick={() => guardar(true)}
                 style={btn('accent', {
                   padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                  opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer',
                   ...(tipo !== 'devolucion' && !editVentaId && { background: C.blue, border: `1px solid ${C.blue}`, color: '#fff' }),
                 })}>
-                {editVentaId ? 'Guardar cambios' : (
+                {saving ? 'Guardando...' : editVentaId ? 'Guardar cambios' : (
                   tipo !== 'devolucion' ? (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -1635,7 +1650,7 @@ export default function VentasPage() {
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="vbtn" style={btn('default')} onClick={() => tryClosePedido()}>Cancelar</button>
-                <button className="vbtn" style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600 })} onClick={guardarPedido}>Guardar pedido</button>
+                <button className="vbtn" disabled={saving} style={btn('accent', { padding: '7px 18px', fontSize: 13, fontWeight: 600, opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer' })} onClick={guardarPedido}>{saving ? 'Guardando...' : 'Guardar pedido'}</button>
               </div>
             </div>
           </div>

@@ -287,6 +287,7 @@ export default function ConsignacionesPage() {
 
   // Modal states
   const [modal, setModal] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
   const [detalleModal, setDetalleModal] = useState<Consignacion | null>(null)
   const [liquidarModal, setLiquidarModal] = useState<Consignacion | null>(null)
@@ -397,11 +398,13 @@ export default function ConsignacionesPage() {
   )
 
   async function handleGuardar() {
+    if (saving) return
     if (!form.cliente_nombre) { showToast('Ingrese un cliente'); return }
     if (!form.fecha_salida) { showToast('Ingrese fecha de salida'); return }
     const validItems = form.items.filter(it => it.nombre && it.cantidad > 0)
     if (validItems.length === 0) { showToast('Agregue al menos un producto'); return }
 
+    setSaving(true)
     const res = await fetch('/api/consignaciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -417,6 +420,7 @@ export default function ConsignacionesPage() {
         estado: 'activa',
       }),
     })
+    setSaving(false)
     if (!res.ok) { showToast('Error al guardar'); return }
     showToast('Consignación creada')
     setModal(false)
@@ -784,7 +788,7 @@ export default function ConsignacionesPage() {
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="cbtn" style={btn('default')} onClick={tryCloseConsignacion}>Cancelar</button>
-                <button className="cbtn" style={btn('accent')} onClick={handleGuardar}>Guardar</button>
+                <button className="cbtn" disabled={saving} style={{ ...btn('accent'), opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer' }} onClick={handleGuardar}>{saving ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </div>
           </div>

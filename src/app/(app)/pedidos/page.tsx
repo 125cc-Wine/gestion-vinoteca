@@ -98,6 +98,7 @@ export default function PedidosPage() {
   const [vendedores, setVendedores] = useState<{id:string;nombre:string}[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteSearch, setClienteSearch] = useState('')
@@ -179,21 +180,27 @@ export default function PedidosPage() {
   }
 
   async function guardar() {
+    if (saving) return
     if (items.every(i => !i.producto_id)) { showToast('Agregá al menos un producto'); return }
-    const res = await fetch('/api/pedidos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresa, cliente_id: clienteId || null, cliente_nombre: clienteNombre || 'Sin cliente',
-        vendedor_nombre: vendedorNombre || null,
-        items: items.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
-        notas, fecha_entrega: fechaEntrega || null, estado: 'pendiente',
-      }),
-    })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); return }
-    setModal(false); cargar(empresa)
-    showToast(`Pedido ${data.numero} creado`)
+    setSaving(true)
+    try {
+      const res = await fetch('/api/pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa, cliente_id: clienteId || null, cliente_nombre: clienteNombre || 'Sin cliente',
+          vendedor_nombre: vendedorNombre || null,
+          items: items.filter(i => i.producto_id).map(i => ({ ...i, cantidad: i.cantidad || 1 })),
+          notas, fecha_entrega: fechaEntrega || null, estado: 'pendiente',
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { showToast('Error: ' + data.error); return }
+      setModal(false); cargar(empresa)
+      showToast(`Pedido ${data.numero} creado`)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function cambiarEstado(id: string, estado: string) {
@@ -463,7 +470,7 @@ export default function PedidosPage() {
               <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }} onClick={verificarStock}>Verificar stock</button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModal(false)}>Cancelar</button>
-                <button className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s' }} onClick={guardar}>Guardar pedido</button>
+                <button className="btn-wine" disabled={saving} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', transition: 'background 0.12s', opacity: saving ? 0.6 : 1 }} onClick={guardar}>{saving ? 'Guardando...' : 'Guardar pedido'}</button>
               </div>
             </div>
           </div>
