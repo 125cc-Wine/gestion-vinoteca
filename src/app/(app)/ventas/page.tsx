@@ -382,6 +382,7 @@ export default function VentasPage() {
   const [pctMayorista, setPctMayorista] = useState(35)
   const [pctDistrib, setPctDistrib] = useState(15)
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
+  const [facturaParaImprimir, setFacturaParaImprimir] = useState<Venta | null>(null)
   const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
   const [previewFactura, setPreviewFactura] = useState<{ venta: Venta; tipo: 1 | 6 } | null>(null)
 
@@ -753,7 +754,7 @@ export default function VentasPage() {
       setFactModal(false)
       const letra = factTipo === 1 ? 'A' : factTipo === 6 ? 'B' : 'C'
       const nroCbteAfip = `F${letra}-${String(data.ptoVta).padStart(5, '0')}-${String(data.nroFactura).padStart(8, '0')}`
-      setVentaParaImprimir({
+      setFacturaParaImprimir({
         ...factVenta,
         facturado: true,
         cae: data.cae,
@@ -762,7 +763,7 @@ export default function VentasPage() {
         cbte_tipo: data.cbteTipo,
         nro_cbte_afip: nroCbteAfip,
       })
-      setTimeout(() => imprimirDoc(w), 400)
+      setTimeout(() => imprimirFactura(w), 400)
       await cargarTodo(empresa)
       showToast(`Factura emitida — CAE ${data.cae}`)
     } catch {
@@ -920,6 +921,24 @@ export default function VentasPage() {
     const w = window.open('', '_blank', 'width=900,height=700')
     setVentaParaImprimir(v)
     setTimeout(() => imprimirDoc(w), 400)
+  }
+
+  // Imprime el formato oficial de Factura A/B (con CAE real, no de ejemplo).
+  // Separado de imprimirDoc/PrintDoc: ese es el remito/presupuesto, este es
+  // exclusivamente la factura — no hay que confundirlos ni mezclarlos.
+  function imprimirFactura(ventanaAbierta?: Window | null) {
+    const el = document.getElementById('print-area-factura')
+    if (!el) return
+    const w = ventanaAbierta ?? window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    w.document.write(`<html><head><title>Factura</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
+  }
+
+  function abrirEImprimirFactura(v: Venta) {
+    const w = window.open('', '_blank', 'width=900,height=700')
+    setFacturaParaImprimir(v)
+    setTimeout(() => imprimirFactura(w), 400)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1206,7 +1225,7 @@ export default function VentasPage() {
                             {v.tipo === 'remito' && <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.blue })} onClick={() => abrirDevolucion(v)}>Dev.</button>}
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} title="Generar etiquetas" onClick={() => setEtiquetaVenta(v)}>🏷️</button>
                             {v.facturado
-                              ? <span style={{ fontSize: 10, fontWeight: 700, color: C.green, padding: '4px 6px', border: `1px solid ${C.green}44`, borderRadius: 4 }}>CAE ✓</span>
+                              ? <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} title="Imprimir factura AFIP" onClick={() => abrirEImprimirFactura(v)}>Factura ✓</button>
                               : <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirFacturar(v)}>Facturar</button>
                             }
                             <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
@@ -2131,6 +2150,10 @@ export default function VentasPage() {
         {ventaParaImprimir && <PrintDoc venta={ventaParaImprimir} empresa={emp} cliente={clientes.find(c => c.id === ventaParaImprimir.cliente_id)} />}
       </div>
 
+      <div id="print-area-factura" style={{ display: 'none' }}>
+        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} />}
+      </div>
+
       {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
       {confirmClose && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -2537,12 +2560,18 @@ function PrintFactura({ venta, tipo, empresa }: {
 
       {/* ── CAE ── */}
       <div style={{ border: '1px solid #000', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: '9px', color: '#555', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
-            Comprobante Electrónico — CAE
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {venta.cae && (() => {
+            const svg = qrAfipSvg(venta, empresa.cuit)
+            return svg ? <img src={`data:image/svg+xml;base64,${btoa(svg)}`} alt="QR AFIP" style={{ width: 60, height: 60, flexShrink: 0 }} /> : null
+          })()}
+          <div>
+            <div style={{ fontSize: '9px', color: '#555', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+              Comprobante Electrónico — CAE
+            </div>
+            <div style={{ fontSize: '11px' }}>CAE N°: <strong>{cae}</strong></div>
+            <div style={{ fontSize: '11px', marginTop: 2 }}>Fecha de Vto. de CAE: <strong>{caeVtoFmt}</strong></div>
           </div>
-          <div style={{ fontSize: '11px' }}>CAE N°: <strong>{cae}</strong></div>
-          <div style={{ fontSize: '11px', marginTop: 2 }}>Fecha de Vto. de CAE: <strong>{caeVtoFmt}</strong></div>
         </div>
         <div style={{ textAlign: 'right', fontSize: '9px', color: '#777' }}>
           {!venta.cae && <div style={{ color: '#e07030', fontWeight: 'bold', marginBottom: 4 }}>⚠ VISTA PREVIA — CAE de ejemplo</div>}
