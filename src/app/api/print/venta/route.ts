@@ -1,6 +1,54 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import QRCode from 'qrcode'
+
+const CBTE_TIPO_POR_LETRA: Record<string, number> = { A: 1, B: 6, C: 11 }
+
+// AFIP devuelve CAEFchVto como YYYYMMDD (ej. "20260723"), no un string que
+// Date() pueda parsear — sin este formateo manual se imprimía "Invalid Date".
+function formatFechaAfip(yyyymmdd: string): string {
+  if (!/^\d{8}$/.test(yyyymmdd)) return yyyymmdd
+  return `${yyyymmdd.slice(6, 8)}/${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(0, 4)}`
+}
+
+// QR obligatorio en comprobantes electrónicos (RG AFIP 4291).
+// Formato: https://www.afip.gob.ar/fe/qr/?p=<base64(JSON)>
+async function qrAfipDataUri(venta: {
+  nro_cbte_afip?: string | null
+  cae?: string | null
+  fecha?: string | null
+  created_at?: string | null
+  total?: number | null
+}, cuitEmpresa: string, cliente: { cuit?: string } | null): Promise<string | null> {
+  if (!venta.cae || !venta.nro_cbte_afip) return null
+
+  const partes = venta.nro_cbte_afip.split('-') // ["FB", "00007", "00000001"]
+  const letra = partes[0]?.replace('F', '') || 'B'
+  const ptoVta = parseInt(partes[1] || '0')
+  const nroCmp = parseInt(partes[2] || '0')
+  const fechaBase = venta.fecha || venta.created_at || new Date().toISOString()
+  const fechaFmt = new Date(fechaBase).toISOString().slice(0, 10)
+
+  const payload = {
+    ver: 1,
+    fecha: fechaFmt,
+    cuit: parseInt(cuitEmpresa.replace(/-/g, '')),
+    ptoVta,
+    tipoCmp: CBTE_TIPO_POR_LETRA[letra] || 6,
+    nroCmp,
+    importe: venta.total ?? 0,
+    moneda: 'PES',
+    ctz: 1,
+    tipoDocRec: cliente?.cuit ? 80 : 99,
+    nroDocRec: cliente?.cuit ? parseInt(cliente.cuit.replace(/-/g, '')) : 0,
+    tipoCodAut: 'E',
+    codAut: parseInt(venta.cae),
+  }
+
+  const url = 'https://www.afip.gob.ar/fe/qr/?p=' + Buffer.from(JSON.stringify(payload)).toString('base64')
+  return QRCode.toDataURL(url, { margin: 1, width: 140 })
+}
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
@@ -124,6 +172,7 @@ export async function GET(req: NextRequest) {
       : ''
 
   const esRemito = venta.tipo === 'remito'
+  const qrDataUri = await qrAfipDataUri(venta, empresa.cuit, cliente)
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -428,10 +477,13 @@ export async function GET(req: NextRequest) {
 
   <!-- ══ DATOS AFIP ══ -->
   ${venta.cae ? `
-  <div class="afip-box">
-    <span><strong>CAE:</strong> ${venta.cae}</span>
-    ${venta.cae_vto ? `<span><strong>Vto. CAE:</strong> ${new Date(venta.cae_vto).toLocaleDateString('es-AR')}</span>` : ''}
-    ${venta.nro_cbte_afip ? `<span><strong>Nro. AFIP:</strong> ${venta.nro_cbte_afip}</span>` : ''}
+  <div class="afip-box" style="align-items:center;">
+    ${qrDataUri ? `<img src="${qrDataUri}" alt="QR AFIP" style="width:70px;height:70px;flex-shrink:0;">` : ''}
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <span><strong>CAE:</strong> ${venta.cae}</span>
+      ${venta.cae_vto ? `<span><strong>Vto. CAE:</strong> ${formatFechaAfip(venta.cae_vto)}</span>` : ''}
+      ${venta.nro_cbte_afip ? `<span><strong>Nro. AFIP:</strong> ${venta.nro_cbte_afip}</span>` : ''}
+    </div>
   </div>` : ''}
 
   <!-- ══ FIRMAS ══ -->
