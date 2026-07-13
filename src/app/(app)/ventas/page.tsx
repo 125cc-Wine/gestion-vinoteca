@@ -2031,7 +2031,7 @@ export default function VentasPage() {
               </button>
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
-              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} />
+              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} clienteCuit={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.cuit} />
             </div>
           </div>
         </div>
@@ -2156,7 +2156,7 @@ export default function VentasPage() {
       </div>
 
       <div id="print-area-factura" style={{ display: 'none' }}>
-        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} />}
+        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} clienteCuit={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.cuit} />}
       </div>
 
       {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
@@ -2404,10 +2404,11 @@ function PrintDoc({ venta, empresa, cliente }: {
 }
 
 // ─── PrintFactura — formato oficial AFIP Factura A / B ────────────────────────
-function PrintFactura({ venta, tipo, empresa }: {
+function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
   venta: Venta
   tipo: 1 | 6
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
+  clienteCuit?: string
 }) {
   const items   = venta.items as (VentaItem & { descuento?: number })[]
   const letra   = tipo === 1 ? 'A' : 'B'
@@ -2419,6 +2420,10 @@ function PrintFactura({ venta, tipo, empresa }: {
   const cae    = venta.cae    || '75XXXXXXXXXXXXXX'
   const caeVto = venta.cae_vto || '20261231'
   const caeVtoFmt = `${caeVto.slice(6,8)}/${caeVto.slice(4,6)}/${caeVto.slice(0,4)}`
+  const cuitComprador = venta.doc_nro || (clienteCuit ? clienteCuit.replace(/-/g, '') : '')
+  const cuitCompradorFmt = cuitComprador.length === 11
+    ? `${cuitComprador.slice(0,2)}-${cuitComprador.slice(2,10)}-${cuitComprador.slice(10)}`
+    : cuitComprador
 
   // Cálculo IVA
   const neto       = parseFloat((venta.total / 1.21).toFixed(2))
@@ -2476,7 +2481,7 @@ function PrintFactura({ venta, tipo, empresa }: {
             </td>
             <td style={{ ...TD, padding: '8px 14px', width: '40%' }}>
               <div><strong>Condición de venta:</strong> {(venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'}</div>
-              {tipo === 1 && <div style={{ marginTop: 3 }}><strong>C.U.I.T.:</strong> ___________________________</div>}
+              {tipo === 1 && <div style={{ marginTop: 3 }}><strong>C.U.I.T.:</strong> {cuitCompradorFmt || '___________________________'}</div>}
             </td>
           </tr>
         </tbody>
@@ -2567,7 +2572,7 @@ function PrintFactura({ venta, tipo, empresa }: {
       <div style={{ border: '1px solid #000', padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {venta.cae && (() => {
-            const svg = qrAfipSvg(venta, empresa.cuit)
+            const svg = qrAfipSvg(venta, empresa.cuit, clienteCuit)
             return svg ? <img src={`data:image/svg+xml;base64,${btoa(svg)}`} alt="QR AFIP" style={{ width: 60, height: 60, flexShrink: 0 }} /> : null
           })()}
           <div>
