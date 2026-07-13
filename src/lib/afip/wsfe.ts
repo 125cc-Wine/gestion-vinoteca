@@ -1,4 +1,5 @@
 import { getTA } from './wsaa'
+import { soapPost } from './soapClient'
 
 const WSFE_URL = {
   homo: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx',
@@ -6,6 +7,19 @@ const WSFE_URL = {
 }
 
 function env() { return (process.env.AFIP_ENV || 'homo') as 'homo' | 'prod' }
+
+// AFIP valida que la fecha del comprobante no sea "futura" respecto a su
+// reloj. Si el servidor calcula el día en UTC (Vercel, cualquier hosting),
+// entre las 21:00 y las 00:00 hora Argentina "hoy" ya es el día siguiente en
+// UTC, y el comprobante sale con fecha de mañana -> error 10016. Siempre hay
+// que calcular la fecha en el huso horario de Argentina, nunca en UTC.
+function fechaHoyArgentina(): string {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  })
+  return fmt.format(new Date()).replace(/-/g, '')
+}
 
 function cuit(empresa: string) {
   const key = empresa === 'aroma' ? 'AFIP_CUIT_AROMA' : 'AFIP_CUIT_LAVID'
@@ -21,18 +35,11 @@ function ptoVta(empresa: string): number {
 
 async function callSOAP(empresa: string, action: string, innerXml: string): Promise<string> {
   const url = WSFE_URL[env()]
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/xml;charset=UTF-8',
-      SOAPAction: `http://ar.gov.afip.dif.FEV1/${action}`,
-    },
-    body: `<?xml version="1.0" encoding="utf-8"?>
+  const body = `<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
   <soap:Body>${innerXml}</soap:Body>
-</soap:Envelope>`,
-  })
-  return res.text()
+</soap:Envelope>`
+  return soapPost(url, `http://ar.gov.afip.dif.FEV1/${action}`, body)
 }
 
 export async function ultimoNroAutorizado(empresa: string, cbteTipo: number): Promise<number> {
@@ -61,6 +68,11 @@ export interface FacturaInput {
   importeIVA: number
   importeTotal: number
   alicuotaIVA?: number  // 21 (default) o 10.5
+  // Obligatorio desde RG 5616 (AFIP rechaza sin esto a partir del 01/09/2026).
+  // 1=RI, 4=Exento, 5=Consumidor Final, 6=Monotributista, etc.
+  condicionIVAReceptorId?: number
+  // Para Notas de Crédito/Débito: referencia al comprobante que anulan/ajustan.
+  comprobanteAsociado?: { tipo: number; ptoVta: number; nro: number }
 }
 
 export interface FacturaResult {
@@ -74,11 +86,14 @@ export interface FacturaResult {
 export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> {
   const { empresa, cbteTipo, docTipo, docNro, importeNeto, importeIVA, importeTotal } = input
   const alicId = (input.alicuotaIVA ?? 21) === 10.5 ? 4 : 5  // 4=10.5%, 5=21%
+  // Sin dato explícito: docTipo 99 (CF sin doc) => Consumidor Final (5).
+  // Con CUIT/DNI informado asumimos Responsable Inscripto (1) salvo que se pase explícito.
+  const condIVA = input.condicionIVAReceptorId ?? (docTipo === 99 ? 5 : 1)
 
   const { token, sign } = await getTA(empresa)
   const pta = ptoVta(empresa)
   const nroSig = (await ultimoNroAutorizado(empresa, cbteTipo)) + 1
-  const hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const hoy = fechaHoyArgentina()
 
   // Factura B a CF: IVA va incluido en neto, sin discriminar
   // Factura A: IVA discriminado obligatorio
@@ -90,6 +105,16 @@ export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> 
           <ar:Importe>${importeIVA.toFixed(2)}</ar:Importe>
         </ar:AlicIva>
       </ar:Iva>` : ''
+
+  const asoc = input.comprobanteAsociado
+  const asocXml = asoc ? `
+      <ar:CbtesAsoc>
+        <ar:CbteAsoc>
+          <ar:Tipo>${asoc.tipo}</ar:Tipo>
+          <ar:PtoVta>${asoc.ptoVta}</ar:PtoVta>
+          <ar:Nro>${asoc.nro}</ar:Nro>
+        </ar:CbteAsoc>
+      </ar:CbtesAsoc>` : ''
 
   const xml = await callSOAP(empresa, 'FECAESolicitar', `
     <ar:FECAESolicitar>
@@ -111,7 +136,7 @@ export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> 
             <ar:DocNro>${docNro}</ar:DocNro>
             <ar:CbteDesde>${nroSig}</ar:CbteDesde>
             <ar:CbteHasta>${nroSig}</ar:CbteHasta>
-            <ar:CbteFecha>${hoy}</ar:CbteFecha>
+            <ar:CbteFch>${hoy}</ar:CbteFch>
             <ar:ImpTotal>${importeTotal.toFixed(2)}</ar:ImpTotal>
             <ar:ImpTotConc>0.00</ar:ImpTotConc>
             <ar:ImpNeto>${importeNeto.toFixed(2)}</ar:ImpNeto>
@@ -120,6 +145,8 @@ export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> 
             <ar:ImpTrib>0.00</ar:ImpTrib>
             <ar:MonId>PES</ar:MonId>
             <ar:MonCotiz>1</ar:MonCotiz>
+            <ar:CondicionIVAReceptorId>${condIVA}</ar:CondicionIVAReceptorId>
+            ${asocXml}
             ${ivaXml}
           </ar:FECAEDetRequest>
         </ar:FeDetReq>

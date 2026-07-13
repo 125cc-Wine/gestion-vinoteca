@@ -1,5 +1,6 @@
 import forge from 'node-forge'
 import { supabase } from '@/lib/supabase'
+import { soapPost } from './soapClient'
 
 const WSAA_URL = {
   homo: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
@@ -8,6 +9,12 @@ const WSAA_URL = {
 
 function buildTRA(): string {
   const now = new Date()
+  // Margen de 10 min hacia atrás en generationTime: WSAA es estricto con el
+  // reloj y un pequeño desfase (el nuestro levemente adelantado respecto al
+  // de AFIP, latencia de red) alcanza para que rechace el TRA como "en el
+  // futuro". Es la defensa estándar contra ese desfase, no afecta la validez
+  // real del ticket (igual expira a las 10hs de expirationTime).
+  const gen = new Date(now.getTime() - 10 * 60 * 1000)
   const exp = new Date(now.getTime() + 10 * 60 * 60 * 1000)
   const fmt = (d: Date) => {
     const s = new Date(d.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 19)
@@ -17,7 +24,7 @@ function buildTRA(): string {
 <loginTicketRequest version="1.0">
   <header>
     <uniqueId>${Math.floor(Date.now() / 1000)}</uniqueId>
-    <generationTime>${fmt(now)}</generationTime>
+    <generationTime>${fmt(gen)}</generationTime>
     <expirationTime>${fmt(exp)}</expirationTime>
   </header>
   <service>wsfe</service>
@@ -72,12 +79,14 @@ export async function getTA(empresa: string): Promise<{ token: string; sign: str
   </soapenv:Body>
 </soapenv:Envelope>`
 
-  const res = await fetch(WSAA_URL[env], {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/xml;charset=UTF-8', SOAPAction: '' },
-    body: soapBody,
-  })
-  const xml = await res.text()
+  const raw = await soapPost(WSAA_URL[env], '', soapBody)
+  // El loginTicketResponse viaja como XML "escapado" (&lt;token&gt;...&lt;/token&gt;)
+  // dentro de <loginCmsReturn>, no como XML anidado literal. Sin desescapar,
+  // el regex nunca matchea aunque el login haya sido exitoso.
+  const xml = raw
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
 
   const token = xml.match(/<token>([\s\S]*?)<\/token>/)?.[1]?.trim() || ''
   const sign  = xml.match(/<sign>([\s\S]*?)<\/sign>/)?.[1]?.trim()  || ''
@@ -86,8 +95,11 @@ export async function getTA(empresa: string): Promise<{ token: string; sign: str
 
   // Cachear — ignorar error si la tabla todavía no existe
   try {
+    // Ojo: reemplazar el sufijo "-03:00" por "Z" a lo bruto NO convierte la
+    // hora (dejaba el timestamp cacheado 3hs adelantado respecto al real).
+    // new Date() ya interpreta el offset ISO-8601 correctamente solo.
     const expirStr = tra.match(/<expirationTime>(.*?)<\/expirationTime>/)?.[1] || ''
-    const expirDate = new Date(expirStr.replace('-03:00', 'Z')).toISOString()
+    const expirDate = new Date(expirStr).toISOString()
     await supabase.from('afip_tokens').upsert(
       { empresa, token, sign, expiration: expirDate, updated_at: new Date().toISOString() },
       { onConflict: 'empresa' }
