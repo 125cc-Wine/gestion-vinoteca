@@ -127,6 +127,7 @@ export default function ProductosPage() {
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroBodega, setFiltroBodega]     = useState('')
   const [filtroSinPrecio, setFiltroSinPrecio] = useState(false)
+  const [mostrarInactivos, setMostrarInactivos] = useState(false)
 
   // Selection
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
@@ -328,15 +329,21 @@ export default function ProductosPage() {
     cargar(e)
   }, [])
 
-  async function cargar(emp: string) {
+  async function cargar(emp: string, incluirInactivos = mostrarInactivos) {
     setLoading(true)
     const [pRes, bRes] = await Promise.all([
-      fetch(`/api/productos?empresa=${emp}`),
+      fetch(`/api/productos?empresa=${emp}&activo=${incluirInactivos ? 'false' : 'true'}`),
       fetch('/api/bodegas'),
     ])
     setProductos(await pRes.json().catch(() => []))
     setBodegas(await bRes.json().catch(() => []))
     setLoading(false)
+  }
+
+  async function reactivarUno(id: string) {
+    const res = await fetch('/api/productos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, activo: true }) })
+    if (!res.ok) { toast_('Error al reactivar'); return }
+    cargar(empresa); toast_('Producto reactivado')
   }
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
@@ -580,13 +587,13 @@ export default function ProductosPage() {
   }
 
   async function eliminarUno(id: string) {
-    if (!confirm('¿Eliminar este producto en ambas empresas?')) return
+    if (!confirm('¿Desactivar este producto en ambas empresas? No se borra — deja de aparecer en el catálogo y en las alertas de stock/precio, y podés reactivarlo cuando quieras desde "Ver desactivados".')) return
     await fetch(`/api/productos?id=${id}`, { method: 'DELETE' })
-    cargar(empresa); toast_('Eliminado')
+    cargar(empresa); toast_('Desactivado')
   }
 
   async function eliminarSel() {
-    if (!confirm(`¿Eliminar ${seleccionados.size} producto${seleccionados.size!==1?'s':''} en ambas empresas?`)) return
+    if (!confirm(`¿Desactivar ${seleccionados.size} producto${seleccionados.size!==1?'s':''} en ambas empresas? No se borran, podés reactivarlos después.`)) return
     await bulkRequest('eliminar', '')
   }
 
@@ -904,6 +911,12 @@ export default function ProductosPage() {
           <option value="">Todo el stock</option>
           <option value="sinprecio">Sin precio</option>
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.muted, cursor: 'pointer', flexShrink: 0 }}
+          title="Productos desactivados — no aparecen en el catálogo ni en las alertas de stock/precio">
+          <input type="checkbox" checked={mostrarInactivos}
+            onChange={e => { setMostrarInactivos(e.target.checked); cargar(empresa, e.target.checked) }} />
+          Ver desactivados
+        </label>
         <select style={{ ...INP, width: 'auto', minWidth: 160 }}
           value={sortCampo ? `${sortCampo}_${sortDir}` : ''}
           onChange={e => {
@@ -1109,11 +1122,17 @@ export default function ProductosPage() {
                   </td>
                   <td style={{ padding: '11px 10px' }} onMouseDown={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
-                      <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
-                      <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
-                      <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
-                      <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Eliminar" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
+                      {mostrarInactivos ? (
+                        <button onClick={() => reactivarUno(p.id!)} className="btn-row" style={{ background: T.greenBg, border: `1px solid rgba(45,122,79,0.28)`, color: T.green, borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} title="Reactivar — vuelve a aparecer en el catálogo y en las alertas">↺ Reactivar</button>
+                      ) : (
+                        <>
+                          <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
+                          <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
+                          <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
+                          <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
+                          <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Desactivar — deja de aparecer en catálogo, stock y alertas, pero no se borra. Podés reactivarlo con 'Ver desactivados'" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

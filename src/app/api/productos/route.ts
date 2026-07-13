@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data ?? null)
   }
 
+  // ?activo=false trae los productos desactivados (para poder reactivarlos)
+  const activo = req.nextUrl.searchParams.get('activo') !== 'false'
+
   // Supabase tiene max_rows=1000; paginamos hasta traer todos
   const PAGE = 1000
   let all: unknown[] = []
@@ -36,7 +39,7 @@ export async function GET(req: NextRequest) {
       .from('productos')
       .select('*')
       .eq('empresa', empresa)
-      .eq('activo', true)
+      .eq('activo', activo)
       .order('nombre')
       .range(from, from + PAGE - 1)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
