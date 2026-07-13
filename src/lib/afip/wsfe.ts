@@ -59,6 +59,24 @@ export async function ultimoNroAutorizado(empresa: string, cbteTipo: number): Pr
   return parseInt(nro || '0')
 }
 
+export async function consultarComprobante(empresa: string, cbteTipo: number, ptoVta: number, cbteNro: number) {
+  const { token, sign } = await getTA(empresa)
+  const xml = await callSOAP(empresa, 'FECompConsultar', `
+    <ar:FECompConsultar>
+      <ar:Auth>
+        <ar:Token>${token}</ar:Token>
+        <ar:Sign>${sign}</ar:Sign>
+        <ar:Cuit>${cuit(empresa)}</ar:Cuit>
+      </ar:Auth>
+      <ar:FeCompConsReq>
+        <ar:CbteTipo>${cbteTipo}</ar:CbteTipo>
+        <ar:CbteNro>${cbteNro}</ar:CbteNro>
+        <ar:PtoVta>${ptoVta}</ar:PtoVta>
+      </ar:FeCompConsReq>
+    </ar:FECompConsultar>`)
+  return xml
+}
+
 export interface FacturaInput {
   empresa: string
   cbteTipo: number      // 1=Fact.A, 6=Fact.B

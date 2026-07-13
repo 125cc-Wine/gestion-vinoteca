@@ -11,6 +11,49 @@ import {
   type LabelPrinterPort, type LabelData,
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
+import QRCode from 'qrcode'
+
+const CBTE_TIPO_POR_LETRA_QR: Record<number, number> = { 1: 1, 6: 6, 11: 11 }
+
+// QR obligatorio en comprobantes electrónicos (RG AFIP 4291). qrcode.create()
+// es sincrónico (sin I/O), a diferencia de toDataURL — necesario porque este
+// componente se renderiza sincrónicamente antes de volcarse a innerHTML.
+function qrAfipSvg(venta: Venta, cuitEmpresa: string, cuitCliente?: string): string | null {
+  if (!venta.cae || !venta.nro_cbte_afip) return null
+  const partes = venta.nro_cbte_afip.split('-') // ["FB", "00007", "00000001"]
+  const ptoVta = parseInt(partes[1] || '0')
+  const nroCmp = parseInt(partes[2] || '0')
+  const fecha = venta.created_at ? new Date(venta.created_at).toISOString().slice(0, 10) : ''
+
+  const payload = {
+    ver: 1,
+    fecha,
+    cuit: parseInt(cuitEmpresa.replace(/-/g, '')),
+    ptoVta,
+    tipoCmp: CBTE_TIPO_POR_LETRA_QR[venta.cbte_tipo || 6] || 6,
+    nroCmp,
+    importe: venta.total,
+    moneda: 'PES',
+    ctz: 1,
+    tipoDocRec: cuitCliente ? 80 : 99,
+    nroDocRec: cuitCliente ? parseInt(cuitCliente.replace(/-/g, '')) : 0,
+    tipoCodAut: 'E',
+    codAut: parseInt(venta.cae),
+  }
+  const url = 'https://www.afip.gob.ar/fe/qr/?p=' + btoa(JSON.stringify(payload))
+
+  const qr = QRCode.create(url, { errorCorrectionLevel: 'M' })
+  const { size, data } = qr.modules
+  const cell = 3
+  let rects = ''
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (data[r * size + c]) rects += `<rect x="${c * cell}" y="${r * cell}" width="${cell}" height="${cell}"/>`
+    }
+  }
+  const dim = size * cell
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}" viewBox="0 0 ${dim} ${dim}">${rects}</svg>`
+}
 
 function _normStr(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -659,7 +702,7 @@ export default function VentasPage() {
       await cargarTodo(empresa)
       const tipoLabel = tipo === 'presupuesto' ? 'Presupuesto' : tipo === 'devolucion' ? 'Devolución' : 'Remito'
       showToast(editVentaId ? 'Comprobante actualizado' : `${tipoLabel} ${data.numero} generado`)
-      if (!editVentaId && imprimir) setTimeout(() => { setVentaParaImprimir(data); setTimeout(imprimirDoc, 400) }, 200)
+      if (!editVentaId && imprimir) setTimeout(() => abrirEImprimir(data), 200)
     } finally {
       setSaving(false)
     }
@@ -688,6 +731,9 @@ export default function VentasPage() {
     if (!factVenta) return
     if (factTipo === 1 && factDocNro.length !== 11) { setFactError('El CUIT debe tener 11 dígitos'); return }
     if (factTipo === 6 && factDocTipo !== 99 && !factDocNro) { setFactError('Ingresá el número de documento'); return }
+    // Se abre acá, antes del primer await, para que el navegador lo reconozca
+    // como originado por el clic del usuario y no lo bloquee como popup.
+    const w = window.open('', '_blank', 'width=900,height=700')
     setFactLoading(true); setFactError('')
     try {
       const res = await fetch('/api/afip/factura', {
@@ -703,12 +749,25 @@ export default function VentasPage() {
         }),
       })
       const data = await res.json()
-      if (data.error) { setFactError(data.error); return }
+      if (data.error) { setFactError(data.error); w?.close(); return }
       setFactModal(false)
+      const letra = factTipo === 1 ? 'A' : factTipo === 6 ? 'B' : 'C'
+      const nroCbteAfip = `F${letra}-${String(data.ptoVta).padStart(5, '0')}-${String(data.nroFactura).padStart(8, '0')}`
+      setVentaParaImprimir({
+        ...factVenta,
+        facturado: true,
+        cae: data.cae,
+        cae_vto: data.caeVto,
+        nro_factura: data.nroFactura,
+        cbte_tipo: data.cbteTipo,
+        nro_cbte_afip: nroCbteAfip,
+      })
+      setTimeout(() => imprimirDoc(w), 400)
       await cargarTodo(empresa)
       showToast(`Factura emitida — CAE ${data.cae}`)
     } catch {
       setFactError('Error de conexión con AFIP')
+      w?.close()
     } finally {
       setFactLoading(false)
     }
@@ -844,13 +903,23 @@ export default function VentasPage() {
     window.open(url, '_blank')
   }
 
-  function imprimirDoc() {
+  // Recibe la ventana ya abierta (windowOpened en el click, sincrónico) para que
+  // el navegador no la trate como popup — si window.open() se llama recién acá
+  // adentro, después de un setTimeout, Safari/Chrome la bloquean en silencio
+  // porque ya no corre dentro del gesto del usuario.
+  function imprimirDoc(ventanaAbierta?: Window | null) {
     const el = document.getElementById('print-area')
     if (!el) return
-    const w = window.open('', '_blank', 'width=900,height=700')
+    const w = ventanaAbierta ?? window.open('', '_blank', 'width=900,height=700')
     if (!w) return
     w.document.write(`<html><head><title>Comprobante</title><style>body{font-family:Arial,sans-serif;font-size:11px;margin:24px}table{width:100%;border-collapse:collapse}th,td{padding:5px 8px}@media print{body{margin:12px}}</style></head><body>${el.innerHTML}</body></html>`)
     w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
+  }
+
+  function abrirEImprimir(v: Venta) {
+    const w = window.open('', '_blank', 'width=900,height=700')
+    setVentaParaImprimir(v)
+    setTimeout(() => imprimirDoc(w), 400)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1130,7 +1199,7 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => setPreviewVenta(v)}>Ver</button>
-                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => { setVentaParaImprimir(v); setTimeout(imprimirDoc, 400) }}>Imprimir</button>
+                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirEImprimir(v)}>Imprimir</button>
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
@@ -1810,7 +1879,7 @@ export default function VentasPage() {
                   🖨️ Imprimir
                 </button>
                 <button
-                  onClick={() => { setVentaParaImprimir(previewVenta); setTimeout(imprimirDoc, 400) }}
+                  onClick={() => abrirEImprimir(previewVenta)}
                   style={{ background: C.accent, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   Imprimir (clásico)
                 </button>
@@ -2270,27 +2339,33 @@ function PrintDoc({ venta, empresa, cliente }: {
       )}
 
       {/* CAE — solo aparece si la venta fue facturada electrónicamente */}
-      {venta.cae && (
+      {venta.cae && (() => {
+        const svg = qrAfipSvg(venta, empresa.cuit, cliente?.cuit)
+        return (
         <div style={{ marginTop: '16px', padding: '10px 14px', border: '1px solid #000', borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#555', marginBottom: 4 }}>
-              Comprobante Electrónico — {venta.cbte_tipo === 1 ? 'FACTURA A' : 'FACTURA B'}
-            </div>
-            {venta.nro_cbte_afip && (
-              <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: 2 }}>N°: {venta.nro_cbte_afip}</div>
-            )}
-            <div style={{ fontSize: '10px' }}>CAE: <strong>{venta.cae}</strong></div>
-            {venta.cae_vto && (
-              <div style={{ fontSize: '10px' }}>
-                Vto. CAE: {venta.cae_vto.slice(0,4)}/{venta.cae_vto.slice(4,6)}/{venta.cae_vto.slice(6,8)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {svg && <img src={`data:image/svg+xml;base64,${btoa(svg)}`} alt="QR AFIP" style={{ width: 60, height: 60, flexShrink: 0 }} />}
+            <div>
+              <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#555', marginBottom: 4 }}>
+                Comprobante Electrónico — {venta.cbte_tipo === 1 ? 'FACTURA A' : 'FACTURA B'}
               </div>
-            )}
+              {venta.nro_cbte_afip && (
+                <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: 2 }}>N°: {venta.nro_cbte_afip}</div>
+              )}
+              <div style={{ fontSize: '10px' }}>CAE: <strong>{venta.cae}</strong></div>
+              {venta.cae_vto && (
+                <div style={{ fontSize: '10px' }}>
+                  Vto. CAE: {venta.cae_vto.slice(6,8)}/{venta.cae_vto.slice(4,6)}/{venta.cae_vto.slice(0,4)}
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ fontSize: '9px', color: '#555', textAlign: 'right' }}>
             Factura electrónica<br />según RG AFIP 2485
           </div>
         </div>
-      )}
+        )
+      })()}
 
       <div style={{ marginTop: '24px', paddingTop: '10px', borderTop: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#999' }}>
         <span>{empresa.nombre} — {empresa.cuit}</span>
