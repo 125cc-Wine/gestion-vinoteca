@@ -2429,10 +2429,10 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
   const neto       = parseFloat((venta.total / 1.21).toFixed(2))
   const iva21      = parseFloat((venta.total - neto).toFixed(2))
 
-  const MAROON = '#7A1F2B'
-  const MUTED  = '#8A7068'
-  const INK    = '#2A1F1C'
-  const LINE   = '#DDD0C0'
+  const MAROON = '#000'
+  const MUTED  = '#555'
+  const INK    = '#000'
+  const LINE   = '#ccc'
   const TD: React.CSSProperties = { padding: '2px 4px', verticalAlign: 'top' }
   const LABEL: React.CSSProperties = { fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: MUTED }
 
@@ -2452,7 +2452,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
             </td>
 
             {/* Col central — letra */}
-            <td style={{ width: '16%', textAlign: 'center', verticalAlign: 'middle', borderRight: `1.5px solid ${MAROON}`, padding: '8px', background: `${MAROON}0d` }}>
+            <td style={{ width: '16%', textAlign: 'center', verticalAlign: 'middle', borderRight: `1.5px solid ${MAROON}`, padding: '8px', background: '#f2f2f2' }}>
               <div style={{ border: `2px solid ${MAROON}`, borderRadius: 4, background: '#fff', display: 'inline-block', width: 52, height: 52, lineHeight: '52px', fontSize: '30px', fontWeight: 700, textAlign: 'center', color: MAROON, marginBottom: 6 }}>
                 {letra}
               </div>
@@ -2507,14 +2507,14 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
         </thead>
         <tbody>
           {items.map((item, i) => (
-            <tr key={i} style={{ borderBottom: `1px solid ${LINE}`, background: i % 2 === 1 ? '#FAF7F4' : '#fff' }}>
+            <tr key={i} style={{ borderBottom: `1px solid ${LINE}`, background: i % 2 === 1 ? '#f7f7f7' : '#fff' }}>
               <td style={{ padding: '6px 10px', textAlign: 'center' }}>{item.cantidad}</td>
               <td style={{ padding: '6px 10px' }}>{item.nombre}</td>
               <td style={{ padding: '6px 10px', textAlign: 'center', color: MUTED }}>un.</td>
               <td style={{ padding: '6px 10px', textAlign: 'right' }}>
                 {(item.precio_unitario / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </td>
-              {tipo === 1 && <td style={{ padding: '6px 10px', textAlign: 'center', color: item.descuento ? '#A07010' : MUTED }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
+              {tipo === 1 && <td style={{ padding: '6px 10px', textAlign: 'center', color: item.descuento ? INK : MUTED, fontWeight: item.descuento ? 700 : 400 }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
               <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600 }}>
                 {(item.subtotal / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </td>
@@ -2522,7 +2522,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
           ))}
           {/* filas vacías para dar espacio */}
           {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
-            <tr key={`e${i}`} style={{ borderBottom: `1px solid #F0EBE5`, background: (items.length + i) % 2 === 1 ? '#FAF7F4' : '#fff' }}>
+            <tr key={`e${i}`} style={{ borderBottom: `1px solid #eee`, background: (items.length + i) % 2 === 1 ? '#f7f7f7' : '#fff' }}>
               <td colSpan={tipo === 1 ? 6 : 5} style={{ padding: '6px 10px' }}>&nbsp;</td>
             </tr>
           ))}
@@ -2575,7 +2575,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
       </div>
 
       {/* ── CAE ── */}
-      <div style={{ border: `1.5px solid ${MAROON}`, borderRadius: 6, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: `${MAROON}08` }}>
+      <div style={{ border: `1.5px solid ${MAROON}`, borderRadius: 6, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f7f7f7' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {venta.cae && (() => {
             const svg = qrAfipSvg(venta, empresa.cuit, clienteCuit)
@@ -2588,7 +2588,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
           </div>
         </div>
         <div style={{ textAlign: 'right', fontSize: '9px', color: MUTED }}>
-          {!venta.cae && <div style={{ color: '#C0392B', fontWeight: 700, marginBottom: 4 }}>⚠ VISTA PREVIA — CAE de ejemplo</div>}
+          {!venta.cae && <div style={{ color: INK, fontWeight: 700, marginBottom: 4 }}>⚠ VISTA PREVIA — CAE de ejemplo</div>}
           <div>Factura electrónica</div>
           <div>RG AFIP 2485</div>
         </div>
