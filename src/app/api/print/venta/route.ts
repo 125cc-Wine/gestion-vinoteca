@@ -20,6 +20,8 @@ async function qrAfipDataUri(venta: {
   fecha?: string | null
   created_at?: string | null
   total?: number | null
+  doc_tipo?: number | null
+  doc_nro?: string | null
 }, cuitEmpresa: string, cliente: { cuit?: string } | null): Promise<string | null> {
   if (!venta.cae || !venta.nro_cbte_afip) return null
 
@@ -40,8 +42,11 @@ async function qrAfipDataUri(venta: {
     importe: venta.total ?? 0,
     moneda: 'PES',
     ctz: 1,
-    tipoDocRec: cliente?.cuit ? 80 : 99,
-    nroDocRec: cliente?.cuit ? parseInt(cliente.cuit.replace(/-/g, '')) : 0,
+    // doc_tipo/doc_nro es lo que realmente se le mandó a AFIP al facturar —
+    // más confiable que reconstruirlo desde el cliente, que puede haber
+    // cambiado de CUIT o no tener uno cargado después de emitida la factura.
+    tipoDocRec: venta.doc_tipo ?? (cliente?.cuit ? 80 : 99),
+    nroDocRec: venta.doc_nro ? parseInt(venta.doc_nro) : (cliente?.cuit ? parseInt(cliente.cuit.replace(/-/g, '')) : 0),
     tipoCodAut: 'E',
     codAut: parseInt(venta.cae),
   }

@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
         nro_factura: result.nroFactura,
         cbte_tipo:   result.cbteTipo,
         nro_cbte_afip: nroStr,
+        doc_tipo:    docTipo || 99,
+        doc_nro:     docNro  || '0',
       }).eq('id', ventaId)
     }
 

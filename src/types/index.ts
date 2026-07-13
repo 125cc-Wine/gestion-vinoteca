@@ -96,6 +96,8 @@ export interface Venta {
   nro_factura?: number
   cbte_tipo?: number
   nro_cbte_afip?: string
+  doc_tipo?: number
+  doc_nro?: string
   created_at?: string
 }
 

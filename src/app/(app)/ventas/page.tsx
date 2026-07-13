@@ -35,8 +35,11 @@ function qrAfipSvg(venta: Venta, cuitEmpresa: string, cuitCliente?: string): str
     importe: venta.total,
     moneda: 'PES',
     ctz: 1,
-    tipoDocRec: cuitCliente ? 80 : 99,
-    nroDocRec: cuitCliente ? parseInt(cuitCliente.replace(/-/g, '')) : 0,
+    // doc_tipo/doc_nro es lo que realmente se le mandó a AFIP al facturar —
+    // más confiable que cuitCliente, que puede haber cambiado o no estar
+    // cargado después de emitida la factura.
+    tipoDocRec: venta.doc_tipo ?? (cuitCliente ? 80 : 99),
+    nroDocRec: venta.doc_nro ? parseInt(venta.doc_nro) : (cuitCliente ? parseInt(cuitCliente.replace(/-/g, '')) : 0),
     tipoCodAut: 'E',
     codAut: parseInt(venta.cae),
   }
@@ -762,6 +765,8 @@ export default function VentasPage() {
         nro_factura: data.nroFactura,
         cbte_tipo: data.cbteTipo,
         nro_cbte_afip: nroCbteAfip,
+        doc_tipo: factDocTipo,
+        doc_nro: factDocNro || '0',
       })
       setTimeout(() => imprimirFactura(w), 400)
       await cargarTodo(empresa)
