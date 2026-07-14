@@ -263,11 +263,41 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
 
+  const { data: venta, error: errVenta } = await supabase
+    .from('ventas')
+    .select('estado, estado_pago, total, cliente_id, empresa, numero, tipo')
+    .eq('id', id)
+    .single()
+  if (errVenta || !venta) return NextResponse.json({ error: errVenta?.message || 'Venta no encontrada' }, { status: 404 })
+
   const { error } = await supabase
     .from('ventas')
     .update({ estado: 'cancelado' })
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Si estaba cargada en cuenta corriente, revertir el cargo — si no, el
+  // saldo del cliente queda con una deuda fantasma de un comprobante que
+  // ya no existe (mismo ajuste que ya se hacía al editar el estado en PUT,
+  // pero acá nunca se aplicaba al eliminar/cancelar).
+  if (venta.estado !== 'cancelado' && venta.estado_pago === 'cuenta_corriente' && venta.cliente_id && venta.total > 0) {
+    const { data: cliente } = await supabase.from('clientes').select('saldo').eq('id', venta.cliente_id).single()
+    const saldoAnterior = cliente?.saldo || 0
+    const saldoNuevo = Math.max(0, saldoAnterior - venta.total)
+    await supabase.from('clientes').update({ saldo: saldoNuevo }).eq('id', venta.cliente_id)
+    const label = venta.tipo === 'presupuesto' ? 'Presupuesto' : venta.tipo === 'remito' ? 'Remito' : venta.tipo
+    await supabase.from('movimientos_cta_cte').insert([{
+      cliente_id: venta.cliente_id,
+      empresa: venta.empresa,
+      tipo: 'cobro',
+      concepto: `${label} ${venta.numero} (anulado)`,
+      monto: venta.total,
+      saldo_anterior: saldoAnterior,
+      saldo_nuevo: saldoNuevo,
+      referencia_id: id,
+    }])
+  }
+
   return NextResponse.json({ ok: true })
 }
