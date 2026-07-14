@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     { data: ventasHoy },
     { data: ventasMes },
     { data: cajaHoy },
-    { data: clientes },
+    { data: ventasCtaCte },
     { data: vencidos },
     { data: pedidosPendientes },
   ] = await Promise.all([
@@ -26,7 +26,11 @@ export async function GET(req: NextRequest) {
     supabase.from('ventas').select('*').eq('empresa', empresa).gte('created_at', hoy).neq('estado', 'cancelado'),
     supabase.from('ventas').select('*').eq('empresa', empresa).gte('created_at', inicioMes).neq('estado', 'cancelado'),
     supabase.from('movimientos_caja').select('*').eq('empresa', empresa).eq('fecha', hoy),
-    supabase.from('clientes').select('id,nombre,saldo').eq('activo', true),
+    // clientes.saldo/empresa no sirven acá: saldo es un total compartido entre
+    // las 2 empresas y empresa es solo el "origen" del cliente, no en cuál le
+    // deben plata (un cliente de Aroma puede tener deuda de una venta a La
+    // Vid). La fuente de verdad es ventas, igual que ya hace /api/aging.
+    supabase.from('ventas').select('cliente_id, total').eq('empresa', empresa).eq('estado_pago', 'cuenta_corriente').neq('estado', 'cancelado'),
     supabase.from('ventas').select('id,numero,cliente_nombre,total,created_at').eq('empresa', empresa).eq('estado_pago', 'pendiente').lte('created_at', hace30diasStr + 'T00:00:00'),
     supabase.from('pedidos').select('id,numero,cliente_nombre').eq('empresa', empresa).eq('estado', 'pendiente'),
   ])
@@ -56,9 +60,15 @@ export async function GET(req: NextRequest) {
   const egresosHoy = (cajaHoy || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
   const saldoCaja = ingresosHoy - egresosHoy
 
-  // Clientes con saldo
-  const clientesConSaldo = (clientes || []).filter(c => c.saldo > 0)
-  const totalCuentasCorrientes = clientesConSaldo.reduce((a, c) => a + c.saldo, 0)
+  // Clientes con saldo — agrupado desde ventas de ESTA empresa en cuenta
+  // corriente (no desde clientes.saldo, que mezcla ambas empresas)
+  const saldoPorCliente = new Map<string, number>()
+  for (const v of ventasCtaCte || []) {
+    const key = v.cliente_id || '__sin_cliente__'
+    saldoPorCliente.set(key, (saldoPorCliente.get(key) || 0) + (v.total || 0))
+  }
+  const totalCuentasCorrientes = Array.from(saldoPorCliente.values()).reduce((a, b) => a + b, 0)
+  const cantidadClientesConSaldo = saldoPorCliente.size
 
   // Top productos vendidos este mes
   const topProductos: Record<string, { nombre: string; cantidad: number; total: number }> = {}
@@ -83,7 +93,7 @@ export async function GET(req: NextRequest) {
     ventasMes: { total: totalVentasMes, cantidad: (ventasMes || []).length },
     caja: { ingresos: ingresosHoy, egresos: egresosHoy, saldo: saldoCaja },
     vendedores: Object.values(porVendedor).sort((a, b) => b.total - a.total),
-    cuentasCorrientes: { cantidad: clientesConSaldo.length, total: totalCuentasCorrientes },
+    cuentasCorrientes: { cantidad: cantidadClientesConSaldo, total: totalCuentasCorrientes },
     topProductos: topProductosArr,
   })
 }
