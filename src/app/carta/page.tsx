@@ -271,11 +271,6 @@ function CartaContent() {
     fetchProductos()
   }, [empresaKey, empresaNombre])
 
-  // ── No empresa param → selector ──────────────────────────────────────
-  if (!empresaKey || !empresaNombre) {
-    return <EmpresaSelector />
-  }
-
   // ── Derived data ─────────────────────────────────────────────────────
   const bodegas = useMemo(
     () => ['todas', ...Array.from(new Set(productos.map(p => p.bodega))).sort()],
@@ -308,6 +303,11 @@ function CartaContent() {
   }, [filtrados])
 
   const bodegasEnLista = Object.keys(porBodega).sort()
+
+  // ── No empresa param → selector ──────────────────────────────────────
+  if (!empresaKey || !empresaNombre) {
+    return <EmpresaSelector />
+  }
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
