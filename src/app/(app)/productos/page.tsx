@@ -641,6 +641,7 @@ export default function ProductosPage() {
     })
     const d = await res.json()
     setSyncing(false)
+    if (!res.ok || d.error) { toast_('Error de sync: ' + (d.error ?? `HTTP ${res.status}`)); return }
     toast_(`Sync ${mode}: ${d.ok} ok${d.errors ? `, ${d.errors} errores` : ''}`)
   }
 
