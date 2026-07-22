@@ -167,6 +167,14 @@ export default function ProductosPage() {
   const [vincPares, setVincPares] = useState<VincPar[]>([])
   const [vincConflictos, setVincConflictos] = useState<{ nombre: string; motivo: string }[]>([])
   const [vincSel, setVincSel] = useState<Set<string>>(new Set())
+  // Modo manual: asignar a mano el par de cada producto sin match.
+  const [vincTab, setVincTab] = useState<'auto' | 'manual'>('auto')
+  const [vincSinMatch, setVincSinMatch] = useState<{ supabaseId: string; nombre: string }[]>([])
+  const [vincWooLibres, setVincWooLibres] = useState<{ wooId: number; nombre: string }[]>([])
+  // Producto del sistema seleccionado para asignarle par, y filtros de búsqueda.
+  const [manualSel, setManualSel] = useState<{ supabaseId: string; nombre: string } | null>(null)
+  const [manualFiltroSis, setManualFiltroSis] = useState('')
+  const [manualFiltroWeb, setManualFiltroWeb] = useState('')
 
   // New-product modal
   const [newModal, setNewModal] = useState(false)
@@ -701,7 +709,32 @@ export default function ProductosPage() {
       setVincPares(pares)
       setVincConflictos(d.conflictos ?? [])
       setVincSel(new Set(pares.map(p => p.supabaseId)))
+      setVincSinMatch(d.sinMatch ?? [])
+      setVincWooLibres(d.wooLibres ?? [])
+      setVincTab(pares.length > 0 ? 'auto' : 'manual')
+      setManualSel(null); setManualFiltroSis(''); setManualFiltroWeb('')
       setVincModal(true)
+    } catch { toast_('Error de red') }
+    setVinculando(false)
+  }
+
+  // Asigna a mano un producto del sistema a un producto de la web.
+  async function asignarManual(supabaseId: string, nombre: string, wooId: number) {
+    setVinculando(true)
+    try {
+      const res = await fetch('/api/woo/vincular', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual: [{ supabaseId, wooId }] }),
+      })
+      const d = await res.json()
+      if (!res.ok || d.error || !d.vinculados) { toast_('Error: ' + (d.error ?? 'no se pudo vincular')); setVinculando(false); return }
+      // Sacar el producto de la lista de sin-match y el par de web-libres.
+      setVincSinMatch(l => l.filter(p => p.supabaseId !== supabaseId))
+      setVincWooLibres(l => l.filter(w => w.wooId !== wooId))
+      setManualSel(null); setManualFiltroWeb('')
+      cargar(empresa)
+      toast_(`Vinculado: ${nombre}`)
     } catch { toast_('Error de red') }
     setVinculando(false)
   }
@@ -1484,20 +1517,25 @@ export default function ProductosPage() {
               <button onClick={() => setVincModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20 }}>×</button>
             </div>
 
-            {vincPares.length === 0 && vincConflictos.length === 0 ? (
+            {/* pestañas Auto / Manual */}
+            <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${T.border}` }}>
+              {([['auto', `Automático (${vincPares.length})`], ['manual', `Manual (${vincSinMatch.length})`]] as const).map(([id, label]) => (
+                <button key={id} onClick={() => setVincTab(id)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${vincTab === id ? T.wine : 'transparent'}`, color: vincTab === id ? T.text : T.muted, fontWeight: vincTab === id ? 700 : 500, fontSize: 13, padding: '6px 10px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
+              ))}
+            </div>
+
+            {/* ── TAB AUTOMÁTICO ── */}
+            {vincTab === 'auto' && (vincPares.length === 0 && vincConflictos.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
-                No hay productos nuevos para vincular. Todo lo que existe en ambos lados ya está enlazado. 🎉
+                No hay pares automáticos. Probá el modo <strong>Manual</strong> para asignarlos vos. 🔗
               </div>
             ) : (
               <>
-                {/* toolbar */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 24px', borderBottom: `1px solid ${T.border}` }}>
                   <button onClick={() => setVincSel(new Set(vincPares.map(p => p.supabaseId)))} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Sel. todos</button>
                   <button onClick={() => setVincSel(new Set())} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.dim, cursor: 'pointer', fontFamily: 'inherit' }}>Limpiar</button>
                   <span style={{ marginLeft: 'auto', fontSize: 12, color: T.muted }}>{vincSel.size} seleccionados</span>
                 </div>
-
-                {/* lista scrollable */}
                 <div style={{ overflowY: 'auto', flex: 1 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
@@ -1531,8 +1569,6 @@ export default function ProductosPage() {
                     </tbody>
                   </table>
                 </div>
-
-                {/* footer */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: `1px solid ${T.border}` }}>
                   <span style={{ fontSize: 12, color: T.dim }}>Solo rellena el ID vacío. No pisa datos ni crea duplicados.</span>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -1543,6 +1579,56 @@ export default function ProductosPage() {
                   </div>
                 </div>
               </>
+            ))}
+
+            {/* ── TAB MANUAL ── */}
+            {vincTab === 'manual' && (
+              <div style={{ display: 'flex', flex: 1, minHeight: 320, overflow: 'hidden' }}>
+                {/* Columna izquierda: productos del sistema sin vincular */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: `1px solid ${T.border}` }}>
+                  <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}` }}>
+                    <input value={manualFiltroSis} onChange={e => setManualFiltroSis(e.target.value)} placeholder="Buscar producto del sistema…"
+                      style={{ width: '100%', padding: '7px 10px', border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 13, fontFamily: 'inherit', background: T.surface, color: T.text }} />
+                  </div>
+                  <div style={{ overflowY: 'auto', flex: 1 }}>
+                    {vincSinMatch.filter(p => p.nombre.toLowerCase().includes(manualFiltroSis.toLowerCase())).slice(0, 300).map(p => (
+                      <div key={p.supabaseId} onClick={() => { setManualSel(p); setManualFiltroWeb('') }}
+                        style={{ padding: '8px 16px', fontSize: 13, cursor: 'pointer', borderBottom: `1px solid ${T.border}`, background: manualSel?.supabaseId === p.supabaseId ? T.bg : 'transparent', color: manualSel?.supabaseId === p.supabaseId ? T.wine : T.text, fontWeight: manualSel?.supabaseId === p.supabaseId ? 600 : 400 }}>
+                        {p.nombre}
+                      </div>
+                    ))}
+                    {vincSinMatch.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: T.dim, fontSize: 13 }}>No quedan productos sin vincular 🎉</div>}
+                  </div>
+                </div>
+
+                {/* Columna derecha: candidatos de la web */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  {!manualSel ? (
+                    <div style={{ padding: 32, textAlign: 'center', color: T.dim, fontSize: 13, margin: 'auto' }}>
+                      ← Elegí un producto del sistema para asignarle su par en la web.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}` }}>
+                        <div style={{ fontSize: 12, color: T.muted, marginBottom: 6 }}>Par para: <strong style={{ color: T.wine }}>{manualSel.nombre}</strong></div>
+                        <input value={manualFiltroWeb} onChange={e => setManualFiltroWeb(e.target.value)} placeholder="Buscar producto de la web…" autoFocus
+                          style={{ width: '100%', padding: '7px 10px', border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 13, fontFamily: 'inherit', background: T.surface, color: T.text }} />
+                      </div>
+                      <div style={{ overflowY: 'auto', flex: 1 }}>
+                        {vincWooLibres.filter(w => w.nombre.toLowerCase().includes(manualFiltroWeb.toLowerCase())).slice(0, 300).map(w => (
+                          <div key={w.wooId} onClick={() => !vinculando && asignarManual(manualSel.supabaseId, manualSel.nombre, w.wooId)}
+                            style={{ padding: '8px 16px', fontSize: 13, cursor: vinculando ? 'default' : 'pointer', borderBottom: `1px solid ${T.border}`, color: T.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            className="lista-sug">
+                            <span>{w.nombre} <span style={{ color: T.dim, fontSize: 11 }}>#{w.wooId}</span></span>
+                            <span style={{ color: T.green, fontSize: 12, fontWeight: 600 }}>Vincular</span>
+                          </div>
+                        ))}
+                        {vincWooLibres.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: T.dim, fontSize: 13 }}>No hay productos de la web disponibles.</div>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>
