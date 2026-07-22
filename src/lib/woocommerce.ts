@@ -44,16 +44,29 @@ export interface WooProduct {
   images: { src: string }[]
 }
 
+// Abreviaturas que significan lo mismo escritas de dos formas. Se expanden a
+// nivel token en ambos lados (web y Supabase) antes de comparar, para que
+// "Rva" y "Reserva" matcheen. Agregar acá nuevos casos que aparezcan.
+const ABREVIATURAS: Record<string, string> = {
+  rva: 'reserva',
+  rsva: 'reserva',
+  res: 'reserva',
+}
+
 // Normaliza un nombre para poder comparar productos entre Supabase y
-// WooCommerce ignorando acentos, mayúsculas, espacios dobles y signos.
-// "Alta-Yarí Reserva  Chardonnay" y "Alta Yari Reserva Chardonnay" matchean.
+// WooCommerce ignorando acentos, mayúsculas, espacios dobles, signos y
+// abreviaturas conocidas (Rva = Reserva).
+// "Alta-Yarí Rva Chardonnay" y "Alta Yari Reserva Chardonnay" matchean.
 export function normalizarNombre(s: string): string {
   return (s || '')
     .normalize('NFKD').replace(/[̀-ͯ]/g, '') // saca acentos
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
-    .replace(/\s+/g, ' ')
+    .split(/\s+/)
+    .map(t => ABREVIATURAS[t] ?? t)
+    .filter(Boolean)
+    .join(' ')
 }
 
 export function mapWooToProducto(woo: WooProduct) {
