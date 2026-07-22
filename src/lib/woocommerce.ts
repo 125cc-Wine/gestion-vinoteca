@@ -51,6 +51,7 @@ const ABREVIATURAS: Record<string, string> = {
   rva: 'reserva',
   rsva: 'reserva',
   res: 'reserva',
+  reserve: 'reserva',   // ingles vs español (Trivento usa "Reserve" en la web)
   cab: 'cabernet',
   sauv: 'sauvignon',
   esp: 'espumante',
@@ -73,6 +74,14 @@ export function normalizarNombre(s: string): string {
     .map(t => ABREVIATURAS[t] ?? t)
     .filter(Boolean)
     .join(' ')
+}
+
+// Clave de matcheo INDEPENDIENTE DEL ORDEN de las palabras. Ordena los tokens
+// alfabéticamente, así "Trivento Golden Reserve Malbec" y "Trivento Malbec
+// Golden Rva" caen en la misma clave. Se usa solo para comparar, no para
+// mostrar. El nombre lindo se sigue tomando de normalizarNombre / el original.
+export function claveMatch(s: string): string {
+  return normalizarNombre(s).split(' ').filter(Boolean).sort().join(' ')
 }
 
 export function mapWooToProducto(woo: WooProduct) {

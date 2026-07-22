@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts, normalizarNombre } from '@/lib/woocommerce'
+import { wooGetAllProducts, claveMatch } from '@/lib/woocommerce'
 
 // Vincula productos que YA existen en Supabase pero no tienen woo_product_id,
-// matcheándolos por nombre normalizado contra el catálogo de WooCommerce.
+// matcheándolos por nombre (normalizado e independiente del orden de palabras)
+// contra el catálogo de WooCommerce.
 // Rellena el woo_product_id vacío en la fila existente en vez de duplicar.
 //
 //   GET  /api/woo/vincular        -> preview: qué se vincularía (no toca nada)
@@ -27,14 +28,14 @@ async function computeMatches(): Promise<MatchResult> {
     throw new Error('WooCommerce no configurado (faltan WOOCOMMERCE_URL / WOOCOMMERCE_CONSUMER_KEY)')
   }
 
-  // 1. Productos de la web, indexados por nombre normalizado.
-  //    Si dos productos Woo normalizan al mismo nombre, marcamos ese nombre
-  //    como ambiguo para no vincular a ciegas.
+  // 1. Productos de la web, indexados por clave de matcheo (normalizada e
+  //    independiente del orden). Si dos productos Woo caen en la misma clave,
+  //    marcamos esa clave como ambigua para no vincular a ciegas.
   const woo = await wooGetAllProducts()
   const wooPorNombre = new Map<string, { id: number; nombre: string }>()
   const wooAmbiguos = new Set<string>()
   for (const w of woo) {
-    const key = normalizarNombre(w.name)
+    const key = claveMatch(w.name)
     if (!key) continue
     if (wooPorNombre.has(key)) wooAmbiguos.add(key)
     else wooPorNombre.set(key, { id: w.id, nombre: w.name })
@@ -64,7 +65,7 @@ async function computeMatches(): Promise<MatchResult> {
   //    no vincular dos filas distintas al mismo producto Woo.
   const vecesEnSupabase = new Map<string, number>()
   for (const p of sinVincular) {
-    const k = normalizarNombre(p.nombre)
+    const k = claveMatch(p.nombre)
     vecesEnSupabase.set(k, (vecesEnSupabase.get(k) ?? 0) + 1)
   }
 
@@ -73,7 +74,7 @@ async function computeMatches(): Promise<MatchResult> {
   let sinMatch = 0
 
   for (const p of sinVincular) {
-    const key = normalizarNombre(p.nombre)
+    const key = claveMatch(p.nombre)
     const w = wooPorNombre.get(key)
     if (!w) { sinMatch++; continue }
     if (wooAmbiguos.has(key)) {
