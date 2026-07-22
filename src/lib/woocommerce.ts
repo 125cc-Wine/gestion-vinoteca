@@ -51,6 +51,8 @@ const ABREVIATURAS: Record<string, string> = {
   rva: 'reserva',
   rsva: 'reserva',
   res: 'reserva',
+  cab: 'cabernet',
+  sauv: 'sauvignon',
 }
 
 // Normaliza un nombre para poder comparar productos entre Supabase y
