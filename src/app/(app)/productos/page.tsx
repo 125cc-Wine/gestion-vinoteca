@@ -156,10 +156,17 @@ export default function ProductosPage() {
   const [syncMenu, setSyncMenu]     = useState(false)
   const [syncConfirm, setSyncConfirm] = useState<'stock'|'precio'|'ambos'|null>(null)
   const [vinculando, setVinculando] = useState(false)
-  // Preview de la vinculación por nombre (productos ya cargados sin woo_product_id)
-  const [vincPreview, setVincPreview] = useState<null | {
+  // Preview de la vinculación por nombre (productos ya cargados sin woo_product_id).
+  // Guarda el resumen + la lista de pares propuestos y los conflictos, para
+  // poder elegir a mano cuáles vincular.
+  interface VincPar { supabaseId: string; nombre: string; wooId: number; wooNombre: string }
+  const [vincModal, setVincModal] = useState(false)
+  const [vincResumen, setVincResumen] = useState<null | {
     se_pueden_vincular: number; conflictos: number; sin_match_en_web: number; productos_sin_vincular: number
   }>(null)
+  const [vincPares, setVincPares] = useState<VincPar[]>([])
+  const [vincConflictos, setVincConflictos] = useState<{ nombre: string; motivo: string }[]>([])
+  const [vincSel, setVincSel] = useState<Set<string>>(new Set())
 
   // New-product modal
   const [newModal, setNewModal] = useState(false)
@@ -681,29 +688,40 @@ export default function ProductosPage() {
     toast_(`${d.imported} productos importados`)
   }
 
-  // Paso 1: previsualiza cuántos productos ya cargados (sin woo_product_id)
-  // matchean por nombre con la web. No modifica nada.
+  // Paso 1: trae los pares propuestos (sistema -> web) y los conflictos.
+  // No modifica nada. Abre el modal con todo preseleccionado.
   async function previewVincular() {
     setVinculando(true)
     try {
       const res = await fetch('/api/woo/vincular')
       const d = await res.json()
       if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setVinculando(false); return }
-      setVincPreview(d.resumen)
+      const pares: VincPar[] = d.vincular ?? []
+      setVincResumen(d.resumen)
+      setVincPares(pares)
+      setVincConflictos(d.conflictos ?? [])
+      setVincSel(new Set(pares.map(p => p.supabaseId)))
+      setVincModal(true)
     } catch { toast_('Error de red') }
     setVinculando(false)
   }
 
-  // Paso 2: aplica la vinculación (setea woo_product_id en las filas matcheadas).
+  // Paso 2: aplica solo los pares seleccionados (setea woo_product_id).
   async function aplicarVincular() {
+    const ids = vincPares.filter(p => vincSel.has(p.supabaseId)).map(p => p.supabaseId)
+    if (!ids.length) { toast_('Nada seleccionado'); return }
     setVinculando(true)
     try {
-      const res = await fetch('/api/woo/vincular', { method: 'POST' })
+      const res = await fetch('/api/woo/vincular', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
       const d = await res.json()
       if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setVinculando(false); return }
-      setVincPreview(null)
+      setVincModal(false)
       cargar(empresa)
-      toast_(`${d.vinculados} productos vinculados${d.conflictos ? ` · ${d.conflictos} conflictos` : ''}`)
+      toast_(`${d.vinculados} productos vinculados${d.errores?.length ? ` · ${d.errores.length} errores` : ''}`)
     } catch { toast_('Error de red') }
     setVinculando(false)
   }
@@ -1448,44 +1466,84 @@ export default function ProductosPage() {
         </div>
       )}
 
-      {/* ── Modal confirmación vincular por nombre ── */}
-      {vincPreview && (
+      {/* ── Modal vincular por nombre (lista de pares + seleccion manual) ── */}
+      {vincModal && vincResumen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && !vinculando && setVincPreview(null)}>
-          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
-            <div style={{ fontSize: 20, marginBottom: 8 }}>🔗</div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: T.text }}>Vincular productos con la web</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
-              Se matchearon por nombre los productos ya cargados que no tenían <strong>WooCommerce ID</strong>.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
-              <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '10px 12px' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: T.green }}>{vincPreview.se_pueden_vincular}</div>
-                <div style={{ fontSize: 11, color: T.green }}>se vincularán</div>
+          onClick={e => e.target === e.currentTarget && !vinculando && setVincModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            {/* header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>🔗 Vincular productos con la web</h2>
+                <p style={{ margin: '3px 0 0', fontSize: 12, color: T.muted }}>
+                  <span style={{ color: T.green, fontWeight: 600 }}>{vincPares.length} pares por nombre</span>
+                  {vincResumen.conflictos > 0 && <> · <span style={{ color: T.dim }}>{vincResumen.conflictos} conflictos</span></>}
+                  {' '}· {vincResumen.sin_match_en_web} sin match
+                </p>
               </div>
-              <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: T.muted }}>{vincPreview.sin_match_en_web}</div>
-                <div style={{ fontSize: 11, color: T.dim }}>sin match en la web</div>
-              </div>
+              <button onClick={() => setVincModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20 }}>×</button>
             </div>
-            {vincPreview.conflictos > 0 && (
-              <p style={{ margin: '0 0 16px', fontSize: 12, color: T.dim, background: T.bg, borderRadius: 8, padding: '8px 12px' }}>
-                ⚠️ {vincPreview.conflictos} con nombre ambiguo — se dejan sin tocar para revisar a mano.
-              </p>
+
+            {vincPares.length === 0 && vincConflictos.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
+                No hay productos nuevos para vincular. Todo lo que existe en ambos lados ya está enlazado. 🎉
+              </div>
+            ) : (
+              <>
+                {/* toolbar */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 24px', borderBottom: `1px solid ${T.border}` }}>
+                  <button onClick={() => setVincSel(new Set(vincPares.map(p => p.supabaseId)))} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Sel. todos</button>
+                  <button onClick={() => setVincSel(new Set())} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: T.dim, cursor: 'pointer', fontFamily: 'inherit' }}>Limpiar</button>
+                  <span style={{ marginLeft: 'auto', fontSize: 12, color: T.muted }}>{vincSel.size} seleccionados</span>
+                </div>
+
+                {/* lista scrollable */}
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, background: T.surface }}>
+                        <th style={{ padding: '8px 12px 8px 24px', width: 36 }}></th>
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>En el sistema</th>
+                        <th style={{ padding: '8px 12px', width: 24 }}></th>
+                        <th style={{ padding: '8px 24px 8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>En la web</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vincPares.map(p => (
+                        <tr key={p.supabaseId} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer' }}
+                          onClick={() => setVincSel(s => { const n = new Set(s); n.has(p.supabaseId) ? n.delete(p.supabaseId) : n.add(p.supabaseId); return n })}>
+                          <td style={{ padding: '8px 12px 8px 24px' }}>
+                            <input type="checkbox" checked={vincSel.has(p.supabaseId)} onChange={() => {}} style={{ accentColor: T.wine, pointerEvents: 'none' }} />
+                          </td>
+                          <td style={{ padding: '8px 12px', color: T.text }}>{p.nombre}</td>
+                          <td style={{ padding: '8px 12px', color: T.dim, textAlign: 'center' }}>→</td>
+                          <td style={{ padding: '8px 24px 8px 12px', color: T.muted }}>{p.wooNombre} <span style={{ color: T.dim, fontSize: 11 }}>#{p.wooId}</span></td>
+                        </tr>
+                      ))}
+                      {vincConflictos.map((c, i) => (
+                        <tr key={'c' + i} style={{ borderBottom: `1px solid ${T.border}`, opacity: 0.6 }}>
+                          <td style={{ padding: '8px 12px 8px 24px', textAlign: 'center' }}>⚠️</td>
+                          <td style={{ padding: '8px 12px', color: T.text }}>{c.nombre}</td>
+                          <td></td>
+                          <td style={{ padding: '8px 24px 8px 12px', color: T.dim, fontSize: 12, fontStyle: 'italic' }}>{c.motivo} — revisar a mano</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* footer */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: `1px solid ${T.border}` }}>
+                  <span style={{ fontSize: 12, color: T.dim }}>Solo rellena el ID vacío. No pisa datos ni crea duplicados.</span>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => setVincModal(false)} disabled={vinculando} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 16px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                    <button onClick={aplicarVincular} disabled={vinculando || vincSel.size === 0} className="btn-wine" style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (vinculando || vincSel.size === 0) ? 0.5 : 1 }}>
+                      {vinculando ? 'Vinculando…' : `Vincular ${vincSel.size}`}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
-            <p style={{ margin: '0 0 24px', fontSize: 12, color: T.dim }}>
-              Solo se rellena el ID vacío. No se pisa ningún dato existente ni se crean duplicados.
-            </p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setVincPreview(null)} disabled={vinculando}
-                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Cancelar
-              </button>
-              <button onClick={aplicarVincular} disabled={vinculando || vincPreview.se_pueden_vincular === 0}
-                style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (vinculando || vincPreview.se_pueden_vincular === 0) ? 0.5 : 1 }}>
-                {vinculando ? 'Vinculando…' : `Vincular ${vincPreview.se_pueden_vincular}`}
-              </button>
-            </div>
           </div>
         </div>
       )}
