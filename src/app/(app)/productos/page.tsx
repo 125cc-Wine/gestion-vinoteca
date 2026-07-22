@@ -622,6 +622,22 @@ export default function ProductosPage() {
 
   async function bulkRequest(accion: string, valor: string|number) {
     setBulkLoading(true)
+    // Si asignan una bodega que todavía no existe, la damos de alta primero para
+    // que quede disponible en filtros y en el resto de los dropdowns.
+    if (accion === 'bodega' && typeof valor === 'string') {
+      const nombre = valor.trim()
+      if (nombre && !bodegas.some(b => b.nombre.toLowerCase() === nombre.toLowerCase())) {
+        try {
+          const r = await fetch('/api/bodegas', { method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ nombre, activo: true }) })
+          if (r.ok) {
+            const nb = await r.json()
+            setBodegas(bs => [...bs, nb].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+          }
+        } catch { /* si falla el alta igual seguimos: la bodega se guarda en el producto */ }
+      }
+    }
     const res = await fetch('/api/productos/bulk', { method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ ids: Array.from(seleccionados), accion, valor }) })
@@ -1072,10 +1088,14 @@ export default function ProductosPage() {
                     {a.key === 'aumento_precio' ? 'Aumentar precio (%)' : a.key === 'precio_fijo' ? 'Precio de venta fijo ($)' : a.key === 'costo_fijo' ? 'Precio de costo fijo ($)' : a.key === 'costo_pct_venta' ? 'Costo = X% del precio de venta' : `Asignar ${a.label}`}
                   </div>
                   {a.kind === 'select' ? (
-                    <select style={INP_SM} value={bulkVal} onChange={e => setBulkVal(e.target.value)}>
-                      <option value="">Elegir bodega...</option>
-                      {bodegas.map(b => <option key={b.id} value={b.nombre}>{b.nombre}</option>)}
-                    </select>
+                    <>
+                      <input autoFocus list="bulk-bodegas-list" style={INP_SM} placeholder="Elegir o escribir bodega…"
+                        value={bulkVal} onChange={e => setBulkVal(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && bulkVal) bulkRequest(a.key, bulkVal); if (e.key === 'Escape') setActiveBulk(null) }} />
+                      <datalist id="bulk-bodegas-list">
+                        {bodegas.map(b => <option key={b.id} value={b.nombre} />)}
+                      </datalist>
+                    </>
                   ) : (
                     <input autoFocus type={a.kind} style={INP_SM}
                       placeholder={a.placeholder || a.label}
