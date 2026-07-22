@@ -44,6 +44,18 @@ export interface WooProduct {
   images: { src: string }[]
 }
 
+// Normaliza un nombre para poder comparar productos entre Supabase y
+// WooCommerce ignorando acentos, mayúsculas, espacios dobles y signos.
+// "Alta-Yarí Reserva  Chardonnay" y "Alta Yari Reserva Chardonnay" matchean.
+export function normalizarNombre(s: string): string {
+  return (s || '')
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '') // saca acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
 export function mapWooToProducto(woo: WooProduct) {
   const attr = (names: string[]) => {
     for (const name of names) {

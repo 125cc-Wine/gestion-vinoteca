@@ -155,6 +155,11 @@ export default function ProductosPage() {
   const [reactivando, setReactivando] = useState(false)
   const [syncMenu, setSyncMenu]     = useState(false)
   const [syncConfirm, setSyncConfirm] = useState<'stock'|'precio'|'ambos'|null>(null)
+  const [vinculando, setVinculando] = useState(false)
+  // Preview de la vinculación por nombre (productos ya cargados sin woo_product_id)
+  const [vincPreview, setVincPreview] = useState<null | {
+    se_pueden_vincular: number; conflictos: number; sin_match_en_web: number; productos_sin_vincular: number
+  }>(null)
 
   // New-product modal
   const [newModal, setNewModal] = useState(false)
@@ -327,6 +332,9 @@ export default function ProductosPage() {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
     cargar(e)
+    // Solo al montar: cargar() se reusa en handlers con el empresa/args del momento;
+    // ponerla en deps la re-dispararia en cada render (cambia de identidad).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function cargar(emp: string, incluirInactivos = mostrarInactivos) {
@@ -673,6 +681,33 @@ export default function ProductosPage() {
     toast_(`${d.imported} productos importados`)
   }
 
+  // Paso 1: previsualiza cuántos productos ya cargados (sin woo_product_id)
+  // matchean por nombre con la web. No modifica nada.
+  async function previewVincular() {
+    setVinculando(true)
+    try {
+      const res = await fetch('/api/woo/vincular')
+      const d = await res.json()
+      if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setVinculando(false); return }
+      setVincPreview(d.resumen)
+    } catch { toast_('Error de red') }
+    setVinculando(false)
+  }
+
+  // Paso 2: aplica la vinculación (setea woo_product_id en las filas matcheadas).
+  async function aplicarVincular() {
+    setVinculando(true)
+    try {
+      const res = await fetch('/api/woo/vincular', { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setVinculando(false); return }
+      setVincPreview(null)
+      cargar(empresa)
+      toast_(`${d.vinculados} productos vinculados${d.conflictos ? ` · ${d.conflictos} conflictos` : ''}`)
+    } catch { toast_('Error de red') }
+    setVinculando(false)
+  }
+
   // ── Drag-to-select ────────────────────────────────────────────────────────
   function onRowMouseDown(e: React.MouseEvent, idx: number, id: string) {
     if (e.button !== 0) return
@@ -815,6 +850,7 @@ export default function ProductosPage() {
           <button onClick={() => setShowKb(true)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '7px 12px', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }} title="Atajos de teclado">?</button>
           {empresa === 'aroma' && <>
             <button onClick={openWooImport} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Importar web</button>
+            <button onClick={previewVincular} disabled={vinculando} className="btn-row" title="Vincula productos ya cargados que no tienen woo_product_id, matcheando por nombre con la web" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: vinculando ? 'default' : 'pointer', fontFamily: 'inherit', opacity: vinculando ? 0.6 : 1 }}>{vinculando ? '…' : 'Vincular web'}</button>
             <div style={{ position: 'relative' }}>
               <button
                 disabled={syncing}
@@ -1406,6 +1442,48 @@ export default function ProductosPage() {
               <button onClick={() => setNewModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
               <button onClick={saveNew} disabled={saving} className="btn-wine" style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
                 {saving ? 'Guardando...' : 'Crear producto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal confirmación vincular por nombre ── */}
+      {vincPreview && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && !vinculando && setVincPreview(null)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ fontSize: 20, marginBottom: 8 }}>🔗</div>
+            <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: T.text }}>Vincular productos con la web</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
+              Se matchearon por nombre los productos ya cargados que no tenían <strong>WooCommerce ID</strong>.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+              <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: T.green }}>{vincPreview.se_pueden_vincular}</div>
+                <div style={{ fontSize: 11, color: T.green }}>se vincularán</div>
+              </div>
+              <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: T.muted }}>{vincPreview.sin_match_en_web}</div>
+                <div style={{ fontSize: 11, color: T.dim }}>sin match en la web</div>
+              </div>
+            </div>
+            {vincPreview.conflictos > 0 && (
+              <p style={{ margin: '0 0 16px', fontSize: 12, color: T.dim, background: T.bg, borderRadius: 8, padding: '8px 12px' }}>
+                ⚠️ {vincPreview.conflictos} con nombre ambiguo — se dejan sin tocar para revisar a mano.
+              </p>
+            )}
+            <p style={{ margin: '0 0 24px', fontSize: 12, color: T.dim }}>
+              Solo se rellena el ID vacío. No se pisa ningún dato existente ni se crean duplicados.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setVincPreview(null)} disabled={vinculando}
+                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancelar
+              </button>
+              <button onClick={aplicarVincular} disabled={vinculando || vincPreview.se_pueden_vincular === 0}
+                style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (vinculando || vincPreview.se_pueden_vincular === 0) ? 0.5 : 1 }}>
+                {vinculando ? 'Vinculando…' : `Vincular ${vincPreview.se_pueden_vincular}`}
               </button>
             </div>
           </div>
