@@ -294,6 +294,12 @@ export default function ProductosPage() {
   // Catálogo sort
   const [sortCampo, setSortCampo] = useState<'nombre' | 'precio_venta' | 'precio_costo' | 'stock' | ''>('')
   const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc')
+  // Click en el encabezado de una columna: ordena por ella; si ya está activa,
+  // invierte la dirección.
+  function toggleSort(campo: 'nombre' | 'precio_venta' | 'precio_costo' | 'stock') {
+    if (sortCampo === campo) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCampo(campo); setSortDir(campo === 'stock' ? 'desc' : 'asc') }
+  }
 
   // Rentabilidad sort
   const [rentSort, setRentSort]     = useState<'margen_pct' | 'margen_abs' | 'precio_venta' | 'nombre'>('margen_pct')
@@ -1133,9 +1139,20 @@ export default function ProductosPage() {
                   onChange={() => setSeleccionados(allCheck ? new Set() : new Set(filtrados.map(p => p.id!)))}
                   style={{ accentColor: T.wine, cursor: 'pointer' }} />
               </th>
-              {['Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio costo', 'Stock', ''].map(h => (
-                <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}` }}>{h}</th>
-              ))}
+              {(['Nombre', 'Bodega', 'Varietal', 'Categoría', 'Precio venta', 'Precio costo', 'Stock', ''] as const).map(h => {
+                const SORT_COL: Record<string, 'nombre' | 'precio_venta' | 'precio_costo' | 'stock'> = {
+                  'Nombre': 'nombre', 'Precio venta': 'precio_venta', 'Precio costo': 'precio_costo', 'Stock': 'stock',
+                }
+                const campo = SORT_COL[h]
+                const activo = campo && sortCampo === campo
+                return (
+                  <th key={h} onClick={campo ? () => toggleSort(campo) : undefined}
+                    style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: activo ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: campo ? 'pointer' : 'default', userSelect: 'none' }}
+                    title={campo ? 'Ordenar por ' + h : undefined}>
+                    {h}{activo ? (sortDir === 'asc' ? ' ↑' : ' ↓') : campo ? ' ↕' : ''}
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody>
