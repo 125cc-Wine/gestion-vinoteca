@@ -61,6 +61,7 @@ export function normalizarNombre(s: string): string {
   return (s || '')
     .normalize('NFKD').replace(/[̀-ͯ]/g, '') // saca acentos
     .toLowerCase()
+    .replace(/&/g, ' y ')                     // "Costa & Pampa" == "Costa y Pampa"
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .split(/\s+/)
