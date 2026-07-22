@@ -53,6 +53,9 @@ const ABREVIATURAS: Record<string, string> = {
   res: 'reserva',
   cab: 'cabernet',
   sauv: 'sauvignon',
+  esp: 'espumante',
+  bco: 'blanco',
+  tto: 'tinto',
 }
 
 // Normaliza un nombre para poder comparar productos entre Supabase y
