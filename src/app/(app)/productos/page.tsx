@@ -222,6 +222,121 @@ export default function ProductosPage() {
     return true
   })
 
+  // Carga masiva de stock desde Excel (mismo archivo que "Exportar Excel",
+  // editando la columna Stock). Matchea por SKU, luego Código de barras,
+  // luego Nombre, y muestra un preview de qué va a cambiar antes de aplicar.
+  const stockFileRef = useRef<HTMLInputElement>(null)
+  const [stockModal, setStockModal]         = useState(false)
+  const [stockLoading, setStockLoading]     = useState(false)
+  const [stockGuardando, setStockGuardando] = useState(false)
+  interface StockCambio { id: string; nombre: string; stockActual: number; stockNuevo: number; matchedBy: string }
+  const [stockCambios, setStockCambios]   = useState<StockCambio[]>([])
+  const [stockSinMatch, setStockSinMatch] = useState<string[]>([])
+  const [stockResumen, setStockResumen]   = useState<null | {
+    totalFilas: number; cambios: number; sinCambios: number; sinMatch: number
+  }>(null)
+
+  function getField(row: Record<string, unknown>, candidates: string[]): string {
+    const keys = Object.keys(row)
+    for (const cand of candidates) {
+      const key = keys.find(k => normalize(k.trim()) === normalize(cand))
+      if (key !== undefined) {
+        const v = row[key]
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim()
+      }
+    }
+    return ''
+  }
+
+  function procesarStockRows(rows: Record<string, unknown>[]) {
+    const bySku = new Map<string, Producto>()
+    const byBarcode = new Map<string, Producto>()
+    const nombreCount = new Map<string, number>()
+    const byNombre = new Map<string, Producto>()
+    for (const p of productos) {
+      if (p.sku) bySku.set(normalize(p.sku.trim()), p)
+      if (p.codigo_barras) byBarcode.set(normalize(p.codigo_barras.trim()), p)
+      const nk = normalize(p.nombre.trim())
+      nombreCount.set(nk, (nombreCount.get(nk) ?? 0) + 1)
+      if (!byNombre.has(nk)) byNombre.set(nk, p)
+    }
+
+    const cambiosMap = new Map<string, StockCambio>() // dedupe por id: si el archivo repite la fila, gana la última
+    const sinMatch: string[] = []
+    let sinCambios = 0
+
+    for (const row of rows) {
+      const stockStr = getField(row, ['Stock'])
+      if (stockStr === '') continue
+      const stockVal = Number(stockStr.replace(',', '.'))
+      if (!Number.isFinite(stockVal)) continue
+
+      const sku = getField(row, ['SKU'])
+      const barcode = getField(row, ['Código de barras', 'Codigo de barras', 'Cod. barras', 'Codigo barras'])
+      const nombreRow = getField(row, ['Nombre'])
+
+      let match: Producto | undefined
+      let matchedBy = ''
+      if (sku && bySku.has(normalize(sku))) { match = bySku.get(normalize(sku)); matchedBy = 'SKU' }
+      else if (barcode && byBarcode.has(normalize(barcode))) { match = byBarcode.get(normalize(barcode)); matchedBy = 'Código de barras' }
+      else if (nombreRow) {
+        const nk = normalize(nombreRow)
+        if ((nombreCount.get(nk) ?? 0) > 1) { sinMatch.push(`${nombreRow} (nombre repetido en el sistema — revisar a mano)`); continue }
+        if (byNombre.has(nk)) { match = byNombre.get(nk); matchedBy = 'Nombre' }
+      }
+
+      if (!match) { sinMatch.push(nombreRow || sku || barcode || '(fila sin identificador)'); continue }
+
+      const stockActual = match.stock ?? 0
+      if (stockActual === stockVal) { sinCambios++; continue }
+      cambiosMap.set(match.id!, { id: match.id!, nombre: match.nombre, stockActual, stockNuevo: stockVal, matchedBy })
+    }
+
+    setStockCambios(Array.from(cambiosMap.values()))
+    setStockSinMatch(sinMatch)
+    setStockResumen({ totalFilas: rows.length, cambios: cambiosMap.size, sinCambios, sinMatch: sinMatch.length })
+    setStockModal(true)
+  }
+
+  function handleStockFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite volver a subir el mismo archivo
+    if (!file) return
+    setStockLoading(true)
+    setStockCambios([]); setStockSinMatch([]); setStockResumen(null)
+    const reader = new FileReader()
+    reader.onload = evt => {
+      try {
+        const buf = evt.target?.result as ArrayBuffer
+        const wb = XLSX.read(buf, { type: 'array' })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: '' })
+        procesarStockRows(rows)
+      } catch { toast_('No se pudo leer el archivo') }
+      setStockLoading(false)
+    }
+    reader.onerror = () => { toast_('Error leyendo el archivo'); setStockLoading(false) }
+    reader.readAsArrayBuffer(file)
+  }
+
+  async function aplicarStockMasivo() {
+    if (!stockCambios.length) return
+    setStockGuardando(true)
+    try {
+      const res = await fetch('/api/productos/stock-masivo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empresa, updates: stockCambios.map(c => ({ id: c.id, stock: c.stockNuevo })) }),
+      })
+      const d = await res.json()
+      if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setStockGuardando(false); return }
+      setStockModal(false)
+      cargar(empresa)
+      toast_(`${d.actualizados} productos actualizados${d.sincronizados ? ` · ${d.sincronizados} sincronizados en la otra empresa` : ''}`)
+    } catch { toast_('Error de red') }
+    setStockGuardando(false)
+  }
+
   function exportarExcel() {
     const rows = filtrados.map(p => ({
       Nombre: p.nombre, Bodega: p.bodega ?? '', Varietal: p.varietal ?? '',
@@ -981,6 +1096,8 @@ export default function ProductosPage() {
           </>}
           <button onClick={calcularCostos} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Calcula precio_costo = 50% precio_venta para los que no tienen costo">Calc. costos</button>
           <button onClick={exportarExcel} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Exportar Excel</button>
+          <input ref={stockFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleStockFile} />
+          <button onClick={() => stockFileRef.current?.click()} disabled={stockLoading} className="btn-row" title="Subí el Excel exportado (o uno con columnas SKU/Código de barras/Nombre + Stock) para actualizar el stock de muchos productos a la vez" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: stockLoading ? 'default' : 'pointer', fontFamily: 'inherit', opacity: stockLoading ? 0.6 : 1 }}>{stockLoading ? 'Leyendo…' : 'Cargar stock'}</button>
           <button onClick={() => { setMasivBodega(''); setMasivCat(''); setMasivValor(''); setMasivDir('subir'); setMasivModal(true) }} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Actualiz. masiva</button>
           <button onClick={abrirListaModal} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Lista precios</button>
           <button onClick={reactivarProductos} disabled={reactivando} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: reactivando ? 'default' : 'pointer', fontFamily: 'inherit', opacity: reactivando ? 0.6 : 1 }}>{reactivando ? '...' : '↺ Reactivar'}</button>
@@ -1767,6 +1884,71 @@ export default function ProductosPage() {
                 <button onClick={() => syncWoo(syncConfirm)} disabled={syncDiffLoading || syncCambios.length === 0}
                   style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (syncDiffLoading || syncCambios.length === 0) ? 0.5 : 1 }}>
                   {syncCambios.length > 0 ? `Confirmar sync (${syncCambios.length})` : 'Confirmar sync'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal carga masiva de stock (preview antes de aplicar) ── */}
+      {stockModal && stockResumen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={e => e.target === e.currentTarget && !stockGuardando && setStockModal(false)}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>📥 Carga masiva de stock</h2>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
+                {stockResumen.totalFilas} filas leídas · <span style={{ color: T.wine, fontWeight: 600 }}>{stockResumen.cambios} van a cambiar</span>
+                {' '}· {stockResumen.sinCambios} sin cambios
+                {stockResumen.sinMatch > 0 && <> · <span style={{ color: T.dim }}>{stockResumen.sinMatch} sin match</span></>}
+              </p>
+            </div>
+
+            {stockCambios.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
+                Nada para actualizar — el stock del sistema ya coincide con el archivo. 🎉
+              </div>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, background: T.surface }}>
+                      <th style={{ padding: '8px 12px 8px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Producto</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Matcheado por</th>
+                      <th style={{ padding: '8px 24px 8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockCambios.map(c => (
+                      <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                        <td style={{ padding: '8px 12px 8px 24px', color: T.text }}>{c.nombre}</td>
+                        <td style={{ padding: '8px 12px', color: T.dim, fontSize: 11 }}>{c.matchedBy}</td>
+                        <td style={{ padding: '8px 24px 8px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>
+                          {c.stockActual} → <strong style={{ color: T.text }}>{c.stockNuevo}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                    {stockSinMatch.map((s, i) => (
+                      <tr key={'nm' + i} style={{ borderBottom: `1px solid ${T.border}`, opacity: 0.6 }}>
+                        <td colSpan={3} style={{ padding: '8px 24px', color: T.dim, fontSize: 12, fontStyle: 'italic' }}>⚠️ {s} — sin match, no se toca</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: `1px solid ${T.border}` }}>
+              <span style={{ fontSize: 12, color: T.dim }}>Se sincroniza también con la otra empresa, igual que al editar un producto.</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setStockModal(false)} disabled={stockGuardando}
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Cancelar
+                </button>
+                <button onClick={aplicarStockMasivo} disabled={stockGuardando || stockCambios.length === 0}
+                  style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (stockGuardando || stockCambios.length === 0) ? 0.5 : 1 }}>
+                  {stockGuardando ? 'Guardando…' : stockCambios.length > 0 ? `Actualizar (${stockCambios.length})` : 'Actualizar'}
                 </button>
               </div>
             </div>
