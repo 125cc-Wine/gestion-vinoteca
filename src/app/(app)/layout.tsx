@@ -5,11 +5,22 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const T = {
-  // Sidebar
-  wine:      '#800000',
-  wineDark:  '#6A0000',
-  wineLight: '#9A1010',
+// El color primario (sidebar, CTA, acentos de nav) depende de la empresa:
+// bordó para Aroma de Vid, azul para La Vid Consultora. Se arma dentro del
+// componente (necesita el estado `empresa`) y se combina con el resto de
+// tokens, que son iguales para las dos.
+const BRAND = {
+  aroma: {
+    wine: '#800000', wineDark: '#6A0000', wineLight: '#9A1010',
+    wineBg: 'rgba(128,0,0,0.08)', wineBd: 'rgba(128,0,0,0.2)', wineShadow: 'rgba(128,0,0,0.35)',
+  },
+  lavid: {
+    wine: '#2B5EA0', wineDark: '#1F4778', wineLight: '#3D74BE',
+    wineBg: 'rgba(43,94,160,0.08)', wineBd: 'rgba(43,94,160,0.2)', wineShadow: 'rgba(43,94,160,0.35)',
+  },
+}
+
+const BASE = {
   // Content
   bg:        '#F5F1EC',
   surface:   '#FFFFFF',
@@ -101,7 +112,6 @@ const BOTTOM_NAV = [
 ]
 
 const TIPO_ICON: Record<string, string> = { venta: '🧾', cliente: '👤', producto: '🍷' }
-const TIPO_COLOR: Record<string, string> = { venta: T.wine, cliente: T.brown, producto: T.green }
 interface SearchResult { tipo: string; id: string; titulo: string; subtitulo: string; href: string }
 
 function NavIcon({ d, size = 15 }: { d: string; size?: number }) {
@@ -131,6 +141,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!e) router.push('/')
     else setEmpresa(e)
   }, [router])
+
+  // Favicon acorde a la empresa activa. El `<link rel="icon">` por defecto
+  // (app/icon.svg, bordó) lo genera Next del lado del servidor y no puede
+  // saber qué empresa eligió el usuario (vive en localStorage, solo cliente),
+  // así que una vez que lo sabemos lo reemplazamos a mano.
+  useEffect(() => {
+    if (!empresa) return
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+    link.href = empresa === 'aroma' ? '/favicon-aroma.svg' : '/favicon-lavid.svg'
+    link.type = 'image/svg+xml'
+  }, [empresa])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -170,6 +192,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!empresa) return null
   const esAroma = empresa === 'aroma'
+  const T = { ...BASE, ...BRAND[esAroma ? 'aroma' : 'lavid'] }
+  const TIPO_COLOR: Record<string, string> = { venta: T.wine, cliente: T.brown, producto: T.green }
   const allNav = NAV_GROUPS.flatMap(g => g.items)
   const currentNav = allNav.find(n => pathname.startsWith(n.href))
 
@@ -382,7 +406,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 background: T.wine, color: '#FFFFFF',
                 border: 'none', borderRadius: 8, padding: '7px 16px',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'background 0.12s', boxShadow: '0 1px 3px rgba(128,0,0,0.35)',
+                transition: 'background 0.12s', boxShadow: `0 1px 3px ${T.wineShadow}`,
               }}
               onMouseEnter={e => (e.currentTarget.style.background = T.wineDark)}
               onMouseLeave={e => (e.currentTarget.style.background = T.wine)}>
@@ -393,9 +417,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Badge empresa */}
             <div className="top-badge" style={{
               fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 99,
-              background: esAroma ? 'rgba(128,0,0,0.08)' : 'rgba(43,94,160,0.08)',
-              color: esAroma ? T.wine : T.blue,
-              border: `1px solid ${esAroma ? 'rgba(128,0,0,0.2)' : 'rgba(43,94,160,0.2)'}`,
+              background: T.wineBg,
+              color: T.wine,
+              border: `1px solid ${T.wineBd}`,
               letterSpacing: '0.05em', textTransform: 'uppercase' as const,
             }}>
               {esAroma ? 'Aroma' : 'La Vid'}
