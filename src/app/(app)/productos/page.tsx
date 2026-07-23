@@ -990,6 +990,7 @@ export default function ProductosPage() {
   const BULK_ACTIONS = [
     { key: 'bodega',          label: 'Bodega',    kind: 'select' as const },
     { key: 'varietal',        label: 'Varietal',  kind: 'text'   as const },
+    { key: 'stock_fijo',      label: 'Stock',     kind: 'number' as const, placeholder: 'Ej: 12' },
     { key: 'aumento_precio',  label: '+ %',       kind: 'number' as const, placeholder: 'Ej: 10' },
     { key: 'precio_fijo',     label: 'Precio $',  kind: 'number' as const, placeholder: 'Ej: 15000' },
     { key: 'costo_fijo',      label: 'Costo $',   kind: 'number' as const, placeholder: 'Ej: 8000' },

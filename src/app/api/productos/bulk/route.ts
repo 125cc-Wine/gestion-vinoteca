@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'costo_fijo', 'costo_pct_venta', 'eliminar']
+const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'costo_fijo', 'costo_pct_venta', 'stock_fijo', 'eliminar']
 
 export async function POST(req: NextRequest) {
   const { ids, accion, valor } = await req.json()
@@ -94,6 +94,14 @@ export async function POST(req: NextRequest) {
       if (errFound?.error) return NextResponse.json({ error: errFound.error.message }, { status: 500 })
       afectados += lote.length
     }
+
+  } else if (accion === 'stock_fijo') {
+    const { count, error } = await supabase
+      .from('productos')
+      .update({ stock: Number(valor) }, { count: 'exact' })
+      .in('id', todosIds)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    afectados = count ?? 0
 
   } else if (accion === 'costo_fijo') {
     const { count, error } = await supabase
