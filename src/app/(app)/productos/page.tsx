@@ -155,6 +155,16 @@ export default function ProductosPage() {
   const [reactivando, setReactivando] = useState(false)
   const [syncMenu, setSyncMenu]     = useState(false)
   const [syncConfirm, setSyncConfirm] = useState<'stock'|'precio'|'ambos'|null>(null)
+  const [syncDiffLoading, setSyncDiffLoading] = useState(false)
+  interface SyncCambio {
+    nombre: string
+    stockActual?: number; stockNuevo?: number
+    precioActual?: number; precioNuevo?: number
+  }
+  const [syncCambios, setSyncCambios] = useState<SyncCambio[]>([])
+  const [syncResumen, setSyncResumen] = useState<null | {
+    total_vinculados: number; cambios: number; sin_cambios: number; sin_encontrar_en_web: number
+  }>(null)
   const [vinculando, setVinculando] = useState(false)
   // Preview de la vinculación por nombre (productos ya cargados sin woo_product_id).
   // Guarda el resumen + la lista de pares propuestos y los conflictos, para
@@ -676,6 +686,22 @@ export default function ProductosPage() {
     setHistorialLoading(false)
   }
 
+  // Trae qué va a cambiar realmente (compara valor actual en la web vs
+  // Supabase) antes de mostrar la confirmación. No escribe nada todavía.
+  async function previewSyncWoo(mode: 'stock' | 'precio' | 'ambos') {
+    setSyncConfirm(mode)
+    setSyncDiffLoading(true)
+    setSyncCambios([]); setSyncResumen(null)
+    try {
+      const res = await fetch(`/api/woo/sync/diff?mode=${mode}`)
+      const d = await res.json()
+      if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setSyncConfirm(null); setSyncDiffLoading(false); return }
+      setSyncCambios(d.cambios ?? [])
+      setSyncResumen(d.resumen)
+    } catch { toast_('Error de red'); setSyncConfirm(null) }
+    setSyncDiffLoading(false)
+  }
+
   async function syncWoo(mode: 'stock' | 'precio' | 'ambos') {
     setSyncConfirm(null)
     setSyncing(true)
@@ -941,7 +967,7 @@ export default function ProductosPage() {
                     ['precio', '💰 Sync Precio',         'Actualiza los precios en WooCommerce'],
                     ['ambos',  '🔄 Sync Stock + Precio', 'Actualiza stock y precios'],
                   ] as const).map(([mode, label, desc]) => (
-                    <button key={mode} onClick={() => { setSyncMenu(false); setSyncConfirm(mode) }}
+                    <button key={mode} onClick={() => { setSyncMenu(false); previewSyncWoo(mode) }}
                       style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                       onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
@@ -1676,30 +1702,73 @@ export default function ProductosPage() {
       {syncConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={e => e.target === e.currentTarget && setSyncConfirm(null)}>
-          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
-            <div style={{ fontSize: 20, marginBottom: 8 }}>
-              {syncConfirm === 'stock' ? '📦' : syncConfirm === 'precio' ? '💰' : '🔄'}
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
+                {syncConfirm === 'stock' ? '📦' : syncConfirm === 'precio' ? '💰' : '🔄'} Confirmar sync — {syncConfirm === 'stock' ? 'Stock' : syncConfirm === 'precio' ? 'Precio' : 'Stock + Precio'}
+              </h2>
+              {syncResumen && (
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
+                  <span style={{ color: T.wine, fontWeight: 600 }}>{syncResumen.cambios} van a cambiar</span>
+                  {' '}· {syncResumen.sin_cambios} sin cambios
+                  {syncResumen.sin_encontrar_en_web > 0 && <> · <span style={{ color: T.dim }}>{syncResumen.sin_encontrar_en_web} no encontrados en la web</span></>}
+                </p>
+              )}
             </div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: T.text }}>
-              Confirmar sync — {syncConfirm === 'stock' ? 'Stock' : syncConfirm === 'precio' ? 'Precio' : 'Stock + Precio'}
-            </h2>
-            <p style={{ margin: '0 0 20px', fontSize: 13, color: T.muted, lineHeight: 1.5 }}>
-              {syncConfirm === 'stock' && 'Se actualizará el stock de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
-              {syncConfirm === 'precio' && 'Se actualizarán los precios de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
-              {syncConfirm === 'ambos' && 'Se actualizarán el stock y los precios de todos los productos vinculados a WooCommerce con los valores actuales de Supabase.'}
-            </p>
-            <p style={{ margin: '0 0 24px', fontSize: 12, color: T.dim, background: T.bg, borderRadius: 8, padding: '8px 12px' }}>
-              Solo afecta productos con <strong>WooCommerce ID</strong> asignado. No modifica nada en Supabase.
-            </p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setSyncConfirm(null)}
-                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Cancelar
-              </button>
-              <button onClick={() => syncWoo(syncConfirm)}
-                style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Confirmar sync
-              </button>
+
+            {syncDiffLoading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>Calculando cambios…</div>
+            ) : syncCambios.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
+                Nada para actualizar — la web ya tiene estos valores al día. 🎉
+              </div>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${T.border}`, position: 'sticky', top: 0, background: T.surface }}>
+                      <th style={{ padding: '8px 12px 8px 24px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Producto</th>
+                      {(syncConfirm === 'stock' || syncConfirm === 'ambos') && (
+                        <th style={{ padding: '8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</th>
+                      )}
+                      {(syncConfirm === 'precio' || syncConfirm === 'ambos') && (
+                        <th style={{ padding: '8px 24px 8px 12px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Precio</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {syncCambios.map((c, i) => (
+                      <tr key={i} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                        <td style={{ padding: '8px 12px 8px 24px', color: T.text }}>{c.nombre}</td>
+                        {(syncConfirm === 'stock' || syncConfirm === 'ambos') && (
+                          <td style={{ padding: '8px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>
+                            {c.stockActual !== undefined ? <>{c.stockActual} → <strong style={{ color: T.text }}>{c.stockNuevo}</strong></> : '—'}
+                          </td>
+                        )}
+                        {(syncConfirm === 'precio' || syncConfirm === 'ambos') && (
+                          <td style={{ padding: '8px 24px 8px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>
+                            {c.precioActual !== undefined ? <>${c.precioActual.toLocaleString('es-AR')} → <strong style={{ color: T.text }}>${c.precioNuevo?.toLocaleString('es-AR')}</strong></> : '—'}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: `1px solid ${T.border}` }}>
+              <span style={{ fontSize: 12, color: T.dim }}>Solo afecta productos con WooCommerce ID. No modifica nada en Supabase.</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setSyncConfirm(null)}
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Cancelar
+                </button>
+                <button onClick={() => syncWoo(syncConfirm)} disabled={syncDiffLoading || syncCambios.length === 0}
+                  style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (syncDiffLoading || syncCambios.length === 0) ? 0.5 : 1 }}>
+                  {syncCambios.length > 0 ? `Confirmar sync (${syncCambios.length})` : 'Confirmar sync'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
