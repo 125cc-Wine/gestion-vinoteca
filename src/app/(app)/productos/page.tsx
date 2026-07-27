@@ -1300,7 +1300,7 @@ export default function ProductosPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading && productos.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Cargando...</td></tr>
             ) : filtrados.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Sin resultados</td></tr>
@@ -1470,7 +1470,7 @@ export default function ProductosPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && productos.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Cargando...</td></tr>
               ) : rentSorted.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '56px 0', color: T.dim }}>Sin productos</td></tr>

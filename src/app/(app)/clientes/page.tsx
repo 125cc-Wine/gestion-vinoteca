@@ -459,7 +459,7 @@ export default function ClientesPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && clientes.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>No hay clientes todavía</td></tr>

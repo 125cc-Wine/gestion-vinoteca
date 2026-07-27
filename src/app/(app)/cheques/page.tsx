@@ -401,7 +401,7 @@ export default function ChequesPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {loading && cheques.length === 0 ? (
                   <tr><td colSpan={9} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
                 ) : filtrados.length === 0 ? (
                   <tr><td colSpan={9} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin cheques{filtroEstado ? ` con estado "${ESTADO_LABEL[filtroEstado]}"` : ''}</td></tr>

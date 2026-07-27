@@ -175,7 +175,7 @@ export default function VendedoresPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && vendedores.length === 0 ? (
                 <tr><td colSpan={3} style={{ padding: '40px 16px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
               ) : activos.length === 0 && !error ? (
                 <tr><td colSpan={3} style={{ padding: '40px 16px', textAlign: 'center', color: T.dim, fontSize: 13 }}>

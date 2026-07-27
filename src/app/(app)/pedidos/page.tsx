@@ -286,7 +286,7 @@ export default function PedidosPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && pedidos.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
               ) : pedidos.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>No hay pedidos todavía</td></tr>

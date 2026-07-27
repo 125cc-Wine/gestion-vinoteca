@@ -190,7 +190,7 @@ export default function ProveedoresPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && proveedores.length === 0 ? (
                 <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={6} style={{ padding: 48, textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin proveedores</td></tr>

@@ -150,7 +150,7 @@ export default function AnadasPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && anadas.length === 0 ? (
                 <tr><td colSpan={4} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtradas.length === 0 ? (
                 <tr><td colSpan={4} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>No hay añadas todavía</td></tr>

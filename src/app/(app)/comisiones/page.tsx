@@ -296,7 +296,7 @@ export default function ComisionesPage() {
           ))}
         </div>
 
-        {loading ? (
+        {loading && comisiones.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando comisiones...</div>
         ) : comisiones.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 13 }}>

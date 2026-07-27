@@ -167,7 +167,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
             {selected && (
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 12, color: '#6B5D55' }}>
                 <input type="checkbox" checked={saveBarcode} onChange={e => setSaveBarcode(e.target.checked)} style={{ width: 15, height: 15, cursor: 'pointer' }} />
-                Guardar código <strong style={{ fontFamily: 'monospace' }}>{code}</strong> en "{selected.nombre}"
+                Guardar código <strong style={{ fontFamily: 'monospace' }}>{code}</strong> en &quot;{selected.nombre}&quot;
               </label>
             )}
           </div>

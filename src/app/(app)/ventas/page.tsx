@@ -946,7 +946,6 @@ export default function VentasPage() {
     setTimeout(() => imprimirFactura(w), 400)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function imprimirVenta(venta: Venta, _empresaNombre: string) {
     window.open(`/api/print/venta?id=${venta.id}&empresa=${empresa}`, '_blank')
   }
@@ -1195,7 +1194,7 @@ export default function VentasPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading
+                {loading && ventas.length === 0
                   ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>Cargando...</td></tr>
                   : ventasFiltradas.length === 0
                     ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay comprobantes</td></tr>
@@ -1279,7 +1278,7 @@ export default function VentasPage() {
                 </tr>
               </thead>
               <tbody>
-                {loading
+                {loading && pedidos.length === 0
                   ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>Cargando...</td></tr>
                   : pedidos.length === 0
                     ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay pedidos</td></tr>

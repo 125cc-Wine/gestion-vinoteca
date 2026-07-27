@@ -538,7 +538,7 @@ export default function ConsignacionesPage() {
           background: T.surface, border: `1px solid ${T.border}`,
           borderRadius: 10, overflow: 'hidden',
         }}>
-          {loading ? (
+          {loading && consignaciones.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.dim }}>Cargando...</div>
           ) : consignaciones.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.dim }}>

@@ -167,7 +167,7 @@ export default function BodegasPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && bodegas.length === 0 ? (
                 <tr><td colSpan={5} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtradas.length === 0 ? (
                 <tr><td colSpan={5} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>No hay bodegas todavía</td></tr>

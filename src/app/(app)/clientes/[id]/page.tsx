@@ -173,34 +173,34 @@ export default function ClienteFichaPage() {
   const [loaded, setLoaded] = useState<Set<Tab>>(new Set())
 
   useEffect(() => {
+    async function cargarVentas(emp: string) {
+      setVentasLoading(true)
+      const res = await fetch(`/api/ventas?empresa=${emp}&cliente_id=${id}`)
+      const data = await res.json()
+      setVentas(Array.isArray(data) ? data : [])
+      setVentasLoading(false)
+    }
+
+    async function cargarCliente(emp: string) {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (!error && data) {
+        setCliente(data)
+        // Load first tab data right away
+        cargarVentas(emp)
+        setLoaded(new Set<Tab>(['compras']))
+      }
+      setLoading(false)
+    }
+
     const emp = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(emp)
     cargarCliente(emp)
   }, [id])
-
-  async function cargarCliente(emp: string) {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('id', id)
-      .single()
-    if (!error && data) {
-      setCliente(data)
-      // Load first tab data right away
-      cargarVentas(emp)
-      setLoaded(new Set<Tab>(['compras']))
-    }
-    setLoading(false)
-  }
-
-  async function cargarVentas(emp: string) {
-    setVentasLoading(true)
-    const res = await fetch(`/api/ventas?empresa=${emp}&cliente_id=${id}`)
-    const data = await res.json()
-    setVentas(Array.isArray(data) ? data : [])
-    setVentasLoading(false)
-  }
 
   async function cargarMovimientos() {
     setMovsLoading(true)

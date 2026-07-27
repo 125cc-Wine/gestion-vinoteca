@@ -628,7 +628,7 @@ export default function ComprasPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && compras.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtradas.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin órdenes</td></tr>

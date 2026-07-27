@@ -53,6 +53,9 @@ export default function MovimientosPage() {
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e); cargar(e, desde, hasta)
+    // Solo al montar: los cambios de fecha llaman cargar() directo desde el onChange (abajo),
+    // agregar desde/hasta aca duplicaria el fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function cargar(emp: string, d: string, h: string) {
@@ -152,7 +155,7 @@ export default function MovimientosPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && movimientos.length === 0 ? (
                 <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Cargando...</td></tr>
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: T.dim, fontSize: 13 }}>Sin movimientos en el período</td></tr>

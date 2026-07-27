@@ -137,6 +137,9 @@ export default function ReportesPage() {
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e); cargar(e, desde, hasta); cargarVentasEst(e)
+    // Solo al montar: los cambios de fecha llaman cargar() directo desde el onChange (abajo),
+    // agregar desde/hasta aca duplicaria el fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function cargar(emp: string, d: string, h: string) {
@@ -232,7 +235,7 @@ export default function ReportesPage() {
           ))}
         </div>
 
-        {loading ? (
+        {loading && todasVentas.length === 0 ? (
           <div style={{ padding: 64, textAlign: 'center', color: T.muted, fontSize: 13 }}>Cargando...</div>
         ) : !datos ? (
           <div style={{ padding: 64, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin datos</div>

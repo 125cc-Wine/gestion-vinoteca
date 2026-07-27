@@ -287,7 +287,7 @@ export default function CajaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {loading && movimientos.length === 0 ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>Cargando...</td></tr>
                   ) : movimientosFiltrados.length === 0 ? (
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>

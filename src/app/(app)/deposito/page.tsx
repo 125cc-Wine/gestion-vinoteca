@@ -492,7 +492,7 @@ function BodegasTab({ empresa }: { empresa: string }) {
   const totalStock = rows.reduce((s, r) => s + r.stock, 0)
   const totalValor = rows.reduce((s, r) => s + r.valor, 0)
 
-  if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
+  if (cargando && rows.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
 
   return (
     <div style={{ padding: 16 }}>
@@ -721,7 +721,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: 'none', background: T.bg, cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ width: 20, height: 20, borderRadius: 6, background: T.wine, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0 }}>+</span>
                       <div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: T.wine }}>Crear "{search}"</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.wine }}>Crear &quot;{search}&quot;</span>
                         <span style={{ fontSize: 11, color: T.muted, display: 'block' }}>Nuevo vino · no está en el catálogo</span>
                       </div>
                     </button>
@@ -887,14 +887,14 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
   const totalGStock = anadasFiltradas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock, 0), 0)
   const totalGValor = anadasFiltradas.reduce((s, a) => s + (a.anada_items ?? []).reduce((ss, i) => ss + i.stock * i.precio, 0), 0)
 
-  if (cargando) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
+  if (cargando && anadas.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
 
   return (
     <div style={{ padding: 16 }}>
       {anadas.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: T.dim, border: `2px dashed ${T.border}`, borderRadius: 14 }}>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Sin añadas registradas</p>
-          <p style={{ margin: '4px 0 0', fontSize: 13 }}>Usá "Registrar" para agregar vinos a una añada</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13 }}>Usá &quot;Registrar&quot; para agregar vinos a una añada</p>
         </div>
       ) : (
         <>
@@ -920,7 +920,7 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
 
           {anadasFiltradas.length === 0 && (
             <div style={{ textAlign: 'center', padding: '30px 20px', color: T.dim, fontSize: 13 }}>
-              Sin resultados para "{filtro}"
+              Sin resultados para &quot;{filtro}&quot;
             </div>
           )}
 
@@ -1097,7 +1097,7 @@ function HistorialTab({ empresa }: { empresa: string }) {
     setLogs([])
   }
 
-  if (cargando) {
+  if (cargando && logs.length === 0) {
     return <div style={{ padding: 40, textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando...</div>
   }
 

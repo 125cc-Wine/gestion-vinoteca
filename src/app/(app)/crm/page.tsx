@@ -747,7 +747,7 @@ export default function CrmPage() {
 
             {/* Table */}
             <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: 'hidden' }}>
-              {loading ? (
+              {loading && visitas.length === 0 ? (
                 <div style={{ padding: 40, textAlign: 'center', color: T.muted }}>Cargando...</div>
               ) : filtered.length === 0 ? (
                 <div style={{ padding: 40, textAlign: 'center', color: T.dim }}>No hay actividades registradas</div>
