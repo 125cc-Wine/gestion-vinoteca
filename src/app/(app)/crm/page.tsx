@@ -455,7 +455,14 @@ function VisitaModal({ open, onClose, onSave, initial, clientes, vendedores, tit
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CrmPage() {
-  const [empresa, setEmpresa] = useState('aroma')
+  // Lazy initializer en vez de useState('aroma') + efecto que corrige después:
+  // con el patrón viejo, los efectos que dependen de [empresa] (fetchVisitas,
+  // fetchObjetivos, clientes/vendedores) disparaban un pedido con 'aroma'
+  // (valor inicial) y OTRO con la empresa real apenas se corregía — si la
+  // respuesta vieja llegaba después, pisaba los datos de la empresa correcta.
+  const [empresa, setEmpresa] = useState(
+    () => (typeof window !== 'undefined' && localStorage.getItem('empresa')) || 'aroma'
+  )
   const [tab, setTab] = useState<Tab>('actividad')
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const toastId = useRef(0)
@@ -491,12 +498,6 @@ export default function CrmPage() {
     setToasts(ts => [...ts, { id, text, type }])
     setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 3000)
   }
-
-  // ─── Bootstrap ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const emp = localStorage.getItem('empresa') || 'aroma'
-    setEmpresa(emp)
-  }, [])
 
   useEffect(() => {
     if (!empresa) return

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -93,7 +93,16 @@ function KpiCard({
 }
 
 export default function AgingPage() {
-  const [empresa, setEmpresa] = useState<string>('aroma')
+  // Lazy initializer: lee localStorage en el primer render, no en un efecto
+  // aparte. Con useState('aroma') + un efecto que corrige después, el efecto
+  // de carga (deps [empresa]) dispara UN pedido con 'aroma' (valor inicial) y
+  // OTRO con la empresa real apenas se corrige — si la respuesta vieja llega
+  // después que la nueva (típico en red, nada garantiza el orden), pisaba los
+  // datos correctos con los de la otra empresa. Arrancar ya con el valor
+  // correcto evita el doble pedido de raíz.
+  const [empresa, setEmpresa] = useState<string>(
+    () => (typeof window !== 'undefined' && localStorage.getItem('empresa')) || 'aroma'
+  )
   const [rows, setRows] = useState<AgingRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,23 +112,26 @@ export default function AgingPage() {
   const [detalleVentas, setDetalleVentas] = useState<VentaDetalle[]>([])
   const [detalleLoading, setDetalleLoading] = useState(false)
 
-  useEffect(() => {
-    const e = localStorage.getItem('empresa')
-    if (e) setEmpresa(e)
-  }, [])
+  // Defensa extra: si por lo que sea hay dos pedidos en vuelo (ej. el usuario
+  // cambia de empresa rápido en el selector), ignorar la respuesta que no es
+  // de la última empresa pedida.
+  const loadIdRef = useRef(0)
 
   const load = useCallback(async (emp: string) => {
+    const id = ++loadIdRef.current
     setLoading(true)
     setError(null)
     try {
       const res = await fetch(`/api/aging?empresa=${emp}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al cargar')
+      if (id !== loadIdRef.current) return
       setRows(data)
     } catch (e: unknown) {
+      if (id !== loadIdRef.current) return
       setError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
-      setLoading(false)
+      if (id === loadIdRef.current) setLoading(false)
     }
   }, [])
 
