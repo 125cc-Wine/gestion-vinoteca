@@ -18,19 +18,26 @@ function medioPagoDesdeCondicion(condicion?: string | null): string {
   return (condicion && map[condicion]) || 'Efectivo'
 }
 
+interface Split { monto: number; medio_pago?: string }
+
 // POST { venta_id, empresa, concepto?, fecha?, monto?, medio_pago? }
-// Registra un cobro contra UNA venta puntual. Si "monto" no se manda, se
-// asume que se paga todo lo que le falta a esa venta (comportamiento
-// original). Si "monto" es menor a lo que falta, la venta queda con
-// estado_pago='cuenta_corriente' pero con monto_pagado actualizado (parcial)
-// — recién pasa a 'pagado' cuando monto_pagado cubre el total.
-// Un pago dividido entre dos medios (ej. mitad efectivo, mitad transferencia)
-// se registra como DOS llamados separados, cada uno con su monto y su
-// medio_pago — así en Caja quedan dos movimientos prolijos en vez de uno
-// mezclado.
+//    o  { venta_id, empresa, concepto?, fecha?, pagos: [{monto, medio_pago}, ...] }
+// Registra un cobro contra UNA venta puntual. Si "monto"/"pagos" no cubre el
+// total pendiente, la venta queda con estado_pago='cuenta_corriente' pero con
+// monto_pagado actualizado (parcial) — recién pasa a 'pagado' cuando
+// monto_pagado cubre el total.
+// "pagos" permite cobrar con varios medios de pago EN UN SOLO PASO (ej. mitad
+// efectivo, mitad transferencia): se valida contra lo que falta pagar, se
+// actualiza la venta una sola vez por el total, y se genera un movimiento de
+// caja POR CADA medio de pago (para que el arqueo de caja separe bien cuánto
+// entró en efectivo vs. transferencia, etc.).
 export async function POST(req: NextRequest) {
-  const { venta_id, empresa, concepto, fecha, monto, medio_pago } = await req.json()
+  const { venta_id, empresa, concepto, fecha, monto, medio_pago, pagos } = await req.json()
   if (!venta_id || !empresa) return NextResponse.json({ error: 'venta_id y empresa requeridos' }, { status: 400 })
+
+  const splits: Split[] = Array.isArray(pagos) && pagos.length > 0
+    ? pagos
+    : [{ monto, medio_pago }]
 
   // Traer venta actual
   const { data: venta, error: ve } = await supabase
@@ -43,7 +50,12 @@ export async function POST(req: NextRequest) {
 
   const montoPagadoActual = venta.monto_pagado || 0
   const restante = parseFloat((venta.total - montoPagadoActual).toFixed(2))
-  const montoCobro = monto != null ? parseFloat(monto) : restante
+
+  for (const s of splits) {
+    const m = s.monto != null ? parseFloat(String(s.monto)) : NaN
+    if (!m || m <= 0) return NextResponse.json({ error: 'Hay un monto inválido en el cobro' }, { status: 400 })
+  }
+  const montoCobro = parseFloat(splits.reduce((a, s) => a + parseFloat(String(s.monto)), 0).toFixed(2))
   if (!montoCobro || montoCobro <= 0) return NextResponse.json({ error: 'Monto inválido' }, { status: 400 })
   if (montoCobro > restante + 0.01) {
     return NextResponse.json({ error: `El monto ($${montoCobro}) supera lo que falta pagar de esta venta ($${restante}). Para cobros que superen una factura puntual, usá el cobro general del cliente.` }, { status: 400 })
@@ -67,7 +79,8 @@ export async function POST(req: NextRequest) {
     .single()
   if (ue) return NextResponse.json({ error: ue.message }, { status: 500 })
 
-  // 2. Si era cuenta corriente, reducir saldo del cliente
+  // 2. Si era cuenta corriente, reducir saldo del cliente (un solo movimiento
+  //    por el total, aunque se haya cobrado en varios medios de pago)
   if (estadoAnterior === 'cuenta_corriente' && venta.cliente_id && montoCobro > 0) {
     const { data: cliente } = await supabase
       .from('clientes')
@@ -92,16 +105,18 @@ export async function POST(req: NextRequest) {
     }])
   }
 
-  // 3. Registrar ingreso en caja por lo efectivamente cobrado ahora
-  if (montoCobro > 0) {
+  // 3. Registrar ingreso en caja: uno por cada medio de pago usado
+  for (const s of splits) {
+    const m = parseFloat(String(s.monto))
+    if (m <= 0) continue
     await supabase.from('movimientos_caja').insert([{
       empresa,
       tipo: 'ingreso',
       concepto: conceptoCobro,
-      monto: montoCobro,
+      monto: m,
       fecha: fechaCobro,
       categoria: 'Ventas - Cobro',
-      medio_pago: medio_pago || medioPagoDesdeCondicion(venta.condicion_venta),
+      medio_pago: s.medio_pago || medioPagoDesdeCondicion(venta.condicion_venta),
       referencia_id: venta_id,
     }])
   }

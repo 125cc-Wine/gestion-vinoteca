@@ -180,6 +180,9 @@ export default function ClienteFichaPage() {
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState('')
   const [cobroMedioPago, setCobroMedioPago] = useState('Efectivo')
+  const [cobroSplit, setCobroSplit] = useState(false)
+  const [cobroMonto2, setCobroMonto2] = useState(0)
+  const [cobroMedioPago2, setCobroMedioPago2] = useState('Transferencia')
   const [cobroGuardando, setCobroGuardando] = useState(false)
 
   useEffect(() => {
@@ -225,20 +228,23 @@ export default function ClienteFichaPage() {
     setCobroConcepto('Cobro cuenta corriente')
     setCobroFecha(new Date().toISOString().split('T')[0])
     setCobroMedioPago('Efectivo')
+    setCobroSplit(false)
+    setCobroMonto2(0)
+    setCobroMedioPago2('Transferencia')
     setCobroModal(true)
   }
 
   async function guardarCobro() {
     if (!cliente || !cobroMonto || cobroMonto <= 0) return
+    if (cobroSplit && (!cobroMonto2 || cobroMonto2 <= 0)) { alert('Ingresá el monto del segundo medio de pago'); return }
     setCobroGuardando(true)
     const nombreCliente = cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim()
+    const body = cobroSplit
+      ? { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, fecha: cobroFecha, pagos: [{ monto: cobroMonto, medio_pago: cobroMedioPago }, { monto: cobroMonto2, medio_pago: cobroMedioPago2 }] }
+      : { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha, medio_pago: cobroMedioPago }
     const res = await fetch('/api/cta-cte', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        empresa, cliente_id: id, cliente_nombre: nombreCliente,
-        tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha,
-        medio_pago: cobroMedioPago,
-      }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     setCobroGuardando(false)
@@ -647,7 +653,9 @@ export default function ClienteFichaPage() {
                 Saldo actual: <strong style={{ color: T.wine }}>{fmtMonto(cliente.saldo)}</strong> — el monto se aplica automáticamente a las facturas/remitos abiertos más viejos primero.
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                  {cobroSplit ? 'Monto — medio 1' : 'Monto cobrado'}
+                </label>
                 <input type="number" autoFocus value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
                   style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
               </div>
@@ -658,13 +666,36 @@ export default function ClienteFichaPage() {
                   {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                 </select>
               </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
+                <input type="checkbox" checked={cobroSplit} onChange={e => setCobroSplit(e.target.checked)} />
+                Dividir en 2 medios de pago (ej. mitad efectivo, mitad transferencia)
+              </label>
+
+              {cobroSplit && (
+                <>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto — medio 2</label>
+                    <input type="number" value={cobroMonto2 || ''} onChange={e => setCobroMonto2(parseFloat(e.target.value) || 0)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago — medio 2</label>
+                    <select value={cobroMedioPago2} onChange={e => setCobroMedioPago2(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }}>
+                      {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
+                    Total: {fmtMonto(cobroMonto + cobroMonto2)}
+                  </div>
+                </>
+              )}
+
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
                 <input value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)}
                   style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
-              </div>
-              <div style={{ fontSize: 11, color: T.dim }}>
-                ¿Pago dividido en dos medios (ej. mitad efectivo, mitad transferencia)? Registrá una parte y después volvé a abrir &quot;Registrar cobro&quot; con el resto y el otro medio.
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>

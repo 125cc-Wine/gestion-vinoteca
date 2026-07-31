@@ -109,6 +109,9 @@ export default function ClientesPage() {
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
   const [cobroMedioPago, setCobroMedioPago] = useState('Efectivo')
+  const [cobroSplit, setCobroSplit] = useState(false)
+  const [cobroMonto2, setCobroMonto2] = useState(0)
+  const [cobroMedioPago2, setCobroMedioPago2] = useState('Transferencia')
 
   // Modal importar CSV
   const [importModal, setImportModal] = useState(false)
@@ -135,6 +138,9 @@ export default function ClientesPage() {
   const [pagoConcepto, setPagoConcepto] = useState('')
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoMedioPago, setPagoMedioPago] = useState('Efectivo')
+  const [pagoSplit, setPagoSplit] = useState(false)
+  const [pagoMonto2, setPagoMonto2] = useState(0)
+  const [pagoMedioPago2, setPagoMedioPago2] = useState('Transferencia')
   const [pagoGuardando, setPagoGuardando] = useState(false)
 
   const [busqueda, setBusqueda] = useState('')
@@ -266,20 +272,28 @@ export default function ClientesPage() {
     setCobroConcepto('Cobro cuenta corriente')
     setCobroFecha(new Date().toISOString().split('T')[0])
     setCobroMedioPago('Efectivo')
+    setCobroSplit(false)
+    setCobroMonto2(0)
+    setCobroMedioPago2('Transferencia')
     setCobroModal(true)
   }
 
   async function guardarCobro() {
     if (!cobroCliente || !cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
+    if (cobroSplit && (!cobroMonto2 || cobroMonto2 <= 0)) { showToast('Ingresá el monto del segundo medio de pago'); return }
     const nombreCliente = cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
+    const totalCobro = cobroMonto + (cobroSplit ? cobroMonto2 : 0)
+    const body = cobroSplit
+      ? { empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, fecha: cobroFecha, pagos: [{ monto: cobroMonto, medio_pago: cobroMedioPago }, { monto: cobroMonto2, medio_pago: cobroMedioPago2 }] }
+      : { empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha, medio_pago: cobroMedioPago }
     const res = await fetch('/api/cta-cte', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha, medio_pago: cobroMedioPago }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
     setCobroModal(false); cargar(empresa)
-    showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
+    showToast(`Cobro de $${totalCobro.toLocaleString('es-AR')} registrado`)
     // Si el modal de historial de este mismo cliente está abierto, refrescarlo
     // (el saldo y los movimientos ya quedaron viejos con el cobro recién hecho).
     if (histCliente?.id === cobroCliente.id) {
@@ -338,24 +352,32 @@ export default function ClientesPage() {
     setPagoConcepto(`Cobro ${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`)
     setPagoFecha(new Date().toISOString().split('T')[0])
     setPagoMedioPago('Efectivo')
+    setPagoSplit(false)
+    setPagoMonto2(0)
+    setPagoMedioPago2('Transferencia')
     setPagoModal(true)
   }
 
   async function confirmarPagoVenta() {
     if (!pagoVenta || !pagoMonto || pagoMonto <= 0) return
+    if (pagoSplit && (!pagoMonto2 || pagoMonto2 <= 0)) { showToast('Ingresá el monto del segundo medio de pago'); return }
     setPagoGuardando(true)
+    const totalCobro = pagoMonto + (pagoSplit ? pagoMonto2 : 0)
+    const body = pagoSplit
+      ? { venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, pagos: [{ monto: pagoMonto, medio_pago: pagoMedioPago }, { monto: pagoMonto2, medio_pago: pagoMedioPago2 }] }
+      : { venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, monto: pagoMonto, medio_pago: pagoMedioPago }
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, monto: pagoMonto, medio_pago: pagoMedioPago }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     setPagoGuardando(false)
     if (data.error) { showToast('Error: ' + data.error); return }
     setPagoModal(false)
-    showToast(`${pagoVenta.numero}: cobrados $${pagoMonto.toLocaleString('es-AR')}`)
+    showToast(`${pagoVenta.numero}: cobrados $${totalCobro.toLocaleString('es-AR')}`)
     if (histCliente) fetchVentas(histCliente.id!)
     cargar(empresa)
-    setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - pagoMonto) } : prev)
+    setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - totalCobro) } : prev)
   }
 
   function copiarMensajeWhatsApp(c: Cliente) {
@@ -598,7 +620,9 @@ export default function ClientesPage() {
                 <span style={{ fontWeight: 700, color: T.amber }}>Saldo: ${cobroCliente.saldo.toLocaleString('es-AR')}</span>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto a cobrar ($) *</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                  {cobroSplit ? 'Monto — medio 1 ($) *' : 'Monto a cobrar ($) *'}
+                </label>
                 <input type="number" min="0" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
               </div>
               <div>
@@ -607,6 +631,30 @@ export default function ClientesPage() {
                   {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                 </select>
               </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
+                <input type="checkbox" checked={cobroSplit} onChange={e => setCobroSplit(e.target.checked)} />
+                Dividir en 2 medios de pago (ej. mitad efectivo, mitad transferencia)
+              </label>
+
+              {cobroSplit && (
+                <>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto — medio 2 ($) *</label>
+                    <input type="number" min="0" style={INP} value={cobroMonto2 || ''} onChange={e => setCobroMonto2(parseFloat(e.target.value) || 0)} placeholder="0" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago — medio 2</label>
+                    <select style={INP} value={cobroMedioPago2} onChange={e => setCobroMedioPago2(e.target.value)}>
+                      {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
+                    Total: ${(cobroMonto + cobroMonto2).toLocaleString('es-AR')}
+                  </div>
+                </>
+              )}
+
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
                 <input style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} />
@@ -614,9 +662,6 @@ export default function ClientesPage() {
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
                 <input type="date" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} />
-              </div>
-              <div style={{ fontSize: 11, color: T.dim }}>
-                ¿Pago dividido en dos medios (ej. mitad efectivo, mitad transferencia)? Registrá primero una parte acá y después volvé a &quot;Cobrar&quot; con el resto y el otro medio de pago.
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -827,11 +872,13 @@ export default function ClientesPage() {
                 )}
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado ahora</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                  {pagoSplit ? 'Monto — medio 1' : 'Monto cobrado ahora'}
+                </label>
                 <input type="number" style={INP} value={pagoMonto || ''} onChange={e => setPagoMonto(parseFloat(e.target.value) || 0)} />
-                {pagoMonto > 0 && pagoMonto < (pagoVenta.total - (pagoVenta.monto_pagado ?? 0)) && (
+                {!pagoSplit && pagoMonto > 0 && pagoMonto < (pagoVenta.total - (pagoVenta.monto_pagado ?? 0)) && (
                   <div style={{ fontSize: 11, color: T.amber, marginTop: 4 }}>
-                    Pago parcial — queda pendiente ${(pagoVenta.total - (pagoVenta.monto_pagado ?? 0) - pagoMonto).toLocaleString('es-AR')}. Para dividirlo en dos medios de pago, guardá esta parte y después volvé a &quot;Cobrar&quot; con el resto.
+                    Pago parcial — queda pendiente ${(pagoVenta.total - (pagoVenta.monto_pagado ?? 0) - pagoMonto).toLocaleString('es-AR')}.
                   </div>
                 )}
               </div>
@@ -841,6 +888,45 @@ export default function ClientesPage() {
                   {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                 </select>
               </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
+                <input type="checkbox" checked={pagoSplit} onChange={e => {
+                  const on = e.target.checked
+                  setPagoSplit(on)
+                  if (on) {
+                    const restante = pagoVenta.total - (pagoVenta.monto_pagado ?? 0)
+                    setPagoMonto2(Math.max(0, parseFloat((restante - pagoMonto).toFixed(2))))
+                  }
+                }} />
+                Dividir en 2 medios de pago (ej. mitad efectivo, mitad transferencia)
+              </label>
+
+              {pagoSplit && (
+                <>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto — medio 2</label>
+                    <input type="number" style={INP} value={pagoMonto2 || ''} onChange={e => setPagoMonto2(parseFloat(e.target.value) || 0)} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago — medio 2</label>
+                    <select style={INP} value={pagoMedioPago2} onChange={e => setPagoMedioPago2(e.target.value)}>
+                      {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                    </select>
+                  </div>
+                  {(() => {
+                    const restante = pagoVenta.total - (pagoVenta.monto_pagado ?? 0)
+                    const total = pagoMonto + pagoMonto2
+                    const diff = parseFloat((restante - total).toFixed(2))
+                    if (diff === 0) return null
+                    return (
+                      <div style={{ fontSize: 11, color: diff > 0 ? T.amber : T.red }}>
+                        {diff > 0 ? `Queda pendiente $${diff.toLocaleString('es-AR')} (pago parcial).` : `Te pasaste por $${Math.abs(diff).toLocaleString('es-AR')} — ajustá los montos.`}
+                      </div>
+                    )
+                  })()}
+                </>
+              )}
+
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
                 <input style={INP} value={pagoConcepto} onChange={e => setPagoConcepto(e.target.value)} />

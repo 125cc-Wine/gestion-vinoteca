@@ -23,9 +23,19 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data)
 }
 
+interface Split { monto: number; medio_pago?: string }
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { cliente_id, tipo, monto, concepto, empresa, referencia_id, fecha, medio_pago } = body
+  const { cliente_id, tipo, concepto, empresa, referencia_id, fecha, medio_pago } = body
+
+  // "pagos" permite cobrar con varios medios de pago en un solo paso (ej.
+  // mitad efectivo, mitad transferencia). Si no viene, se usa el "monto" +
+  // "medio_pago" sueltos (comportamiento original).
+  const splits: Split[] = Array.isArray(body.pagos) && body.pagos.length > 0
+    ? body.pagos
+    : [{ monto: body.monto, medio_pago }]
+  const monto = parseFloat(splits.reduce((a, s) => a + (parseFloat(String(s.monto)) || 0), 0).toFixed(2))
 
   // Obtener saldo actual del cliente
   const { data: cliente } = await supabase
@@ -65,6 +75,9 @@ export async function POST(req: NextRequest) {
   // pendientes — antes el saldo bajaba pero las ventas puntuales quedaban
   // "cuenta_corriente" para siempre. Lo que sobra tras cubrir todo lo
   // abierto queda como saldo a favor (no rompe nada, el saldo ya lo soporta).
+  // Si el cobro viene partido en varios medios de pago, se recorren ambas
+  // colas (ventas abiertas y splits de pago) a la vez, así cada movimiento
+  // de caja generado queda con el medio de pago que realmente le tocó.
   if (tipo === 'cobro' && monto > 0) {
     const { data: abiertas } = await supabase
       .from('ventas')
@@ -75,33 +88,48 @@ export async function POST(req: NextRequest) {
       .neq('estado_pago', 'pagado')
       .order('created_at', { ascending: true })
 
-    let restante = monto
     const fechaCobro = fecha || new Date().toISOString().split('T')[0]
-    for (const v of abiertas || []) {
-      if (restante <= 0) break
-      const faltaVenta = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
-      if (faltaVenta <= 0) continue
-      const aplicar = Math.min(restante, faltaVenta)
-      const nuevoMontoPagado = parseFloat(((v.monto_pagado || 0) + aplicar).toFixed(2))
-      const cubreTotal = aplicar >= faltaVenta - 0.01
+    const ventas = [...(abiertas || [])]
+    let vIdx = 0
+    let faltaVentaActual = ventas[0] ? parseFloat((ventas[0].total - (ventas[0].monto_pagado || 0)).toFixed(2)) : 0
+    let montoPagadoVentaActual = ventas[0]?.monto_pagado || 0
 
-      await supabase.from('ventas').update({
-        monto_pagado: nuevoMontoPagado,
-        ...(cubreTotal ? { estado_pago: 'pagado' } : {}),
-      }).eq('id', v.id)
+    for (const s of splits) {
+      let restanteSplit = parseFloat(String(s.monto)) || 0
+      const medioSplit = s.medio_pago || 'Efectivo'
 
-      await supabase.from('movimientos_caja').insert([{
-        empresa,
-        tipo: 'ingreso',
-        concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a venta)`,
-        monto: aplicar,
-        fecha: fechaCobro,
-        categoria: 'Ventas - Cobro',
-        medio_pago: medio_pago || 'Efectivo',
-        referencia_id: v.id,
-      }])
+      while (restanteSplit > 0 && vIdx < ventas.length) {
+        if (faltaVentaActual <= 0) {
+          vIdx++
+          if (vIdx >= ventas.length) break
+          faltaVentaActual = parseFloat((ventas[vIdx].total - (ventas[vIdx].monto_pagado || 0)).toFixed(2))
+          montoPagadoVentaActual = ventas[vIdx].monto_pagado || 0
+          continue
+        }
+        const v = ventas[vIdx]
+        const aplicar = Math.min(restanteSplit, faltaVentaActual)
+        montoPagadoVentaActual = parseFloat((montoPagadoVentaActual + aplicar).toFixed(2))
+        faltaVentaActual = parseFloat((faltaVentaActual - aplicar).toFixed(2))
+        const cubreTotal = faltaVentaActual <= 0.01
 
-      restante = parseFloat((restante - aplicar).toFixed(2))
+        await supabase.from('ventas').update({
+          monto_pagado: montoPagadoVentaActual,
+          ...(cubreTotal ? { estado_pago: 'pagado' } : {}),
+        }).eq('id', v.id)
+
+        await supabase.from('movimientos_caja').insert([{
+          empresa,
+          tipo: 'ingreso',
+          concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a venta)`,
+          monto: aplicar,
+          fecha: fechaCobro,
+          categoria: 'Ventas - Cobro',
+          medio_pago: medioSplit,
+          referencia_id: v.id,
+        }])
+
+        restanteSplit = parseFloat((restanteSplit - aplicar).toFixed(2))
+      }
     }
   }
 
