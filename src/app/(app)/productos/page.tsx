@@ -73,6 +73,18 @@ interface WooPreview {
   categoria: string; precio_venta: number; stock: number; ya_importado: boolean
 }
 
+interface VentaHistItem {
+  venta_id: string
+  numero?: string
+  tipo: string
+  created_at: string
+  cliente_id?: string | null
+  cliente_nombre?: string
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
+}
+
 interface HistorialPrecio {
   id: string
   producto_id: string
@@ -445,6 +457,12 @@ export default function ProductosPage() {
   const [historialData, setHistorialData]         = useState<HistorialPrecio[]>([])
   const [historialLoading, setHistorialLoading]   = useState(false)
 
+  // Historial de ventas modal
+  const [histVentasModal, setHistVentasModal]         = useState(false)
+  const [histVentasProducto, setHistVentasProducto]   = useState<{ id: string; nombre: string } | null>(null)
+  const [histVentasData, setHistVentasData]           = useState<VentaHistItem[]>([])
+  const [histVentasLoading, setHistVentasLoading]     = useState(false)
+
   const searchRef = useRef<HTMLInputElement>(null)
 
   // ── Computed (declared before effects so closures capture them) ───────────
@@ -799,6 +817,41 @@ export default function ProductosPage() {
       .limit(50)
     setHistorialData((data as HistorialPrecio[]) || [])
     setHistorialLoading(false)
+  }
+
+  // Recorre las ventas de la empresa buscando en qué comprobantes apareció
+  // este producto puntual — items se guarda como JSON dentro de cada venta,
+  // no hay una tabla normalizada de renglones, así que se filtra acá.
+  async function openHistorialVentas(p: Producto) {
+    setHistVentasProducto({ id: p.id!, nombre: p.nombre })
+    setHistVentasData([])
+    setHistVentasLoading(true)
+    setHistVentasModal(true)
+    const { data } = await supabase
+      .from('ventas')
+      .select('id, numero, tipo, created_at, cliente_id, cliente_nombre, items, estado')
+      .eq('empresa', p.empresa)
+      .neq('estado', 'cancelado')
+      .in('tipo', ['remito', 'presupuesto'])
+      .order('created_at', { ascending: false })
+      .limit(2000)
+
+    const eventos: VentaHistItem[] = []
+    for (const v of (data ?? [])) {
+      const items: { producto_id?: string; nombre?: string; cantidad?: number; precio_unitario?: number; subtotal?: number }[] =
+        typeof v.items === 'string' ? JSON.parse(v.items) : (v.items ?? [])
+      for (const it of items) {
+        if (it.producto_id === p.id) {
+          eventos.push({
+            venta_id: v.id, numero: v.numero, tipo: v.tipo, created_at: v.created_at,
+            cliente_id: v.cliente_id, cliente_nombre: v.cliente_nombre,
+            cantidad: it.cantidad ?? 0, precio_unitario: it.precio_unitario ?? 0, subtotal: it.subtotal ?? 0,
+          })
+        }
+      }
+    }
+    setHistVentasData(eventos)
+    setHistVentasLoading(false)
   }
 
   // Trae qué va a cambiar realmente (compara valor actual en la web vs
@@ -1396,6 +1449,7 @@ export default function ProductosPage() {
                       ) : (
                         <>
                           <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
+                          <button onClick={() => openHistorialVentas(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.wine, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de ventas — cuándo y a quién se vendió" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>🧾</button>
                           <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
                           <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
                           <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
@@ -2339,6 +2393,93 @@ export default function ProductosPage() {
           </div>
         </div>
       )}
+
+      {/* ── Modal: Historial de ventas de un producto ────────────────────── */}
+      {histVentasModal && (() => {
+        const totalCant = histVentasData.reduce((a, e) => a + e.cantidad, 0)
+        const ventasDistintas = new Set(histVentasData.map(e => e.venta_id)).size
+        const clientesDistintos = new Set(histVentasData.map(e => e.cliente_id || e.cliente_nombre || '—')).size
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={e => e.target === e.currentTarget && setHistVentasModal(false)}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 820, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.22)' }}>
+              {/* Header */}
+              <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Historial de ventas</h2>
+                  {histVentasProducto && (
+                    <p style={{ margin: '3px 0 0', fontSize: 13, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 600 }}>
+                      {histVentasProducto.nombre}
+                    </p>
+                  )}
+                </div>
+                <button onClick={() => setHistVentasModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 22, lineHeight: 1, flexShrink: 0, marginLeft: 16 }}>×</button>
+              </div>
+
+              {/* Resumen */}
+              {!histVentasLoading && histVentasData.length > 0 && (
+                <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+                  <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12 }}>
+                    <strong style={{ color: T.wine }}>{totalCant}</strong> unidades vendidas
+                  </div>
+                  <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12 }}>
+                    en <strong style={{ color: T.wine }}>{ventasDistintas}</strong> venta{ventasDistintas !== 1 ? 's' : ''} distinta{ventasDistintas !== 1 ? 's' : ''}
+                  </div>
+                  <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12 }}>
+                    a <strong style={{ color: T.wine }}>{clientesDistintos}</strong> cliente{clientesDistintos !== 1 ? 's' : ''} distinto{clientesDistintos !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              )}
+
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
+                {histVentasLoading ? (
+                  <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando historial...</div>
+                ) : histVentasData.length === 0 ? (
+                  <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Este producto todavía no se vendió</div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead style={{ position: 'sticky', top: 0, background: T.bg, zIndex: 1 }}>
+                      <tr>
+                        {['Fecha', 'Comprobante', 'Cliente', 'Cant.', 'Precio unit.', 'Subtotal'].map(h => (
+                          <th key={h} style={{ padding: '10px 14px', textAlign: (h === 'Cant.' || h === 'Precio unit.' || h === 'Subtotal') ? 'right' : 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {histVentasData.map((e, i) => (
+                        <tr key={e.venta_id + '-' + i} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td style={{ padding: '11px 14px', color: T.muted, whiteSpace: 'nowrap' }}>
+                            {new Date(e.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </td>
+                          <td style={{ padding: '11px 14px' }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, marginRight: 6, background: T.wineBg, color: T.wine, border: `1px solid rgba(128,0,0,0.25)`, textTransform: 'uppercase' as const }}>
+                              {e.tipo}
+                            </span>
+                            <span style={{ color: T.dim, fontSize: 11 }}>{e.numero ? `#${e.numero}` : `#${e.venta_id.slice(0, 8).toUpperCase()}`}</span>
+                          </td>
+                          <td style={{ padding: '11px 14px', color: T.text }}>{e.cliente_nombre || 'Consumidor Final'}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>{e.cantidad}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted }}>${e.precio_unitario.toLocaleString('es-AR')}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>${e.subtotal.toLocaleString('es-AR')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 12, color: T.dim }}>
+                  {histVentasData.length > 0 ? `${histVentasData.length} línea${histVentasData.length !== 1 ? 's' : ''} de venta` : ''}
+                </span>
+                <button onClick={() => setHistVentasModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Toast ─────────────────────────────────────────────────── */}
       {toast && (
