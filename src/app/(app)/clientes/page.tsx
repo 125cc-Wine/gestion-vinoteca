@@ -73,8 +73,9 @@ function tipoBadge(tipo: string) {
   return <Badge color={T.dim} bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">{label}</Badge>
 }
 
-function BadgePago({ estado }: { estado: string }) {
+function BadgePago({ estado, montoPagado }: { estado: string; montoPagado?: number }) {
   if (estado === 'pagado')          return <Badge color={T.green} bg={T.greenBg} border={T.greenBd}>Pagado</Badge>
+  if ((montoPagado ?? 0) > 0)       return <Badge color={T.amber} bg={T.amberBg} border={T.amberBd}>Parcial</Badge>
   if (estado === 'pendiente')       return <Badge color={T.amber} bg={T.amberBg} border={T.amberBd}>Pendiente</Badge>
   if (estado === 'cuenta_corriente') return <Badge color={T.blue}  bg={T.blueBg}  border={T.blueBd}>Cta. Cte.</Badge>
   return <span style={{ color: T.dim }}>—</span>
@@ -127,6 +128,7 @@ export default function ClientesPage() {
   // Modal pago desde comprobante
   const [pagoModal, setPagoModal] = useState(false)
   const [pagoVenta, setPagoVenta] = useState<Venta | null>(null)
+  const [pagoMonto, setPagoMonto] = useState(0)
   const [pagoConcepto, setPagoConcepto] = useState('')
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
   const [pagoGuardando, setPagoGuardando] = useState(false)
@@ -273,6 +275,13 @@ export default function ClientesPage() {
     if (data.error) { showToast('Error: ' + data.error); return }
     setCobroModal(false); cargar(empresa)
     showToast(`Cobro de $${cobroMonto.toLocaleString('es-AR')} registrado`)
+    // Si el modal de historial de este mismo cliente está abierto, refrescarlo
+    // (el saldo y los movimientos ya quedaron viejos con el cobro recién hecho).
+    if (histCliente?.id === cobroCliente.id) {
+      setHistCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
+      if (histTab === 'ctacte') fetchMovimientos(cobroCliente.id!, histDesde, histHasta)
+      else fetchVentas(cobroCliente.id!)
+    }
   }
 
   // ── Historial ─────────────────────────────────────────────────────────────
@@ -320,26 +329,27 @@ export default function ClientesPage() {
 
   function abrirPagoVenta(v: Venta) {
     setPagoVenta(v)
+    setPagoMonto(parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2)))
     setPagoConcepto(`Cobro ${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`)
     setPagoFecha(new Date().toISOString().split('T')[0])
     setPagoModal(true)
   }
 
   async function confirmarPagoVenta() {
-    if (!pagoVenta) return
+    if (!pagoVenta || !pagoMonto || pagoMonto <= 0) return
     setPagoGuardando(true)
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha }),
+      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, monto: pagoMonto }),
     })
     const data = await res.json()
     setPagoGuardando(false)
     if (data.error) { showToast('Error: ' + data.error); return }
     setPagoModal(false)
-    showToast(`${pagoVenta.numero} marcado como pagado`)
+    showToast(`${pagoVenta.numero}: cobrados $${pagoMonto.toLocaleString('es-AR')}`)
     if (histCliente) fetchVentas(histCliente.id!)
     cargar(empresa)
-    setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - pagoVenta.total) } : prev)
+    setHistCliente(prev => prev ? { ...prev, saldo: Math.max(0, prev.saldo - pagoMonto) } : prev)
   }
 
   function copiarMensajeWhatsApp(c: Cliente) {
@@ -673,7 +683,7 @@ export default function ClientesPage() {
                               </td>
                               <td style={{ padding: '10px 14px', color: T.muted, fontSize: 11 }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
                               <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>${v.total.toLocaleString('es-AR')}</td>
-                              <td style={{ padding: '10px 14px' }}><BadgePago estado={v.estado_pago || ''} /></td>
+                              <td style={{ padding: '10px 14px' }}><BadgePago estado={v.estado_pago || ''} montoPagado={v.monto_pagado} /></td>
                               <td style={{ padding: '10px 14px' }}>
                                 {v.estado_pago !== 'pagado' && (
                                   <button
@@ -709,6 +719,11 @@ export default function ClientesPage() {
                     </div>
                     <button className="btn-wine" style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => fetchMovimientos(histCliente.id!, histDesde, histHasta)}>Filtrar</button>
                     <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => { setHistDesde(''); const h = new Date().toISOString().split('T')[0]; setHistHasta(h); fetchMovimientos(histCliente.id!, '', h) }}>Ver todo</button>
+                    {histCliente.saldo > 0 && (
+                      <button style={{ marginLeft: 'auto', background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.green, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }} onClick={() => abrirCobro(histCliente)}>
+                        Registrar cobro
+                      </button>
+                    )}
                   </div>
 
                   {/* Resumen */}
@@ -788,9 +803,19 @@ export default function ClientesPage() {
                   <span style={{ fontFamily: 'monospace', fontWeight: 600, color: T.text, fontSize: 13 }}>{pagoVenta.numero}</span>
                   <span style={{ fontSize: 12, color: T.muted }}>{new Date(pagoVenta.created_at!).toLocaleDateString('es-AR')}</span>
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: T.green }}>${pagoVenta.total.toLocaleString('es-AR')}</div>
+                <div style={{ fontSize: 11, color: T.dim }}>
+                  Total: ${pagoVenta.total.toLocaleString('es-AR')}
+                  {(pagoVenta.monto_pagado ?? 0) > 0 && ` · Ya pagado: $${(pagoVenta.monto_pagado ?? 0).toLocaleString('es-AR')}`}
+                </div>
                 {pagoVenta.estado_pago === 'cuenta_corriente' && (
                   <div style={{ fontSize: 11, color: T.amber, marginTop: 6 }}>Se descontará del saldo en cuenta corriente del cliente</div>
+                )}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado ahora</label>
+                <input type="number" style={INP} value={pagoMonto || ''} onChange={e => setPagoMonto(parseFloat(e.target.value) || 0)} />
+                {pagoMonto > 0 && pagoMonto < (pagoVenta.total - (pagoVenta.monto_pagado ?? 0)) && (
+                  <div style={{ fontSize: 11, color: T.amber, marginTop: 4 }}>Pago parcial — queda pendiente ${(pagoVenta.total - (pagoVenta.monto_pagado ?? 0) - pagoMonto).toLocaleString('es-AR')}</div>
                 )}
               </div>
               <div>
@@ -806,9 +831,9 @@ export default function ClientesPage() {
               <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setPagoModal(false)}>Cancelar</button>
               <button
                 className="btn-green"
-                style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: T.green, cursor: 'pointer', fontFamily: 'inherit', opacity: pagoGuardando ? 0.6 : 1 }}
+                style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, color: T.green, cursor: 'pointer', fontFamily: 'inherit', opacity: pagoGuardando || !pagoMonto ? 0.6 : 1 }}
                 onClick={confirmarPagoVenta}
-                disabled={pagoGuardando}
+                disabled={pagoGuardando || !pagoMonto}
               >
                 {pagoGuardando ? 'Guardando...' : 'Confirmar cobro'}
               </button>

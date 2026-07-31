@@ -66,6 +66,7 @@ interface VentaDetalle {
   numero?: string
   tipo: string
   total: number
+  monto_pagado?: number
   created_at: string
   dias: number
 }
@@ -138,7 +139,7 @@ export default function AgingPage() {
       const res = await fetch(url)
       const data = await res.json()
       const now = Date.now()
-      const raw: { id: string; numero?: string; total: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
+      const raw: { id: string; numero?: string; total: number; monto_pagado?: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
         Array.isArray(data) ? data : data.ventas ?? []
       const ventas: VentaDetalle[] = raw
         .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente'
@@ -148,6 +149,7 @@ export default function AgingPage() {
           numero: v.numero,
           tipo: v.tipo ?? 'remito',
           total: v.total,
+          monto_pagado: v.monto_pagado ?? 0,
           created_at: v.created_at,
           dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
         }))
@@ -161,15 +163,29 @@ export default function AgingPage() {
   }
 
   async function marcarPagado(v: VentaDetalle) {
-    if (!confirm(`¿Marcar ${v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()} (${fmt(v.total)}) como pagado?`)) return
+    const restante = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
+    const input = prompt(
+      `¿Cuánto se cobró de ${v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()}? (falta ${fmt(restante)})`,
+      String(restante)
+    )
+    if (input === null) return
+    const monto = parseFloat(input.replace(',', '.'))
+    if (!monto || monto <= 0) { alert('Monto inválido'); return }
+    if (monto > restante + 0.01) { alert(`No puede ser mayor a lo que falta (${fmt(restante)})`); return }
+
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: v.id, empresa }),
+      body: JSON.stringify({ venta_id: v.id, empresa, monto }),
     })
     const data = await res.json()
     if (data.error) { alert('Error: ' + data.error); return }
-    setDetalleVentas(prev => prev.filter(x => x.id !== v.id))
-    setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - v.total) } : prev)
+    const esParcial = monto < restante - 0.01
+    if (esParcial) {
+      setDetalleVentas(prev => prev.map(x => x.id === v.id ? { ...x, monto_pagado: (x.monto_pagado || 0) + monto } : x))
+    } else {
+      setDetalleVentas(prev => prev.filter(x => x.id !== v.id))
+    }
+    setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
     load(empresa)
   }
 
@@ -523,6 +539,11 @@ export default function AgingPage() {
                           </td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.text }}>
                             {fmt(v.total)}
+                            {(v.monto_pagado || 0) > 0 && (
+                              <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2 }}>
+                                Parcial: pagó {fmt(v.monto_pagado || 0)}, falta {fmt(v.total - (v.monto_pagado || 0))}
+                              </div>
+                            )}
                           </td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: diasColor }}>
                             {v.dias}d
@@ -547,7 +568,7 @@ export default function AgingPage() {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              Marcar pagado
+                              Cobrar
                             </button>
                           </td>
                         </tr>

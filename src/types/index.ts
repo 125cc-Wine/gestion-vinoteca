@@ -87,6 +87,7 @@ export interface Venta {
   total: number
   estado: 'borrador' | 'emitido' | 'pagado' | 'cancelado'
   estado_pago?: 'pagado' | 'pendiente' | 'cuenta_corriente'
+  monto_pagado?: number
   notas?: string
   condicion_venta?: string
   // AFIP

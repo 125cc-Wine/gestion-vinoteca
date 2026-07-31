@@ -1031,16 +1031,22 @@ export default function VentasPage() {
     .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
 
   async function marcarPagadoDesdeResumen(v: Venta) {
-    if (!confirm(`¿Marcar ${v.numero} (${v.cliente_nombre} — $${v.total.toLocaleString('es-AR')}) como pagado?`)) return
+    const restante = parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2))
+    const input = prompt(`¿Cuánto se cobró de ${v.numero} (${v.cliente_nombre})? (falta $${restante.toLocaleString('es-AR')})`, String(restante))
+    if (input === null) return
+    const monto = parseFloat(input.replace(',', '.'))
+    if (!monto || monto <= 0) { showToast('Monto inválido'); return }
+    if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
+
     setCobrandoId(v.id!)
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: v.id, empresa: v.empresa }),
+      body: JSON.stringify({ venta_id: v.id, empresa: v.empresa, monto }),
     })
     const data = await res.json()
     setCobrandoId(null)
     if (data.error) { showToast('Error: ' + data.error); return }
-    showToast(`${v.numero} marcado como pagado`)
+    showToast(monto < restante - 0.01 ? `${v.numero}: cobrado parcial $${monto.toLocaleString('es-AR')}` : `${v.numero} marcado como pagado`)
     await cargarTodo(empresa)
   }
   const ventasFiltradas = ventas.filter(v => {
@@ -1214,8 +1220,9 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px', color: C.muted, fontSize: 12 }}>{new Date(v.created_at!).toLocaleDateString('es-AR')}</td>
                         <td style={{ padding: '11px 14px' }}>
                           {v.estado_pago === 'pagado' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(76,175,125,0.15)', color: C.green, border: '1px solid rgba(76,175,125,0.3)' }}>Pagado</span>}
-                          {v.estado_pago === 'pendiente' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)' }}>Pendiente</span>}
-                          {v.estado_pago === 'cuenta_corriente' && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(43,94,160,0.08)', color: '#2B5EA0', border: '1px solid rgba(43,94,160,0.25)' }}>Cta. Cte.</span>}
+                          {v.estado_pago !== 'pagado' && (v.monto_pagado ?? 0) > 0 && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)' }}>Parcial</span>}
+                          {v.estado_pago === 'pendiente' && !(v.monto_pagado ?? 0) && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(212,130,10,0.15)', color: C.amber, border: '1px solid rgba(212,130,10,0.3)' }}>Pendiente</span>}
+                          {v.estado_pago === 'cuenta_corriente' && !(v.monto_pagado ?? 0) && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(43,94,160,0.08)', color: '#2B5EA0', border: '1px solid rgba(43,94,160,0.25)' }}>Cta. Cte.</span>}
                           {!v.estado_pago && <span style={{ color: C.dim }}>—</span>}
                         </td>
                         <td style={{ padding: '11px 14px', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
@@ -1352,14 +1359,19 @@ export default function VentasPage() {
                             {v.estado_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 'Pendiente'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: C.text }}>${v.total.toLocaleString('es-AR')}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: C.text }}>
+                          ${v.total.toLocaleString('es-AR')}
+                          {(v.monto_pagado ?? 0) > 0 && (
+                            <div style={{ fontSize: 10, fontWeight: 400, color: C.amber }}>pagó ${(v.monto_pagado ?? 0).toLocaleString('es-AR')}</div>
+                          )}
+                        </td>
                         <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                           <button
                             disabled={cobrandoId === v.id}
                             onClick={() => marcarPagadoDesdeResumen(v)}
                             style={{ background: C.greenBg, border: '1px solid rgba(45,122,79,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: C.green, cursor: cobrandoId === v.id ? 'default' : 'pointer', fontFamily: 'inherit', fontWeight: 600, opacity: cobrandoId === v.id ? 0.6 : 1, whiteSpace: 'nowrap' }}
                           >
-                            {cobrandoId === v.id ? '...' : 'Marcar pagado'}
+                            {cobrandoId === v.id ? '...' : 'Cobrar'}
                           </button>
                         </td>
                       </tr>

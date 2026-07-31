@@ -172,6 +172,13 @@ export default function ClienteFichaPage() {
   // Track which tabs have been loaded
   const [loaded, setLoaded] = useState<Set<Tab>>(new Set())
 
+  // Registrar cobro (cuenta corriente)
+  const [cobroModal, setCobroModal] = useState(false)
+  const [cobroMonto, setCobroMonto] = useState(0)
+  const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
+  const [cobroFecha, setCobroFecha] = useState('')
+  const [cobroGuardando, setCobroGuardando] = useState(false)
+
   useEffect(() => {
     async function cargarVentas(emp: string) {
       setVentasLoading(true)
@@ -208,6 +215,39 @@ export default function ClienteFichaPage() {
     const data = await res.json()
     setMovimientos(Array.isArray(data) ? data : [])
     setMovsLoading(false)
+  }
+
+  function abrirCobro() {
+    setCobroMonto(0)
+    setCobroConcepto('Cobro cuenta corriente')
+    setCobroFecha(new Date().toISOString().split('T')[0])
+    setCobroModal(true)
+  }
+
+  async function guardarCobro() {
+    if (!cliente || !cobroMonto || cobroMonto <= 0) return
+    setCobroGuardando(true)
+    const nombreCliente = cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim()
+    const res = await fetch('/api/cta-cte', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa, cliente_id: id, cliente_nombre: nombreCliente,
+        tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha,
+      }),
+    })
+    const data = await res.json()
+    setCobroGuardando(false)
+    if (data.error) { alert('Error: ' + data.error); return }
+    setCobroModal(false)
+    setCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
+    cargarMovimientos()
+    // El cobro se reparte FIFO contra ventas abiertas — si el tab de compras
+    // ya estaba cargado, sus estado_pago pueden haber cambiado.
+    if (loaded.has('compras')) {
+      const r = await fetch(`/api/ventas?empresa=${empresa}&cliente_id=${id}`)
+      const d = await r.json()
+      setVentas(Array.isArray(d) ? d : [])
+    }
   }
 
   async function cargarConsignaciones(emp: string) {
@@ -461,9 +501,16 @@ export default function ClienteFichaPage() {
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Movimientos de cuenta corriente</span>
-              <span style={{ fontSize: 12, color: T.muted }}>
-                Saldo actual: <strong style={{ color: cliente.saldo >= 0 ? T.green : T.red }}>{fmtMonto(cliente.saldo)}</strong>
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ fontSize: 12, color: T.muted }}>
+                  Saldo actual: <strong style={{ color: cliente.saldo >= 0 ? T.green : T.red }}>{fmtMonto(cliente.saldo)}</strong>
+                </span>
+                {cliente.saldo > 0 && (
+                  <button onClick={abrirCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Registrar cobro
+                  </button>
+                )}
+              </div>
             </div>
             {movsLoading ? (
               <div style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>Cargando...</div>
@@ -578,6 +625,47 @@ export default function ClienteFichaPage() {
         )}
 
       </div>
+
+      {/* ── Modal registrar cobro ──────────────────────────────────────────── */}
+      {cobroModal && cliente && (
+        <div
+          onClick={e => e.target === e.currentTarget && setCobroModal(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Registrar cobro</div>
+              <button onClick={() => setCobroModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 12, color: T.muted }}>
+                Saldo actual: <strong style={{ color: T.wine }}>{fmtMonto(cliente.saldo)}</strong> — el monto se aplica automáticamente a las facturas/remitos abiertos más viejos primero.
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
+                <input type="number" autoFocus value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
+                <input value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
+                <input type="date" value={cobroFecha} onChange={e => setCobroFecha(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setCobroModal(false)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button disabled={cobroGuardando || !cobroMonto} onClick={guardarCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cobroGuardando ? 'default' : 'pointer', opacity: cobroGuardando || !cobroMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {cobroGuardando ? 'Guardando...' : 'Confirmar cobro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
