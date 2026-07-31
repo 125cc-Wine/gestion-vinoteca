@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+
 const TIPOS = [
   { value: 'consumidor_final',    label: 'Consumidor final' },
   { value: 'responsable_inscripto', label: 'Resp. Inscripto' },
@@ -106,6 +108,7 @@ export default function ClientesPage() {
   const [cobroMonto, setCobroMonto] = useState(0)
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState(new Date().toISOString().split('T')[0])
+  const [cobroMedioPago, setCobroMedioPago] = useState('Efectivo')
 
   // Modal importar CSV
   const [importModal, setImportModal] = useState(false)
@@ -131,6 +134,7 @@ export default function ClientesPage() {
   const [pagoMonto, setPagoMonto] = useState(0)
   const [pagoConcepto, setPagoConcepto] = useState('')
   const [pagoFecha, setPagoFecha] = useState(new Date().toISOString().split('T')[0])
+  const [pagoMedioPago, setPagoMedioPago] = useState('Efectivo')
   const [pagoGuardando, setPagoGuardando] = useState(false)
 
   const [busqueda, setBusqueda] = useState('')
@@ -261,6 +265,7 @@ export default function ClientesPage() {
     setCobroCliente(c); setCobroMonto(0)
     setCobroConcepto('Cobro cuenta corriente')
     setCobroFecha(new Date().toISOString().split('T')[0])
+    setCobroMedioPago('Efectivo')
     setCobroModal(true)
   }
 
@@ -269,7 +274,7 @@ export default function ClientesPage() {
     const nombreCliente = cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
     const res = await fetch('/api/cta-cte', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha }),
+      body: JSON.stringify({ empresa, cliente_id: cobroCliente.id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha, medio_pago: cobroMedioPago }),
     })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
@@ -332,6 +337,7 @@ export default function ClientesPage() {
     setPagoMonto(parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2)))
     setPagoConcepto(`Cobro ${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`)
     setPagoFecha(new Date().toISOString().split('T')[0])
+    setPagoMedioPago('Efectivo')
     setPagoModal(true)
   }
 
@@ -340,7 +346,7 @@ export default function ClientesPage() {
     setPagoGuardando(true)
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, monto: pagoMonto }),
+      body: JSON.stringify({ venta_id: pagoVenta.id, empresa, concepto: pagoConcepto, fecha: pagoFecha, monto: pagoMonto, medio_pago: pagoMedioPago }),
     })
     const data = await res.json()
     setPagoGuardando(false)
@@ -596,12 +602,21 @@ export default function ClientesPage() {
                 <input type="number" min="0" style={INP} value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)} placeholder="0" autoFocus />
               </div>
               <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
+                <select style={INP} value={cobroMedioPago} onChange={e => setCobroMedioPago(e.target.value)}>
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
+              </div>
+              <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
                 <input style={INP} value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
                 <input type="date" style={INP} value={cobroFecha} onChange={e => setCobroFecha(e.target.value)} />
+              </div>
+              <div style={{ fontSize: 11, color: T.dim }}>
+                ¿Pago dividido en dos medios (ej. mitad efectivo, mitad transferencia)? Registrá primero una parte acá y después volvé a &quot;Cobrar&quot; con el resto y el otro medio de pago.
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -815,8 +830,16 @@ export default function ClientesPage() {
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado ahora</label>
                 <input type="number" style={INP} value={pagoMonto || ''} onChange={e => setPagoMonto(parseFloat(e.target.value) || 0)} />
                 {pagoMonto > 0 && pagoMonto < (pagoVenta.total - (pagoVenta.monto_pagado ?? 0)) && (
-                  <div style={{ fontSize: 11, color: T.amber, marginTop: 4 }}>Pago parcial — queda pendiente ${(pagoVenta.total - (pagoVenta.monto_pagado ?? 0) - pagoMonto).toLocaleString('es-AR')}</div>
+                  <div style={{ fontSize: 11, color: T.amber, marginTop: 4 }}>
+                    Pago parcial — queda pendiente ${(pagoVenta.total - (pagoVenta.monto_pagado ?? 0) - pagoMonto).toLocaleString('es-AR')}. Para dividirlo en dos medios de pago, guardá esta parte y después volvé a &quot;Cobrar&quot; con el resto.
+                  </div>
                 )}
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
+                <select style={INP} value={pagoMedioPago} onChange={e => setPagoMedioPago(e.target.value)}>
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>

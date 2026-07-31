@@ -18,14 +18,18 @@ function medioPagoDesdeCondicion(condicion?: string | null): string {
   return (condicion && map[condicion]) || 'Efectivo'
 }
 
-// POST { venta_id, empresa, concepto?, fecha?, monto? }
+// POST { venta_id, empresa, concepto?, fecha?, monto?, medio_pago? }
 // Registra un cobro contra UNA venta puntual. Si "monto" no se manda, se
 // asume que se paga todo lo que le falta a esa venta (comportamiento
 // original). Si "monto" es menor a lo que falta, la venta queda con
 // estado_pago='cuenta_corriente' pero con monto_pagado actualizado (parcial)
 // — recién pasa a 'pagado' cuando monto_pagado cubre el total.
+// Un pago dividido entre dos medios (ej. mitad efectivo, mitad transferencia)
+// se registra como DOS llamados separados, cada uno con su monto y su
+// medio_pago — así en Caja quedan dos movimientos prolijos en vez de uno
+// mezclado.
 export async function POST(req: NextRequest) {
-  const { venta_id, empresa, concepto, fecha, monto } = await req.json()
+  const { venta_id, empresa, concepto, fecha, monto, medio_pago } = await req.json()
   if (!venta_id || !empresa) return NextResponse.json({ error: 'venta_id y empresa requeridos' }, { status: 400 })
 
   // Traer venta actual
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
       monto: montoCobro,
       fecha: fechaCobro,
       categoria: 'Ventas - Cobro',
-      medio_pago: medioPagoDesdeCondicion(venta.condicion_venta),
+      medio_pago: medio_pago || medioPagoDesdeCondicion(venta.condicion_venta),
       referencia_id: venta_id,
     }])
   }

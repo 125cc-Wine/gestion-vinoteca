@@ -32,6 +32,8 @@ const T = {
   amberBd: 'rgba(160,112,16,0.22)',
 }
 
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+
 const TIPOS: Record<string, string> = {
   consumidor_final:     'Consumidor final',
   responsable_inscripto: 'Resp. Inscripto',
@@ -177,6 +179,7 @@ export default function ClienteFichaPage() {
   const [cobroMonto, setCobroMonto] = useState(0)
   const [cobroConcepto, setCobroConcepto] = useState('Cobro cuenta corriente')
   const [cobroFecha, setCobroFecha] = useState('')
+  const [cobroMedioPago, setCobroMedioPago] = useState('Efectivo')
   const [cobroGuardando, setCobroGuardando] = useState(false)
 
   useEffect(() => {
@@ -221,6 +224,7 @@ export default function ClienteFichaPage() {
     setCobroMonto(0)
     setCobroConcepto('Cobro cuenta corriente')
     setCobroFecha(new Date().toISOString().split('T')[0])
+    setCobroMedioPago('Efectivo')
     setCobroModal(true)
   }
 
@@ -233,6 +237,7 @@ export default function ClienteFichaPage() {
       body: JSON.stringify({
         empresa, cliente_id: id, cliente_nombre: nombreCliente,
         tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha,
+        medio_pago: cobroMedioPago,
       }),
     })
     const data = await res.json()
@@ -647,9 +652,19 @@ export default function ClienteFichaPage() {
                   style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
               </div>
               <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
+                <select value={cobroMedioPago} onChange={e => setCobroMedioPago(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }}>
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
+              </div>
+              <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto</label>
                 <input value={cobroConcepto} onChange={e => setCobroConcepto(e.target.value)}
                   style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ fontSize: 11, color: T.dim }}>
+                ¿Pago dividido en dos medios (ej. mitad efectivo, mitad transferencia)? Registrá una parte y después volvé a abrir &quot;Registrar cobro&quot; con el resto y el otro medio.
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>

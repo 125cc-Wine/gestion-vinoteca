@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { cliente_id, tipo, monto, concepto, empresa, referencia_id, fecha } = body
+  const { cliente_id, tipo, monto, concepto, empresa, referencia_id, fecha, medio_pago } = body
 
   // Obtener saldo actual del cliente
   const { data: cliente } = await supabase
@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
         monto: aplicar,
         fecha: fechaCobro,
         categoria: 'Ventas - Cobro',
+        medio_pago: medio_pago || 'Efectivo',
         referencia_id: v.id,
       }])
 
