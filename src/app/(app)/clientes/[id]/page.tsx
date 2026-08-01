@@ -481,7 +481,15 @@ export default function ClienteFichaPage() {
                 <tbody>
                   {ventas.map(v => (
                     <tr key={v.id} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
-                      <td style={{ padding: '11px 16px', fontFamily: 'monospace', fontWeight: 600, fontSize: 12, color: T.text }}>{v.numero}</td>
+                      <td style={{ padding: '11px 16px' }}>
+                        <button
+                          onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${v.empresa}`, '_blank')}
+                          title="Ver / imprimir comprobante"
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 12, textDecoration: 'underline' }}
+                        >
+                          {v.numero}
+                        </button>
+                      </td>
                       <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(v.created_at)}</td>
                       <td style={{ padding: '11px 16px' }}>
                         {v.tipo === 'presupuesto'

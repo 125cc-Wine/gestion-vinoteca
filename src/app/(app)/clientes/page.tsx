@@ -734,7 +734,15 @@ export default function ClientesPage() {
                         <tbody>
                           {histVentas.map(v => (
                             <tr key={v.id} className="venta-tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
-                              <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: T.text, fontSize: 11 }}>{v.numero}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <button
+                                  onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${v.empresa}`, '_blank')}
+                                  title="Ver / imprimir comprobante"
+                                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 11, textDecoration: 'underline' }}
+                                >
+                                  {v.numero}
+                                </button>
+                              </td>
                               <td style={{ padding: '10px 14px' }}>
                                 {v.tipo === 'presupuesto'
                                   ? <Badge color={T.wine} bg={T.wineBg} border={T.wineBd}>Presupuesto</Badge>
