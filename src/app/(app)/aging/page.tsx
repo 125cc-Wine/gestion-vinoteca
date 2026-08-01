@@ -544,7 +544,11 @@ export default function AgingPage() {
                               }}>
                                 {v.tipo}
                               </span>
-                              <span style={{ color: T.dim, fontSize: 11 }}>
+                              <span
+                                onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${empresa}`, '_blank')}
+                                title="Ver / imprimir comprobante"
+                                style={{ color: T.dim, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}
+                              >
                                 {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
                               </span>
                             </div>

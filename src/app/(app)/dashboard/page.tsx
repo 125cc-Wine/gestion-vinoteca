@@ -466,8 +466,9 @@ export default function DashboardPage() {
                   </div>
                   <div style={{ padding: '8px 4px' }}>
                     {data.alertas.vencidos.slice(0, 4).map((v, i) => (
-                      <div key={i} className="ralert" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.muted, padding: '6px 12px', borderRadius: 6, transition: 'background 0.1s', cursor: 'default' }}>
-                        <span><strong style={{ color: T.text }}>{v.numero}</strong> — {v.cliente_nombre}</span>
+                      <div key={i} className="ralert" onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${empresa}`, '_blank')}
+                        style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.muted, padding: '6px 12px', borderRadius: 6, transition: 'background 0.1s', cursor: 'pointer' }}>
+                        <span><strong style={{ color: T.text, textDecoration: 'underline' }}>{v.numero}</strong> — {v.cliente_nombre}</span>
                         <span style={{ fontWeight: 700, color: T.red }}>{fmt(v.total)}</span>
                       </div>
                     ))}
