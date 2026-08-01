@@ -211,9 +211,10 @@ export default function ProductosPage() {
   const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
 
   // Lista de precios modal
-  interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_mayorista: number }
+  interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_costo: number; precio_mayorista: number }
   const [listaModal, setListaModal] = useState(false)
   const [listaItems, setListaItems] = useState<ListaItem[]>([])
+  const [listaTitulo, setListaTitulo] = useState<string | null>(null)
   const [listaQuery, setListaQuery] = useState('')
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
 
@@ -688,45 +689,95 @@ export default function ProductosPage() {
   }
 
   function abrirListaModal() {
-    setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaModal(true)
+    setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null); setListaModal(true)
   }
 
   function listaAgregarProducto(p: Producto) {
     if (listaItems.find(i => i.id === p.id)) return
     setListaItems(prev => [...prev, {
       id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_mayorista: p.precio_mayorista || 0,
+      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+      precio_mayorista: p.precio_mayorista || 0,
     }])
     setListaQuery(''); setListaSugsOpen(false)
   }
 
+  // Listas default: cargan de una todos los productos activos con precio de
+  // la categoría correspondiente, en vez de tener que buscarlos uno por uno.
+  // Como toman el precio de "productos" (ya cargado en memoria), siempre
+  // reflejan lo último guardado — cambiás un precio, volvés a cargar la
+  // lista, y ya sale actualizado.
+  function cargarListaDefault(tipo: 'vinos' | 'otros') {
+    const base = productos.filter(p => p.activo !== false && p.precio_venta > 0 &&
+      (tipo === 'vinos' ? p.categoria !== 'Otro' : p.categoria === 'Otro'))
+    const items: ListaItem[] = base.map(p => ({
+      id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+      precio_mayorista: p.precio_mayorista || 0,
+    }))
+    items.sort((a, b) => (a.bodega || a.varietal).localeCompare(b.bodega || b.varietal) || a.nombre.localeCompare(b.nombre))
+    setListaItems(items)
+    setListaTitulo(tipo === 'vinos' ? 'Vinos' : 'Vermouth y Destilados')
+  }
+
   function imprimirLista() {
-    const empNombre = empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'
-    const fecha = new Date().toLocaleDateString('es-AR')
-    const rows = listaItems.map(p => `
+    const esAroma = empresa === 'aroma'
+    const empNombre = esAroma ? 'Aroma de Vid' : 'La Vid Consultora'
+    const accent = esAroma ? '#800000' : '#2B5EA0'
+    const accentBg = esAroma ? 'rgba(128,0,0,0.06)' : 'rgba(43,94,160,0.06)'
+    const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const logo = esAroma ? '/logos/aroma.jpg' : '/logos/lavid.png'
+
+    // Agrupar por Bodega (vinos) o por Varietal (usado como sub-rubro en
+    // aperitivos/licores/destilados, ej. "Whiskies", "Gin", "Fernet") — así
+    // sale ordenada igual que las planillas que se armaban a mano.
+    const grupos = new Map<string, ListaItem[]>()
+    for (const it of listaItems) {
+      const key = it.bodega || it.varietal || 'Otros'
+      if (!grupos.has(key)) grupos.set(key, [])
+      grupos.get(key)!.push(it)
+    }
+    const gruposOrdenados = Array.from(grupos.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+
+    const bloques = gruposOrdenados.map(([grupo, items]) => `
+      <tr><td colspan="4" style="padding:10px 10px 4px;font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid ${accent}">${grupo}</td></tr>
+      ${items.map(p => `
       <tr style="border-bottom:1px solid #eee">
-        <td style="padding:7px 10px;font-size:12px;font-weight:500">${p.nombre}</td>
-        <td style="padding:7px 10px;font-size:11px;color:#666">${p.bodega}</td>
-        <td style="padding:7px 10px;font-size:11px;color:#666">${p.varietal}</td>
-        <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700">$${p.precio_venta.toLocaleString('es-AR')}</td>
-        <td style="padding:7px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
-      </tr>`).join('')
-    const html = `<html><head><title>Lista de Precios — ${empNombre}</title>
-      <style>body{font-family:Arial,sans-serif;margin:28px;color:#222}table{width:100%;border-collapse:collapse}@media print{body{margin:14px}}</style>
+        <td style="padding:6px 10px;font-size:12px;font-weight:500">${p.nombre}${p.varietal && p.bodega ? `<span style="color:#999;font-weight:400"> — ${p.varietal}</span>` : ''}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right;color:#888">${p.precio_costo ? '$' + p.precio_costo.toLocaleString('es-AR') : '—'}</td>
+        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:700">$${p.precio_venta.toLocaleString('es-AR')}</td>
+        <td style="padding:6px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
+      </tr>`).join('')}`).join('')
+
+    const html = `<html><head><title>Lista de Precios — ${empNombre}${listaTitulo ? ' — ' + listaTitulo : ''}</title>
+      <style>
+        body{font-family:Arial,sans-serif;margin:28px;color:#222}
+        table{width:100%;border-collapse:collapse}
+        @media print{body{margin:14px}}
+        @page{margin:14mm}
+      </style>
       </head><body>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:18px">
-        <div><div style="font-size:22px;font-weight:700">${empNombre}</div><div style="font-size:13px;color:#555;margin-top:3px">Lista de precios</div></div>
-        <div style="text-align:right;font-size:11px;color:#777"><div>${fecha}</div><div style="margin-top:2px">${listaItems.length} productos</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid ${accent};padding-bottom:14px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <img src="${logo}" style="height:44px;width:auto;object-fit:contain" onerror="this.style.display='none'">
+          <div>
+            <div style="font-size:20px;font-weight:700;color:${accent}">${empNombre}</div>
+            <div style="font-size:13px;color:#555;margin-top:2px">Lista de precios${listaTitulo ? ' — ' + listaTitulo : ''}</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#777">
+          <div style="text-transform:capitalize">${fecha}</div>
+          <div style="margin-top:2px">${listaItems.length} productos</div>
+        </div>
       </div>
       <table>
-        <thead><tr style="border-bottom:2px solid #222">
-          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Producto</th>
-          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Bodega</th>
-          <th style="padding:7px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Varietal</th>
-          <th style="padding:7px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio</th>
-          <th style="padding:7px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Mayorista</th>
+        <thead><tr style="border-bottom:2px solid #222;background:${accentBg}">
+          <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Producto</th>
+          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Costo</th>
+          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio</th>
+          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Mayorista</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${bloques}</tbody>
       </table>
       <div style="margin-top:24px;font-size:10px;color:#bbb;text-align:center">Precios en pesos argentinos · Válidos a la fecha de emisión</div>
       </body></html>`
@@ -2085,6 +2136,19 @@ export default function ProductosPage() {
               <button onClick={() => setListaModal(false)} style={{ background: 'none', border: 'none', color: T.dim, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
             </div>
 
+            {/* Listas default */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button onClick={() => cargarListaDefault('vinos')} className="btn-row" style={{ flex: 1, background: listaTitulo === 'Vinos' ? T.wineBg : T.bg, border: `1px solid ${listaTitulo === 'Vinos' ? T.wine : T.border}`, color: listaTitulo === 'Vinos' ? T.wine : T.muted, borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                🍷 Todos los vinos
+              </button>
+              <button onClick={() => cargarListaDefault('otros')} className="btn-row" style={{ flex: 1, background: listaTitulo === 'Vermouth y Destilados' ? T.wineBg : T.bg, border: `1px solid ${listaTitulo === 'Vermouth y Destilados' ? T.wine : T.border}`, color: listaTitulo === 'Vermouth y Destilados' ? T.wine : T.muted, borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                🥃 Vermouth y destilados
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: T.dim, marginBottom: 16, marginTop: -8 }}>
+              Cargan todos los productos activos con precio de esa categoría, con el precio de hoy. También podés buscar y armar una lista a mano abajo.
+            </div>
+
             {/* Buscador */}
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <input
@@ -2129,8 +2193,8 @@ export default function ProductosPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.bg }}>
-                      {['Producto', 'Bodega', 'Varietal', 'Precio', 'Mayorista', ''].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', fontSize: 11, color: T.dim, fontWeight: 700, textAlign: h === 'Precio' || h === 'Mayorista' ? 'right' : 'left', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
+                      {['Producto', 'Bodega', 'Varietal', 'Costo', 'Precio', 'Mayorista', ''].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', fontSize: 11, color: T.dim, fontWeight: 700, textAlign: h === 'Costo' || h === 'Precio' || h === 'Mayorista' ? 'right' : 'left', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -2140,6 +2204,7 @@ export default function ProductosPage() {
                         <td style={{ padding: '10px 14px', color: T.text, fontWeight: 500 }}>{item.nombre}</td>
                         <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.bodega || '—'}</td>
                         <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.varietal || '—'}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: 12 }}>{item.precio_costo ? '$' + item.precio_costo.toLocaleString('es-AR') : '—'}</td>
                         <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.green }}>${item.precio_venta.toLocaleString('es-AR')}</td>
                         <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: 12 }}>{item.precio_mayorista ? '$' + item.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
                         <td style={{ padding: '10px 10px', textAlign: 'right' }}>
