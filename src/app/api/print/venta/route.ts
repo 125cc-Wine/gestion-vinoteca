@@ -106,11 +106,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Fetch client data if linked
-  let cliente: { cuit?: string; direccion?: string; telefono?: string; email?: string } | null = null
+  let cliente: { cuit?: string; direccion?: string; telefono?: string; email?: string; saldo?: number } | null = null
   if (venta.cliente_id) {
     const { data: cl } = await supabase
       .from('clientes')
-      .select('cuit, direccion, telefono, email')
+      .select('cuit, direccion, telefono, email, saldo')
       .eq('id', venta.cliente_id)
       .single()
     if (cl) cliente = cl
@@ -331,6 +331,16 @@ export async function GET(req: NextRequest) {
       font-size: 11.5px; color: #6B5D55;
     }
     .notas-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #A89888; margin-bottom: 4px; }
+    .saldo-box {
+      background: #FBF3E7;
+      border: 1px solid #E0C89A;
+      border-left: 3px solid #A07010;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px; color: #6B5D55;
+    }
+    .saldo-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #A07010; margin-bottom: 4px; }
+    .saldo-monto { font-size: 15px; font-weight: 700; color: #A07010; }
     .totales-box {
       border: 1px solid #DDD0C0;
       border-radius: 5px;
@@ -470,7 +480,13 @@ export async function GET(req: NextRequest) {
 
   <!-- ══ TOTALES ══ -->
   <div class="bottom-grid">
-    <div><!-- espacio vacío a la izquierda --></div>
+    <div>
+      ${venta.estado_pago === 'cuenta_corriente' && cliente?.saldo != null ? `
+      <div class="saldo-box">
+        <div class="saldo-title">Saldo Cuenta Corriente</div>
+        <div class="saldo-monto">${moneda(cliente.saldo)}</div>
+      </div>` : ''}
+    </div>
     <div class="totales-box">
       ${subtotal !== total || descuento > 0 ? `<div class="totales-row"><span>Subtotal</span><span>${moneda(subtotal)}</span></div>` : ''}
       ${descuento > 0 ? `<div class="totales-row desc"><span>Descuento (${descuento}%)</span><span>-${moneda((subtotal * descuento) / 100)}</span></div>` : ''}
