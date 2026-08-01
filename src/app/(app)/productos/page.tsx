@@ -217,6 +217,10 @@ export default function ProductosPage() {
   const [listaTitulo, setListaTitulo] = useState<string | null>(null)
   const [listaQuery, setListaQuery] = useState('')
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
+  interface ListaGuardada { id: string; nombre: string; producto_ids: string[] }
+  const [listasGuardadas, setListasGuardadas]   = useState<ListaGuardada[]>([])
+  const [listaGuardadaId, setListaGuardadaId]   = useState<string | null>(null)
+  const [listaGuardando, setListaGuardando]     = useState(false)
 
   // Actualización masiva de precios
   const [masivModal, setMasivModal]         = useState(false)
@@ -688,8 +692,69 @@ export default function ProductosPage() {
     setFullEditId(null); cargar(empresa); toast_('Guardado')
   }
 
-  function abrirListaModal() {
-    setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null); setListaModal(true)
+  async function abrirListaModal() {
+    setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null)
+    setListaGuardadaId(null); setListaModal(true)
+    const { data } = await supabase.from('listas_precio').select('id,nombre,producto_ids').eq('empresa', empresa).order('nombre')
+    setListasGuardadas((data as ListaGuardada[]) || [])
+  }
+
+  // Arma listaItems con el precio ACTUAL de cada producto guardado — no se
+  // congela nada al guardar la lista, solo qué productos la componen.
+  function cargarListaGuardada(id: string) {
+    const l = listasGuardadas.find(x => x.id === id)
+    if (!l) return
+    const items: ListaItem[] = l.producto_ids
+      .map(pid => productos.find(p => p.id === pid))
+      .filter((p): p is Producto => !!p)
+      .map(p => ({
+        id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+        categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+        precio_mayorista: p.precio_mayorista || 0,
+      }))
+    const faltantes = l.producto_ids.length - items.length
+    setListaItems(items)
+    setListaTitulo(l.nombre)
+    setListaGuardadaId(l.id)
+    if (faltantes > 0) toast_(`${faltantes} producto${faltantes !== 1 ? 's' : ''} de "${l.nombre}" ya no está${faltantes !== 1 ? 'n' : ''} activo${faltantes !== 1 ? 's' : ''} y se sacó${faltantes !== 1 ? 'ron' : ''} de la lista`)
+  }
+
+  async function guardarListaComo() {
+    if (listaItems.length === 0) return
+    const nombre = prompt('Nombre para esta lista (para volver a usarla después):', listaTitulo || '')
+    if (!nombre || !nombre.trim()) return
+    setListaGuardando(true)
+    const { data, error } = await supabase.from('listas_precio')
+      .insert([{ empresa, nombre: nombre.trim(), producto_ids: listaItems.map(i => i.id) }])
+      .select('id,nombre,producto_ids').single()
+    setListaGuardando(false)
+    if (error) { toast_('Error al guardar: ' + error.message); return }
+    setListasGuardadas(prev => [...prev, data as ListaGuardada].sort((a, b) => a.nombre.localeCompare(b.nombre)))
+    setListaGuardadaId(data.id); setListaTitulo(data.nombre)
+    toast_(`Lista "${data.nombre}" guardada`)
+  }
+
+  async function actualizarListaGuardada() {
+    if (!listaGuardadaId || listaItems.length === 0) return
+    setListaGuardando(true)
+    const { error } = await supabase.from('listas_precio')
+      .update({ producto_ids: listaItems.map(i => i.id), updated_at: new Date().toISOString() })
+      .eq('id', listaGuardadaId)
+    setListaGuardando(false)
+    if (error) { toast_('Error al actualizar: ' + error.message); return }
+    setListasGuardadas(prev => prev.map(l => l.id === listaGuardadaId ? { ...l, producto_ids: listaItems.map(i => i.id) } : l))
+    toast_('Lista actualizada')
+  }
+
+  async function borrarListaGuardada() {
+    if (!listaGuardadaId) return
+    const l = listasGuardadas.find(x => x.id === listaGuardadaId)
+    if (!confirm(`¿Borrar la lista guardada "${l?.nombre}"? No afecta los productos, solo esta lista.`)) return
+    const { error } = await supabase.from('listas_precio').delete().eq('id', listaGuardadaId)
+    if (error) { toast_('Error al borrar: ' + error.message); return }
+    setListasGuardadas(prev => prev.filter(x => x.id !== listaGuardadaId))
+    setListaGuardadaId(null); setListaItems([]); setListaTitulo(null)
+    toast_('Lista borrada')
   }
 
   function listaAgregarProducto(p: Producto) {
@@ -718,6 +783,7 @@ export default function ProductosPage() {
     items.sort((a, b) => (a.bodega || a.varietal).localeCompare(b.bodega || b.varietal) || a.nombre.localeCompare(b.nombre))
     setListaItems(items)
     setListaTitulo(tipo === 'vinos' ? 'Vinos' : 'Vermouth y Destilados')
+    setListaGuardadaId(null)
   }
 
   function imprimirLista() {
@@ -2149,6 +2215,28 @@ export default function ProductosPage() {
               Cargan todos los productos activos con precio de esa categoría, con el precio de hoy. También podés buscar y armar una lista a mano abajo.
             </div>
 
+            {/* Listas guardadas */}
+            {listasGuardadas.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
+                <select
+                  value={listaGuardadaId || ''}
+                  onChange={e => {
+                    if (e.target.value) cargarListaGuardada(e.target.value)
+                    else { setListaItems([]); setListaTitulo(null); setListaGuardadaId(null) }
+                  }}
+                  style={{ ...INP, flex: 1 }}
+                >
+                  <option value="">— Cargar una lista guardada —</option>
+                  {listasGuardadas.map(l => <option key={l.id} value={l.id}>{l.nombre} ({l.producto_ids.length})</option>)}
+                </select>
+                {listaGuardadaId && (
+                  <button onClick={borrarListaGuardada} title="Borrar esta lista guardada" className="btn-row" style={{ background: T.redBg, border: `1px solid ${T.redBd}`, color: T.red, borderRadius: 8, padding: '9px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    🗑
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Buscador */}
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <input
@@ -2222,6 +2310,17 @@ export default function ProductosPage() {
               <span style={{ fontSize: 12, color: T.dim }}>{listaItems.length} producto{listaItems.length !== 1 ? 's' : ''}</span>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setListaModal(false)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                {listaGuardadaId ? (
+                  <button onClick={actualizarListaGuardada} disabled={listaGuardando || listaItems.length === 0} className="btn-row"
+                    style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit', opacity: listaGuardando ? 0.6 : 1 }}>
+                    {listaGuardando ? 'Guardando...' : `💾 Actualizar "${listaTitulo}"`}
+                  </button>
+                ) : (
+                  <button onClick={guardarListaComo} disabled={listaGuardando || listaItems.length === 0} className="btn-row"
+                    style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit', opacity: listaItems.length === 0 ? 0.4 : listaGuardando ? 0.6 : 1 }}>
+                    {listaGuardando ? 'Guardando...' : '💾 Guardar lista'}
+                  </button>
+                )}
                 <button onClick={imprimirLista} disabled={listaItems.length === 0} className="btn-wine"
                   style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: listaItems.length === 0 ? 0.4 : 1 }}>
                   Imprimir lista
