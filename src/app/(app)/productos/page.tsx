@@ -217,9 +217,10 @@ export default function ProductosPage() {
   const [listaTitulo, setListaTitulo] = useState<string | null>(null)
   const [listaQuery, setListaQuery] = useState('')
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
-  interface ListaGuardada { id: string; nombre: string; producto_ids: string[] }
+  interface ListaGuardada { id: string; nombre: string; producto_ids: string[]; descuento: number }
   const [listasGuardadas, setListasGuardadas]   = useState<ListaGuardada[]>([])
   const [listaGuardadaId, setListaGuardadaId]   = useState<string | null>(null)
+  const [listaDescuento, setListaDescuento]     = useState(0)
   const [listaGuardando, setListaGuardando]     = useState(false)
 
   // Actualización masiva de precios
@@ -694,8 +695,8 @@ export default function ProductosPage() {
 
   async function abrirListaModal() {
     setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null)
-    setListaGuardadaId(null); setListaModal(true)
-    const { data } = await supabase.from('listas_precio').select('id,nombre,producto_ids').eq('empresa', empresa).order('nombre')
+    setListaGuardadaId(null); setListaDescuento(0); setListaModal(true)
+    const { data } = await supabase.from('listas_precio').select('id,nombre,producto_ids,descuento').eq('empresa', empresa).order('nombre')
     setListasGuardadas((data as ListaGuardada[]) || [])
   }
 
@@ -716,6 +717,7 @@ export default function ProductosPage() {
     setListaItems(items)
     setListaTitulo(l.nombre)
     setListaGuardadaId(l.id)
+    setListaDescuento(l.descuento || 0)
     if (faltantes > 0) toast_(`${faltantes} producto${faltantes !== 1 ? 's' : ''} de "${l.nombre}" ya no está${faltantes !== 1 ? 'n' : ''} activo${faltantes !== 1 ? 's' : ''} y se sacó${faltantes !== 1 ? 'ron' : ''} de la lista`)
   }
 
@@ -725,8 +727,8 @@ export default function ProductosPage() {
     if (!nombre || !nombre.trim()) return
     setListaGuardando(true)
     const { data, error } = await supabase.from('listas_precio')
-      .insert([{ empresa, nombre: nombre.trim(), producto_ids: listaItems.map(i => i.id) }])
-      .select('id,nombre,producto_ids').single()
+      .insert([{ empresa, nombre: nombre.trim(), producto_ids: listaItems.map(i => i.id), descuento: listaDescuento || 0 }])
+      .select('id,nombre,producto_ids,descuento').single()
     setListaGuardando(false)
     if (error) { toast_('Error al guardar: ' + error.message); return }
     setListasGuardadas(prev => [...prev, data as ListaGuardada].sort((a, b) => a.nombre.localeCompare(b.nombre)))
@@ -738,11 +740,11 @@ export default function ProductosPage() {
     if (!listaGuardadaId || listaItems.length === 0) return
     setListaGuardando(true)
     const { error } = await supabase.from('listas_precio')
-      .update({ producto_ids: listaItems.map(i => i.id), updated_at: new Date().toISOString() })
+      .update({ producto_ids: listaItems.map(i => i.id), descuento: listaDescuento || 0, updated_at: new Date().toISOString() })
       .eq('id', listaGuardadaId)
     setListaGuardando(false)
     if (error) { toast_('Error al actualizar: ' + error.message); return }
-    setListasGuardadas(prev => prev.map(l => l.id === listaGuardadaId ? { ...l, producto_ids: listaItems.map(i => i.id) } : l))
+    setListasGuardadas(prev => prev.map(l => l.id === listaGuardadaId ? { ...l, producto_ids: listaItems.map(i => i.id), descuento: listaDescuento || 0 } : l))
     toast_('Lista actualizada')
   }
 
@@ -753,8 +755,20 @@ export default function ProductosPage() {
     const { error } = await supabase.from('listas_precio').delete().eq('id', listaGuardadaId)
     if (error) { toast_('Error al borrar: ' + error.message); return }
     setListasGuardadas(prev => prev.filter(x => x.id !== listaGuardadaId))
-    setListaGuardadaId(null); setListaItems([]); setListaTitulo(null)
+    setListaGuardadaId(null); setListaItems([]); setListaTitulo(null); setListaDescuento(0)
     toast_('Lista borrada')
+  }
+
+  async function renombrarListaGuardada() {
+    if (!listaGuardadaId) return
+    const actual = listasGuardadas.find(x => x.id === listaGuardadaId)
+    const nombre = prompt('Nuevo nombre para esta lista:', actual?.nombre || listaTitulo || '')
+    if (!nombre || !nombre.trim() || nombre.trim() === actual?.nombre) return
+    const { error } = await supabase.from('listas_precio').update({ nombre: nombre.trim() }).eq('id', listaGuardadaId)
+    if (error) { toast_('Error al renombrar: ' + error.message); return }
+    setListasGuardadas(prev => prev.map(l => l.id === listaGuardadaId ? { ...l, nombre: nombre.trim() } : l).sort((a, b) => a.nombre.localeCompare(b.nombre)))
+    setListaTitulo(nombre.trim())
+    toast_('Lista renombrada')
   }
 
   function listaAgregarProducto(p: Producto) {
@@ -784,6 +798,7 @@ export default function ProductosPage() {
     setListaItems(items)
     setListaTitulo(tipo === 'vinos' ? 'Vinos' : 'Vermouth y Destilados')
     setListaGuardadaId(null)
+    setListaDescuento(0)
   }
 
   function imprimirLista() {
@@ -805,15 +820,19 @@ export default function ProductosPage() {
     }
     const gruposOrdenados = Array.from(grupos.entries()).sort((a, b) => a[0].localeCompare(b[0]))
 
+    const conDescuento = listaDescuento > 0
+    const colspan = conDescuento ? 3 : 2
+
     const bloques = gruposOrdenados.map(([grupo, items]) => `
-      <tr><td colspan="4" style="padding:10px 10px 4px;font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid ${accent}">${grupo}</td></tr>
-      ${items.map(p => `
+      <tr><td colspan="${colspan}" style="padding:10px 10px 4px;font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid ${accent}">${grupo}</td></tr>
+      ${items.map(p => {
+        const final = conDescuento ? p.precio_venta * (1 - listaDescuento / 100) : p.precio_venta
+        return `
       <tr style="border-bottom:1px solid #eee">
         <td style="padding:6px 10px;font-size:12px;font-weight:500">${p.nombre}${p.varietal && p.bodega ? `<span style="color:#999;font-weight:400"> — ${p.varietal}</span>` : ''}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;color:#888">${p.precio_costo ? '$' + p.precio_costo.toLocaleString('es-AR') : '—'}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:700">$${p.precio_venta.toLocaleString('es-AR')}</td>
-        <td style="padding:6px 10px;font-size:11px;text-align:right;color:#888">${p.precio_mayorista ? '$' + p.precio_mayorista.toLocaleString('es-AR') : '—'}</td>
-      </tr>`).join('')}`).join('')
+        <td style="padding:6px 10px;font-size:12px;text-align:right;${conDescuento ? 'color:#999;text-decoration:line-through' : 'font-weight:700'}">$${p.precio_venta.toLocaleString('es-AR')}</td>
+        ${conDescuento ? `<td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:700">$${final.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>` : ''}
+      </tr>`}).join('')}`).join('')
 
     const html = `<html><head><title>Lista de Precios — ${empNombre}${listaTitulo ? ' — ' + listaTitulo : ''}</title>
       <style>
@@ -833,15 +852,14 @@ export default function ProductosPage() {
         </div>
         <div style="text-align:right;font-size:11px;color:#777">
           <div style="text-transform:capitalize">${fecha}</div>
-          <div style="margin-top:2px">${listaItems.length} productos</div>
+          <div style="margin-top:2px">${listaItems.length} productos${conDescuento ? ` · ${listaDescuento}% de descuento` : ''}</div>
         </div>
       </div>
       <table>
         <thead><tr style="border-bottom:2px solid #222;background:${accentBg}">
           <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Producto</th>
-          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Costo</th>
-          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio</th>
-          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Mayorista</th>
+          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio de Lista</th>
+          ${conDescuento ? `<th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio Final (-${listaDescuento}%)</th>` : ''}
         </tr></thead>
         <tbody>${bloques}</tbody>
       </table>
@@ -2222,7 +2240,7 @@ export default function ProductosPage() {
                   value={listaGuardadaId || ''}
                   onChange={e => {
                     if (e.target.value) cargarListaGuardada(e.target.value)
-                    else { setListaItems([]); setListaTitulo(null); setListaGuardadaId(null) }
+                    else { setListaItems([]); setListaTitulo(null); setListaGuardadaId(null); setListaDescuento(0) }
                   }}
                   style={{ ...INP, flex: 1 }}
                 >
@@ -2230,10 +2248,32 @@ export default function ProductosPage() {
                   {listasGuardadas.map(l => <option key={l.id} value={l.id}>{l.nombre} ({l.producto_ids.length})</option>)}
                 </select>
                 {listaGuardadaId && (
-                  <button onClick={borrarListaGuardada} title="Borrar esta lista guardada" className="btn-row" style={{ background: T.redBg, border: `1px solid ${T.redBd}`, color: T.red, borderRadius: 8, padding: '9px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    🗑
-                  </button>
+                  <>
+                    <button onClick={renombrarListaGuardada} title="Renombrar esta lista" className="btn-row" style={{ background: T.bg, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '9px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      ✏️
+                    </button>
+                    <button onClick={borrarListaGuardada} title="Borrar esta lista guardada" className="btn-row" style={{ background: T.redBg, border: `1px solid ${T.redBd}`, color: T.red, borderRadius: 8, padding: '9px 12px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      🗑
+                    </button>
+                  </>
                 )}
+              </div>
+            )}
+
+            {/* Descuento */}
+            {listaItems.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 14px' }}>
+                <label style={{ fontSize: 12, color: T.muted, fontWeight: 600, whiteSpace: 'nowrap' }}>Descuento sobre precio de lista (%)</label>
+                <input
+                  type="number" min="0" max="100" step="1"
+                  value={listaDescuento || ''}
+                  onChange={e => setListaDescuento(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                  placeholder="0"
+                  style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', textAlign: 'right' }}
+                />
+                <span style={{ fontSize: 11, color: T.dim }}>
+                  {listaDescuento > 0 ? 'Se aplica a todos los productos al imprimir' : 'Sin descuento — sale el precio de lista tal cual'}
+                </span>
               </div>
             )}
 
