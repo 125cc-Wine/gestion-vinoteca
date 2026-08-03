@@ -398,6 +398,10 @@ export default function VentasPage() {
   const [factLoading, setFactLoading] = useState(false)
   const [factError, setFactError] = useState('')
 
+  // Mes que muestran los totales del header (Total general / Cobrado) —
+  // arranca en el mes corriente, cambiable con el selector.
+  const [kpiMes, setKpiMes] = useState(() => new Date().toISOString().slice(0, 7))
+
   // ── Filtros comprobantes — arrancan mostrando solo hoy
   const [busquedaVentas, setBusquedaVentas] = useState('')
   const [filtroDesde, setFiltroDesde] = useState(() => new Date().toISOString().split('T')[0])
@@ -1023,9 +1027,14 @@ export default function VentasPage() {
   // Remitos y presupuestos son ambos ventas reales — se suman en un solo
   // total y se separan por si ya se cobraron, no por tipo de comprobante.
   const ventasParaKpi = ventas.filter(v => (v.tipo === 'remito' || v.tipo === 'presupuesto') && v.estado !== 'cancelado')
-  const totalGeneral = ventasParaKpi.reduce((a, v) => a + v.total, 0)
-  const totalCobrado = ventasParaKpi.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
-  const totalPorCobrar = totalGeneral - totalCobrado
+  // "Total general" y "Cobrado" son del mes elegido (kpiMes, default el mes
+  // corriente) — antes sumaban TODO lo cargado en memoria sin importar la
+  // fecha. "Por cobrar" en cambio queda SIN acotar por mes a propósito: es
+  // deuda pendiente de cobro, no desaparece porque cambió el mes.
+  const ventasDelMes = ventasParaKpi.filter(v => (v.created_at || '').slice(0, 7) === kpiMes)
+  const totalGeneral = ventasDelMes.reduce((a, v) => a + v.total, 0)
+  const totalCobrado = ventasDelMes.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
+  const totalPorCobrar = ventasParaKpi.filter(v => v.estado_pago !== 'pagado').reduce((a, v) => a + v.total, 0)
   const ventasPorCobrar = ventasParaKpi
     .filter(v => v.estado_pago !== 'pagado')
     .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
@@ -1127,6 +1136,26 @@ export default function VentasPage() {
       {/* ══ COMPROBANTES ══ */}
       {tab === 'comprobantes' && (
         <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: C.dim, fontWeight: 600 }}>Mes de &quot;Total general&quot; y &quot;Cobrado&quot;:</span>
+            <button className="vbtn" style={btn('default', { padding: '4px 9px', fontSize: 13 })}
+              onClick={() => {
+                const [y, m] = kpiMes.split('-').map(Number)
+                const d = new Date(y, m - 2, 1)
+                setKpiMes(d.toISOString().slice(0, 7))
+              }}>‹</button>
+            <input type="month" className="vinp" style={{ ...INP, width: 150, padding: '5px 10px' }} value={kpiMes} onChange={e => e.target.value && setKpiMes(e.target.value)} />
+            <button className="vbtn" style={btn('default', { padding: '4px 9px', fontSize: 13 })}
+              onClick={() => {
+                const [y, m] = kpiMes.split('-').map(Number)
+                const d = new Date(y, m, 1)
+                setKpiMes(d.toISOString().slice(0, 7))
+              }}>›</button>
+            {kpiMes !== new Date().toISOString().slice(0, 7) && (
+              <button className="vbtn" style={btn('default', { padding: '4px 10px', fontSize: 12 })} onClick={() => setKpiMes(new Date().toISOString().slice(0, 7))}>Mes actual</button>
+            )}
+          </div>
+
           <div className="v-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
             {[
               { label: 'Total general', value: `$${totalGeneral.toLocaleString('es-AR')}`, color: C.text, onClick: undefined },
