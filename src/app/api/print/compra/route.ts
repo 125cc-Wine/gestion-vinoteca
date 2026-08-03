@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { esc } from '@/lib/html'
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
   if (!id) return new Response(errorHtml('Falta el parámetro id.'), { status: 400, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 
   const { data: compra, error } = await supabase.from('compras').select('*').eq('id', id).single()
-  if (error || !compra) return new Response(errorHtml(`No se encontró la compra con id ${id}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  if (error || !compra) return new Response(errorHtml(`No se encontró la compra con id ${esc(id)}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 
   const empresa = EMPRESAS_DATA[empresaKey] ?? EMPRESAS_DATA['aroma']
 
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
   const itemsRows = items.map((it, i) => `
     <tr>
       <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
-      <td>${it.nombre ?? ''}</td>
+      <td>${esc(it.nombre ?? '')}</td>
       <td style="text-align:center;font-weight:600;">${it.cajas && it.cajas > 1 ? `${it.cajas} caj.` : it.cantidad}</td>
       <td style="text-align:center;">${it.unidades_por_caja && it.unidades_por_caja > 1 ? it.cantidad : '—'}</td>
       <td style="text-align:right;">${it.precio_unitario != null ? moneda(it.precio_unitario) : '—'}</td>
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${tipoLabel} ${compra.numero ?? ''}</title>
+  <title>${tipoLabel} ${esc(compra.numero ?? '')}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }
@@ -166,9 +167,9 @@ export async function GET(req: NextRequest) {
     </div>
     <div class="header-doc">
       <div class="doc-tipo">${tipoLabel}</div>
-      <div class="doc-num">${compra.numero ?? ''}</div>
+      <div class="doc-num">${esc(compra.numero ?? '')}</div>
       <div class="doc-fecha">${fecha}</div>
-      <span class="estado-badge">${ESTADO_LABEL[compra.estado] ?? compra.estado}</span>
+      <span class="estado-badge">${esc(ESTADO_LABEL[compra.estado] ?? compra.estado)}</span>
     </div>
   </div>
 
@@ -177,7 +178,7 @@ export async function GET(req: NextRequest) {
     <div class="info-box">
       <div class="info-box-title">Proveedor</div>
       <div class="info-box-body">
-        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${compra.proveedor_nombre}</span></div>
+        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${esc(compra.proveedor_nombre)}</span></div>
       </div>
     </div>
     <div class="info-box">
@@ -185,7 +186,7 @@ export async function GET(req: NextRequest) {
       <div class="info-box-body">
         <div class="info-row"><span class="info-label">Fecha emisión: </span><span class="info-val">${fecha}</span></div>
         ${fechaEsperada ? `<div class="info-row"><span class="info-label">Entrega esperada: </span><span class="info-val" style="font-weight:600;">${fechaEsperada}</span></div>` : ''}
-        ${compra.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${compra.notas}</span></div>` : ''}
+        ${compra.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${esc(compra.notas)}</span></div>` : ''}
       </div>
     </div>
   </div>
@@ -214,14 +215,14 @@ export async function GET(req: NextRequest) {
     <div class="factura-box">
       <div class="info-box-title">Datos de factura y pago</div>
       <div class="info-box-body">
-        ${compra.nro_factura ? `<div class="info-row"><span class="info-label">Nro. factura: </span><span class="info-val" style="font-family:monospace;">${compra.nro_factura}</span></div>` : ''}
+        ${compra.nro_factura ? `<div class="info-row"><span class="info-label">Nro. factura: </span><span class="info-val" style="font-family:monospace;">${esc(compra.nro_factura)}</span></div>` : ''}
         ${fechaFactura ? `<div class="info-row"><span class="info-label">Fecha factura: </span><span class="info-val">${fechaFactura}</span></div>` : ''}
-        ${compra.condicion_pago ? `<div class="info-row"><span class="info-label">Condición: </span><span class="info-val">${CONDICION_LABEL[compra.condicion_pago] ?? compra.condicion_pago}</span></div>` : ''}
+        ${compra.condicion_pago ? `<div class="info-row"><span class="info-label">Condición: </span><span class="info-val">${esc(CONDICION_LABEL[compra.condicion_pago] ?? compra.condicion_pago)}</span></div>` : ''}
         ${fechaVencimiento ? `<div class="info-row"><span class="info-label">Vencimiento: </span><span class="info-val" style="font-weight:600;">${fechaVencimiento}</span></div>` : ''}
-        ${compra.estado_pago ? `<div class="info-row"><span class="info-label">Estado pago: </span><span class="info-val">${ESTADO_PAGO_LABEL[compra.estado_pago] ?? compra.estado_pago}</span></div>` : ''}
+        ${compra.estado_pago ? `<div class="info-row"><span class="info-label">Estado pago: </span><span class="info-val">${esc(ESTADO_PAGO_LABEL[compra.estado_pago] ?? compra.estado_pago)}</span></div>` : ''}
         ${compra.estado_pago === 'pagado' && compra.monto_pagado ? `<div class="info-row"><span class="info-label">Monto pagado: </span><span class="info-val" style="font-weight:600;">${moneda(compra.monto_pagado)}</span></div>` : ''}
         ${fechaPago ? `<div class="info-row"><span class="info-label">Fecha pago: </span><span class="info-val">${fechaPago}</span></div>` : ''}
-        ${compra.notas_pago ? `<div class="info-row"><span class="info-label">Notas pago: </span><span class="info-val">${compra.notas_pago}</span></div>` : ''}
+        ${compra.notas_pago ? `<div class="info-row"><span class="info-label">Notas pago: </span><span class="info-val">${esc(compra.notas_pago)}</span></div>` : ''}
       </div>
     </div>` : '<div></div>'}
     <div class="totales-box">

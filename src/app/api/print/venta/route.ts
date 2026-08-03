@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { esc } from '@/lib/html'
 import QRCode from 'qrcode'
 
 const CBTE_TIPO_POR_LETRA: Record<string, number> = { A: 1, B: 6, C: 11 }
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (error || !venta) {
-    return new Response(errorHtml(`No se encontró la venta con id ${id}.`), {
+    return new Response(errorHtml(`No se encontró la venta con id ${esc(id)}.`), {
       status: 404,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     })
@@ -158,7 +159,7 @@ export async function GET(req: NextRequest) {
       (it, i) => `
       <tr>
         <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
-        <td>${it.nombre ?? ''}</td>
+        <td>${esc(it.nombre ?? '')}</td>
         <td style="text-align:center;">${it.cantidad}</td>
         <td style="text-align:right;">${moneda(it.precio_unitario ?? 0)}</td>
         ${(it.descuento ?? 0) > 0 ? `<td style="text-align:center;color:#A07010;">${it.descuento}%</td>` : '<td style="text-align:center;color:#A89888;">—</td>'}
@@ -184,7 +185,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${tipoLabel} ${venta.numero ?? ''}</title>
+  <title>${tipoLabel} ${esc(venta.numero ?? '')}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -430,7 +431,7 @@ export async function GET(req: NextRequest) {
     </div>
     <div class="header-doc">
       <div class="doc-tipo">${tipoLabel}</div>
-      <div class="doc-num">${venta.numero ?? ''}</div>
+      <div class="doc-num">${esc(venta.numero ?? '')}</div>
       <div class="doc-fecha">${fecha}</div>
       ${estadoPago ? `<div class="estado-badge-header">${estadoPago}</div>` : ''}
     </div>
@@ -441,21 +442,21 @@ export async function GET(req: NextRequest) {
     <div class="info-box">
       <div class="info-box-title">Destinatario</div>
       <div class="info-box-body">
-        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${venta.cliente_nombre || 'Consumidor Final'}</span></div>
-        ${cliente?.cuit ? `<div class="info-row"><span class="info-label">CUIT: </span><span class="info-val" style="font-family:monospace;">${cliente.cuit}</span></div>` : ''}
-        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${cliente.direccion}</span></div>` : ''}
-        ${cliente?.telefono ? `<div class="info-row"><span class="info-label">Tel: </span><span class="info-val">${cliente.telefono}</span></div>` : ''}
-        ${cliente?.email ? `<div class="info-row"><span class="info-val">${cliente.email}</span></div>` : ''}
+        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${esc(venta.cliente_nombre) || 'Consumidor Final'}</span></div>
+        ${cliente?.cuit ? `<div class="info-row"><span class="info-label">CUIT: </span><span class="info-val" style="font-family:monospace;">${esc(cliente.cuit)}</span></div>` : ''}
+        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${esc(cliente.direccion)}</span></div>` : ''}
+        ${cliente?.telefono ? `<div class="info-row"><span class="info-label">Tel: </span><span class="info-val">${esc(cliente.telefono)}</span></div>` : ''}
+        ${cliente?.email ? `<div class="info-row"><span class="info-val">${esc(cliente.email)}</span></div>` : ''}
       </div>
     </div>
     <div class="info-box">
       <div class="info-box-title">Datos del comprobante</div>
       <div class="info-box-body">
-        ${venta.vendedor_nombre ? `<div class="info-row"><span class="info-label">Vendedor: </span><span class="info-val">${venta.vendedor_nombre}</span></div>` : ''}
-        ${venta.condicion_venta ? `<div class="info-row"><span class="info-label">Condición: </span><span class="info-val">${venta.condicion_venta}</span></div>` : ''}
-        ${venta.estado ? `<div class="info-row"><span class="info-label">Estado: </span><span class="info-val">${venta.estado}</span></div>` : ''}
+        ${venta.vendedor_nombre ? `<div class="info-row"><span class="info-label">Vendedor: </span><span class="info-val">${esc(venta.vendedor_nombre)}</span></div>` : ''}
+        ${venta.condicion_venta ? `<div class="info-row"><span class="info-label">Condición: </span><span class="info-val">${esc(venta.condicion_venta)}</span></div>` : ''}
+        ${venta.estado ? `<div class="info-row"><span class="info-label">Estado: </span><span class="info-val">${esc(venta.estado)}</span></div>` : ''}
         ${venta.notas ? '' : '<div class="info-row" style="color:#A89888;font-size:11px;font-style:italic;">Sin observaciones</div>'}
-        ${venta.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${venta.notas}</span></div>` : ''}
+        ${venta.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${esc(venta.notas)}</span></div>` : ''}
       </div>
     </div>
   </div>
@@ -535,7 +536,7 @@ export async function GET(req: NextRequest) {
     </div>
     <div class="header-doc">
       <div class="doc-tipo">Remito — Duplicado</div>
-      <div class="doc-num">${venta.numero ?? ''}</div>
+      <div class="doc-num">${esc(venta.numero ?? '')}</div>
       <div class="doc-fecha">${fecha}</div>
     </div>
   </div>
@@ -544,8 +545,8 @@ export async function GET(req: NextRequest) {
     <div class="info-box">
       <div class="info-box-title">Destinatario</div>
       <div class="info-box-body">
-        <div class="info-row"><span class="info-val" style="font-weight:600;">${venta.cliente_nombre || 'Consumidor Final'}</span></div>
-        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${cliente.direccion}</span></div>` : ''}
+        <div class="info-row"><span class="info-val" style="font-weight:600;">${esc(venta.cliente_nombre) || 'Consumidor Final'}</span></div>
+        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${esc(cliente.direccion)}</span></div>` : ''}
       </div>
     </div>
     <div class="info-box">

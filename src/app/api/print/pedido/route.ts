@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { esc } from '@/lib/html'
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   if (!id) return new Response(errorHtml('Falta el parámetro id.'), { status: 400, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 
   const { data: pedido, error } = await supabase.from('pedidos').select('*').eq('id', id).single()
-  if (error || !pedido) return new Response(errorHtml(`No se encontró el pedido con id ${id}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  if (error || !pedido) return new Response(errorHtml(`No se encontró el pedido con id ${esc(id)}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 
   let cliente: { cuit?: string; direccion?: string; telefono?: string; email?: string } | null = null
   if (pedido.cliente_id) {
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
   const itemsRows = items.map((it, i) => `
     <tr>
       <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
-      <td>${it.nombre ?? ''}</td>
+      <td>${esc(it.nombre ?? '')}</td>
       <td style="text-align:center;font-weight:600;">${it.cantidad}</td>
     </tr>`).join('')
 
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pedido ${pedido.numero ?? ''}</title>
+  <title>Pedido ${esc(pedido.numero ?? '')}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }
@@ -143,9 +144,9 @@ export async function GET(req: NextRequest) {
     </div>
     <div class="header-doc">
       <div class="doc-tipo">Pedido</div>
-      <div class="doc-num">${pedido.numero ?? ''}</div>
+      <div class="doc-num">${esc(pedido.numero ?? '')}</div>
       <div class="doc-fecha">${fecha}</div>
-      <span class="estado-badge">${pedido.estado ?? ''}</span>
+      <span class="estado-badge">${esc(pedido.estado ?? '')}</span>
     </div>
   </div>
 
@@ -154,19 +155,19 @@ export async function GET(req: NextRequest) {
     <div class="info-box">
       <div class="info-box-title">Cliente</div>
       <div class="info-box-body">
-        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${pedido.cliente_nombre || 'Consumidor Final'}</span></div>
-        ${cliente?.cuit ? `<div class="info-row"><span class="info-label">CUIT: </span><span class="info-val" style="font-family:monospace;">${cliente.cuit}</span></div>` : ''}
-        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${cliente.direccion}</span></div>` : ''}
-        ${cliente?.telefono ? `<div class="info-row"><span class="info-label">Tel: </span><span class="info-val">${cliente.telefono}</span></div>` : ''}
-        ${cliente?.email ? `<div class="info-row"><span class="info-val">${cliente.email}</span></div>` : ''}
+        <div class="info-row"><span class="info-val" style="font-weight:600;font-size:13px;">${esc(pedido.cliente_nombre) || 'Consumidor Final'}</span></div>
+        ${cliente?.cuit ? `<div class="info-row"><span class="info-label">CUIT: </span><span class="info-val" style="font-family:monospace;">${esc(cliente.cuit)}</span></div>` : ''}
+        ${cliente?.direccion ? `<div class="info-row"><span class="info-label">Dirección: </span><span class="info-val">${esc(cliente.direccion)}</span></div>` : ''}
+        ${cliente?.telefono ? `<div class="info-row"><span class="info-label">Tel: </span><span class="info-val">${esc(cliente.telefono)}</span></div>` : ''}
+        ${cliente?.email ? `<div class="info-row"><span class="info-val">${esc(cliente.email)}</span></div>` : ''}
       </div>
     </div>
     <div class="info-box">
       <div class="info-box-title">Datos del pedido</div>
       <div class="info-box-body">
         ${fechaEntrega ? `<div class="info-row"><span class="info-label">Entrega: </span><span class="info-val" style="font-weight:600;">${fechaEntrega}</span></div>` : ''}
-        ${pedido.vendedor_nombre ? `<div class="info-row"><span class="info-label">Vendedor: </span><span class="info-val">${pedido.vendedor_nombre}</span></div>` : ''}
-        ${pedido.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${pedido.notas}</span></div>` : '<div class="info-row" style="color:#A89888;font-size:11px;font-style:italic;">Sin observaciones</div>'}
+        ${pedido.vendedor_nombre ? `<div class="info-row"><span class="info-label">Vendedor: </span><span class="info-val">${esc(pedido.vendedor_nombre)}</span></div>` : ''}
+        ${pedido.notas ? `<div class="info-row"><span class="info-label">Obs.: </span><span class="info-val">${esc(pedido.notas)}</span></div>` : '<div class="info-row" style="color:#A89888;font-size:11px;font-style:italic;">Sin observaciones</div>'}
       </div>
     </div>
   </div>
