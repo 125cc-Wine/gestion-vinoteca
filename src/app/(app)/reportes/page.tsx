@@ -48,9 +48,9 @@ const fmt = (n: number) => n.toLocaleString('es-AR', { style: 'currency', curren
 const fmtN = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 })
 
 interface Datos {
-  kpis: { totalVentas: number; cantVentas: number; ticketPromedio: number }
+  kpis: { totalVentas: number; cantVentas: number; ticketPromedio: number; cobrado: number; pendienteCobro: number; margenTotal: number }
   ventasPorDia: { fecha: string; total: number }[]
-  rankingProductos: { nombre: string; cantidad: number; total: number }[]
+  rankingProductos: { nombre: string; cantidad: number; total: number; margen: number }[]
   porVendedor: { nombre: string; ventas: number; total: number }[]
   porCondicion: { condicion: string; ventas: number; total: number }[]
 }
@@ -115,9 +115,26 @@ function ventasPorMes(ventasArr: Venta[], anio: number): number[] {
   return meses
 }
 
+function pctDelta(actual: number, anterior: number): number | null {
+  if (!anterior) return null
+  return ((actual - anterior) / Math.abs(anterior)) * 100
+}
+
+function DeltaBadge({ pct }: { pct: number | null }) {
+  if (pct === null) return null
+  const up = pct >= 0
+  const color = up ? T.green : T.red
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, color, marginLeft: 8 }}>
+      {up ? '▲' : '▼'} {Math.abs(pct).toFixed(0)}%
+    </span>
+  )
+}
+
 export default function ReportesPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [datos, setDatos] = useState<Datos | null>(null)
+  const [datosAnt, setDatosAnt] = useState<Datos | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('ventas')
   const [desde, setDesde] = useState(() => {
@@ -145,9 +162,23 @@ export default function ReportesPage() {
   async function cargar(emp: string, d: string, h: string) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}`)
+      // Período anterior de igual duración, para poder mostrar "vs. período
+      // anterior" en los KPIs — sin esto los números no dicen si vamos mejor
+      // o peor que antes, solo un total suelto.
+      const dias = Math.max(1, Math.round((new Date(h).getTime() - new Date(d).getTime()) / 86400000) + 1)
+      const hAnt = new Date(d); hAnt.setDate(hAnt.getDate() - 1)
+      const dAnt = new Date(hAnt); dAnt.setDate(dAnt.getDate() - dias + 1)
+      const dAntStr = dAnt.toISOString().split('T')[0]
+      const hAntStr = hAnt.toISOString().split('T')[0]
+
+      const [res, resAnt] = await Promise.all([
+        fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}`),
+        fetch(`/api/reportes?empresa=${emp}&desde=${dAntStr}&hasta=${hAntStr}`),
+      ])
       const data = await res.json()
+      const dataAnt = await resAnt.json()
       if (!data.error) setDatos(data)
+      setDatosAnt(!dataAnt.error ? dataAnt : null)
     } finally {
       setLoading(false)
     }
@@ -211,15 +242,30 @@ export default function ReportesPage() {
       <div style={{ padding: '24px 28px' }}>
         {/* KPIs */}
         {datos && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 14 }}>
             {[
-              { label: 'Total ventas',       value: fmt(datos.kpis.totalVentas),      color: T.green },
-              { label: 'Cantidad de ventas', value: fmtN(datos.kpis.cantVentas),      color: T.text  },
-              { label: 'Ticket promedio',    value: fmt(datos.kpis.ticketPromedio),    color: T.amber },
+              { label: 'Total facturado',    value: fmt(datos.kpis.totalVentas),      color: T.text,  delta: pctDelta(datos.kpis.totalVentas, datosAnt?.kpis.totalVentas ?? 0) },
+              { label: 'Cantidad de ventas',  value: fmtN(datos.kpis.cantVentas),      color: T.text,  delta: pctDelta(datos.kpis.cantVentas, datosAnt?.kpis.cantVentas ?? 0) },
+              { label: 'Ticket promedio',     value: fmt(datos.kpis.ticketPromedio),   color: T.text,  delta: pctDelta(datos.kpis.ticketPromedio, datosAnt?.kpis.ticketPromedio ?? 0) },
             ].map(k => (
               <div key={k.label} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{k.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}<DeltaBadge pct={k.delta} /></div>
+                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>vs. período anterior</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {datos && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+            {[
+              { label: 'Cobrado',            value: fmt(datos.kpis.cobrado),          color: T.green },
+              { label: 'Pendiente de cobro',  value: fmt(datos.kpis.pendienteCobro),   color: T.amber },
+              { label: 'Margen estimado',     value: fmt(datos.kpis.margenTotal),      color: T.blue },
+            ].map(k => (
+              <div key={k.label} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
               </div>
             ))}
           </div>
@@ -296,9 +342,10 @@ export default function ReportesPage() {
                           <span style={{ fontSize: 11, color: T.dim, width: 20, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                              <span style={{ fontSize: 13, fontWeight: 500, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{p.nombre}</span>
+                              <span style={{ fontSize: 13, fontWeight: 500, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50%' }}>{p.nombre}</span>
                               <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
                                 <span style={{ fontSize: 12, color: T.muted }}>{fmtN(p.cantidad)} u.</span>
+                                <span style={{ fontSize: 12, color: T.blue }} title="Margen estimado al costo actual">{fmt(p.margen)} marg.</span>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: T.green }}>{fmt(p.total)}</span>
                               </div>
                             </div>

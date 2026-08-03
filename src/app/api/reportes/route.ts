@@ -27,6 +27,14 @@ export async function GET(req: NextRequest) {
   // la propia devolución (con total y cantidades positivas).
   const list = (ventas || []).filter(v => v.tipo !== 'devolucion')
 
+  // Costo por producto, para calcular margen en el ranking (join en JS
+  // porque "items" guarda una copia del producto al momento de la venta,
+  // no el costo actual — y de última el costo actual es lo que interesa
+  // para saber qué tan rentable es el producto HOY).
+  const { data: productosCosto } = await supabase
+    .from('productos').select('id, precio_costo').eq('empresa', empresa)
+  const costoPorId = new Map((productosCosto ?? []).map(p => [p.id, p.precio_costo || 0]))
+
   // 1. Ventas por día
   const porDia: Record<string, number> = {}
   for (const v of list) {
@@ -35,14 +43,16 @@ export async function GET(req: NextRequest) {
   }
   const ventasPorDia = Object.entries(porDia).map(([fecha, total]) => ({ fecha, total }))
 
-  // 2. Ranking productos
-  const prodMap: Record<string, { nombre: string; cantidad: number; total: number }> = {}
+  // 2. Ranking productos (con margen estimado al costo actual)
+  const prodMap: Record<string, { nombre: string; cantidad: number; total: number; margen: number }> = {}
   for (const v of list) {
-    for (const item of (v.items as { nombre: string; cantidad: number; subtotal: number }[] || [])) {
+    for (const item of (v.items as { nombre: string; cantidad: number; subtotal: number; producto_id?: string }[] || [])) {
       const key = item.nombre
-      if (!prodMap[key]) prodMap[key] = { nombre: item.nombre, cantidad: 0, total: 0 }
+      if (!prodMap[key]) prodMap[key] = { nombre: item.nombre, cantidad: 0, total: 0, margen: 0 }
       prodMap[key].cantidad += item.cantidad
       prodMap[key].total   += item.subtotal || 0
+      const costo = item.producto_id ? costoPorId.get(item.producto_id) : undefined
+      if (costo != null) prodMap[key].margen += (item.subtotal || 0) - costo * item.cantidad
     }
   }
   const rankingProductos = Object.values(prodMap)
@@ -75,9 +85,14 @@ export async function GET(req: NextRequest) {
   const totalVentas   = list.reduce((a, v) => a + v.total, 0)
   const cantVentas    = list.length
   const ticketPromedio = cantVentas ? totalVentas / cantVentas : 0
+  // Facturado vs. efectivamente cobrado en el período — antes el reporte
+  // solo mostraba lo facturado, sin distinguir cuánto de eso ya se cobró.
+  const cobrado        = list.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
+  const pendienteCobro  = totalVentas - cobrado
+  const margenTotal     = Object.values(prodMap).reduce((a, p) => a + p.margen, 0)
 
   return NextResponse.json({
-    kpis: { totalVentas, cantVentas, ticketPromedio },
+    kpis: { totalVentas, cantVentas, ticketPromedio, cobrado, pendienteCobro, margenTotal },
     ventasPorDia,
     rankingProductos,
     porVendedor,
