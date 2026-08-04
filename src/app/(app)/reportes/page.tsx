@@ -141,6 +141,7 @@ export default function ReportesPage() {
     const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 2); return d.toISOString().split('T')[0]
   })
   const [hasta, setHasta] = useState(new Date().toISOString().split('T')[0])
+  const [rankingLimit, setRankingLimit] = useState<number | 'all'>(20)
 
   // Estacionalidad
   const curYear = new Date().getFullYear()
@@ -159,7 +160,7 @@ export default function ReportesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function cargar(emp: string, d: string, h: string) {
+  async function cargar(emp: string, d: string, h: string, limit: number | 'all' = rankingLimit) {
     setLoading(true)
     try {
       // Período anterior de igual duración, para poder mostrar "vs. período
@@ -172,8 +173,8 @@ export default function ReportesPage() {
       const hAntStr = hAnt.toISOString().split('T')[0]
 
       const [res, resAnt] = await Promise.all([
-        fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}`),
-        fetch(`/api/reportes?empresa=${emp}&desde=${dAntStr}&hasta=${hAntStr}`),
+        fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}&limit=${limit}`),
+        fetch(`/api/reportes?empresa=${emp}&desde=${dAntStr}&hasta=${hAntStr}&limit=${limit}`),
       ])
       const data = await res.json()
       const dataAnt = await resAnt.json()
@@ -189,9 +190,18 @@ export default function ReportesPage() {
     estFetchedEmp.current = emp
     setEstLoading(true)
     try {
-      const res = await fetch(`/api/ventas?empresa=${emp}`)
-      const data = await res.json()
-      if (Array.isArray(data)) setTodasVentas(data)
+      // "ambas" no existe como valor de empresa para /api/ventas (esa ruta
+      // se usa también para escrituras ligadas a una sola empresa) — acá
+      // simplemente pedimos las dos y las combinamos en el cliente.
+      if (emp === 'ambas') {
+        const [rA, rL] = await Promise.all([fetch('/api/ventas?empresa=aroma'), fetch('/api/ventas?empresa=lavid')])
+        const [dA, dL] = await Promise.all([rA.json(), rL.json()])
+        setTodasVentas([...(Array.isArray(dA) ? dA : []), ...(Array.isArray(dL) ? dL : [])])
+      } else {
+        const res = await fetch(`/api/ventas?empresa=${emp}`)
+        const data = await res.json()
+        if (Array.isArray(data)) setTodasVentas(data)
+      }
     } finally {
       setEstLoading(false)
     }
@@ -216,9 +226,25 @@ export default function ReportesPage() {
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Reportes</h1>
-          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
+          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>
+            {empresa === 'aroma' ? 'Aroma de Vid' : empresa === 'lavid' ? 'La Vid Consultora' : 'Aroma de Vid + La Vid Consultora'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            value={empresa}
+            style={{ ...INP, width: 'auto', padding: '5px 10px', fontSize: 13 }}
+            onChange={e => {
+              const emp = e.target.value
+              setEmpresa(emp)
+              cargar(emp, desde, hasta)
+              cargarVentasEst(emp)
+            }}
+          >
+            <option value="aroma">Aroma de Vid</option>
+            <option value="lavid">La Vid Consultora</option>
+            <option value="ambas">Ambas empresas (total)</option>
+          </select>
           <input
             type="month"
             style={INP}
@@ -330,7 +356,25 @@ export default function ReportesPage() {
             {/* Ranking productos */}
             {tab === 'productos' && (
               <div>
-                <h2 style={{ margin: '0 0 20px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top 20 productos por facturación</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+                  <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {rankingLimit === 'all' ? 'Todos los productos' : `Top ${rankingLimit} productos`} por facturación
+                  </h2>
+                  <select
+                    value={rankingLimit}
+                    style={{ ...INP, width: 'auto', padding: '5px 10px', fontSize: 12 }}
+                    onChange={e => {
+                      const v = e.target.value === 'all' ? 'all' : Number(e.target.value)
+                      setRankingLimit(v)
+                      cargar(empresa, desde, hasta, v)
+                    }}
+                  >
+                    <option value={20}>Top 20</option>
+                    <option value={50}>Top 50</option>
+                    <option value={100}>Top 100</option>
+                    <option value="all">Todos</option>
+                  </select>
+                </div>
                 {datos.rankingProductos.length === 0 ? (
                   <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin datos</p>
                 ) : (
