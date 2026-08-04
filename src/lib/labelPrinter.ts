@@ -511,7 +511,10 @@ export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
     ctx.fillStyle = '#000'
     ctx.font = `bold ${s(ITEM_FONT)}px Arial`
     const baselineOffset = Math.round(ITEM_FONT * 16 / 19)
-    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + baselineOffset)))
+    // Cada línea envuelta de un mismo item tiene que bajar su propio alto —
+    // antes todas se dibujaban en el mismo Y y quedaban superpuestas cuando
+    // un nombre largo envolvía a 2+ líneas.
+    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + baselineOffset + i * ITEM_LINE_H)))
     y += lines.length * ITEM_LINE_H
     shown++
   }
