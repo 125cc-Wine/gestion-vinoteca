@@ -454,51 +454,60 @@ export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
   // Top bar
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, s(6))
 
-  // "CAJA n/total"
+  // "CAJA n/total" — más chico que antes para dejarle lugar a los items,
+  // que son lo que realmente hay que poder leer rápido al armar el pedido.
   ctx.textAlign = 'left'
-  ctx.font = `bold ${s(30)}px Arial`
+  ctx.font = `bold ${s(24)}px Arial`
   ctx.fillStyle = '#000'
-  ctx.fillText(`CAJA ${d.cajaNum}/${d.cajaTotal}`, s(PAD), s(42))
+  ctx.fillText(`CAJA ${d.cajaNum}/${d.cajaTotal}`, s(PAD), s(34))
 
-  // Pedido # · cliente
-  let y = 66
-  ctx.font = `bold ${s(14)}px Arial`
+  // Pedido # · cliente (cliente a 1 sola línea, con truncado, no 2)
+  let y = 54
+  ctx.font = `bold ${s(13)}px Arial`
   ctx.fillStyle = '#222'
   const pedLine = `Presupuesto ${d.pedidoNumero}`
   ctx.fillText(pedLine, s(PAD), s(y))
-  y += 18
+  y += 16
 
-  ctx.font = `${s(13)}px Arial`
+  ctx.font = `${s(12)}px Arial`
   ctx.fillStyle = '#444'
-  const clienteLines = wrapText(ctx, d.clienteNombre, s(LW - PAD * 2)).slice(0, 2)
-  clienteLines.forEach(l => { ctx.fillText(l, s(PAD), s(y)); y += 16 })
+  const maxClienteW = s(LW - PAD * 2)
+  let cliente = d.clienteNombre
+  while (cliente.length > 1 && ctx.measureText(cliente + '…').width > maxClienteW) cliente = cliente.slice(0, -1)
+  if (cliente !== d.clienteNombre) cliente += '…'
+  ctx.fillText(cliente, s(PAD), s(y))
+  y += 14
 
   // Divider
-  y += 4
+  y += 6
   ctx.strokeStyle = '#bbb'; ctx.lineWidth = s(1)
   ctx.beginPath(); ctx.moveTo(s(PAD), s(y)); ctx.lineTo(s(LW - PAD), s(y)); ctx.stroke()
-  y += 20
+  y += 22
 
-  // Items — "cant × nombre", wrap por item, cortar si se llena el label
-  // dejando lugar para la fecha al pie.
-  const BOTTOM_LIMIT = 316
-  ctx.font = `${s(15)}px Arial`
+  // Items — "cant × nombre", fuente grande (esto es lo que hay que leer de
+  // un vistazo al armar/verificar la caja), wrap por item, y si no entran
+  // todos se corta con "+N más" en vez de achicar la letra.
+  const BOTTOM_LIMIT = 314
+  const ITEM_FONT = 19
+  const ITEM_LINE_H = 22
+  ctx.font = `bold ${s(ITEM_FONT)}px Arial`
   let shown = 0
   for (const it of d.items) {
     const label = `${it.cantidad} × ${it.nombre}`
     const lines = wrapText(ctx, label, s(LW - PAD * 2))
-    if (y + lines.length * 17 > BOTTOM_LIMIT) {
+    if (y + lines.length * ITEM_LINE_H > BOTTOM_LIMIT) {
       const restantes = d.items.length - shown
       if (restantes > 0) {
-        ctx.font = `italic ${s(12)}px Arial`; ctx.fillStyle = '#777'
-        ctx.fillText(`+ ${restantes} producto${restantes !== 1 ? 's' : ''} más`, s(PAD), s(y + 14))
+        ctx.font = `italic ${s(13)}px Arial`; ctx.fillStyle = '#777'
+        ctx.fillText(`+ ${restantes} producto${restantes !== 1 ? 's' : ''} más`, s(PAD), s(y + 15))
       }
       y = BOTTOM_LIMIT
       break
     }
     ctx.fillStyle = '#000'
-    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + 14)))
-    y += lines.length * 17
+    ctx.font = `bold ${s(ITEM_FONT)}px Arial`
+    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + 16)))
+    y += lines.length * ITEM_LINE_H
     shown++
   }
 

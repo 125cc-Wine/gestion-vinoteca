@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   const desde   = req.nextUrl.searchParams.get('desde')
   const hasta   = req.nextUrl.searchParams.get('hasta')
   const limitParam = req.nextUrl.searchParams.get('limit')
+  const sortParam  = req.nextUrl.searchParams.get('sort') // 'total' | 'cantidad'
 
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
 
@@ -64,8 +65,12 @@ export async function GET(req: NextRequest) {
   }
   // limit=0 (o "all") devuelve el ranking completo, sin techo.
   const limit = limitParam === 'all' || limitParam === '0' ? undefined : Number(limitParam) || 20
-  const rankingCompleto = Object.values(prodMap).sort((a, b) => b.total - a.total)
+  const sortKey = sortParam === 'cantidad' ? 'cantidad' : 'total'
+  const rankingCompleto = Object.values(prodMap).sort((a, b) => b[sortKey] - a[sortKey])
   const rankingProductos = limit ? rankingCompleto.slice(0, limit) : rankingCompleto
+  // Total de botellas vendidas en el período — sobre TODOS los productos,
+  // no solo los que entran en el ranking recortado por "limit".
+  const unidadesTotales = Object.values(prodMap).reduce((a, p) => a + p.cantidad, 0)
 
   // 3. Ventas por vendedor
   const vendMap: Record<string, { nombre: string; ventas: number; total: number }> = {}
@@ -100,7 +105,7 @@ export async function GET(req: NextRequest) {
   const margenTotal     = Object.values(prodMap).reduce((a, p) => a + p.margen, 0)
 
   return NextResponse.json({
-    kpis: { totalVentas, cantVentas, ticketPromedio, cobrado, pendienteCobro, margenTotal },
+    kpis: { totalVentas, cantVentas, ticketPromedio, cobrado, pendienteCobro, margenTotal, unidadesTotales },
     ventasPorDia,
     rankingProductos,
     porVendedor,

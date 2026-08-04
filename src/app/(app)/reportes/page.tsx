@@ -48,7 +48,7 @@ const fmt = (n: number) => n.toLocaleString('es-AR', { style: 'currency', curren
 const fmtN = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 })
 
 interface Datos {
-  kpis: { totalVentas: number; cantVentas: number; ticketPromedio: number; cobrado: number; pendienteCobro: number; margenTotal: number }
+  kpis: { totalVentas: number; cantVentas: number; ticketPromedio: number; cobrado: number; pendienteCobro: number; margenTotal: number; unidadesTotales: number }
   ventasPorDia: { fecha: string; total: number }[]
   rankingProductos: { nombre: string; cantidad: number; total: number; margen: number }[]
   porVendedor: { nombre: string; ventas: number; total: number }[]
@@ -142,6 +142,7 @@ export default function ReportesPage() {
   })
   const [hasta, setHasta] = useState(new Date().toISOString().split('T')[0])
   const [rankingLimit, setRankingLimit] = useState<number | 'all'>(20)
+  const [rankingSort, setRankingSort] = useState<'total' | 'cantidad'>('total')
 
   // Estacionalidad
   const curYear = new Date().getFullYear()
@@ -160,7 +161,7 @@ export default function ReportesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function cargar(emp: string, d: string, h: string, limit: number | 'all' = rankingLimit) {
+  async function cargar(emp: string, d: string, h: string, limit: number | 'all' = rankingLimit, sort: 'total' | 'cantidad' = rankingSort) {
     setLoading(true)
     try {
       // Período anterior de igual duración, para poder mostrar "vs. período
@@ -173,8 +174,8 @@ export default function ReportesPage() {
       const hAntStr = hAnt.toISOString().split('T')[0]
 
       const [res, resAnt] = await Promise.all([
-        fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}&limit=${limit}`),
-        fetch(`/api/reportes?empresa=${emp}&desde=${dAntStr}&hasta=${hAntStr}&limit=${limit}`),
+        fetch(`/api/reportes?empresa=${emp}&desde=${d}&hasta=${h}&limit=${limit}&sort=${sort}`),
+        fetch(`/api/reportes?empresa=${emp}&desde=${dAntStr}&hasta=${hAntStr}&limit=${limit}&sort=${sort}`),
       ])
       const data = await res.json()
       const dataAnt = await resAnt.json()
@@ -356,31 +357,52 @@ export default function ReportesPage() {
             {/* Ranking productos */}
             {tab === 'productos' && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
                   <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {rankingLimit === 'all' ? 'Todos los productos' : `Top ${rankingLimit} productos`} por facturación
+                    {rankingLimit === 'all' ? 'Todos los productos' : `Top ${rankingLimit} productos`} {rankingSort === 'total' ? 'por facturación' : 'por unidades vendidas'}
                   </h2>
-                  <select
-                    value={rankingLimit}
-                    style={{ ...INP, width: 'auto', padding: '5px 10px', fontSize: 12 }}
-                    onChange={e => {
-                      const v = e.target.value === 'all' ? 'all' : Number(e.target.value)
-                      setRankingLimit(v)
-                      cargar(empresa, desde, hasta, v)
-                    }}
-                  >
-                    <option value={20}>Top 20</option>
-                    <option value={50}>Top 50</option>
-                    <option value={100}>Top 100</option>
-                    <option value="all">Todos</option>
-                  </select>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', border: `1px solid ${T.border}`, borderRadius: 7, overflow: 'hidden' }}>
+                      {([['total', 'Facturación'], ['cantidad', 'Unidades']] as const).map(([key, label]) => (
+                        <button key={key} onClick={() => {
+                          setRankingSort(key)
+                          cargar(empresa, desde, hasta, rankingLimit, key)
+                        }}
+                          style={{
+                            background: rankingSort === key ? T.wine : T.surface,
+                            color: rankingSort === key ? '#fff' : T.muted,
+                            border: 'none', padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                            cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s',
+                          }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <select
+                      value={rankingLimit}
+                      style={{ ...INP, width: 'auto', padding: '5px 10px', fontSize: 12 }}
+                      onChange={e => {
+                        const v = e.target.value === 'all' ? 'all' : Number(e.target.value)
+                        setRankingLimit(v)
+                        cargar(empresa, desde, hasta, v, rankingSort)
+                      }}
+                    >
+                      <option value={20}>Top 20</option>
+                      <option value={50}>Top 50</option>
+                      <option value={100}>Top 100</option>
+                      <option value="all">Todos</option>
+                    </select>
+                  </div>
                 </div>
+                <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted }}>
+                  Total en el período: <strong style={{ color: T.text }}>{fmtN(datos.kpis.unidadesTotales)} botellas vendidas</strong>
+                </p>
                 {datos.rankingProductos.length === 0 ? (
                   <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin datos</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {datos.rankingProductos.map((p, i) => {
-                      const maxTotal = datos.rankingProductos[0].total
+                      const maxVal = datos.rankingProductos[0][rankingSort]
                       return (
                         <div key={p.nombre} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <span style={{ fontSize: 11, color: T.dim, width: 20, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
@@ -388,12 +410,12 @@ export default function ReportesPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                               <span style={{ fontSize: 13, fontWeight: 500, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50%' }}>{p.nombre}</span>
                               <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-                                <span style={{ fontSize: 12, color: T.muted }}>{fmtN(p.cantidad)} u.</span>
                                 <span style={{ fontSize: 12, color: T.blue }} title="Margen estimado al costo actual">{fmt(p.margen)} marg.</span>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: T.green }}>{fmt(p.total)}</span>
+                                <span style={{ fontSize: 13, fontWeight: rankingSort === 'cantidad' ? 700 : 500, color: rankingSort === 'cantidad' ? T.green : T.muted }}>{fmtN(p.cantidad)} u.</span>
+                                <span style={{ fontSize: 13, fontWeight: rankingSort === 'total' ? 700 : 500, color: rankingSort === 'total' ? T.green : T.muted }}>{fmt(p.total)}</span>
                               </div>
                             </div>
-                            <HBar pct={(p.total / maxTotal) * 100} color={i === 0 ? T.wine : i < 3 ? T.brown : T.border2} />
+                            <HBar pct={(p[rankingSort] / maxVal) * 100} color={i === 0 ? T.wine : i < 3 ? T.brown : T.border2} />
                           </div>
                         </div>
                       )
