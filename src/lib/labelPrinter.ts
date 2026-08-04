@@ -439,6 +439,10 @@ export interface CajaLabelData {
   clienteNombre: string
   fecha: string
   items: { nombre: string; cantidad: number }[]
+  // Tamaño de fuente (en dots) de la lista de items — ajustable a mano desde
+  // la UI porque lo que se ve bien en pantalla no siempre se lee bien ya
+  // impreso en el papel térmico real. Default 19, igual que antes.
+  itemFontSize?: number
 }
 
 export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
@@ -488,8 +492,8 @@ export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
   // un vistazo al armar/verificar la caja), wrap por item, y si no entran
   // todos se corta con "+N más" en vez de achicar la letra.
   const BOTTOM_LIMIT = 314
-  const ITEM_FONT = 19
-  const ITEM_LINE_H = 22
+  const ITEM_FONT = d.itemFontSize ?? 19
+  const ITEM_LINE_H = Math.round(ITEM_FONT * 22 / 19)
   ctx.font = `bold ${s(ITEM_FONT)}px Arial`
   let shown = 0
   for (const it of d.items) {
@@ -506,7 +510,8 @@ export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
     }
     ctx.fillStyle = '#000'
     ctx.font = `bold ${s(ITEM_FONT)}px Arial`
-    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + 16)))
+    const baselineOffset = Math.round(ITEM_FONT * 16 / 19)
+    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + baselineOffset)))
     y += lines.length * ITEM_LINE_H
     shown++
   }

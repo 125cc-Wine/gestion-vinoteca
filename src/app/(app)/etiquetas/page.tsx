@@ -99,6 +99,7 @@ export default function EtiquetasPage() {
   const [cajaActiva, setCajaActiva] = useState(0)
   const [cantAgregar, setCantAgregar] = useState<Record<string, number>>({})
   const [cajaPreview, setCajaPreview] = useState(0)
+  const [cajaFontSize, setCajaFontSize] = useState(19)
   const canvasCajaRef = useRef<HTMLCanvasElement>(null)
 
   const pedidoSel = pedidos.find(p => p.id === pedidoId) || null
@@ -152,6 +153,12 @@ export default function EtiquetasPage() {
     setCajaActiva(cajas.length)
   }
 
+  function ajustarFontSize(n: number) {
+    const v = Math.max(12, Math.min(28, n))
+    setCajaFontSize(v)
+    localStorage.setItem('caja_font_size', String(v))
+  }
+
   function borrarCaja(idx: number) {
     if (cajas.length === 1) { setCajas([{ items: [] }]); return }
     setCajas(prev => prev.filter((_, i) => i !== idx))
@@ -174,6 +181,7 @@ export default function EtiquetasPage() {
           pedidoNumero: pedidoSel.numero || pedidoSel.id.slice(0, 8).toUpperCase(),
           clienteNombre: pedidoSel.cliente_nombre, fecha,
           items: cajasConItems[i].items,
+          itemFontSize: cajaFontSize,
         })
         // Esperar el próximo frame para que el canvas termine de dibujar antes de leerlo.
         await new Promise(r => requestAnimationFrame(r))
@@ -200,11 +208,14 @@ export default function EtiquetasPage() {
       clienteNombre: pedidoSel.cliente_nombre,
       fecha: new Date().toLocaleDateString('es-AR'),
       items: c.items,
+      itemFontSize: cajaFontSize,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, cajas, cajaPreview, pedidoSel])
+  }, [tab, cajas, cajaPreview, pedidoSel, cajaFontSize])
 
   useEffect(() => {
+    const fs = parseInt(localStorage.getItem('caja_font_size') || '')
+    if (fs) setCajaFontSize(fs)
     const e = localStorage.getItem('empresa') || 'aroma'
     setEmpresa(e)
     fetch(`/api/productos?empresa=${e}`).then(r => r.json()).then(d => {
@@ -534,6 +545,16 @@ export default function EtiquetasPage() {
           {/* ── Preview + imprimir ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Vista previa</div>
+
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.muted }}>Tamaño de letra (items)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button className="ebtn" style={btn('default', { padding: '3px 10px', fontSize: 16 })} onClick={() => ajustarFontSize(cajaFontSize - 1)}>−</button>
+                <span style={{ fontSize: 15, fontWeight: 700, color: T.text, minWidth: 22, textAlign: 'center' }}>{cajaFontSize}</span>
+                <button className="ebtn" style={btn('default', { padding: '3px 10px', fontSize: 16 })} onClick={() => ajustarFontSize(cajaFontSize + 1)}>+</button>
+              </div>
+            </div>
+
             {cajasConItems.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {cajasConItems.map((_, i) => (
