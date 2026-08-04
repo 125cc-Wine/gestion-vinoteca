@@ -420,6 +420,94 @@ export async function renderBottle(canvas: HTMLCanvasElement, d: LabelData) {
   ctx.fillText('✂', W / 2, H / 2 + s(5))
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// FORMAT 4 — CAJA DE DESPACHO (box/dispatch label, texto — sin QR a propósito
+// para dejar más lugar al listado cuando la caja tiene varios productos)
+// Logical: 384×338 dots
+//
+//   [0..6]     top black bar
+//   [16..48]   "CAJA n/total" bold grande
+//   [~54..78]  pedido # · cliente (wrap a 2 líneas si hace falta)
+//   [divider]
+//   [items]    "cant × nombre" — hasta que entren, el resto se resume "+N más"
+//   [bottom]   fecha · bottom bar
+// ─────────────────────────────────────────────────────────────────────────
+export interface CajaLabelData {
+  cajaNum: number
+  cajaTotal: number
+  pedidoNumero: string
+  clienteNombre: string
+  fecha: string
+  items: { nombre: string; cantidad: number }[]
+}
+
+export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
+  const LW = PRINTER_W, LH = PRINTER_H
+  const W = LW * SCALE, H = LH * SCALE
+  canvas.width = W; canvas.height = H
+  const ctx = canvas.getContext('2d')!
+  const s = (n: number) => Math.round(n * SCALE)
+  const PAD = 14
+
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H)
+
+  // Top bar
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, s(6))
+
+  // "CAJA n/total"
+  ctx.textAlign = 'left'
+  ctx.font = `bold ${s(30)}px Arial`
+  ctx.fillStyle = '#000'
+  ctx.fillText(`CAJA ${d.cajaNum}/${d.cajaTotal}`, s(PAD), s(42))
+
+  // Pedido # · cliente
+  let y = 66
+  ctx.font = `bold ${s(14)}px Arial`
+  ctx.fillStyle = '#222'
+  const pedLine = `Pedido ${d.pedidoNumero}`
+  ctx.fillText(pedLine, s(PAD), s(y))
+  y += 18
+
+  ctx.font = `${s(13)}px Arial`
+  ctx.fillStyle = '#444'
+  const clienteLines = wrapText(ctx, d.clienteNombre, s(LW - PAD * 2)).slice(0, 2)
+  clienteLines.forEach(l => { ctx.fillText(l, s(PAD), s(y)); y += 16 })
+
+  // Divider
+  y += 4
+  ctx.strokeStyle = '#bbb'; ctx.lineWidth = s(1)
+  ctx.beginPath(); ctx.moveTo(s(PAD), s(y)); ctx.lineTo(s(LW - PAD), s(y)); ctx.stroke()
+  y += 20
+
+  // Items — "cant × nombre", wrap por item, cortar si se llena el label
+  // dejando lugar para la fecha al pie.
+  const BOTTOM_LIMIT = 316
+  ctx.font = `${s(15)}px Arial`
+  let shown = 0
+  for (const it of d.items) {
+    const label = `${it.cantidad} × ${it.nombre}`
+    const lines = wrapText(ctx, label, s(LW - PAD * 2))
+    if (y + lines.length * 17 > BOTTOM_LIMIT) {
+      const restantes = d.items.length - shown
+      if (restantes > 0) {
+        ctx.font = `italic ${s(12)}px Arial`; ctx.fillStyle = '#777'
+        ctx.fillText(`+ ${restantes} producto${restantes !== 1 ? 's' : ''} más`, s(PAD), s(y + 14))
+      }
+      y = BOTTOM_LIMIT
+      break
+    }
+    ctx.fillStyle = '#000'
+    lines.forEach((l, i) => ctx.fillText(i === 0 ? l : '   ' + l, s(PAD), s(y + 14)))
+    y += lines.length * 17
+    shown++
+  }
+
+  // Fecha + bottom bar
+  ctx.font = `${s(10)}px Arial`; ctx.fillStyle = '#888'
+  ctx.fillText(d.fecha, s(PAD), s(326))
+  ctx.fillStyle = '#000'; ctx.fillRect(0, s(332), W, s(6))
+}
+
 // ── Render dispatcher ─────────────────────────────────────────────────────
 export type LabelFormat = 'cava' | 'precio' | 'botella'
 

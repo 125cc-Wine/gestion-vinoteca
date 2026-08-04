@@ -6,8 +6,8 @@ function normalize(s: string) {
 }
 import {
   connectPrinter, disconnectPrinter, initPrinter, printCanvas, testPrint,
-  renderLabel, PRINTER_W, PRINTER_H, feedNextLabel,
-  type LabelPrinterPort, type LabelData, type LabelFormat,
+  renderLabel, renderCaja, PRINTER_W, PRINTER_H, feedNextLabel,
+  type LabelPrinterPort, type LabelData, type LabelFormat, type CajaLabelData,
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
 
@@ -60,6 +60,13 @@ interface Producto {
   woo_product_id?: number
 }
 
+interface PedidoItem { producto_id?: string; nombre: string; cantidad: number }
+interface Pedido {
+  id: string; numero?: string; cliente_nombre: string; estado: string
+  items: PedidoItem[]; created_at?: string
+}
+interface Caja { items: { nombre: string; cantidad: number }[] }
+
 const FORMATS: { id: LabelFormat; label: string; desc: string }[] = [
   { id: 'cava',    label: 'Etiqueta cava',   desc: '50×45mm · nombre, bodega, varietal, precio + QR' },
   { id: 'precio',  label: 'Precio rápido',   desc: '50×25mm · precio grande, ideal gondola' },
@@ -82,6 +89,116 @@ export default function EtiquetasPage() {
   const [toast, setToast] = useState('')
   const [toastErr, setToastErr] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // ── Tab: Cajas / despacho ──────────────────────────────────────────────
+  const [tab, setTab] = useState<'producto' | 'cajas'>('producto')
+  const [pedidos, setPedidos] = useState<Pedido[]>([])
+  const [pedidosCargados, setPedidosCargados] = useState(false)
+  const [pedidoId, setPedidoId] = useState('')
+  const [cajas, setCajas] = useState<Caja[]>([{ items: [] }])
+  const [cajaActiva, setCajaActiva] = useState(0)
+  const [cantAgregar, setCantAgregar] = useState<Record<string, number>>({})
+  const [cajaPreview, setCajaPreview] = useState(0)
+  const canvasCajaRef = useRef<HTMLCanvasElement>(null)
+
+  const pedidoSel = pedidos.find(p => p.id === pedidoId) || null
+
+  async function cargarPedidos() {
+    if (pedidosCargados) return
+    const r = await fetch(`/api/pedidos?empresa=${empresa}`)
+    const d = await r.json()
+    setPedidos(Array.isArray(d) ? d : [])
+    setPedidosCargados(true)
+  }
+
+  function elegirPedido(id: string) {
+    setPedidoId(id)
+    setCajas([{ items: [] }])
+    setCajaActiva(0)
+    setCajaPreview(0)
+    const p = pedidos.find(x => x.id === id)
+    if (p) {
+      const init: Record<string, number> = {}
+      for (const it of p.items) init[it.nombre] = it.cantidad
+      setCantAgregar(init)
+    }
+  }
+
+  function asignadoDe(nombre: string): number {
+    return cajas.reduce((a, c) => a + c.items.filter(i => i.nombre === nombre).reduce((s, i) => s + i.cantidad, 0), 0)
+  }
+
+  function agregarACaja(nombre: string) {
+    const cant = cantAgregar[nombre] || 0
+    if (cant <= 0) return
+    setCajas(prev => prev.map((c, i) => {
+      if (i !== cajaActiva) return c
+      const existente = c.items.find(it => it.nombre === nombre)
+      if (existente) return { items: c.items.map(it => it.nombre === nombre ? { ...it, cantidad: it.cantidad + cant } : it) }
+      return { items: [...c.items, { nombre, cantidad: cant }] }
+    }))
+  }
+
+  function quitarDeCaja(cajaIdx: number, nombre: string) {
+    setCajas(prev => prev.map((c, i) => i !== cajaIdx ? c : { items: c.items.filter(it => it.nombre !== nombre) }))
+  }
+
+  function nuevaCaja() {
+    setCajas(prev => [...prev, { items: [] }])
+    setCajaActiva(cajas.length)
+  }
+
+  function borrarCaja(idx: number) {
+    if (cajas.length === 1) { setCajas([{ items: [] }]); return }
+    setCajas(prev => prev.filter((_, i) => i !== idx))
+    setCajaActiva(a => Math.max(0, a >= idx ? a - 1 : a))
+    setCajaPreview(p => Math.max(0, p >= idx ? p - 1 : p))
+  }
+
+  async function imprimirCajas() {
+    if (!port) { toast$('Conectá la impresora primero', true); return }
+    if (!canvasCajaRef.current || !pedidoSel) return
+    const cajasConItems = cajas.filter(c => c.items.length > 0)
+    if (cajasConItems.length === 0) { toast$('No hay cajas con productos', true); return }
+    setPrinting(true)
+    try {
+      await initPrinter(port)
+      const fecha = new Date().toLocaleDateString('es-AR')
+      for (let i = 0; i < cajasConItems.length; i++) {
+        renderCaja(canvasCajaRef.current, {
+          cajaNum: i + 1, cajaTotal: cajasConItems.length,
+          pedidoNumero: pedidoSel.numero || pedidoSel.id.slice(0, 8).toUpperCase(),
+          clienteNombre: pedidoSel.cliente_nombre, fecha,
+          items: cajasConItems[i].items,
+        })
+        // Esperar el próximo frame para que el canvas termine de dibujar antes de leerlo.
+        await new Promise(r => requestAnimationFrame(r))
+        await printCanvas(port, canvasCajaRef.current)
+      }
+      toast$(`${cajasConItems.length} etiqueta${cajasConItems.length !== 1 ? 's' : ''} de caja impresa${cajasConItems.length !== 1 ? 's' : ''} ✓`)
+    } catch (e) { toast$('Error: ' + (e as Error).message, true) }
+    finally { setPrinting(false) }
+  }
+
+  useEffect(() => {
+    if (tab === 'cajas') cargarPedidos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
+
+  useEffect(() => {
+    if (tab !== 'cajas' || !canvasCajaRef.current) return
+    const cajasConItems = cajas.filter(c => c.items.length > 0)
+    const c = cajasConItems[cajaPreview] || cajasConItems[0]
+    if (!c || !pedidoSel) return
+    renderCaja(canvasCajaRef.current, {
+      cajaNum: cajaPreview + 1, cajaTotal: cajasConItems.length,
+      pedidoNumero: pedidoSel.numero || pedidoSel.id.slice(0, 8).toUpperCase(),
+      clienteNombre: pedidoSel.cliente_nombre,
+      fecha: new Date().toLocaleDateString('es-AR'),
+      items: c.items,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, cajas, cajaPreview, pedidoSel])
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
@@ -192,6 +309,21 @@ export default function EtiquetasPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '0 28px', display: 'flex', gap: 4 }}>
+        {([['producto', 'Producto'], ['cajas', 'Cajas / Despacho']] as const).map(([id, label]) => (
+          <button key={id} className="ebtn" onClick={() => setTab(id)}
+            style={{
+              background: 'none', border: 'none', borderBottom: `2px solid ${tab === id ? T.wine : 'transparent'}`,
+              color: tab === id ? T.wine : T.muted, fontWeight: tab === id ? 700 : 500, fontSize: 13,
+              padding: '11px 6px', margin: '0 10px 0 0', cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'producto' && (
       <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: 24, padding: '24px 28px', alignItems: 'start' }}>
 
         {/* ── LEFT PANEL ── */}
@@ -307,6 +439,130 @@ export default function EtiquetasPage() {
           </div>
         </div>
       </div>
+      )}
+
+      {tab === 'cajas' && (() => {
+        const cajasConItems = cajas.filter(c => c.items.length > 0)
+        return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 380px', gap: 24, padding: '24px 28px', alignItems: 'start' }}>
+
+          {/* ── Pedido + items ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 10 }}>Pedido a despachar</div>
+              <select className="einp" style={INP} value={pedidoId} onChange={e => elegirPedido(e.target.value)}>
+                <option value="">— Elegir pedido —</option>
+                {pedidos.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.numero || p.id.slice(0, 8).toUpperCase()} · {p.cliente_nombre} ({p.estado})
+                  </option>
+                ))}
+              </select>
+              {pedidos.length === 0 && pedidosCargados && (
+                <div style={{ fontSize: 12, color: T.dim, marginTop: 8 }}>No hay pedidos cargados para esta empresa.</div>
+              )}
+            </div>
+
+            {pedidoSel && (
+              <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>
+                  Items del pedido — agregar a Caja {cajaActiva + 1}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pedidoSel.items.map(it => {
+                    const asignado = asignadoDe(it.nombre)
+                    const restante = it.cantidad - asignado
+                    return (
+                      <div key={it.nombre} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: T.bg, borderRadius: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.nombre}</div>
+                          <div style={{ fontSize: 11, color: restante > 0 ? T.amber : T.green, marginTop: 2 }}>
+                            {restante > 0 ? `Faltan ${restante} de ${it.cantidad}` : `✓ Asignado (${it.cantidad})`}
+                          </div>
+                        </div>
+                        <input type="number" min={0} max={Math.max(0, restante)} style={{ ...INP, width: 54, padding: '5px 6px', textAlign: 'center' }}
+                          value={cantAgregar[it.nombre] ?? 0}
+                          onChange={e => setCantAgregar(prev => ({ ...prev, [it.nombre]: Math.max(0, parseInt(e.target.value) || 0) }))} />
+                        <button className="ebtn" style={btn('default', { padding: '5px 10px', fontSize: 12 })}
+                          disabled={restante <= 0 || (cantAgregar[it.nombre] ?? 0) <= 0}
+                          onClick={() => agregarACaja(it.nombre)}>+ Agregar</button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Cajas armadas ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Cajas</div>
+                <button className="ebtn" style={btn('default', { fontSize: 12, padding: '5px 12px' })} onClick={nuevaCaja}>+ Nueva caja</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {cajas.map((c, idx) => (
+                  <div key={idx}
+                    onClick={() => setCajaActiva(idx)}
+                    style={{ border: `1.5px solid ${cajaActiva === idx ? T.wine : T.border}`, background: cajaActiva === idx ? T.wineBg : T.bg, borderRadius: 9, padding: '10px 12px', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: c.items.length ? 6 : 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: cajaActiva === idx ? T.wine : T.text }}>
+                        Caja {idx + 1} {cajaActiva === idx ? '(activa)' : ''}
+                      </span>
+                      <button className="ebtn" style={btn('ghost', { fontSize: 11, padding: '3px 8px', color: T.red })}
+                        onClick={e => { e.stopPropagation(); borrarCaja(idx) }}>Borrar</button>
+                    </div>
+                    {c.items.map(it => (
+                      <div key={it.nombre} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.muted, padding: '2px 0' }}>
+                        <span>{it.cantidad} × {it.nombre}</span>
+                        <span onClick={e => { e.stopPropagation(); quitarDeCaja(idx, it.nombre) }} style={{ cursor: 'pointer', color: T.dim }}>✕</span>
+                      </div>
+                    ))}
+                    {c.items.length === 0 && <div style={{ fontSize: 11, color: T.dim, fontStyle: 'italic' }}>Vacía</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Preview + imprimir ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Vista previa</div>
+            {cajasConItems.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {cajasConItems.map((_, i) => (
+                  <button key={i} className="ebtn" onClick={() => setCajaPreview(i)}
+                    style={{ ...btn(cajaPreview === i ? 'accent' : 'default', { padding: '4px 10px', fontSize: 12 }) }}>
+                    Caja {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div style={{ background: '#e8e8e8', border: `1px solid ${T.border}`, borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div style={{ background: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', borderRadius: 4 }}>
+                <canvas ref={canvasCajaRef} style={{ display: 'block', width: '100%', maxWidth: 340, height: 'auto' }} />
+              </div>
+              {cajasConItems.length === 0 && (
+                <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>Agregá productos a una caja para ver la vista previa</div>
+              )}
+            </div>
+
+            <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
+              {!port && (
+                <div style={{ fontSize: 12, color: T.amber, background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
+                  Conectá la impresora arriba para poder imprimir.
+                </div>
+              )}
+              <button className="ebtn" onClick={imprimirCajas} disabled={printing || cajasConItems.length === 0}
+                style={btn('accent', { width: '100%', padding: '10px', fontSize: 14, fontWeight: 700, opacity: (printing || cajasConItems.length === 0) ? 0.5 : 1 })}>
+                {printing ? 'Imprimiendo...' : `🖨️  Imprimir ${cajasConItems.length} etiqueta${cajasConItems.length !== 1 ? 's' : ''} de caja`}
+              </button>
+            </div>
+          </div>
+        </div>
+        )
+      })()}
 
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100, background: toastErr ? T.redBg : T.surface, border: `1px solid ${toastErr ? T.redBd : T.border}`, color: toastErr ? T.red : T.text, borderRadius: 10, padding: '12px 20px', fontSize: 13, boxShadow: '0 4px 20px rgba(26,18,16,0.1)' }}>
