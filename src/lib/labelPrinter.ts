@@ -464,7 +464,7 @@ export function renderCaja(canvas: HTMLCanvasElement, d: CajaLabelData) {
   let y = 66
   ctx.font = `bold ${s(14)}px Arial`
   ctx.fillStyle = '#222'
-  const pedLine = `Pedido ${d.pedidoNumero}`
+  const pedLine = `Presupuesto ${d.pedidoNumero}`
   ctx.fillText(pedLine, s(PAD), s(y))
   y += 18
 

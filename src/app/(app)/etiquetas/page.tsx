@@ -62,7 +62,7 @@ interface Producto {
 
 interface PedidoItem { producto_id?: string; nombre: string; cantidad: number }
 interface Pedido {
-  id: string; numero?: string; cliente_nombre: string; estado: string
+  id: string; numero?: string; cliente_nombre: string; tipo?: string
   items: PedidoItem[]; created_at?: string
 }
 interface Caja { items: { nombre: string; cantidad: number }[] }
@@ -103,11 +103,15 @@ export default function EtiquetasPage() {
 
   const pedidoSel = pedidos.find(p => p.id === pedidoId) || null
 
+  // En la práctica no se usa el módulo "Pedidos" — lo que arma cada despacho
+  // es un Presupuesto (tipo de comprobante en Ventas), así que las cajas se
+  // arman a partir de ahí.
   async function cargarPedidos() {
     if (pedidosCargados) return
-    const r = await fetch(`/api/pedidos?empresa=${empresa}`)
+    const r = await fetch(`/api/ventas?empresa=${empresa}`)
     const d = await r.json()
-    setPedidos(Array.isArray(d) ? d : [])
+    const presupuestos = (Array.isArray(d) ? d : []).filter((v: Pedido) => v.tipo === 'presupuesto')
+    setPedidos(presupuestos)
     setPedidosCargados(true)
   }
 
@@ -449,24 +453,25 @@ export default function EtiquetasPage() {
           {/* ── Pedido + items ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 10 }}>Pedido a despachar</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 10 }}>Presupuesto a despachar</div>
               <select className="einp" style={INP} value={pedidoId} onChange={e => elegirPedido(e.target.value)}>
-                <option value="">— Elegir pedido —</option>
+                <option value="">— Elegir presupuesto —</option>
                 {pedidos.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.numero || p.id.slice(0, 8).toUpperCase()} · {p.cliente_nombre} ({p.estado})
+                    {p.numero || p.id.slice(0, 8).toUpperCase()} · {p.cliente_nombre}
+                    {p.created_at ? ` · ${new Date(p.created_at).toLocaleDateString('es-AR')}` : ''}
                   </option>
                 ))}
               </select>
               {pedidos.length === 0 && pedidosCargados && (
-                <div style={{ fontSize: 12, color: T.dim, marginTop: 8 }}>No hay pedidos cargados para esta empresa.</div>
+                <div style={{ fontSize: 12, color: T.dim, marginTop: 8 }}>No hay presupuestos cargados para esta empresa.</div>
               )}
             </div>
 
             {pedidoSel && (
               <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>
-                  Items del pedido — agregar a Caja {cajaActiva + 1}
+                  Items del presupuesto — agregar a Caja {cajaActiva + 1}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {pedidoSel.items.map(it => {
