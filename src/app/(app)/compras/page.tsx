@@ -6,6 +6,19 @@ function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
+// Compras y deudas son compartidas entre Aroma y La Vid (ver cargar() más abajo) —
+// esta marca distingue a cuál de las dos quedó atribuida cada orden/factura.
+function EmpresaBadge({ empresa, T }: { empresa: string; T: { wine: string; wineBg: string; blue: string; blueBg: string } }) {
+  const esAroma = empresa === 'aroma'
+  const color = esAroma ? T.wine : T.blue
+  const bg = esAroma ? T.wineBg : T.blueBg
+  return (
+    <span style={{ marginLeft: 7, padding: '1px 6px', borderRadius: 99, fontSize: 9.5, fontWeight: 700, color, background: bg, verticalAlign: 'middle' }}>
+      {esAroma ? 'Aroma' : 'La Vid'}
+    </span>
+  )
+}
+
 interface DropPos { top: number; left: number; width: number; maxH: number }
 function computeDropPos(el: HTMLElement, desired: number): DropPos {
   const rect = el.getBoundingClientRect()
@@ -221,13 +234,21 @@ export default function ComprasPage() {
   async function cargar(emp: string) {
     setLoading(true)
     try {
-      const [cRes, provRes, prodRes] = await Promise.all([
-        fetch(`/api/compras?empresa=${emp}`),
+      // Compras y deudas son compartidas entre las 2 empresas (un solo depósito
+      // real, mismos proveedores) — se traen de ambas y se combinan en una sola
+      // lista, sin importar cuál esté seleccionada en el toggle. Productos sí
+      // sigue filtrado por la empresa activa: es lo que se usa para elegir el
+      // producto puntual al cargar los ítems de la compra.
+      const [cResAroma, cResLavid, provRes, prodRes] = await Promise.all([
+        fetch(`/api/compras?empresa=aroma`),
+        fetch(`/api/compras?empresa=lavid`),
         fetch('/api/proveedores'),
         fetch(`/api/productos?empresa=${emp}`),
       ])
-      const [cData, provData, prodData] = await Promise.all([cRes.json(), provRes.json(), prodRes.json()])
-      setCompras(Array.isArray(cData) ? cData : [])
+      const [cDataAroma, cDataLavid, provData, prodData] = await Promise.all([cResAroma.json(), cResLavid.json(), provRes.json(), prodRes.json()])
+      const combinadas = [...(Array.isArray(cDataAroma) ? cDataAroma : []), ...(Array.isArray(cDataLavid) ? cDataLavid : [])]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setCompras(combinadas)
       setProveedores(Array.isArray(provData) ? provData : [])
       setProductos(Array.isArray(prodData) ? prodData : [])
     } finally { setLoading(false) }
@@ -569,7 +590,7 @@ export default function ComprasPage() {
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Órdenes de compra</h1>
-          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
+          <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>Compartido — Aroma de Vid y La Vid Consultora</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={abrirDeuda} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -634,7 +655,10 @@ export default function ComprasPage() {
                 <tr><td colSpan={7} style={{ padding: 48, textAlign: 'center', color: T.muted, fontSize: 13 }}>Sin órdenes</td></tr>
               ) : filtradas.map(c => esVistaPagar ? (
                 <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', transition: 'background 0.1s' }} onClick={() => setDetalle(c)}>
-                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</td>
+                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>
+                    {c.numero}
+                    <EmpresaBadge empresa={c.empresa} T={T} />
+                  </td>
                   <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{c.proveedor_nombre}</td>
                   <td style={{ padding: '10px 14px', fontSize: 13, color: T.muted, fontFamily: 'monospace' }}>{c.nro_factura || '—'}</td>
                   <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: T.text }}>${c.total.toLocaleString('es-AR')}</td>
@@ -652,7 +676,10 @@ export default function ComprasPage() {
                 </tr>
               ) : (
                 <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, cursor: 'pointer', transition: 'background 0.1s' }} onClick={() => setDetalle(c)}>
-                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>{c.numero}</td>
+                  <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: T.muted }}>
+                    {c.numero}
+                    <EmpresaBadge empresa={c.empresa} T={T} />
+                  </td>
                   <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{c.proveedor_nombre}</td>
                   <td style={{ padding: '10px 14px', fontSize: 13, color: T.muted }}>{c.items?.length || 0} ítem{c.items?.length !== 1 ? 's' : ''}</td>
                   <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: T.text }}>${c.total.toLocaleString('es-AR')}</td>
