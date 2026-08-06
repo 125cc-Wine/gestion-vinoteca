@@ -2254,7 +2254,7 @@ function fmtCantBot(qty: number) {
 function PrintDoc({ venta, empresa, cliente }: {
   venta: Venta
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
-  cliente?: { cuit?: string; direccion?: string; telefono?: string; email?: string } | null
+  cliente?: { cuit?: string; direccion?: string; telefono?: string; email?: string; saldo?: number } | null
 }) {
   const items = venta.items as (VentaItem & { descuento?: number })[]
   const fecha = new Date(venta.created_at!).toLocaleDateString('es-AR')
@@ -2367,7 +2367,17 @@ function PrintDoc({ venta, empresa, cliente }: {
       })()}
 
       {/* Totales */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: cliente?.saldo && cliente.saldo > 0 ? 'space-between' : 'flex-end', alignItems: 'flex-start', marginBottom: '16px' }}>
+        {!!(cliente?.saldo && cliente.saldo > 0) && (
+          <div style={{ border: '1px solid #A07010', borderLeft: '3px solid #A07010', background: '#FBF3E7', padding: '8px 14px', minWidth: 180 }}>
+            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A07010', marginBottom: 4 }}>
+              Saldo Cuenta Corriente
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#A07010' }}>
+              ${cliente!.saldo!.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+        )}
         <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 240 }}>
           <tbody>
             <tr>
