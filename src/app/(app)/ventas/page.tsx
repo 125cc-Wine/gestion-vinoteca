@@ -2376,6 +2376,9 @@ function PrintDoc({ venta, empresa, cliente }: {
             <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#A07010' }}>
               ${cliente!.saldo!.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </div>
+            <div style={{ fontSize: '9.5px', color: '#A07010', opacity: 0.8, marginTop: 2 }}>
+              {esCuentaCorriente ? 'Incluye este comprobante' : 'No incluye este comprobante (se abonó aparte)'}
+            </div>
           </div>
         )}
         <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 240 }}>

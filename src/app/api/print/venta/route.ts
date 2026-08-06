@@ -342,6 +342,7 @@ export async function GET(req: NextRequest) {
     }
     .saldo-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #A07010; margin-bottom: 4px; }
     .saldo-monto { font-size: 15px; font-weight: 700; color: #A07010; }
+    .saldo-nota { font-size: 9.5px; color: #A07010; opacity: 0.8; margin-top: 2px; }
     .totales-box {
       border: 1px solid #DDD0C0;
       border-radius: 5px;
@@ -486,6 +487,7 @@ export async function GET(req: NextRequest) {
       <div class="saldo-box">
         <div class="saldo-title">Saldo Cuenta Corriente</div>
         <div class="saldo-monto">${moneda(cliente.saldo)}</div>
+        <div class="saldo-nota">${venta.estado_pago === 'cuenta_corriente' ? 'Incluye este comprobante' : 'No incluye este comprobante (se abonó aparte)'}</div>
       </div>` : ''}
     </div>
     <div class="totales-box">
