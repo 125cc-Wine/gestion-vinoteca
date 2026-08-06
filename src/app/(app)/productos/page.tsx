@@ -781,6 +781,27 @@ export default function ProductosPage() {
     setListaQuery(''); setListaSugsOpen(false)
   }
 
+  // Agrega/quita de un saque todos los productos activos con precio de una
+  // bodega puntual — toggle: si ya están todos cargados, los saca; si falta
+  // alguno, agrega los que falten (no duplica los que ya estaban).
+  function listaToggleBodega(bodega: string) {
+    const deLaBodega = productos.filter(p => p.activo !== false && p.precio_venta > 0 && p.bodega === bodega)
+    const idsBodega = new Set(deLaBodega.map(p => p.id))
+    const yaEstanTodos = deLaBodega.length > 0 && deLaBodega.every(p => listaItems.find(i => i.id === p.id))
+    if (yaEstanTodos) {
+      setListaItems(prev => prev.filter(i => !idsBodega.has(i.id)))
+    } else {
+      const faltantes: ListaItem[] = deLaBodega
+        .filter(p => !listaItems.find(i => i.id === p.id))
+        .map(p => ({
+          id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+          categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+          precio_mayorista: p.precio_mayorista || 0,
+        }))
+      setListaItems(prev => [...prev, ...faltantes].sort((a, b) => (a.bodega || a.varietal).localeCompare(b.bodega || b.varietal) || a.nombre.localeCompare(b.nombre)))
+    }
+  }
+
   // Listas default: cargan de una todos los productos activos con precio de
   // la categoría correspondiente, en vez de tener que buscarlos uno por uno.
   // Como toman el precio de "productos" (ya cargado en memoria), siempre
@@ -2232,6 +2253,26 @@ export default function ProductosPage() {
             <div style={{ fontSize: 11, color: T.dim, marginBottom: 16, marginTop: -8 }}>
               Cargan todos los productos activos con precio de esa categoría, con el precio de hoy. También podés buscar y armar una lista a mano abajo.
             </div>
+
+            {/* Por bodega */}
+            {bodegasUnicas.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 7 }}>
+                  Por bodega
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {bodegasUnicas.map(b => {
+                    const deLaBodega = productos.filter(p => p.activo !== false && p.precio_venta > 0 && p.bodega === b)
+                    const cargada = deLaBodega.length > 0 && deLaBodega.every(p => listaItems.find(i => i.id === p.id))
+                    return (
+                      <button key={b} onClick={() => listaToggleBodega(b)} className={`pill${cargada ? ' on' : ''}`}>
+                        {b} <span style={{ opacity: 0.6 }}>({deLaBodega.length})</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Listas guardadas */}
             {listasGuardadas.length > 0 && (
