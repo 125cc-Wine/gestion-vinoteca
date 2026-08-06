@@ -79,7 +79,7 @@ const ESTADO_STYLE: Record<string, React.CSSProperties> = {
   cancelado:  { background: T.redBg,   color: T.red,   border: `1px solid rgba(192,48,48,0.25)` },
 }
 
-interface Producto { id: string; nombre: string; bodega?: string; stock: number; precio_venta: number }
+interface Producto { id: string; nombre: string; bodega?: string; stock: number; precio_venta: number; sku?: string }
 interface Cliente { id: string; nombre: string; apellido?: string; razon_social?: string }
 interface PedidoItem { producto_id: string; nombre: string; cantidad: number; precio_unitario: number }
 interface StockStatus { [key: string]: { disponible: number; pedido: number; ok: boolean } }
@@ -397,7 +397,7 @@ export default function PedidosPage() {
                     const st = stockStatus[item.producto_id]
                     const q = (prodSearches[idx] || '').toLowerCase()
                     const filtered = prodOpen === idx
-                      ? (q ? productos.filter(p => normalize(`${p.nombre} ${p.bodega || ''}`).includes(normalize(q))) : productos).slice(0, 25)
+                      ? (q ? productos.filter(p => normalize(`${p.nombre} ${p.bodega || ''} ${p.sku || ''}`).includes(normalize(q))) : productos).slice(0, 25)
                       : []
                     return (
                       <div key={idx} style={{ border: `1px solid ${st ? (st.ok ? T.greenBd : T.redBd) : T.border}`, borderRadius: 10, padding: 10, background: st ? (st.ok ? T.greenBg : T.redBg) : 'transparent', transition: 'border-color 0.12s' }}>

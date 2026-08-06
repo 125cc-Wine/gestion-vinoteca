@@ -258,7 +258,7 @@ export default function EtiquetasPage() {
   }
 
   const filtrados = productos
-    .filter(p => normalize(`${p.nombre} ${p.bodega} ${p.varietal}`).includes(normalize(busqueda)))
+    .filter(p => normalize(`${p.nombre} ${p.bodega} ${p.varietal} ${p.sku || ''}`).includes(normalize(busqueda)))
     .slice(0, 14)
 
   async function conectar() {

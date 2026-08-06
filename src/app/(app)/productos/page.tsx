@@ -475,7 +475,7 @@ export default function ProductosPage() {
   const filtrados = (() => {
     const base = productos.filter(p => {
       const q = normalize(busqueda)
-      if (q && !normalize(`${p.nombre}${p.bodega}${p.varietal}`).includes(q)) return false
+      if (q && !normalize(`${p.nombre}${p.bodega}${p.varietal}${p.sku || ''}`).includes(q)) return false
       if (filtroCategoria && p.categoria !== filtroCategoria) return false
       if (filtroBodega && p.bodega !== filtroBodega) return false
       if (filtroSinPrecio && (p.precio_venta || 0) > 0) return false
@@ -1338,7 +1338,7 @@ export default function ProductosPage() {
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 360 }}>
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.dim, fontSize: 14, pointerEvents: 'none' }}>⌕</span>
           <input ref={searchRef} style={{ ...INP, paddingLeft: 30 }}
-            placeholder="Buscar producto, bodega, varietal... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+            placeholder="Buscar producto, bodega, varietal, SKU... (Ctrl+F)" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
         <button onClick={() => setScanMode('buscar')}
           title="Escanear código de barras"

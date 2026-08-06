@@ -89,6 +89,7 @@ interface Producto {
   nombre: string
   bodega: string
   precio_venta?: number
+  sku?: string
 }
 
 interface Vendedor {
@@ -220,7 +221,7 @@ function ProductoSearch({
   useEffect(() => { setQ(value) }, [value])
 
   const filtered = productos.filter(p =>
-    `${p.nombre} ${p.bodega || ''}`.toLowerCase().includes(q.toLowerCase())
+    `${p.nombre} ${p.bodega || ''} ${p.sku || ''}`.toLowerCase().includes(q.toLowerCase())
   ).slice(0, 8)
 
   useEffect(() => {

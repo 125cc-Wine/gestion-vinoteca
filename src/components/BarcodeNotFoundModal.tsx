@@ -65,7 +65,7 @@ export default function BarcodeNotFoundModal({ code, empresa, onSelect, onClose 
   const filtrados = busqueda.trim().length < 2
     ? []
     : productos.filter(p =>
-        normalize(`${p.nombre} ${p.bodega ?? ''} ${p.varietal ?? ''}`).includes(normalize(busqueda))
+        normalize(`${p.nombre} ${p.bodega ?? ''} ${p.varietal ?? ''} ${p.sku ?? ''}`).includes(normalize(busqueda))
       ).slice(0, 50)
 
   async function crearProducto() {
