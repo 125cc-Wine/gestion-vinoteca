@@ -184,6 +184,11 @@ export default function ClienteFichaPage() {
   const [cobroMonto2, setCobroMonto2] = useState(0)
   const [cobroMedioPago2, setCobroMedioPago2] = useState('Transferencia')
   const [cobroGuardando, setCobroGuardando] = useState(false)
+  const [cargoModal, setCargoModal] = useState(false)
+  const [cargoMonto, setCargoMonto] = useState(0)
+  const [cargoConcepto, setCargoConcepto] = useState('')
+  const [cargoFecha, setCargoFecha] = useState('')
+  const [cargoGuardando, setCargoGuardando] = useState(false)
 
   useEffect(() => {
     async function cargarVentas(emp: string) {
@@ -259,6 +264,30 @@ export default function ClienteFichaPage() {
       const d = await r.json()
       setVentas(Array.isArray(d) ? d : [])
     }
+  }
+
+  function abrirCargo() {
+    setCargoMonto(0)
+    setCargoConcepto('')
+    setCargoFecha(new Date().toISOString().split('T')[0])
+    setCargoModal(true)
+  }
+
+  async function guardarCargo() {
+    if (!cliente || !cargoMonto || cargoMonto <= 0) return
+    if (!cargoConcepto.trim()) { alert('Ingresá un concepto/motivo de la deuda'); return }
+    setCargoGuardando(true)
+    const nombreCliente = cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim()
+    const res = await fetch('/api/cta-cte', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cargo', concepto: cargoConcepto, monto: cargoMonto, fecha: cargoFecha }),
+    })
+    const data = await res.json()
+    setCargoGuardando(false)
+    if (data.error) { alert('Error: ' + data.error); return }
+    setCargoModal(false)
+    setCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
+    cargarMovimientos()
   }
 
   async function cargarConsignaciones(emp: string) {
@@ -524,6 +553,9 @@ export default function ClienteFichaPage() {
                 <span style={{ fontSize: 12, color: T.muted }}>
                   Saldo actual: <strong style={{ color: cliente.saldo >= 0 ? T.green : T.red }}>{fmtMonto(cliente.saldo)}</strong>
                 </span>
+                <button onClick={abrirCargo} style={{ background: T.surface, color: T.wine, border: `1px solid ${T.wineBd}`, borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Cargar deuda
+                </button>
                 {cliente.saldo > 0 && (
                   <button onClick={abrirCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                     Registrar cobro
@@ -715,6 +747,47 @@ export default function ClienteFichaPage() {
               <button onClick={() => setCobroModal(false)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
               <button disabled={cobroGuardando || !cobroMonto} onClick={guardarCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cobroGuardando ? 'default' : 'pointer', opacity: cobroGuardando || !cobroMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {cobroGuardando ? 'Guardando...' : 'Confirmar cobro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal cargar deuda (cargo suelto, sin venta asociada) ─────────────── */}
+      {cargoModal && cliente && (
+        <div
+          onClick={e => e.target === e.currentTarget && setCargoModal(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Cargar deuda</div>
+              <button onClick={() => setCargoModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 12, color: T.muted }}>
+                Saldo actual: <strong style={{ color: T.wine }}>{fmtMonto(cliente.saldo)}</strong> — suma este monto a la deuda del cliente sin generar ninguna venta ni factura (para deudas viejas, ajustes, etc.).
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto adeudado</label>
+                <input type="number" autoFocus value={cargoMonto || ''} onChange={e => setCargoMonto(parseFloat(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto / motivo</label>
+                <input autoFocus={false} placeholder="Ej: saldo anterior, préstamo, ajuste..." value={cargoConcepto} onChange={e => setCargoConcepto(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
+                <input type="date" value={cargoFecha} onChange={e => setCargoFecha(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setCargoModal(false)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button disabled={cargoGuardando || !cargoMonto} onClick={guardarCargo} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cargoGuardando ? 'default' : 'pointer', opacity: cargoGuardando || !cargoMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {cargoGuardando ? 'Guardando...' : 'Confirmar deuda'}
               </button>
             </div>
           </div>
