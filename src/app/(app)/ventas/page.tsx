@@ -73,8 +73,8 @@ function lookupWooUrl(nombre: string): string {
 }
 
 const EMPRESAS_DATA = {
-  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
-  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png' },
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg', inicioActividades: '23/10/2012' },
+  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png', inicioActividades: '01/07/2022' },
 }
 
 const CONDICIONES_VENTA = ['Contado', 'Cta. Cte.', 'Transferencia', 'Cheque', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'Billetera Virtual MercadoPago', 'CtaDni']
@@ -2460,7 +2460,7 @@ function PrintDoc({ venta, empresa, cliente }: {
 function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
   venta: Venta
   tipo: 1 | 6
-  empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
+  empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string; inicioActividades?: string }
   clienteCuit?: string
   clienteSaldo?: number
 }) {
@@ -2523,7 +2523,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
               <div style={{ marginBottom: 3 }}><strong>Fecha de emisión:</strong> {fecha}</div>
               <div style={{ marginBottom: 3 }}><strong>C.U.I.T.:</strong> {empresa.cuit}</div>
               <div style={{ marginBottom: 3 }}><strong>Ingresos Brutos:</strong> {empresa.cuit}</div>
-              <div><strong>Inicio de Actividades:</strong> 01/01/2010</div>
+              <div><strong>Inicio de Actividades:</strong> {empresa.inicioActividades || '—'}</div>
             </td>
           </tr>
         </tbody>
