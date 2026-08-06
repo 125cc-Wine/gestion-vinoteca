@@ -482,7 +482,7 @@ export async function GET(req: NextRequest) {
   <!-- ══ TOTALES ══ -->
   <div class="bottom-grid">
     <div>
-      ${venta.estado_pago === 'cuenta_corriente' && cliente?.saldo != null ? `
+      ${cliente?.saldo != null && cliente.saldo > 0 ? `
       <div class="saldo-box">
         <div class="saldo-title">Saldo Cuenta Corriente</div>
         <div class="saldo-monto">${moneda(cliente.saldo)}</div>
