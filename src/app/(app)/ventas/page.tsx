@@ -2071,7 +2071,7 @@ export default function VentasPage() {
               </button>
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
-              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} clienteCuit={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.cuit} />
+              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} clienteCuit={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.saldo} />
             </div>
           </div>
         </div>
@@ -2196,7 +2196,7 @@ export default function VentasPage() {
       </div>
 
       <div id="print-area-factura" style={{ display: 'none' }}>
-        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} clienteCuit={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.cuit} />}
+        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} clienteCuit={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.saldo} />}
       </div>
 
       {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
@@ -2457,11 +2457,12 @@ function PrintDoc({ venta, empresa, cliente }: {
 }
 
 // ─── PrintFactura — formato oficial AFIP Factura A / B ────────────────────────
-function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
+function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
   venta: Venta
   tipo: 1 | 6
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
   clienteCuit?: string
+  clienteSaldo?: number
 }) {
   const items   = venta.items as (VentaItem & { descuento?: number })[]
   const letra   = tipo === 1 ? 'A' : 'B'
@@ -2600,7 +2601,20 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit }: {
       })()}
 
       {/* ── Totales + IVA ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: clienteSaldo && clienteSaldo > 0 ? 'space-between' : 'flex-end', alignItems: 'flex-start', marginBottom: '16px' }}>
+        {!!(clienteSaldo && clienteSaldo > 0) && (
+          <div style={{ border: '1px solid #A07010', borderLeft: '3px solid #A07010', background: '#FBF3E7', padding: '8px 14px', minWidth: 180 }}>
+            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A07010', marginBottom: 4 }}>
+              Saldo Cuenta Corriente
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#A07010' }}>
+              ${clienteSaldo!.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: '9.5px', color: '#A07010', opacity: 0.8, marginTop: 2 }}>
+              {venta.estado_pago === 'cuenta_corriente' ? 'Incluye este comprobante' : 'No incluye este comprobante (se abonó aparte)'}
+            </div>
+          </div>
+        )}
         <table style={{ borderCollapse: 'collapse', fontSize: '11.5px', minWidth: 270, border: `1px solid ${LINE}`, borderRadius: 6, overflow: 'hidden' }}>
           <tbody>
             <tr style={{ borderBottom: `1px solid ${LINE}` }}>
