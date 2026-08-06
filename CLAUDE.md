@@ -21,10 +21,9 @@ todas las páginas de `src/app/(app)/*` para filtrar datos y cambiar tema/logo
 - Env vars por empresa: `AFIP_CERT_{AROMA,LAVID}`, `AFIP_KEY_{AROMA,LAVID}`,
   `AFIP_CUIT_{AROMA,LAVID}`, `AFIP_PTO_VTA_{AROMA,LAVID}`. `AFIP_ENV=prod` (ya en producción,
   no homologación).
-- **Estado:** Aroma tiene certificado emitido y funcionando en prod. La Vid tiene
-  `lavid.csr`/`lavid.key` generados pero **sin certificado emitido todavía** — el botón de
-  facturar no va a andar para La Vid hasta tramitar el `.crt` en AFIP y cargar
-  `AFIP_CERT_LAVID`/`AFIP_CUIT_LAVID`/`AFIP_PTO_VTA_LAVID` en `.env.local` (y en Vercel).
+- **Estado:** Aroma y La Vid tienen certificado emitido y funcionando en prod (login WSAA
+  verificado para ambas). Punto de venta: Aroma=7, La Vid=5 (de los dos habilitados en AFIP
+  para La Vid — 4 y 5 — la gestora confirmó que el 5 es el que usa este sistema).
 
 ## Health Stack
 
