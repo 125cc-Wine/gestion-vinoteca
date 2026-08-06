@@ -739,6 +739,16 @@ export default function VentasPage() {
     if (!factVenta) return
     if (factTipo === 1 && factDocNro.length !== 11) { setFactError('El CUIT debe tener 11 dígitos'); return }
     if (factTipo === 6 && factDocTipo !== 99 && !factDocNro) { setFactError('Ingresá el número de documento'); return }
+    // La emisión con CAE es irreversible (no se puede "deshacer" una factura,
+    // solo anularla con una nota de crédito) — se confirma antes de mandarla a AFIP.
+    const letraConfirm = factTipo === 1 ? 'A' : factTipo === 6 ? 'B' : 'C'
+    const totalConfirm = factVenta.total.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })
+    const confirmado = window.confirm(
+      `¿Confirmás emitir esta Factura ${letraConfirm} a AFIP?\n\n` +
+      `Cliente: ${factVenta.cliente_nombre}\nTotal: ${totalConfirm}\n\n` +
+      `Una vez emitida con CAE no se puede deshacer.`
+    )
+    if (!confirmado) return
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
     const w = window.open('', '_blank', 'width=850,height=1100')
