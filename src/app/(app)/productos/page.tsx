@@ -1482,8 +1482,12 @@ export default function ProductosPage() {
       )}
 
       {/* ── Table ─────────────────────────────────────────────────── */}
-      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)', contain: 'layout' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      {/* overflowX: auto — con muchas columnas + 5 botones de acción, a 100%
+          de zoom la tabla se corta contra el borde y "overflow: hidden" tapaba
+          los últimos botones (Etiqueta, Desactivar) en vez de dejar scrollear.
+          overflowY se deja en hidden para conservar el recorte de esquinas redondeadas. */}
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflowX: 'auto', overflowY: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)', contain: 'layout' }}>
+        <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: T.bg }}>
               <th style={{ width: 40, padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${T.border}` }}>
