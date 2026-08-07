@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 // El color primario (sidebar, CTA, acentos de nav) depende de la empresa:
@@ -472,7 +473,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {searchOpen && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh' }}
-          onClick={e => e.target === e.currentTarget && setSearchOpen(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setSearchOpen(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 580, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
             {/* Input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: searchResults.length > 0 || searchLoading ? `1px solid ${T.border}` : 'none' }}>

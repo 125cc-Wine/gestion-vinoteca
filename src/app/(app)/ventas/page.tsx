@@ -12,6 +12,7 @@ import {
 } from '@/lib/labelPrinter'
 import wooUrls from '@/data/wooUrls.json'
 import QRCode from 'qrcode'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const CBTE_TIPO_POR_LETRA_QR: Record<number, number> = { 1: 1, 6: 6, 11: 11 }
 
@@ -1361,7 +1362,7 @@ export default function VentasPage() {
       {/* ══ SCANNER CÓDIGO DE BARRAS ══ */}
       {porCobrarModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setPorCobrarModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setPorCobrarModal(false) })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(26,18,16,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: `1px solid ${C.border}` }}>
               <div>
@@ -1448,7 +1449,7 @@ export default function VentasPage() {
         ).slice(0, 30)
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-            onClick={e => e.target === e.currentTarget && setDevSelectorModal(false)}>
+            onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setDevSelectorModal(false) })}>
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 660, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 48px rgba(26,18,16,0.18)' }}>
 
               {/* Header */}
@@ -1542,7 +1543,7 @@ export default function VentasPage() {
       {/* ══ MODAL VENTA ══ */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && tryCloseVenta()}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { tryCloseVenta() })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 760, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
@@ -1783,7 +1784,7 @@ export default function VentasPage() {
       {/* ══ MODAL PEDIDO ══ */}
       {pedidoModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && tryClosePedido()}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { tryClosePedido() })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 680, margin: '16px auto', boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Nuevo pedido</h2>
@@ -1890,7 +1891,7 @@ export default function VentasPage() {
       {/* ══ MODAL DETALLE PEDIDO ══ */}
       {detallePedido && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setDetallePedido(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setDetallePedido(null) })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 480, boxShadow: '0 8px 40px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Pedido {detallePedido.numero}</h2>
@@ -1942,7 +1943,7 @@ export default function VentasPage() {
       {/* ── Modal vista previa ──────────────────────────────────────────────── */}
       {previewVenta && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setPreviewVenta(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setPreviewVenta(null) })}>
           <div style={{ width: '100%', maxWidth: 820 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Vista previa — {previewVenta.numero}</span>
@@ -1974,7 +1975,7 @@ export default function VentasPage() {
       {/* ── Modal facturación AFIP ──────────────────────────────────────────── */}
       {factModal && factVenta && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && !factLoading && setFactModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { !factLoading && setFactModal(false) })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 440 }}>
             <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Emitir factura AFIP</h2>
             <p style={{ color: C.muted, fontSize: 13, margin: '0 0 18px' }}>
@@ -2069,7 +2070,7 @@ export default function VentasPage() {
       {/* ── Modal preview Factura A/B ───────────────────────────────────────── */}
       {previewFactura && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 70, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setPreviewFactura(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setPreviewFactura(null) })}>
           <div style={{ width: '100%', maxWidth: 820 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>
@@ -2093,7 +2094,7 @@ export default function VentasPage() {
         const totalEtiquetas = items.reduce((s, item, i) => s + (etiquetaQtys[i] ?? item.cantidad), 0)
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-            onClick={e => e.target === e.currentTarget && !etiquetaPrinting && setEtiquetaVenta(null)}>
+            onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { !etiquetaPrinting && setEtiquetaVenta(null) })}>
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 520, boxShadow: '0 8px 40px rgba(26,18,16,0.15)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
 
               {/* Header */}

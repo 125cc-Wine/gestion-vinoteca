@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
 const T = {
@@ -680,7 +681,7 @@ export default function ClienteFichaPage() {
       {/* ── Modal registrar cobro ──────────────────────────────────────────── */}
       {cobroModal && cliente && (
         <div
-          onClick={e => e.target === e.currentTarget && setCobroModal(false)}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setCobroModal(false) })}
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
@@ -756,7 +757,7 @@ export default function ClienteFichaPage() {
       {/* ── Modal cargar deuda (cargo suelto, sin venta asociada) ─────────────── */}
       {cargoModal && cliente && (
         <div
-          onClick={e => e.target === e.currentTarget && setCargoModal(false)}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setCargoModal(false) })}
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>

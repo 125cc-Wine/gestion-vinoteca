@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -470,7 +471,7 @@ export default function ComisionesPage() {
       {modalPagar && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(5px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={e => e.target === e.currentTarget && setModalPagar(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModalPagar(null) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: 420, padding: 28, boxShadow: '0 24px 64px rgba(26,18,16,0.18)' }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: T.text, margin: '0 0 6px' }}>
               Marcar comisión como pagada

@@ -6,6 +6,7 @@ import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -1748,7 +1749,7 @@ export default function ProductosPage() {
 
       {/* ── Full edit modal ───────────────────────────────────────── */}
       {fullEditId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setFullEditId(null)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setFullEditId(null) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 600, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', maxHeight: '92vh', overflowY: 'auto' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Editar producto</h2>
@@ -1829,7 +1830,7 @@ export default function ProductosPage() {
 
       {/* ── New product modal ─────────────────────────────────────── */}
       {newModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setNewModal(false)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setNewModal(false) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 600, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', maxHeight: '92vh', overflowY: 'auto' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nuevo producto</h2>
@@ -1898,7 +1899,7 @@ export default function ProductosPage() {
       {/* ── Modal vincular por nombre (lista de pares + seleccion manual) ── */}
       {vincModal && vincResumen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && !vinculando && setVincModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { !vinculando && setVincModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             {/* header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
@@ -2034,7 +2035,7 @@ export default function ProductosPage() {
       {/* ── Modal confirmación sync WooCommerce ── */}
       {syncConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setSyncConfirm(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setSyncConfirm(null) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
@@ -2110,7 +2111,7 @@ export default function ProductosPage() {
       {/* ── Modal carga masiva de stock (preview antes de aplicar) ── */}
       {stockModal && stockResumen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && !stockGuardando && setStockModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { !stockGuardando && setStockModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>📥 Carga masiva de stock</h2>
@@ -2173,7 +2174,7 @@ export default function ProductosPage() {
       )}
 
       {importModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setImportModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, width: '100%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexShrink: 0 }}>
               <div>
@@ -2239,7 +2240,7 @@ export default function ProductosPage() {
       {/* ── Lista de precios modal ────────────────────────────────── */}
       {listaModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setListaModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setListaModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 720, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Armar lista de precios</h2>
@@ -2420,7 +2421,7 @@ export default function ProductosPage() {
       {/* ── Actualización masiva de precios / costos ─────────────── */}
       {masivModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setMasivModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setMasivModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Actualización masiva</h2>
@@ -2559,7 +2560,7 @@ export default function ProductosPage() {
       {/* ── Historial de precios modal ────────────────────────────── */}
       {historialModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setHistorialModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setHistorialModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 780, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.22)' }}>
             {/* Header */}
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>
@@ -2651,7 +2652,7 @@ export default function ProductosPage() {
         const clientesDistintos = new Set(histVentasData.map(e => e.cliente_id || e.cliente_nombre || '—')).size
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-            onClick={e => e.target === e.currentTarget && setHistVentasModal(false)}>
+            onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setHistVentasModal(false) })}>
             <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 820, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.22)' }}>
               {/* Header */}
               <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0 }}>

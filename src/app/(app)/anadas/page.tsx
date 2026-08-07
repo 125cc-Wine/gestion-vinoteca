@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const T = {
   bg:      '#F5F1EC',
@@ -190,7 +191,7 @@ export default function AnadasPage() {
       {modal && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={e => e.target === e.currentTarget && setModal(false)}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModal(false) })}
         >
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

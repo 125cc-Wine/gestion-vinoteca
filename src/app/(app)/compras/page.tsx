@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -713,7 +714,7 @@ export default function ComprasPage() {
       {/* Modal nueva OC */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && tryCloseCompra()}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { tryCloseCompra() })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nueva orden de compra</h2>
@@ -856,7 +857,7 @@ export default function ComprasPage() {
       {/* Modal detalle */}
       {detalle && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setDetalle(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setDetalle(null) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -983,7 +984,7 @@ export default function ComprasPage() {
       {/* Modal preview WhatsApp */}
       {waModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setWaModal('')}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setWaModal('') })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
             <div style={{ padding: '18px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1030,7 +1031,7 @@ export default function ComprasPage() {
       {/* ── Modal deuda directa (mismo flujo que OC + datos de factura) ── */}
       {deudaModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setDeudaModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setDeudaModal(false) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 700, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
 
             {/* Header */}
@@ -1274,7 +1275,7 @@ export default function ComprasPage() {
       {/* Modal carga de factura */}
       {facturaModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setFacturaModal(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setFacturaModal(null) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Cargar factura — {facturaModal.numero}</h2>
@@ -1346,7 +1347,7 @@ export default function ComprasPage() {
       {/* Modal registro de pago */}
       {pagoModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setPagoModal(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setPagoModal(null) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.2)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>

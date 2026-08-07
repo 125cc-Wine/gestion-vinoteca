@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
 
@@ -543,7 +544,7 @@ export default function ClientesPage() {
 
       {/* ── Modal edición cliente ─────────────────────────────────────────── */}
       {modal && (
-        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setModal(false)}>
+        <div style={OVERLAY} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModal(false) })}>
           <div style={PANEL(500)}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
@@ -607,7 +608,7 @@ export default function ClientesPage() {
 
       {/* ── Modal cobro manual ───────────────────────────────────────────── */}
       {cobroModal && cobroCliente && (
-        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setCobroModal(false)}>
+        <div style={OVERLAY} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setCobroModal(false) })}>
           <div style={PANEL(400)}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Registrar cobro</h2>
@@ -674,7 +675,7 @@ export default function ClientesPage() {
 
       {/* ── Modal historial + comprobantes ──────────────────────────────── */}
       {histModal && histCliente && (
-        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setHistModal(false)}>
+        <div style={OVERLAY} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setHistModal(false) })}>
           <div style={{ ...PANEL(760), maxHeight: '92vh' }}>
 
             {/* Header del modal */}
@@ -858,7 +859,7 @@ export default function ClientesPage() {
 
       {/* ── Modal confirmar pago de comprobante ──────────────────────────── */}
       {pagoModal && pagoVenta && (
-        <div style={{ ...OVERLAY, zIndex: 110 }} onClick={e => e.target === e.currentTarget && setPagoModal(false)}>
+        <div style={{ ...OVERLAY, zIndex: 110 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setPagoModal(false) })}>
           <div style={PANEL(420)}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Confirmar cobro</h2>
@@ -961,7 +962,7 @@ export default function ClientesPage() {
 
       {/* ── Modal importar CSV ───────────────────────────────────────────── */}
       {importModal && (
-        <div style={{ ...OVERLAY, zIndex: 110 }} onClick={e => e.target === e.currentTarget && setImportModal(false)}>
+        <div style={{ ...OVERLAY, zIndex: 110 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setImportModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 760, maxHeight: '90vh', boxShadow: '0 20px 60px rgba(26,18,16,0.18)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Importar clientes desde CSV</h2>

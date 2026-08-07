@@ -4,6 +4,7 @@ import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { supabase } from '@/lib/supabase'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -987,7 +988,7 @@ function InventarioAnadasView({ empresa, reloadKey }: { empresa: string; reloadK
       {/* Modal edición de ítem */}
       {editItem && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-          onClick={e => e.target === e.currentTarget && setEditItem(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setEditItem(null) })}>
           <div style={{ background: '#fff', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 32px', boxShadow: '0 -8px 32px rgba(26,18,16,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>

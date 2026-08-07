@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -323,7 +324,7 @@ export default function PedidosPage() {
       {/* Modal nuevo pedido */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflowY: 'auto' }}
-          onClick={e => e.target === e.currentTarget && setModal(false)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModal(false) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 680, margin: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nuevo pedido</h2>
@@ -480,7 +481,7 @@ export default function PedidosPage() {
       {/* Modal detalle */}
       {modalDetalle && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
-          onClick={e => e.target === e.currentTarget && setModalDetalle(null)}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModalDetalle(null) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Pedido {modalDetalle.numero}</h2>

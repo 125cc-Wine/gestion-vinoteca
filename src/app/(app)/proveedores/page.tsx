@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { Proveedor } from '@/types'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const T = {
   bg:      '#F5F1EC',
@@ -229,7 +230,7 @@ export default function ProveedoresPage() {
 
       {/* Modal historial compras */}
       {histProv && (
-        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setHistProv(null)}>
+        <div style={OVERLAY} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setHistProv(null) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 700, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             {/* Header */}
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -298,7 +299,7 @@ export default function ProveedoresPage() {
 
       {/* Modal editar/nuevo */}
       {modal && (
-        <div style={OVERLAY} onClick={e => e.target === e.currentTarget && setModal(false)}>
+        <div style={OVERLAY} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModal(false) })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             {/* Header */}
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -452,7 +453,7 @@ export default function AgingPage() {
       {/* Modal detalle */}
       {modalCliente && (
         <div
-          onClick={e => e.target === e.currentTarget && setModalCliente(null)}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModalCliente(null) })}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)',
             backdropFilter: 'blur(6px)', zIndex: 300,
