@@ -1482,12 +1482,13 @@ export default function ProductosPage() {
       )}
 
       {/* ── Table ─────────────────────────────────────────────────── */}
-      {/* overflowX: auto — con muchas columnas + 5 botones de acción, a 100%
-          de zoom la tabla se corta contra el borde y "overflow: hidden" tapaba
-          los últimos botones (Etiqueta, Desactivar) en vez de dejar scrollear.
-          overflowY se deja en hidden para conservar el recorte de esquinas redondeadas. */}
+      {/* Padding compacto (ver celdas abajo) para que las 8 columnas + 5 botones
+          de acción entren a 100% de zoom sin recortarse. overflowX: auto queda
+          como red de seguridad para ventanas muy angostas, no como comportamiento
+          normal — minWidth bajo a propósito para priorizar achicarse antes que
+          scrollear. overflowY se deja en hidden para conservar las esquinas redondeadas. */}
       <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflowX: 'auto', overflowY: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)', contain: 'layout' }}>
-        <table style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: T.bg }}>
               <th style={{ width: 40, padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${T.border}` }}>
@@ -1504,7 +1505,7 @@ export default function ProductosPage() {
                 const activo = campo && sortCampo === campo
                 return (
                   <th key={h} onClick={campo ? () => toggleSort(campo) : undefined}
-                    style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: activo ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: campo ? 'pointer' : 'default', userSelect: 'none' }}
+                    style={{ textAlign: 'left', padding: '8px 10px', fontSize: 11, fontWeight: 700, color: activo ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap', borderBottom: `1px solid ${T.border}`, cursor: campo ? 'pointer' : 'default', userSelect: 'none' }}
                     title={campo ? 'Ordenar por ' + h : undefined}>
                     {h}{activo ? (sortDir === 'asc' ? ' ↑' : ' ↓') : campo ? ' ↕' : ''}
                   </th>
@@ -1524,7 +1525,7 @@ export default function ProductosPage() {
 
               if (isEdit) return (
                 <tr key={p.id + 'e'} style={{ background: T.bg, borderBottom: `1px solid ${T.border}`, borderLeft: `2px solid ${T.wine}` }}>
-                  <td colSpan={9} style={{ padding: '10px 16px' }}>
+                  <td colSpan={9} style={{ padding: '8px 10px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px 70px auto', gap: 8, alignItems: 'center' }}>
                       <input ref={editFirstRef} style={INP_SM}
                         value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
@@ -1560,7 +1561,7 @@ export default function ProductosPage() {
                         <option value="caja6">Caja ×6</option>
                         <option value="caja12">Caja ×12</option>
                       </select>
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ display: 'flex', gap: 2 }}>
                         <button onClick={saveEdit} disabled={saving} className="btn-wine" style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 7, padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>✓</button>
                         <button onClick={() => { const px = productos.find(x => x.id === editingId); if (px) { setEditingId(null); openFullEdit(px) } }} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 7, padding: '6px 10px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }} title="Ver todos los campos">⋯</button>
                         <button onClick={() => setEditingId(null)} className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 7, padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
@@ -1580,40 +1581,40 @@ export default function ProductosPage() {
                   <td style={{ padding: '11px 12px', textAlign: 'center' }} onMouseDown={e => e.stopPropagation()}>
                     <input type="checkbox" checked={isSel} onChange={() => toggleSel(p.id!)} style={{ accentColor: T.wine, cursor: 'pointer' }} />
                   </td>
-                  <td style={{ padding: '11px 16px', maxWidth: 260 }}>
+                  <td style={{ padding: '9px 10px', maxWidth: 260 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
                     {p.sku && <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{p.sku}</div>}
                   </td>
-                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{p.bodega || <span style={{ color: T.dim }}>—</span>}</td>
-                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{p.varietal || <span style={{ color: T.dim }}>—</span>}</td>
-                  <td style={{ padding: '11px 16px' }}>
+                  <td style={{ padding: '9px 10px', fontSize: 13, color: T.muted }}>{p.bodega || <span style={{ color: T.dim }}>—</span>}</td>
+                  <td style={{ padding: '9px 10px', fontSize: 13, color: T.muted }}>{p.varietal || <span style={{ color: T.dim }}>—</span>}</td>
+                  <td style={{ padding: '9px 10px' }}>
                     {p.categoria && (
                       <span style={{ ...BADGE_BASE, ...catBadge(p.categoria) }}>{p.categoria}</span>
                     )}
                   </td>
-                  <td style={{ padding: '11px 16px', fontSize: 13, fontWeight: 600, color: T.text }}>
+                  <td style={{ padding: '9px 10px', fontSize: 13, fontWeight: 600, color: T.text }}>
                     {p.precio_venta ? `$${p.precio_venta.toLocaleString('es-AR')}` : <span style={{ color: T.red, fontSize: 12, fontWeight: 500 }}>Sin precio</span>}
                   </td>
-                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.dim }}>
+                  <td style={{ padding: '9px 10px', fontSize: 13, color: T.dim }}>
                     {p.precio_costo ? `$${p.precio_costo.toLocaleString('es-AR')}` : '—'}
                   </td>
-                  <td style={{ padding: '11px 16px' }}>
+                  <td style={{ padding: '9px 10px' }}>
                     <span style={{ ...BADGE_BASE, ...stockBadge(p.stock, p.stock_minimo) }}>
                       {p.stock === 0 ? 'Sin stock' : p.stock <= p.stock_minimo ? `${p.stock} u. ⚠` : `${p.stock} u.`}
                     </span>
                   </td>
-                  <td style={{ padding: '11px 10px' }} onMouseDown={e => e.stopPropagation()}>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                  <td style={{ padding: '8px 6px' }} onMouseDown={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: 2 }}>
                       {mostrarInactivos ? (
-                        <button onClick={() => reactivarUno(p.id!)} className="btn-row" style={{ background: T.greenBg, border: `1px solid rgba(45,122,79,0.28)`, color: T.green, borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} title="Reactivar — vuelve a aparecer en el catálogo y en las alertas">↺ Reactivar</button>
+                        <button onClick={() => reactivarUno(p.id!)} className="btn-row" style={{ background: T.greenBg, border: `1px solid rgba(45,122,79,0.28)`, color: T.green, borderRadius: 6, padding: '3px 6px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }} title="Reactivar — vuelve a aparecer en el catálogo y en las alertas">↺ Reactivar</button>
                       ) : (
                         <>
-                          <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
-                          <button onClick={() => openHistorialVentas(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.wine, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de ventas — cuándo y a quién se vendió" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>🧾</button>
-                          <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
-                          <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
-                          <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
-                          <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Desactivar — deja de aparecer en catálogo, stock y alertas, pero no se borra. Podés reactivarlo con 'Ver desactivados'" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
+                          <button onClick={() => openHistorial(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.green, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de precios" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>📈</button>
+                          <button onClick={() => openHistorialVentas(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.wine, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.8, transition: 'opacity 0.1s' }} title="Historial de ventas — cuándo y a quién se vendió" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}>🧾</button>
+                          <button onClick={() => openEdit(p)} className="btn-row" style={{ background: 'none', border: `1px solid transparent`, color: T.dim, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }} title="Editar (E)">✏</button>
+                          <button onClick={() => duplicarProducto(p)} style={{ background: 'none', border: `1px solid transparent`, color: T.blue, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Duplicar producto">⧉</button>
+                          <button onClick={() => { localStorage.setItem('etiqueta_prefill', JSON.stringify(p)); window.location.href = '/etiquetas' }} style={{ background: 'none', border: `1px solid transparent`, color: T.gold, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.85 }} title="Imprimir etiqueta">🏷️</button>
+                          <button onClick={() => eliminarUno(p.id!)} style={{ background: 'none', border: `1px solid transparent`, color: T.red, borderRadius: 6, padding: '3px 6px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: 0.7, transition: 'opacity 0.1s' }} title="Desactivar — deja de aparecer en catálogo, stock y alertas, pero no se borra. Podés reactivarlo con 'Ver desactivados'" onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>✕</button>
                         </>
                       )}
                     </div>
