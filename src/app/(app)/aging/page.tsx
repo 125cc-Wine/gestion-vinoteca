@@ -113,6 +113,13 @@ export default function AgingPage() {
   const [detalleVentas, setDetalleVentas] = useState<VentaDetalle[]>([])
   const [detalleLoading, setDetalleLoading] = useState(false)
 
+  // Cobro de un monto global — se reparte solo, del comprobante más viejo al
+  // más nuevo (mismo reparto FIFO que ya usa /api/cta-cte para "Registrar
+  // cobro" en la ficha de cliente), en vez de tener que cobrar comprobante
+  // por comprobante a mano.
+  const [montoGlobal, setMontoGlobal] = useState('')
+  const [cobrandoGlobal, setCobrandoGlobal] = useState(false)
+
   // Defensa extra: si por lo que sea hay dos pedidos en vuelo (ej. el usuario
   // cambia de empresa rápido en el selector), ignorar la respuesta que no es
   // de la última empresa pedida.
@@ -138,40 +145,79 @@ export default function AgingPage() {
 
   useEffect(() => { load(empresa) }, [empresa, load])
 
+  async function cargarVentasPendientes(row: AgingRow) {
+    // Ventas de "Consumidor Final" no tienen cliente_id — pedir todas las
+    // de la empresa y filtrar acá las que no tengan cliente asignado, en
+    // vez de mandar cliente_id=null (nunca matcheaba nada).
+    const url = row.cliente_id
+      ? `/api/ventas?empresa=${empresa}&cliente_id=${row.cliente_id}`
+      : `/api/ventas?empresa=${empresa}`
+    const res = await fetch(url)
+    const data = await res.json()
+    const now = Date.now()
+    const raw: { id: string; numero?: string; total: number; monto_pagado?: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
+      Array.isArray(data) ? data : data.ventas ?? []
+    const ventas: VentaDetalle[] = raw
+      .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente'
+        && (row.cliente_id ? true : !v.cliente_id))
+      .map(v => ({
+        id: v.id,
+        numero: v.numero,
+        tipo: v.tipo ?? 'remito',
+        total: v.total,
+        monto_pagado: v.monto_pagado ?? 0,
+        created_at: v.created_at,
+        dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+      }))
+    ventas.sort((a, b) => b.dias - a.dias)
+    return ventas
+  }
+
   async function openDetalle(row: AgingRow) {
     setModalCliente(row)
     setDetalleLoading(true)
     setDetalleVentas([])
+    setMontoGlobal('')
     try {
-      // Ventas de "Consumidor Final" no tienen cliente_id — pedir todas las
-      // de la empresa y filtrar acá las que no tengan cliente asignado, en
-      // vez de mandar cliente_id=null (nunca matcheaba nada).
-      const url = row.cliente_id
-        ? `/api/ventas?empresa=${empresa}&cliente_id=${row.cliente_id}`
-        : `/api/ventas?empresa=${empresa}`
-      const res = await fetch(url)
-      const data = await res.json()
-      const now = Date.now()
-      const raw: { id: string; numero?: string; total: number; monto_pagado?: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
-        Array.isArray(data) ? data : data.ventas ?? []
-      const ventas: VentaDetalle[] = raw
-        .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente'
-          && (row.cliente_id ? true : !v.cliente_id))
-        .map(v => ({
-          id: v.id,
-          numero: v.numero,
-          tipo: v.tipo ?? 'remito',
-          total: v.total,
-          monto_pagado: v.monto_pagado ?? 0,
-          created_at: v.created_at,
-          dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
-        }))
-      ventas.sort((a, b) => b.dias - a.dias)
-      setDetalleVentas(ventas)
+      setDetalleVentas(await cargarVentasPendientes(row))
     } catch {
       setDetalleVentas([])
     } finally {
       setDetalleLoading(false)
+    }
+  }
+
+  // Cobra un monto global sin elegir comprobante: /api/cta-cte lo reparte
+  // FIFO contra las ventas abiertas (remito/presupuesto) del cliente, de la
+  // más vieja a la más nueva, igual que "Registrar cobro" en la ficha de
+  // cliente. Nota: ese reparto no toca facturas ya emitidas (solo remito/
+  // presupuesto) — si el saldo incluye una factura pendiente, esa parte del
+  // monto queda como saldo a favor hasta cobrarla aparte.
+  async function cobrarMontoGlobal() {
+    if (!modalCliente || !modalCliente.cliente_id) return
+    const monto = parseFloat(montoGlobal.replace(',', '.'))
+    if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return }
+    if (monto > modalCliente.saldo_total + 0.01) {
+      if (!confirm(`El monto (${fmt(monto)}) es mayor al saldo adeudado (${fmt(modalCliente.saldo_total)}). ¿Igual querés registrarlo? El excedente queda como saldo a favor del cliente.`)) return
+    }
+    setCobrandoGlobal(true)
+    try {
+      const res = await fetch('/api/cta-cte', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa, cliente_id: modalCliente.cliente_id, cliente_nombre: modalCliente.cliente_nombre,
+          tipo: 'cobro', concepto: 'Cobro cuenta corriente (Aging)', monto,
+          fecha: new Date().toISOString().split('T')[0],
+        }),
+      })
+      const data = await res.json()
+      if (data.error) { alert('Error: ' + data.error); return }
+      setMontoGlobal('')
+      setDetalleVentas(await cargarVentasPendientes(modalCliente))
+      setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
+      load(empresa)
+    } finally {
+      setCobrandoGlobal(false)
     }
   }
 
@@ -606,6 +652,39 @@ export default function AgingPage() {
                 </table>
               )}
             </div>
+
+            {/* Cobrar un monto global — se reparte solo del comprobante más viejo al más nuevo */}
+            {modalCliente.cliente_id && detalleVentas.length > 0 && (
+              <div style={{
+                padding: '14px 22px', borderTop: `1px solid ${T.border}`,
+                background: T.bg, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+              }}>
+                <div style={{ fontSize: 12, color: T.muted, flex: '1 1 220px' }}>
+                  <strong style={{ color: T.text }}>Cobrar un monto</strong> — se descuenta solo del comprobante más viejo, y sigue con el siguiente si sobra.
+                </div>
+                <input
+                  type="number" min="0" step="0.01" placeholder="Monto"
+                  value={montoGlobal} onChange={e => setMontoGlobal(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !cobrandoGlobal) cobrarMontoGlobal() }}
+                  style={{
+                    width: 140, padding: '8px 10px', borderRadius: 8,
+                    border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit',
+                  }}
+                />
+                <button
+                  onClick={cobrarMontoGlobal}
+                  disabled={cobrandoGlobal || !montoGlobal}
+                  style={{
+                    background: T.wine, color: '#fff', border: 'none', borderRadius: 8,
+                    padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                    cursor: cobrandoGlobal ? 'default' : 'pointer', fontFamily: 'inherit',
+                    opacity: cobrandoGlobal || !montoGlobal ? 0.6 : 1,
+                  }}
+                >
+                  {cobrandoGlobal ? 'Aplicando...' : 'Cobrar'}
+                </button>
+              </div>
+            )}
 
             {/* Modal footer */}
             <div style={{
