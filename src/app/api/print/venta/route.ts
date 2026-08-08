@@ -56,9 +56,9 @@ async function qrAfipDataUri(venta: {
   return QRCode.toDataURL(url, { margin: 1, width: 140 })
 }
 
-const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
-  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
-  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870' },
+const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }> = {
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
+  lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 685-0870', logoPath: '/logos/lavid.png' },
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -156,9 +156,8 @@ export async function GET(req: NextRequest) {
 
   const itemsRows = items
     .map(
-      (it, i) => `
+      (it) => `
       <tr>
-        <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
         <td>${esc(it.nombre ?? '')}</td>
         <td style="text-align:center;">${it.cantidad}</td>
         <td style="text-align:right;">${moneda(it.precio_unitario ?? 0)}</td>
@@ -171,7 +170,7 @@ export async function GET(req: NextRequest) {
   const descuentoRow =
     descuento > 0
       ? `<tr class="total-line">
-          <td colspan="4"></td>
+          <td colspan="3"></td>
           <td style="text-align:right;color:#6B5D55;">Descuento (${descuento}%):</td>
           <td style="text-align:right;color:#6B5D55;">-${moneda((subtotal * descuento) / 100)}</td>
         </tr>`
@@ -227,6 +226,15 @@ export async function GET(req: NextRequest) {
     .header-empresa {
       padding: 14px 18px;
       border-right: 2px solid #800000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      height: 46px;
+      max-width: 90px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
     .empresa-nombre {
       font-size: 18px; font-weight: 700; color: #800000; margin: 0 0 3px;
@@ -424,10 +432,13 @@ export async function GET(req: NextRequest) {
   <!-- ══ HEADER ══ -->
   <div class="header">
     <div class="header-empresa">
-      <div class="empresa-nombre">${empresa.nombre}</div>
-      <div class="empresa-sub">
-        ${empresa.domicilio}<br>
-        Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}
+      <img class="header-logo" src="${empresa.logoPath}" alt="${empresa.nombre}">
+      <div>
+        <div class="empresa-nombre">${empresa.nombre}</div>
+        <div class="empresa-sub">
+          ${empresa.domicilio}<br>
+          Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}
+        </div>
       </div>
     </div>
     <div class="header-doc">
@@ -466,7 +477,6 @@ export async function GET(req: NextRequest) {
   <table>
     <thead>
       <tr>
-        <th style="width:26px;text-align:center;">#</th>
         <th>Descripción</th>
         <th style="width:64px;text-align:center;">Cant.</th>
         <th style="width:110px;text-align:right;">Precio unit.</th>
@@ -475,7 +485,7 @@ export async function GET(req: NextRequest) {
       </tr>
     </thead>
     <tbody>
-      ${itemsRows || '<tr><td colspan="6" style="text-align:center;color:#A89888;padding:16px;">Sin ítems</td></tr>'}
+      ${itemsRows || '<tr><td colspan="5" style="text-align:center;color:#A89888;padding:16px;">Sin ítems</td></tr>'}
     </tbody>
   </table>
   <div class="resumen-unidades">Total: <strong>${resumenUnidades}</strong></div>
@@ -533,8 +543,11 @@ export async function GET(req: NextRequest) {
 
   <div class="header">
     <div class="header-empresa">
-      <div class="empresa-nombre">${empresa.nombre}</div>
-      <div class="empresa-sub">${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit}</div>
+      <img class="header-logo" src="${empresa.logoPath}" alt="${empresa.nombre}">
+      <div>
+        <div class="empresa-nombre">${empresa.nombre}</div>
+        <div class="empresa-sub">${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit}</div>
+      </div>
     </div>
     <div class="header-doc">
       <div class="doc-tipo">Remito — Duplicado</div>
@@ -564,7 +577,6 @@ export async function GET(req: NextRequest) {
   <table>
     <thead>
       <tr>
-        <th style="width:26px;text-align:center;">#</th>
         <th>Descripción</th>
         <th style="width:64px;text-align:center;">Cant.</th>
         <th style="width:110px;text-align:right;">Precio unit.</th>
@@ -573,7 +585,7 @@ export async function GET(req: NextRequest) {
       </tr>
     </thead>
     <tbody>
-      ${itemsRows || '<tr><td colspan="6" style="text-align:center;color:#A89888;padding:16px;">Sin ítems</td></tr>'}
+      ${itemsRows || '<tr><td colspan="5" style="text-align:center;color:#A89888;padding:16px;">Sin ítems</td></tr>'}
     </tbody>
   </table>
   <div class="resumen-unidades">Total: <strong>${resumenUnidades}</strong></div>
