@@ -244,6 +244,9 @@ export default function ClienteFichaPage() {
   async function guardarCobro() {
     if (!cliente || !cobroMonto || cobroMonto <= 0) return
     if (cobroSplit && (!cobroMonto2 || cobroMonto2 <= 0)) { alert('Ingresá el monto del segundo medio de pago'); return }
+    // Se abre acá, antes del primer await, para que el navegador lo reconozca
+    // como originado por el clic del usuario y no lo bloquee como popup.
+    const wRecibo = window.open('', '_blank', 'width=650,height=850')
     setCobroGuardando(true)
     const nombreCliente = cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim()
     const body = cobroSplit
@@ -255,10 +258,17 @@ export default function ClienteFichaPage() {
     })
     const data = await res.json()
     setCobroGuardando(false)
-    if (data.error) { alert('Error: ' + data.error); return }
+    if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
     setCobroModal(false)
     setCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
     cargarMovimientos()
+    // Recibo de pago — con el medio de pago principal (si se dividió en 2, se
+    // muestra el primero; el detalle completo queda igual en el historial).
+    if (data.id && wRecibo) {
+      wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=${encodeURIComponent(cobroMedioPago)}`
+    } else {
+      wRecibo?.close()
+    }
     // El cobro se reparte FIFO contra ventas abiertas — si el tab de compras
     // ya estaba cargado, sus estado_pago pueden haber cambiado.
     if (loaded.has('compras')) {

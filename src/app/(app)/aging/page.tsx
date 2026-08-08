@@ -200,6 +200,9 @@ export default function AgingPage() {
     if (monto > modalCliente.saldo_total + 0.01) {
       if (!confirm(`El monto (${fmt(monto)}) es mayor al saldo adeudado (${fmt(modalCliente.saldo_total)}). ¿Igual querés registrarlo? El excedente queda como saldo a favor del cliente.`)) return
     }
+    // Se abre acá, antes del primer await, para que el navegador lo reconozca
+    // como originado por el clic/Enter del usuario y no lo bloquee como popup.
+    const wRecibo = window.open('', '_blank', 'width=650,height=850')
     setCobrandoGlobal(true)
     try {
       const res = await fetch('/api/cta-cte', {
@@ -211,11 +214,13 @@ export default function AgingPage() {
         }),
       })
       const data = await res.json()
-      if (data.error) { alert('Error: ' + data.error); return }
+      if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
       setMontoGlobal('')
       setDetalleVentas(await cargarVentasPendientes(modalCliente))
       setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
       load(empresa)
+      if (data.id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=Efectivo`
+      else wRecibo?.close()
     } finally {
       setCobrandoGlobal(false)
     }
@@ -232,12 +237,15 @@ export default function AgingPage() {
     if (!monto || monto <= 0) { alert('Monto inválido'); return }
     if (monto > restante + 0.01) { alert(`No puede ser mayor a lo que falta (${fmt(restante)})`); return }
 
+    // Se abre acá, antes del primer await, para que el navegador lo reconozca
+    // como originado por el clic del usuario y no lo bloquee como popup.
+    const wRecibo = window.open('', '_blank', 'width=650,height=850')
     const res = await fetch('/api/ventas/cobrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ venta_id: v.id, empresa, monto }),
     })
     const data = await res.json()
-    if (data.error) { alert('Error: ' + data.error); return }
+    if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
     const esParcial = monto < restante - 0.01
     if (esParcial) {
       setDetalleVentas(prev => prev.map(x => x.id === v.id ? { ...x, monto_pagado: (x.monto_pagado || 0) + monto } : x))
@@ -246,6 +254,8 @@ export default function AgingPage() {
     }
     setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
     load(empresa)
+    if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=Efectivo`
+    else wRecibo?.close()
   }
 
   // KPI totals

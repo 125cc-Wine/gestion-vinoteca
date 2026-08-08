@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
 
   // 2. Si era cuenta corriente, reducir saldo del cliente (un solo movimiento
   //    por el total, aunque se haya cobrado en varios medios de pago)
+  let movimientoCtaCteId: string | null = null
   if (estadoAnterior === 'cuenta_corriente' && venta.cliente_id && montoCobro > 0) {
     const { data: cliente } = await supabase
       .from('clientes')
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     await supabase.from('clientes').update({ saldo: saldoNuevo }).eq('id', venta.cliente_id)
 
-    await supabase.from('movimientos_cta_cte').insert([{
+    const { data: movCtaCte } = await supabase.from('movimientos_cta_cte').insert([{
       cliente_id: venta.cliente_id,
       empresa,
       tipo: 'cobro',
@@ -102,7 +103,8 @@ export async function POST(req: NextRequest) {
       saldo_anterior: saldoAnterior,
       saldo_nuevo: saldoNuevo,
       referencia_id: venta_id,
-    }])
+    }]).select('id').single()
+    movimientoCtaCteId = movCtaCte?.id ?? null
   }
 
   // 3. Registrar ingreso en caja: uno por cada medio de pago usado
@@ -121,5 +123,5 @@ export async function POST(req: NextRequest) {
     }])
   }
 
-  return NextResponse.json(ventaActualizada)
+  return NextResponse.json({ ...ventaActualizada, movimiento_cta_cte_id: movimientoCtaCteId })
 }
