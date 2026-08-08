@@ -686,6 +686,10 @@ export default function VentasPage() {
   async function guardar(imprimir = true) {
     if (saving) return // evita doble click / doble comprobante mientras espera la respuesta
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
+    // Se abre acá, antes del primer await, para que el navegador lo reconozca
+    // como originado por el clic del usuario y no lo bloquee como popup (ver
+    // mismo patrón en emitirFactura).
+    const wImprimir = (!editVentaId && imprimir) ? window.open('', '_blank', 'width=850,height=1100') : null
     setSaving(true)
     try {
       const subtotal = items.reduce((a, i) => a + calcSub(i), 0)
@@ -714,7 +718,7 @@ export default function VentasPage() {
       await cargarTodo(empresa)
       const tipoLabel = tipo === 'presupuesto' ? 'Presupuesto' : tipo === 'devolucion' ? 'Devolución' : 'Remito'
       showToast(editVentaId ? 'Comprobante actualizado' : `${tipoLabel} ${data.numero} generado`)
-      if (!editVentaId && imprimir) setTimeout(() => abrirEImprimir(data), 200)
+      if (!editVentaId && imprimir) imprimirVenta(data, '', wImprimir)
     } finally {
       setSaving(false)
     }
@@ -964,8 +968,10 @@ export default function VentasPage() {
     setTimeout(() => imprimirFactura(w), 400)
   }
 
-  function imprimirVenta(venta: Venta, _empresaNombre: string) {
-    window.open(`/api/print/venta?id=${venta.id}&empresa=${empresa}`, '_blank')
+  function imprimirVenta(venta: Venta, _empresaNombre: string, ventanaAbierta?: Window | null) {
+    const url = `/api/print/venta?id=${venta.id}&empresa=${empresa}`
+    if (ventanaAbierta) ventanaAbierta.location.href = url
+    else window.open(url, '_blank')
   }
 
   // ── Pedido helpers
@@ -1272,7 +1278,7 @@ export default function VentasPage() {
                         <td style={{ padding: '11px 14px' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => setPreviewVenta(v)}>Ver</button>
-                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirEImprimir(v)}>Imprimir</button>
+                            <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => imprimirVenta(v, '')}>Imprimir</button>
                             <button className="vbtn" style={btn('green', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => whatsappVenta(v)}>WA</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
