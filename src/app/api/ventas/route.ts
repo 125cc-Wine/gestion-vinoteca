@@ -19,6 +19,51 @@ function medioPagoDesdeCondicion(condicion?: string | null): string | undefined 
   return condicion ? map[condicion] : undefined
 }
 
+// Descuenta stock de cada ítem de la venta, en las dos empresas (depósito
+// compartido) y sincroniza WooCommerce. Se usa tanto al crear un remito
+// nuevo como al convertir un presupuesto en remito.
+async function descontarStockItems(items: { producto_id?: string; cantidad: number }[]) {
+  for (const item of items) {
+    if (!item.producto_id) continue
+    const { data: prod } = await supabase
+      .from('productos')
+      .select('id, nombre, empresa, stock, woo_product_id, precio_venta, unidad_medida')
+      .eq('id', item.producto_id)
+      .single()
+
+    if (!prod) continue
+
+    const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : prod.unidad_medida === 'caja4' ? 4 : 1
+    const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad * factor)
+    await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+
+    // Descontar mismo stock en la otra empresa
+    const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+    const { data: contra } = await supabase
+      .from('productos')
+      .select('id, woo_product_id, precio_venta')
+      .eq('nombre', prod.nombre)
+      .eq('empresa', otraEmpresa)
+      .single()
+
+    if (contra) {
+      await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+    }
+
+    // Sync WooCommerce con el producto de aroma (sea el principal o la contraparte)
+    if (process.env.WOOCOMMERCE_CONSUMER_KEY) {
+      const aromaProd = prod.empresa === 'aroma' ? prod : contra
+      if (aromaProd?.woo_product_id) {
+        try {
+          await wooUpdateStockAndPrice(aromaProd.woo_product_id, aromaProd.precio_venta, nuevoStock)
+        } catch (e) {
+          console.error('WooCommerce sync error:', e)
+        }
+      }
+    }
+  }
+}
+
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
@@ -104,46 +149,7 @@ export async function POST(req: NextRequest) {
 
   // Descontar stock si es remito (en ambas empresas — depósito compartido)
   if (descontarStock && venta.items) {
-    for (const item of venta.items) {
-      if (item.producto_id) {
-        const { data: prod } = await supabase
-          .from('productos')
-          .select('id, nombre, empresa, stock, woo_product_id, precio_venta, unidad_medida')
-          .eq('id', item.producto_id)
-          .single()
-
-        if (prod) {
-          const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : prod.unidad_medida === 'caja4' ? 4 : 1
-          const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad * factor)
-          await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
-
-          // Descontar mismo stock en la otra empresa
-          const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
-          const { data: contra } = await supabase
-            .from('productos')
-            .select('id, woo_product_id, precio_venta')
-            .eq('nombre', prod.nombre)
-            .eq('empresa', otraEmpresa)
-            .single()
-
-          if (contra) {
-            await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
-          }
-
-          // Sync WooCommerce con el producto de aroma (sea el principal o la contraparte)
-          if (process.env.WOOCOMMERCE_CONSUMER_KEY) {
-            const aromaProd = prod.empresa === 'aroma' ? prod : contra
-            if (aromaProd?.woo_product_id) {
-              try {
-                await wooUpdateStockAndPrice(aromaProd.woo_product_id, aromaProd.precio_venta, nuevoStock)
-              } catch (e) {
-                console.error('WooCommerce sync error:', e)
-              }
-            }
-          }
-        }
-      }
-    }
+    await descontarStockItems(venta.items)
   }
 
   // Registrar en caja (tanto presupuesto como remito)
@@ -192,7 +198,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const body = await req.json()
-  const { id, descontarStock: _ds, devolverStock: _dvs, ...rest } = body
+  const { id, descontarStock: _ds, devolverStock: _dvs, convertirARemito, ...rest } = body
 
   const { data: anterior, error: errAnterior } = await supabase
     .from('ventas')
@@ -209,6 +215,14 @@ export async function PUT(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // "Convertir a remito": un presupuesto que en verdad ya se entregó. Recién
+  // acá se descuenta el stock (los presupuestos nunca lo tocan) — se guarda
+  // contra anterior.tipo, no contra rest.tipo, para no volver a descontar si
+  // por lo que sea se llama de nuevo sobre una venta que ya es remito.
+  if (convertirARemito && anterior.tipo === 'presupuesto' && Array.isArray(data?.items)) {
+    await descontarStockItems(data.items)
+  }
 
   // Reconciliar cuenta corriente: si el estado de pago o el total cambiaron
   // al editar, hay que ajustar clientes.saldo y dejar registro en

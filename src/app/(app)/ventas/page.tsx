@@ -699,7 +699,10 @@ export default function VentasPage() {
         })),
         subtotal, descuento: descuentoGlobal, total: calcTotal(),
         estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
-        descontarStock: tipo === 'remito' && !editVentaId,
+        // Acá se usa "Presupuesto" como la venta real del día a día (no como
+        // cotización que puede no concretarse) — así que también descuenta
+        // stock al crearlo, igual que un remito.
+        descontarStock: (tipo === 'remito' || tipo === 'presupuesto') && !editVentaId,
         devolverStock: tipo === 'devolucion' && !editVentaId,
       }
       const res = editVentaId

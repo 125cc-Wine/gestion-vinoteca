@@ -78,6 +78,7 @@ interface MovCtaCte {
   cliente_id: string
   tipo: string
   monto: number
+  monto_pagado?: number
   descripcion?: string
   concepto?: string
   created_at: string
@@ -592,7 +593,19 @@ export default function ClienteFichaPage() {
                             {m.tipo === 'nota_credito' ? 'Nota crédito' : esCobro ? 'Cobro/Pago' : 'Cargo'}
                           </Badge>
                         </td>
-                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>{m.descripcion || m.concepto || '—'}</td>
+                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>
+                          {m.descripcion || m.concepto || '—'}
+                          {m.tipo === 'cargo' && (m.monto_pagado || 0) > 0 && (m.monto_pagado || 0) < m.monto && (
+                            <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2 }}>
+                              Parcial: cobrado {fmtMonto(m.monto_pagado || 0)}, falta {fmtMonto(m.monto - (m.monto_pagado || 0))}
+                            </div>
+                          )}
+                          {m.tipo === 'cargo' && (m.monto_pagado || 0) >= m.monto && m.monto > 0 && (
+                            <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2 }}>
+                              Cobrada
+                            </div>
+                          )}
+                        </td>
                         <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color: esCobro ? T.green : T.red }}>
                           {esCobro ? '-' : '+'}{fmtMonto(m.monto)}
                         </td>

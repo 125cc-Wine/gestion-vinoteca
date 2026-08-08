@@ -70,62 +70,83 @@ export async function POST(req: NextRequest) {
     .eq('id', cliente_id)
 
   // Un "cobro" genérico (no atado a una venta puntual, a diferencia de
-  // /api/ventas/cobrar) se reparte FIFO contra las ventas abiertas más
-  // viejas del cliente, para que Ventas/Aging dejen de mostrarlas como
-  // pendientes — antes el saldo bajaba pero las ventas puntuales quedaban
-  // "cuenta_corriente" para siempre. Lo que sobra tras cubrir todo lo
-  // abierto queda como saldo a favor (no rompe nada, el saldo ya lo soporta).
+  // /api/ventas/cobrar) se reparte FIFO contra TODO lo abierto del cliente,
+  // en un único orden cronológico: remitos/presupuestos Y deudas cargadas a
+  // mano ("Cargar deuda"), mezclados por fecha real — no primero todos los
+  // remitos y recién después lo que sobra contra las deudas manuales, que es
+  // lo que pasaba antes y podía saltearse una deuda manual más vieja que un
+  // remito más nuevo. Lo que sobra tras cubrir todo lo abierto queda como
+  // saldo a favor (no rompe nada, el saldo ya lo soporta).
   // Si el cobro viene partido en varios medios de pago, se recorren ambas
-  // colas (ventas abiertas y splits de pago) a la vez, así cada movimiento
-  // de caja generado queda con el medio de pago que realmente le tocó.
+  // colas (pendientes y splits de pago) a la vez, así cada movimiento de
+  // caja generado queda con el medio de pago que realmente le tocó.
   if (tipo === 'cobro' && monto > 0) {
-    const { data: abiertas } = await supabase
+    const { data: ventasAbiertas } = await supabase
       .from('ventas')
-      .select('id, total, monto_pagado')
+      .select('id, total, monto_pagado, created_at')
       .eq('cliente_id', cliente_id)
       .eq('empresa', empresa)
       .in('tipo', ['remito', 'presupuesto'])
       .neq('estado_pago', 'pagado')
       .order('created_at', { ascending: true })
 
+    const { data: cargosAbiertos } = await supabase
+      .from('movimientos_cta_cte')
+      .select('id, monto, monto_pagado, created_at')
+      .eq('cliente_id', cliente_id)
+      .eq('empresa', empresa)
+      .eq('tipo', 'cargo')
+      .order('created_at', { ascending: true })
+
+    type Pendiente = { kind: 'venta' | 'cargo'; id: string; total: number; monto_pagado: number; created_at: string }
+    const pendientes: Pendiente[] = [
+      ...(ventasAbiertas || []).map(v => ({ kind: 'venta' as const, id: v.id, total: v.total, monto_pagado: v.monto_pagado || 0, created_at: v.created_at })),
+      ...(cargosAbiertos || [])
+        .filter(c => parseFloat((c.monto - (c.monto_pagado || 0)).toFixed(2)) > 0.01)
+        .map(c => ({ kind: 'cargo' as const, id: c.id, total: c.monto, monto_pagado: c.monto_pagado || 0, created_at: c.created_at })),
+    ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
     const fechaCobro = fecha || new Date().toISOString().split('T')[0]
-    const ventas = [...(abiertas || [])]
-    let vIdx = 0
-    let faltaVentaActual = ventas[0] ? parseFloat((ventas[0].total - (ventas[0].monto_pagado || 0)).toFixed(2)) : 0
-    let montoPagadoVentaActual = ventas[0]?.monto_pagado || 0
+    let pIdx = 0
+    let faltaActual = pendientes[0] ? parseFloat((pendientes[0].total - pendientes[0].monto_pagado).toFixed(2)) : 0
+    let montoPagadoActual = pendientes[0]?.monto_pagado || 0
 
     for (const s of splits) {
       let restanteSplit = parseFloat(String(s.monto)) || 0
       const medioSplit = s.medio_pago || 'Efectivo'
 
-      while (restanteSplit > 0 && vIdx < ventas.length) {
-        if (faltaVentaActual <= 0) {
-          vIdx++
-          if (vIdx >= ventas.length) break
-          faltaVentaActual = parseFloat((ventas[vIdx].total - (ventas[vIdx].monto_pagado || 0)).toFixed(2))
-          montoPagadoVentaActual = ventas[vIdx].monto_pagado || 0
+      while (restanteSplit > 0 && pIdx < pendientes.length) {
+        if (faltaActual <= 0) {
+          pIdx++
+          if (pIdx >= pendientes.length) break
+          faltaActual = parseFloat((pendientes[pIdx].total - pendientes[pIdx].monto_pagado).toFixed(2))
+          montoPagadoActual = pendientes[pIdx].monto_pagado
           continue
         }
-        const v = ventas[vIdx]
-        const aplicar = Math.min(restanteSplit, faltaVentaActual)
-        montoPagadoVentaActual = parseFloat((montoPagadoVentaActual + aplicar).toFixed(2))
-        faltaVentaActual = parseFloat((faltaVentaActual - aplicar).toFixed(2))
-        const cubreTotal = faltaVentaActual <= 0.01
+        const item = pendientes[pIdx]
+        const aplicar = Math.min(restanteSplit, faltaActual)
+        montoPagadoActual = parseFloat((montoPagadoActual + aplicar).toFixed(2))
+        faltaActual = parseFloat((faltaActual - aplicar).toFixed(2))
+        const cubreTotal = faltaActual <= 0.01
 
-        await supabase.from('ventas').update({
-          monto_pagado: montoPagadoVentaActual,
-          ...(cubreTotal ? { estado_pago: 'pagado' } : {}),
-        }).eq('id', v.id)
+        if (item.kind === 'venta') {
+          await supabase.from('ventas').update({
+            monto_pagado: montoPagadoActual,
+            ...(cubreTotal ? { estado_pago: 'pagado' } : {}),
+          }).eq('id', item.id)
+        } else {
+          await supabase.from('movimientos_cta_cte').update({ monto_pagado: montoPagadoActual }).eq('id', item.id)
+        }
 
         await supabase.from('movimientos_caja').insert([{
           empresa,
           tipo: 'ingreso',
-          concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a venta)`,
+          concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a ${item.kind === 'venta' ? 'venta' : 'deuda cargada'})`,
           monto: aplicar,
           fecha: fechaCobro,
           categoria: 'Ventas - Cobro',
           medio_pago: medioSplit,
-          referencia_id: v.id,
+          referencia_id: item.id,
         }])
 
         restanteSplit = parseFloat((restanteSplit - aplicar).toFixed(2))
