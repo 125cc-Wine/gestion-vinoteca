@@ -218,6 +218,8 @@ export default function ProductosPage() {
   const [listaTitulo, setListaTitulo] = useState<string | null>(null)
   const [listaQuery, setListaQuery] = useState('')
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
+  const [bodegaQuery, setBodegaQuery] = useState('')
+  const [bodegaSugsOpen, setBodegaSugsOpen] = useState(false)
   interface ListaGuardada { id: string; nombre: string; producto_ids: string[]; descuento: number }
   const [listasGuardadas, setListasGuardadas]   = useState<ListaGuardada[]>([])
   const [listaGuardadaId, setListaGuardadaId]   = useState<string | null>(null)
@@ -2262,21 +2264,43 @@ export default function ProductosPage() {
 
             {/* Por bodega */}
             {bodegasUnicas.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 16, position: 'relative' }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 7 }}>
                   Por bodega
                 </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {bodegasUnicas.map(b => {
-                    const deLaBodega = productos.filter(p => p.activo !== false && p.precio_venta > 0 && p.bodega === b)
-                    const cargada = deLaBodega.length > 0 && deLaBodega.every(p => listaItems.find(i => i.id === p.id))
-                    return (
-                      <button key={b} onClick={() => listaToggleBodega(b)} className={`pill${cargada ? ' on' : ''}`}>
-                        {b} <span style={{ opacity: 0.6 }}>({deLaBodega.length})</span>
-                      </button>
-                    )
-                  })}
-                </div>
+                <input
+                  style={{ ...INP, paddingRight: 32 }}
+                  placeholder="Buscar bodega y agregar todos sus productos..."
+                  value={bodegaQuery}
+                  onChange={e => { setBodegaQuery(e.target.value); setBodegaSugsOpen(true) }}
+                  onFocus={() => setBodegaSugsOpen(true)}
+                  onBlur={() => setTimeout(() => setBodegaSugsOpen(false), 150)}
+                  autoComplete="off"
+                />
+                {bodegaSugsOpen && (() => {
+                  const matches = bodegasUnicas.filter(b => normalize(b).includes(normalize(bodegaQuery)))
+                  return (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 240, overflowY: 'auto', marginTop: 4 }}>
+                      {matches.length === 0 ? (
+                        <div style={{ padding: '14px', fontSize: 12, color: T.dim, textAlign: 'center' }}>Sin resultados</div>
+                      ) : matches.map(b => {
+                        const deLaBodega = productos.filter(p => p.activo !== false && p.precio_venta > 0 && p.bodega === b)
+                        const cargada = deLaBodega.length > 0 && deLaBodega.every(p => listaItems.find(i => i.id === p.id))
+                        return (
+                          <div key={b} onMouseDown={() => listaToggleBodega(b)}
+                            style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            className="lista-sug">
+                            <span style={{ fontSize: 13, color: T.text, fontWeight: 500 }}>
+                              {cargada && <span style={{ color: T.wine, marginRight: 6 }}>✓</span>}
+                              {b}
+                            </span>
+                            <span style={{ fontSize: 11, color: T.dim }}>{deLaBodega.length} producto{deLaBodega.length !== 1 ? 's' : ''}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
