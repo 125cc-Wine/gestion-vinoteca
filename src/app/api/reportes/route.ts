@@ -50,21 +50,25 @@ export async function GET(req: NextRequest) {
   // Costo por producto, para calcular margen en el ranking (join en JS
   // porque "items" guarda una copia del producto al momento de la venta,
   // no el costo actual — y de última el costo actual es lo que interesa
-  // para saber qué tan rentable es el producto HOY). Los ids de producto
-  // son UUID únicos globales, así que sumar ambas empresas al mismo Map
-  // no genera colisiones.
-  // Supabase corta en 1000 filas por default — con >1000 productos por
-  // empresa, la mitad de los costos se perdía en silencio y el margen del
-  // reporte salía subestimado (o en 0) para todo lo que caía después de la
-  // fila 1000. Hay que paginar para traerlos todos.
-  const productosCosto: { id: string; precio_costo: number | null }[] = []
+  // para saber qué tan rentable es el producto HOY).
+  // Se traen los productos de LAS DOS empresas siempre (no solo la del
+  // reporte): algunos ítems de venta quedaron con un producto_id de la otra
+  // empresa (bug viejo del selector) — si acá solo buscábamos en la empresa
+  // del reporte, esos ítems no encontraban costo y su margen se perdía en
+  // silencio (el total y las unidades sí sumaban bien, quedaba un número
+  // a medias, muy difícil de notar). Además de por id, se guarda un mapa por
+  // NOMBRE como respaldo — mismo criterio que ya usamos para compartir listas
+  // de precio entre empresas — para cubrir cualquier producto_id que ya no
+  // matchee ningún producto (borrado, o de la otra empresa).
+  // Paginado porque Supabase corta en 1000 filas por default y hay >1000
+  // productos por empresa (>2700 en total).
+  const productosCosto: { id: string; nombre: string; precio_costo: number | null }[] = []
   {
     const PAGE = 1000
     let from = 0
     while (true) {
-      let q = supabase.from('productos').select('id, precio_costo').range(from, from + PAGE - 1)
-      if (!ambas) q = q.eq('empresa', empresa)
-      const { data, error: errCosto } = await q
+      const { data, error: errCosto } = await supabase
+        .from('productos').select('id, nombre, precio_costo').range(from, from + PAGE - 1)
       if (errCosto || !data || data.length === 0) break
       productosCosto.push(...data)
       if (data.length < PAGE) break
@@ -72,6 +76,7 @@ export async function GET(req: NextRequest) {
     }
   }
   const costoPorId = new Map(productosCosto.map(p => [p.id, p.precio_costo || 0]))
+  const costoPorNombre = new Map(productosCosto.map(p => [p.nombre.trim().toLowerCase(), p.precio_costo || 0]))
 
   // 1. Ventas por día
   const porDia: Record<string, number> = {}
@@ -89,7 +94,15 @@ export async function GET(req: NextRequest) {
       if (!prodMap[key]) prodMap[key] = { nombre: item.nombre, cantidad: 0, total: 0, margen: 0 }
       prodMap[key].cantidad += item.cantidad
       prodMap[key].total   += item.subtotal || 0
-      const costo = item.producto_id ? costoPorId.get(item.producto_id) : undefined
+      // Primero por id (más preciso); si no matchea ningún producto (id de
+      // la otra empresa, o producto borrado), se cae a buscar por nombre —
+      // el ítem se guarda como "Nombre - Bodega", así que se recorta antes
+      // de buscar (ver comentario arriba de costoPorNombre).
+      let costo = item.producto_id ? costoPorId.get(item.producto_id) : undefined
+      if (costo == null) {
+        const nombreBase = item.nombre.split(' - ')[0].trim().toLowerCase()
+        costo = costoPorNombre.get(nombreBase)
+      }
       if (costo != null) prodMap[key].margen += (item.subtotal || 0) - costo * item.cantidad
     }
   }
