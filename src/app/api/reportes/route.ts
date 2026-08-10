@@ -14,18 +14,33 @@ export async function GET(req: NextRequest) {
   // "ambas" agrega Aroma + La Vid en un solo reporte — no filtra por empresa.
   const ambas = empresa === 'ambas'
 
-  let q = supabase
-    .from('ventas')
-    .select('id, numero, tipo, total, created_at, cliente_nombre, vendedor_nombre, items, estado_pago, condicion_venta')
-    .neq('estado', 'cancelado')
-    .order('created_at', { ascending: true })
+  // Paginado por las dudas — Supabase corta en 1000 filas por default, y un
+  // rango de fechas amplio (o "ambas" empresas) puede superarlo con el
+  // tiempo, cortando ventas en silencio y desviando todos los KPIs.
+  const ventas: { id: string; numero: string; tipo: string; total: number; created_at: string; cliente_nombre: string; vendedor_nombre: string | null; items: unknown; estado_pago: string | null; condicion_venta: string | null }[] = []
+  {
+    const PAGE = 1000
+    let from = 0
+    while (true) {
+      let q = supabase
+        .from('ventas')
+        .select('id, numero, tipo, total, created_at, cliente_nombre, vendedor_nombre, items, estado_pago, condicion_venta')
+        .neq('estado', 'cancelado')
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE - 1)
 
-  if (!ambas) q = q.eq('empresa', empresa)
-  if (desde) q = q.gte('created_at', desde)
-  if (hasta) q = q.lte('created_at', hasta + 'T23:59:59')
+      if (!ambas) q = q.eq('empresa', empresa)
+      if (desde) q = q.gte('created_at', desde)
+      if (hasta) q = q.lte('created_at', hasta + 'T23:59:59')
 
-  const { data: ventas, error } = await q
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      const { data, error } = await q
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (!data || data.length === 0) break
+      ventas.push(...data)
+      if (data.length < PAGE) break
+      from += PAGE
+    }
+  }
 
   // Las devoluciones no son ventas — si se incluyen acá, la mercadería
   // devuelta se contaba dos veces: como venta original y como "venta" de
@@ -38,10 +53,25 @@ export async function GET(req: NextRequest) {
   // para saber qué tan rentable es el producto HOY). Los ids de producto
   // son UUID únicos globales, así que sumar ambas empresas al mismo Map
   // no genera colisiones.
-  let productosCostoQ = supabase.from('productos').select('id, precio_costo')
-  if (!ambas) productosCostoQ = productosCostoQ.eq('empresa', empresa)
-  const { data: productosCosto } = await productosCostoQ
-  const costoPorId = new Map((productosCosto ?? []).map(p => [p.id, p.precio_costo || 0]))
+  // Supabase corta en 1000 filas por default — con >1000 productos por
+  // empresa, la mitad de los costos se perdía en silencio y el margen del
+  // reporte salía subestimado (o en 0) para todo lo que caía después de la
+  // fila 1000. Hay que paginar para traerlos todos.
+  const productosCosto: { id: string; precio_costo: number | null }[] = []
+  {
+    const PAGE = 1000
+    let from = 0
+    while (true) {
+      let q = supabase.from('productos').select('id, precio_costo').range(from, from + PAGE - 1)
+      if (!ambas) q = q.eq('empresa', empresa)
+      const { data, error: errCosto } = await q
+      if (errCosto || !data || data.length === 0) break
+      productosCosto.push(...data)
+      if (data.length < PAGE) break
+      from += PAGE
+    }
+  }
+  const costoPorId = new Map(productosCosto.map(p => [p.id, p.precio_costo || 0]))
 
   // 1. Ventas por día
   const porDia: Record<string, number> = {}
