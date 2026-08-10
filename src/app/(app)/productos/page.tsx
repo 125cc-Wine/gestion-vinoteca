@@ -220,7 +220,7 @@ export default function ProductosPage() {
   const [listaSugsOpen, setListaSugsOpen] = useState(false)
   const [bodegaQuery, setBodegaQuery] = useState('')
   const [bodegaSugsOpen, setBodegaSugsOpen] = useState(false)
-  interface ListaGuardada { id: string; nombre: string; producto_ids: string[]; descuento: number }
+  interface ListaGuardada { id: string; nombre: string; empresa: string; producto_ids: string[]; descuento: number }
   const [listasGuardadas, setListasGuardadas]   = useState<ListaGuardada[]>([])
   const [listaGuardadaId, setListaGuardadaId]   = useState<string | null>(null)
   const [listaDescuento, setListaDescuento]     = useState(0)
@@ -699,17 +699,31 @@ export default function ProductosPage() {
   async function abrirListaModal() {
     setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null)
     setListaGuardadaId(null); setListaDescuento(0); setListaModal(true)
-    const { data } = await supabase.from('listas_precio').select('id,nombre,producto_ids,descuento').eq('empresa', empresa).order('nombre')
+    // Sin filtro de empresa: las listas guardadas son compartidas entre
+    // Aroma y La Vid (mismo catálogo real, dos filas de precio por producto).
+    const { data } = await supabase.from('listas_precio').select('id,nombre,empresa,producto_ids,descuento').order('nombre')
     setListasGuardadas((data as ListaGuardada[]) || [])
   }
 
   // Arma listaItems con el precio ACTUAL de cada producto guardado — no se
   // congela nada al guardar la lista, solo qué productos la componen.
-  function cargarListaGuardada(id: string) {
+  // Como las listas son compartidas, los producto_ids guardados pueden ser de
+  // la OTRA empresa (id distinto aunque el producto sea "el mismo" wine) —
+  // primero se resuelve cada id a su nombre, y con el nombre se busca el
+  // producto de la empresa activa para mostrar siempre su precio actual.
+  async function cargarListaGuardada(id: string) {
     const l = listasGuardadas.find(x => x.id === id)
     if (!l) return
+    const directos = new Map(productos.map(p => [p.id, p]))
+    const idsFaltantes = l.producto_ids.filter(pid => !directos.has(pid))
+    let nombresPorId = new Map<string, string>()
+    if (idsFaltantes.length > 0) {
+      const { data: otros } = await supabase.from('productos').select('id,nombre').in('id', idsFaltantes)
+      nombresPorId = new Map((otros || []).map(p => [p.id, p.nombre]))
+    }
+    const porNombre = new Map(productos.map(p => [normalize(p.nombre), p]))
     const items: ListaItem[] = l.producto_ids
-      .map(pid => productos.find(p => p.id === pid))
+      .map(pid => directos.get(pid) ?? (nombresPorId.has(pid) ? porNombre.get(normalize(nombresPorId.get(pid)!)) : undefined))
       .filter((p): p is Producto => !!p)
       .map(p => ({
         id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
@@ -721,7 +735,7 @@ export default function ProductosPage() {
     setListaTitulo(l.nombre)
     setListaGuardadaId(l.id)
     setListaDescuento(l.descuento || 0)
-    if (faltantes > 0) toast_(`${faltantes} producto${faltantes !== 1 ? 's' : ''} de "${l.nombre}" ya no está${faltantes !== 1 ? 'n' : ''} activo${faltantes !== 1 ? 's' : ''} y se sacó${faltantes !== 1 ? 'ron' : ''} de la lista`)
+    if (faltantes > 0) toast_(`${faltantes} producto${faltantes !== 1 ? 's' : ''} de "${l.nombre}" ya no está${faltantes !== 1 ? 'n' : ''} activo${faltantes !== 1 ? 's' : ''} (o no existe${faltantes !== 1 ? 'n' : ''} en esta empresa) y se sacó${faltantes !== 1 ? 'ron' : ''} de la lista`)
   }
 
   async function guardarListaComo() {
@@ -731,7 +745,7 @@ export default function ProductosPage() {
     setListaGuardando(true)
     const { data, error } = await supabase.from('listas_precio')
       .insert([{ empresa, nombre: nombre.trim(), producto_ids: listaItems.map(i => i.id), descuento: listaDescuento || 0 }])
-      .select('id,nombre,producto_ids,descuento').single()
+      .select('id,nombre,empresa,producto_ids,descuento').single()
     setListaGuardando(false)
     if (error) { toast_('Error al guardar: ' + error.message); return }
     setListasGuardadas(prev => [...prev, data as ListaGuardada].sort((a, b) => a.nombre.localeCompare(b.nombre)))
@@ -2316,7 +2330,7 @@ export default function ProductosPage() {
                   style={{ ...INP, flex: 1 }}
                 >
                   <option value="">— Cargar una lista guardada —</option>
-                  {listasGuardadas.map(l => <option key={l.id} value={l.id}>{l.nombre} ({l.producto_ids.length})</option>)}
+                  {listasGuardadas.map(l => <option key={l.id} value={l.id}>{l.nombre} ({l.producto_ids.length}) — {l.empresa === 'aroma' ? 'Aroma' : 'La Vid'}</option>)}
                 </select>
                 {listaGuardadaId && (
                   <>
