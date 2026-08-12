@@ -46,6 +46,7 @@ export interface Cliente {
   notas?: string
   activo: boolean
   created_at?: string
+  vendedor_id?: string | null
 }
 
 export interface Proveedor {

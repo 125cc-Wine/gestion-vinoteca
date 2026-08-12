@@ -20,10 +20,12 @@ interface MovCtaCte {
   saldo_anterior?: number; saldo_nuevo?: number; fecha?: string; created_at: string
 }
 
+interface VendedorMini { id: string; nombre: string; tipo: string; activo: boolean }
+
 const EMPTY: Omit<Cliente, 'id' | 'created_at'> = {
   empresa: 'aroma', nombre: '', apellido: '', razon_social: '', cuit: '',
   email: '', telefono: '', direccion: '', tipo: 'consumidor_final',
-  saldo: 0, limite_credito: 0, notas: '', activo: true,
+  saldo: 0, limite_credito: 0, notas: '', activo: true, vendedor_id: null,
 }
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
@@ -97,6 +99,8 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [filtrTipo, setFiltrTipo] = useState('')
+  const [filtrVendedor, setFiltrVendedor] = useState('')
+  const [vendedores, setVendedores] = useState<VendedorMini[]>([])
 
   // Modal edición
   const [modal, setModal] = useState(false)
@@ -154,10 +158,20 @@ export default function ClientesPage() {
 
   async function cargar(emp: string) {
     setLoading(true)
-    const res = await fetch('/api/clientes')
+    const [res, resVend] = await Promise.all([
+      fetch('/api/clientes'),
+      fetch(`/api/vendedores?empresa=${emp}`),
+    ])
     const data = await res.json()
+    const dataVend = await resVend.json()
     setClientes(Array.isArray(data) ? data : [])
+    setVendedores(Array.isArray(dataVend) ? dataVend.filter((v: VendedorMini) => v.activo) : [])
     setLoading(false)
+  }
+
+  function vendedorNombre(id: string | null | undefined) {
+    if (!id) return null
+    return vendedores.find(v => v.id === id)?.nombre || null
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
@@ -245,6 +259,7 @@ export default function ClientesPage() {
       razon_social: c.razon_social || '', cuit: c.cuit || '', email: c.email || '',
       telefono: c.telefono || '', direccion: c.direccion || '', tipo: c.tipo,
       saldo: c.saldo, limite_credito: c.limite_credito || 0, notas: c.notas || '', activo: c.activo,
+      vendedor_id: c.vendedor_id || null,
     })
     setEditId(c.id!); setModal(true)
   }
@@ -401,7 +416,8 @@ export default function ClientesPage() {
     const q = busqueda.toLowerCase()
     const matchQ = !q || `${c.nombre} ${c.apellido || ''} ${c.razon_social || ''} ${c.cuit || ''} ${c.telefono || ''}`.toLowerCase().includes(q)
     const matchTipo = !filtrTipo || c.tipo === filtrTipo
-    return matchQ && matchTipo
+    const matchVendedor = !filtrVendedor || c.vendedor_id === filtrVendedor
+    return matchQ && matchTipo && matchVendedor
   })
 
   const conSaldo = clientes.filter(c => c.saldo > 0).length
@@ -485,6 +501,14 @@ export default function ClientesPage() {
             <option value="">Todos los tipos</option>
             {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
+          <select
+            style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', fontSize: 13, color: T.text, outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
+            value={filtrVendedor}
+            onChange={e => setFiltrVendedor(e.target.value)}
+          >
+            <option value="">Todos los vendedores</option>
+            {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre}{v.tipo === 'calle' ? ' (calle)' : ''}</option>)}
+          </select>
         </div>
 
         {/* Table */}
@@ -507,6 +531,11 @@ export default function ClientesPage() {
                   <td style={{ padding: '11px 16px', fontSize: 13 }}>
                     <div style={{ fontWeight: 600, color: T.text }}>{c.nombre} {c.apellido || ''}</div>
                     {c.razon_social && <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{c.razon_social}</div>}
+                    {vendedorNombre(c.vendedor_id) && (
+                      <div style={{ fontSize: 10, color: T.wine, marginTop: 2, fontWeight: 600 }}>
+                        Vendedor: {vendedorNombre(c.vendedor_id)}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '11px 16px' }}>{tipoBadge(c.tipo)}</td>
                   <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{c.email || '—'}</td>
@@ -571,6 +600,13 @@ export default function ClientesPage() {
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Tipo</label>
                 <select style={INP} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as Cliente['tipo'] }))}>
                   {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Vendedor</label>
+                <select style={INP} value={form.vendedor_id || ''} onChange={e => setForm(f => ({ ...f, vendedor_id: e.target.value || null }))}>
+                  <option value="">Sin asignar</option>
+                  {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre}{v.tipo === 'calle' ? ' (calle)' : ''}</option>)}
                 </select>
               </div>
               <div>

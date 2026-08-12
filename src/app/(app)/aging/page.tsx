@@ -53,6 +53,7 @@ interface AgingRow {
   cliente_id: string | null
   cliente_nombre: string
   telefono: string | null
+  vendedor_id: string | null
   saldo_total: number
   bucket_30: number
   bucket_60: number
@@ -107,6 +108,8 @@ export default function AgingPage() {
   const [rows, setRows] = useState<AgingRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [vendedores, setVendedores] = useState<{ id: string; nombre: string; tipo: string }[]>([])
+  const [filtroVendedor, setFiltroVendedor] = useState('')
 
   // Modal detalle
   const [modalCliente, setModalCliente] = useState<AgingRow | null>(null)
@@ -144,6 +147,20 @@ export default function AgingPage() {
   }, [])
 
   useEffect(() => { load(empresa) }, [empresa, load])
+
+  // Vendedores es una tabla compartida (no depende de la empresa) — se carga
+  // una sola vez, para el filtro "por vendedor" y para mostrar de quién es
+  // cada cliente.
+  useEffect(() => {
+    fetch('/api/vendedores')
+      .then(r => r.json())
+      .then(d => setVendedores(Array.isArray(d) ? d.filter((v: { activo: boolean }) => v.activo) : []))
+  }, [])
+
+  function nombreVendedor(id: string | null) {
+    if (!id) return null
+    return vendedores.find(v => v.id === id)?.nombre || null
+  }
 
   async function cargarVentasPendientes(row: AgingRow) {
     // Ventas de "Consumidor Final" no tienen cliente_id — pedir todas las
@@ -258,12 +275,16 @@ export default function AgingPage() {
     else wRecibo?.close()
   }
 
+  // Filtro por vendedor — se aplica antes de los KPIs y la tabla, así todo
+  // (totales, cantidad de clientes, filas) queda consistente con el filtro.
+  const rowsFiltradas = filtroVendedor ? rows.filter(r => r.vendedor_id === filtroVendedor) : rows
+
   // KPI totals
-  const total30 = rows.reduce((s, r) => s + r.bucket_30, 0)
-  const total60 = rows.reduce((s, r) => s + r.bucket_60, 0)
-  const total90 = rows.reduce((s, r) => s + r.bucket_90, 0)
-  const totalMas90 = rows.reduce((s, r) => s + r.bucket_mas90, 0)
-  const totalGeneral = rows.reduce((s, r) => s + r.saldo_total, 0)
+  const total30 = rowsFiltradas.reduce((s, r) => s + r.bucket_30, 0)
+  const total60 = rowsFiltradas.reduce((s, r) => s + r.bucket_60, 0)
+  const total90 = rowsFiltradas.reduce((s, r) => s + r.bucket_90, 0)
+  const totalMas90 = rowsFiltradas.reduce((s, r) => s + r.bucket_mas90, 0)
+  const totalGeneral = rowsFiltradas.reduce((s, r) => s + r.saldo_total, 0)
 
   // Footer totals
   const footerBucket = {
@@ -312,6 +333,21 @@ export default function AgingPage() {
             <option value="aroma">Aroma de Vid</option>
             <option value="lavid">La Vid Consultora</option>
           </select>
+          {vendedores.length > 0 && (
+            <select
+              className="sel-empresa"
+              value={filtroVendedor}
+              onChange={e => setFiltroVendedor(e.target.value)}
+              style={{
+                background: T.surface, border: `1px solid ${T.border2}`,
+                borderRadius: 8, padding: '7px 12px', fontSize: 13,
+                color: T.text, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <option value="">Todos los vendedores</option>
+              {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre}{v.tipo === 'calle' ? ' (calle)' : ''}</option>)}
+            </select>
+          )}
           <button
             onClick={() => load(empresa)}
             style={{
@@ -341,7 +377,7 @@ export default function AgingPage() {
             {fmt(totalGeneral)}
           </div>
           <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>
-            {rows.length} clientes
+            {rowsFiltradas.length} clientes
           </div>
         </div>
       </div>
@@ -361,9 +397,11 @@ export default function AgingPage() {
       {/* Tabla */}
       {!loading && !error && (
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden' }}>
-          {rows.length === 0 ? (
+          {rowsFiltradas.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: T.muted, fontSize: 14 }}>
-              Sin clientes con saldo pendiente en {empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}.
+              {filtroVendedor
+                ? 'Ningún cliente de este vendedor tiene saldo pendiente.'
+                : `Sin clientes con saldo pendiente en ${empresa === 'aroma' ? 'Aroma de Vid' : 'La Vid Consultora'}.`}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -384,7 +422,7 @@ export default function AgingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, i) => {
+                  {rowsFiltradas.map((row, i) => {
                     const bColor = getBucketColor(row)
                     const bs = BUCKET_STYLES[bColor]
                     return (
@@ -392,13 +430,18 @@ export default function AgingPage() {
                         key={row.cliente_id ?? 'sin-cliente'}
                         className="aging-tr"
                         style={{
-                          borderBottom: i < rows.length - 1 ? `1px solid ${T.border}` : 'none',
+                          borderBottom: i < rowsFiltradas.length - 1 ? `1px solid ${T.border}` : 'none',
                           background: bs.bg,
                         }}
                       >
                         {/* Cliente */}
                         <td style={{ padding: '11px 14px' }}>
                           <div style={{ fontWeight: 600, color: T.text }}>{row.cliente_nombre}</div>
+                          {nombreVendedor(row.vendedor_id) && (
+                            <div style={{ fontSize: 10, color: T.wine, marginTop: 1, fontWeight: 600 }}>
+                              Vendedor: {nombreVendedor(row.vendedor_id)}
+                            </div>
+                          )}
                           {row.telefono && (
                             <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{row.telefono}</div>
                           )}
@@ -480,7 +523,7 @@ export default function AgingPage() {
                 <tfoot>
                   <tr style={{ background: T.bg, borderTop: `2px solid ${T.border2}` }}>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: T.muted, fontSize: 12 }}>
-                      TOTALES ({rows.length})
+                      TOTALES ({rowsFiltradas.length})
                     </td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>
                       {fmt(totalGeneral)}

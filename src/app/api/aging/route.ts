@@ -43,14 +43,18 @@ export async function GET(req: NextRequest) {
     devPorCliente[key] = (devPorCliente[key] || 0) + Math.abs(d.total || 0)
   }
 
-  // 3. Datos de contacto de los clientes
+  // 3. Datos de contacto y vendedor asignado de los clientes
   const { data: clientes } = await supabase
     .from('clientes')
-    .select('id, telefono')
+    .select('id, telefono, vendedor_id')
     .in('id', clienteIdsConVentas)
 
   const telPorCliente: Record<string, string | null> = {}
-  for (const c of (clientes ?? [])) telPorCliente[c.id] = c.telefono
+  const vendedorPorCliente: Record<string, string | null> = {}
+  for (const c of (clientes ?? [])) {
+    telPorCliente[c.id] = c.telefono
+    vendedorPorCliente[c.id] = c.vendedor_id
+  }
 
   // 4. Agrupar por cliente y calcular buckets
   //    Ojo: v.cliente_id puede ser null (venta a "Consumidor Final" sin
@@ -119,6 +123,7 @@ export async function GET(req: NextRequest) {
       cliente_id: clienteId,
       cliente_nombre: nombre,
       telefono: clienteId ? (telPorCliente[clienteId] ?? null) : null,
+      vendedor_id: clienteId ? (vendedorPorCliente[clienteId] ?? null) : null,
       saldo_total,
       bucket_30,
       bucket_60,
