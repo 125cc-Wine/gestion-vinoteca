@@ -100,6 +100,14 @@ export default function ClientesPage() {
   const [loading, setLoading] = useState(true)
   const [filtrTipo, setFiltrTipo] = useState('')
   const [filtrVendedor, setFiltrVendedor] = useState('')
+  const [sortCampo, setSortCampo] = useState<'nombre' | 'saldo' | ''>('')
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('asc')
+  // Click en el encabezado de una columna: ordena por ella; si ya está activa,
+  // invierte la dirección (mismo patrón que /productos).
+  function toggleSort(campo: 'nombre' | 'saldo') {
+    if (sortCampo === campo) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCampo(campo); setSortDir(campo === 'saldo' ? 'desc' : 'asc') }
+  }
   const [vendedores, setVendedores] = useState<VendedorMini[]>([])
 
   // Modal edición
@@ -418,6 +426,14 @@ export default function ClientesPage() {
     const matchTipo = !filtrTipo || c.tipo === filtrTipo
     const matchVendedor = !filtrVendedor || c.vendedor_id === filtrVendedor
     return matchQ && matchTipo && matchVendedor
+  }).sort((a, b) => {
+    if (!sortCampo) return 0
+    if (sortCampo === 'nombre') {
+      const va = `${a.nombre} ${a.apellido || ''}`.trim()
+      const vb = `${b.nombre} ${b.apellido || ''}`.trim()
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    }
+    return sortDir === 'asc' ? a.saldo - b.saldo : b.saldo - a.saldo
   })
 
   const conSaldo = clientes.filter(c => c.saldo > 0).length
@@ -516,9 +532,18 @@ export default function ClientesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: T.bg }}>
-                {['Cliente', 'Tipo', 'Email', 'Teléfono', 'CUIT', 'Saldo', 'Estado', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}` }}>{h}</th>
-                ))}
+                {['Cliente', 'Tipo', 'Email', 'Teléfono', 'CUIT', 'Saldo', 'Estado', ''].map(h => {
+                  const SORT_COL: Record<string, 'nombre' | 'saldo'> = { 'Cliente': 'nombre', 'Saldo': 'saldo' }
+                  const campo = SORT_COL[h]
+                  const activo = campo && sortCampo === campo
+                  return (
+                    <th key={h} onClick={campo ? () => toggleSort(campo) : undefined}
+                      style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: activo ? T.wine : T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}`, cursor: campo ? 'pointer' : 'default', userSelect: 'none' }}
+                      title={campo ? 'Ordenar por ' + h : undefined}>
+                      {h}{activo ? (sortDir === 'asc' ? ' ↑' : ' ↓') : campo ? ' ↕' : ''}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
