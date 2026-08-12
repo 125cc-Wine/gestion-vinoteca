@@ -59,7 +59,12 @@ export async function GET(req: NextRequest) {
   const fecha = new Date(mov.created_at).toLocaleDateString('es-AR')
   const moneda = (n: number) => '$' + (n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-  const textoWa = `Hola ${clienteNombre}, te confirmamos la recepción de tu pago de ${moneda(mov.monto)} el ${fecha} en ${empresa.nombre}.${mov.concepto ? ` Concepto: ${mov.concepto}.` : ''} ¡Gracias!`
+  // El concepto puede traer el detalle de a qué comprobantes se aplicó el
+  // cobro (ver /api/cta-cte), separado con " — Aplicado a: " — se muestra
+  // en una fila aparte para que no quede todo amontonado en una sola línea.
+  const [conceptoBase, aplicadoA] = (mov.concepto || '').split(' — Aplicado a: ')
+
+  const textoWa = `Hola ${clienteNombre}, te confirmamos la recepción de tu pago de ${moneda(mov.monto)} el ${fecha} en ${empresa.nombre}.${conceptoBase ? ` Concepto: ${conceptoBase}.` : ''}${aplicadoA ? ` Aplicado a: ${aplicadoA}.` : ''} ¡Gracias!`
   const wa = waLink(cliente?.telefono, textoWa)
 
   const html = `<!DOCTYPE html>
@@ -139,7 +144,8 @@ export async function GET(req: NextRequest) {
   <div class="detalle">
     <div class="detalle-row"><span class="detalle-label">Recibimos de</span><span class="detalle-val">${esc(clienteNombre)}</span></div>
     ${cliente?.cuit ? `<div class="detalle-row"><span class="detalle-label">CUIT</span><span class="detalle-val">${esc(cliente.cuit)}</span></div>` : ''}
-    <div class="detalle-row"><span class="detalle-label">En concepto de</span><span class="detalle-val">${esc(mov.concepto || 'Cobro cuenta corriente')}</span></div>
+    <div class="detalle-row"><span class="detalle-label">En concepto de</span><span class="detalle-val">${esc(conceptoBase || 'Cobro cuenta corriente')}</span></div>
+    ${aplicadoA ? `<div class="detalle-row"><span class="detalle-label">Aplicado a</span><span class="detalle-val">${esc(aplicadoA)}</span></div>` : ''}
     ${medio ? `<div class="detalle-row"><span class="detalle-label">Medio de pago</span><span class="detalle-val">${esc(medio)}</span></div>` : ''}
     <div class="detalle-row"><span class="detalle-label">Saldo restante</span><span class="detalle-val">${moneda(mov.saldo_nuevo)}</span></div>
   </div>

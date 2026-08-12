@@ -49,26 +49,6 @@ export async function POST(req: NextRequest) {
     ? saldoAnterior + monto
     : saldoAnterior - monto
 
-  // Registrar movimiento
-  const { data, error } = await supabase
-    .from('movimientos_cta_cte')
-    .insert([{
-      cliente_id, tipo, monto, concepto, empresa,
-      saldo_anterior: saldoAnterior,
-      saldo_nuevo: saldoNuevo,
-      referencia_id: referencia_id || null,
-    }])
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Actualizar saldo del cliente
-  await supabase
-    .from('clientes')
-    .update({ saldo: saldoNuevo })
-    .eq('id', cliente_id)
-
   // Un "cobro" genérico (no atado a una venta puntual, a diferencia de
   // /api/ventas/cobrar) se reparte FIFO contra TODO lo abierto del cliente,
   // en un único orden cronológico: remitos/presupuestos Y deudas cargadas a
@@ -80,10 +60,17 @@ export async function POST(req: NextRequest) {
   // Si el cobro viene partido en varios medios de pago, se recorren ambas
   // colas (pendientes y splits de pago) a la vez, así cada movimiento de
   // caja generado queda con el medio de pago que realmente le tocó.
+  // Se hace ANTES de insertar el movimiento en cta_cte para poder anotar en
+  // el concepto a qué comprobantes se aplicó — si no, el recibo del cliente
+  // no decía más que "Cobro cuenta corriente" sin ninguna referencia a qué
+  // factura/presupuesto correspondía.
+  const detalleAplicado: string[] = []
+  let sobrante = 0
+
   if (tipo === 'cobro' && monto > 0) {
     const { data: ventasAbiertas } = await supabase
       .from('ventas')
-      .select('id, total, monto_pagado, created_at')
+      .select('id, numero, tipo, total, monto_pagado, created_at')
       .eq('cliente_id', cliente_id)
       .eq('empresa', empresa)
       .in('tipo', ['remito', 'presupuesto'])
@@ -92,18 +79,24 @@ export async function POST(req: NextRequest) {
 
     const { data: cargosAbiertos } = await supabase
       .from('movimientos_cta_cte')
-      .select('id, monto, monto_pagado, created_at')
+      .select('id, concepto, monto, monto_pagado, created_at')
       .eq('cliente_id', cliente_id)
       .eq('empresa', empresa)
       .eq('tipo', 'cargo')
       .order('created_at', { ascending: true })
 
-    type Pendiente = { kind: 'venta' | 'cargo'; id: string; total: number; monto_pagado: number; created_at: string }
+    type Pendiente = { kind: 'venta' | 'cargo'; id: string; total: number; monto_pagado: number; created_at: string; label: string }
     const pendientes: Pendiente[] = [
-      ...(ventasAbiertas || []).map(v => ({ kind: 'venta' as const, id: v.id, total: v.total, monto_pagado: v.monto_pagado || 0, created_at: v.created_at })),
+      ...(ventasAbiertas || []).map(v => ({
+        kind: 'venta' as const, id: v.id, total: v.total, monto_pagado: v.monto_pagado || 0, created_at: v.created_at,
+        label: `${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`,
+      })),
       ...(cargosAbiertos || [])
         .filter(c => parseFloat((c.monto - (c.monto_pagado || 0)).toFixed(2)) > 0.01)
-        .map(c => ({ kind: 'cargo' as const, id: c.id, total: c.monto, monto_pagado: c.monto_pagado || 0, created_at: c.created_at })),
+        .map(c => ({
+          kind: 'cargo' as const, id: c.id, total: c.monto, monto_pagado: c.monto_pagado || 0, created_at: c.created_at,
+          label: c.concepto || 'Deuda cargada',
+        })),
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
     const fechaCobro = fecha || new Date().toISOString().split('T')[0]
@@ -141,7 +134,7 @@ export async function POST(req: NextRequest) {
         await supabase.from('movimientos_caja').insert([{
           empresa,
           tipo: 'ingreso',
-          concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a ${item.kind === 'venta' ? 'venta' : 'deuda cargada'})`,
+          concepto: `${concepto || 'Cobro cuenta corriente'} (aplicado a ${item.label})`,
           monto: aplicar,
           fecha: fechaCobro,
           categoria: 'Ventas - Cobro',
@@ -149,10 +142,39 @@ export async function POST(req: NextRequest) {
           referencia_id: item.id,
         }])
 
+        detalleAplicado.push(`${item.label}${cubreTotal ? '' : ' (parcial)'}: $${aplicar.toLocaleString('es-AR')}`)
         restanteSplit = parseFloat((restanteSplit - aplicar).toFixed(2))
       }
+      if (restanteSplit > 0) sobrante += restanteSplit
     }
   }
+
+  let conceptoFinal = concepto || (tipo === 'cargo' ? 'Cargo' : 'Cobro cuenta corriente')
+  if (tipo === 'cobro' && detalleAplicado.length > 0) {
+    conceptoFinal += ` — Aplicado a: ${detalleAplicado.join(', ')}`
+  } else if (tipo === 'cobro' && sobrante > 0.01) {
+    conceptoFinal += ' — Sin comprobantes abiertos, quedó como saldo a favor'
+  }
+
+  // Registrar movimiento
+  const { data, error } = await supabase
+    .from('movimientos_cta_cte')
+    .insert([{
+      cliente_id, tipo, monto, concepto: conceptoFinal, empresa,
+      saldo_anterior: saldoAnterior,
+      saldo_nuevo: saldoNuevo,
+      referencia_id: referencia_id || null,
+    }])
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Actualizar saldo del cliente
+  await supabase
+    .from('clientes')
+    .update({ saldo: saldoNuevo })
+    .eq('id', cliente_id)
 
   return NextResponse.json({ ...data, saldo_nuevo: saldoNuevo })
 }

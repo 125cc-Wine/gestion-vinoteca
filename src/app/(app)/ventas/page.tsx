@@ -748,6 +748,32 @@ export default function VentasPage() {
     cargarTodo(empresa); showToast('Comprobante eliminado')
   }
 
+  // Cobrar un comprobante puntual (presupuesto/remito en cta. cte.) sin
+  // tener que ir hasta la ficha del cliente o Cuentas Corrientes — mismo
+  // flujo que ya usa Aging.
+  async function cobrarVentaFila(v: Venta) {
+    const restante = parseFloat(((v.total || 0) - (v.monto_pagado || 0)).toFixed(2))
+    const input = prompt(`¿Cuánto se cobró de ${v.numero}? (falta $${restante.toLocaleString('es-AR')})`, String(restante))
+    if (input === null) return
+    const monto = parseFloat(input.replace(',', '.'))
+    if (!monto || monto <= 0) { showToast('Monto inválido'); return }
+    if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
+
+    // Se abre acá, antes del primer await, para que el navegador lo
+    // reconozca como originado por el clic del usuario y no lo bloquee.
+    const wRecibo = window.open('', '_blank', 'width=650,height=850')
+    const res = await fetch('/api/ventas/cobrar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ venta_id: v.id, empresa, monto }),
+    })
+    const data = await res.json()
+    if (data.error) { showToast('Error: ' + data.error); wRecibo?.close(); return }
+    await cargarTodo(empresa)
+    showToast(monto < restante - 0.01 ? 'Cobro parcial registrado' : 'Comprobante cobrado')
+    if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=Efectivo`
+    else wRecibo?.close()
+  }
+
   function abrirFacturar(v: Venta) {
     const c = clientes.find(cl => cl.id === v.cliente_id)
     const esRI = c?.tipo === 'responsable_inscripto'
@@ -1301,6 +1327,8 @@ export default function VentasPage() {
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11 })} onClick={() => editarVenta(v)}>Editar</button>
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} onClick={() => duplicarVenta(v)}>Dupl.</button>
                             {v.tipo === 'remito' && <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.blue })} onClick={() => abrirDevolucion(v)}>Dev.</button>}
+                            {v.estado_pago === 'cuenta_corriente' && (v.total - (v.monto_pagado ?? 0)) > 0.01 &&
+                              <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.green })} onClick={() => cobrarVentaFila(v)}>Cobrar</button>}
                             <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.amber })} title="Generar etiquetas" onClick={() => setEtiquetaVenta(v)}>🏷️</button>
                             {v.facturado
                               ? <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} title="Imprimir factura AFIP" onClick={() => abrirEImprimirFactura(v)}>Factura ✓</button>
