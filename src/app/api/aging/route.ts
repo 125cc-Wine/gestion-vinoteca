@@ -8,133 +8,200 @@ function diffDays(from: string): number {
   return Math.floor((now - then) / (1000 * 60 * 60 * 24))
 }
 
+const PAGE = 1000
+async function fetchAll<T>(table: string, cols: string, eqs: Record<string, string> = {}): Promise<T[]> {
+  let all: T[] = []
+  let from = 0
+  while (true) {
+    let q = supabase.from(table).select(cols)
+    for (const [k, v] of Object.entries(eqs)) q = q.eq(k, v)
+    const { data, error } = await q.range(from, from + PAGE - 1)
+    if (error) throw new Error(error.message)
+    all = all.concat((data ?? []) as T[])
+    if (!data || data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
 
-  // 1. Ventas pendientes en cuenta corriente (presupuesto, remito y factura)
-  //    NO filtramos por clientes.saldo — usamos las ventas como fuente de verdad
-  const { data: ventas, error: errVentas } = await supabase
-    .from('ventas')
-    .select('id, numero, cliente_id, cliente_nombre, total, created_at, tipo')
-    .eq('empresa', empresa)
-    .in('tipo', ['presupuesto', 'remito', 'factura'])
-    .eq('estado_pago', 'cuenta_corriente')
-    .neq('estado', 'cancelado')
-    .order('created_at', { ascending: false })
+  try {
+    // 1. Ventas pendientes en cuenta corriente de ESTA empresa (presupuesto,
+    //    remito y factura). Se usa total - monto_pagado, no el total bruto,
+    //    para no sobrecontar ventas que ya tienen un pago parcial registrado.
+    const ventasEmpresa = await fetchAll<{
+      id: string; numero?: string; cliente_id: string | null; cliente_nombre: string
+      total: number; monto_pagado: number | null; created_at: string; tipo: string
+      estado_pago: string; estado: string
+    }>('ventas', 'id, numero, cliente_id, cliente_nombre, total, monto_pagado, created_at, tipo, estado_pago, estado', { empresa })
+      .then(rows => rows.filter(v =>
+        ['presupuesto', 'remito', 'factura'].includes(v.tipo) &&
+        v.estado_pago === 'cuenta_corriente' &&
+        v.estado !== 'cancelado'
+      ))
 
-  if (errVentas) return NextResponse.json({ error: errVentas.message }, { status: 500 })
-  if (!ventas || ventas.length === 0) return NextResponse.json([])
+    // 2. Deuda "cargada a mano" (Cargar deuda, migraciones de sistema
+    //    anterior, etc.) que no está atada a ninguna venta.
+    //    movimientos_cta_cte.monto_pagado no sirve para saber cuánto de un
+    //    cargo sigue abierto: una migración vieja lo dejó igual a "monto" en
+    //    el 100% de los cargos existentes, marcándolos a todos como
+    //    "cobrados" sin importar si realmente lo estaban. En cambio usamos
+    //    clientes.saldo (que sí se mantiene al día en cada alta/edición/
+    //    cobro) menos lo que ya se explica con ventas abiertas — la
+    //    diferencia es la deuda cargada que sigue pendiente. clientes.saldo
+    //    es global (no está partido por empresa), así que ese residuo se
+    //    reparte a prorrata de en qué empresa están cargados los
+    //    movimientos de cta_cte del cliente.
+    const [ventasGlobales, cargos, clientesConSaldo] = await Promise.all([
+      fetchAll<{ cliente_id: string | null; total: number; monto_pagado: number | null; tipo: string; estado_pago: string; estado: string }>(
+        'ventas', 'cliente_id, total, monto_pagado, tipo, estado_pago, estado'
+      ).then(rows => rows.filter(v =>
+        ['presupuesto', 'remito', 'factura'].includes(v.tipo) &&
+        v.estado_pago === 'cuenta_corriente' &&
+        v.estado !== 'cancelado'
+      )),
+      fetchAll<{ cliente_id: string; empresa: string; monto: number; created_at: string }>(
+        'movimientos_cta_cte', 'cliente_id, empresa, monto, created_at', { tipo: 'cargo' }
+      ),
+      fetchAll<{ id: string; nombre: string; apellido: string | null; razon_social: string | null; telefono: string | null; vendedor_id: string | null; saldo: number }>(
+        'clientes', 'id, nombre, apellido, razon_social, telefono, vendedor_id, saldo'
+      ).then(rows => rows.filter(c => c.saldo > 0)),
+    ])
 
-  // 2. Devoluciones pendientes de netear (tipo='devolucion', mismo cliente)
-  const clienteIdsConVentas = Array.from(new Set(ventas.map(v => v.cliente_id)))
-  const { data: devoluciones } = await supabase
-    .from('ventas')
-    .select('id, cliente_id, total')
-    .eq('empresa', empresa)
-    .eq('tipo', 'devolucion')
-    .neq('estado', 'cancelado')
-    .in('cliente_id', clienteIdsConVentas)
+    if (ventasEmpresa.length === 0 && clientesConSaldo.length === 0) return NextResponse.json([])
 
-  // monto devuelto por cliente
-  const devPorCliente: Record<string, number> = {}
-  for (const d of (devoluciones ?? [])) {
-    const key = d.cliente_id || '__sin_cliente__'
-    devPorCliente[key] = (devPorCliente[key] || 0) + Math.abs(d.total || 0)
-  }
-
-  // 3. Datos de contacto y vendedor asignado de los clientes
-  const { data: clientes } = await supabase
-    .from('clientes')
-    .select('id, telefono, vendedor_id')
-    .in('id', clienteIdsConVentas)
-
-  const telPorCliente: Record<string, string | null> = {}
-  const vendedorPorCliente: Record<string, string | null> = {}
-  for (const c of (clientes ?? [])) {
-    telPorCliente[c.id] = c.telefono
-    vendedorPorCliente[c.id] = c.vendedor_id
-  }
-
-  // 4. Agrupar por cliente y calcular buckets
-  //    Ojo: v.cliente_id puede ser null (venta a "Consumidor Final" sin
-  //    cliente asignado). Usar ese valor directo como clave de objeto lo
-  //    convierte en el string "null" — después el frontend mandaba
-  //    cliente_id=null a /api/ventas y la búsqueda nunca encontraba nada
-  //    (comparaba contra el texto "null", no contra un cliente_id vacío).
-  //    Por eso agrupamos con una clave interna separada y devolvemos el
-  //    cliente_id real (string o null) en la respuesta.
-  type VentaItem = { id: string; numero?: string; total: number; created_at: string; dias: number; tipo: string }
-  const SIN_CLIENTE = '__sin_cliente__'
-  const ventasPorCliente: Record<string, { nombre: string; items: VentaItem[]; clienteId: string | null }> = {}
-
-  for (const v of ventas) {
-    const key = v.cliente_id || SIN_CLIENTE
-    if (!ventasPorCliente[key]) {
-      ventasPorCliente[key] = { nombre: v.cliente_nombre, items: [], clienteId: v.cliente_id }
-    }
-    ventasPorCliente[key].items.push({
-      id: v.id,
-      numero: v.numero,
-      total: v.total,
-      created_at: v.created_at,
-      dias: diffDays(v.created_at),
-      tipo: v.tipo,
-    })
-  }
-
-  // 5. Construir resultado — saldo_total calculado desde ventas, no desde clientes.saldo
-  const result = Object.values(ventasPorCliente).map(({ nombre, items, clienteId }) => {
-    let bucket_30 = 0
-    let bucket_60 = 0
-    let bucket_90 = 0
-    let bucket_mas90 = 0
-    let dias_maximo = 0
-    let ultima_compra: string | null = null
-
-    for (const v of items) {
-      if (v.dias <= 30) bucket_30 += v.total
-      else if (v.dias <= 60) bucket_60 += v.total
-      else if (v.dias <= 90) bucket_90 += v.total
-      else bucket_mas90 += v.total
-
-      if (v.dias > dias_maximo) dias_maximo = v.dias
-      if (!ultima_compra || v.created_at > ultima_compra) ultima_compra = v.created_at
+    // Total de ventas abiertas por cliente, en TODAS las empresas (para
+    // aislar cuánto del saldo global no se explica con ninguna venta).
+    const pendienteVentasGlobalPorCliente: Record<string, number> = {}
+    for (const v of ventasGlobales) {
+      if (!v.cliente_id) continue
+      const pendiente = (v.total || 0) - (v.monto_pagado || 0)
+      pendienteVentasGlobalPorCliente[v.cliente_id] = (pendienteVentasGlobalPorCliente[v.cliente_id] || 0) + pendiente
     }
 
-    // Netear devoluciones del bucket más antiguo con saldo
-    let devPendiente = devPorCliente[clienteId ?? SIN_CLIENTE] || 0
-    if (devPendiente > 0) {
-      const descuento = (bucket: number) => {
-        const aplicado = Math.min(bucket, devPendiente)
-        devPendiente -= aplicado
-        return bucket - aplicado
+    // Cargos por cliente, separados por empresa (para el prorrateo) y con la
+    // fecha más vieja (para ubicar el residuo en el bucket de antigüedad
+    // correcto).
+    const cargoBrutoPorCliente: Record<string, { aroma: number; lavid: number }> = {}
+    const cargoFechaMasViejaPorCliente: Record<string, string> = {}
+    for (const c of cargos) {
+      if (!cargoBrutoPorCliente[c.cliente_id]) cargoBrutoPorCliente[c.cliente_id] = { aroma: 0, lavid: 0 }
+      if (c.empresa === 'aroma' || c.empresa === 'lavid') cargoBrutoPorCliente[c.cliente_id][c.empresa] += (c.monto || 0)
+      const fechaActual = cargoFechaMasViejaPorCliente[c.cliente_id]
+      if (!fechaActual || c.created_at < fechaActual) cargoFechaMasViejaPorCliente[c.cliente_id] = c.created_at
+    }
+
+    const clientePorId: Record<string, typeof clientesConSaldo[number]> = {}
+    for (const c of clientesConSaldo) clientePorId[c.id] = c
+
+    // 3. Devoluciones pendientes de netear (tipo='devolucion', mismo
+    //    cliente), en esta empresa.
+    const idsRelevantes = Array.from(new Set([
+      ...ventasEmpresa.map(v => v.cliente_id).filter((id): id is string => !!id),
+      ...clientesConSaldo.map(c => c.id),
+    ]))
+    const { data: devoluciones } = idsRelevantes.length > 0 ? await supabase
+      .from('ventas')
+      .select('id, cliente_id, total')
+      .eq('empresa', empresa)
+      .eq('tipo', 'devolucion')
+      .neq('estado', 'cancelado')
+      .in('cliente_id', idsRelevantes) : { data: [] as { id: string; cliente_id: string; total: number }[] }
+
+    const devPorCliente: Record<string, number> = {}
+    for (const d of (devoluciones ?? [])) {
+      const key = d.cliente_id || '__sin_cliente__'
+      devPorCliente[key] = (devPorCliente[key] || 0) + Math.abs(d.total || 0)
+    }
+
+    // 4. Agrupar por cliente y calcular buckets.
+    type Item = { total: number; created_at: string; dias: number }
+    const SIN_CLIENTE = '__sin_cliente__'
+    const porCliente: Record<string, { nombre: string; items: Item[]; clienteId: string | null }> = {}
+
+    for (const v of ventasEmpresa) {
+      const key = v.cliente_id || SIN_CLIENTE
+      if (!porCliente[key]) porCliente[key] = { nombre: v.cliente_nombre, items: [], clienteId: v.cliente_id }
+      const pendiente = (v.total || 0) - (v.monto_pagado || 0)
+      if (pendiente <= 0.01) continue
+      porCliente[key].items.push({ total: pendiente, created_at: v.created_at, dias: diffDays(v.created_at) })
+    }
+
+    // Residuo de deuda cargada a mano, prorrateado a esta empresa.
+    for (const c of clientesConSaldo) {
+      const pendienteVentas = pendienteVentasGlobalPorCliente[c.id] || 0
+      const residualGlobal = Math.max(0, c.saldo - pendienteVentas)
+      if (residualGlobal <= 0.01) continue
+      const bruto = cargoBrutoPorCliente[c.id]
+      const brutoTotal = bruto ? bruto.aroma + bruto.lavid : 0
+      const share = brutoTotal > 0 ? (bruto![empresa as 'aroma' | 'lavid'] || 0) / brutoTotal : (empresa === 'aroma' ? 1 : 0)
+      const residualEmpresa = residualGlobal * share
+      if (residualEmpresa <= 0.01) continue
+
+      const key = c.id
+      if (!porCliente[key]) {
+        const nombre = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
+        porCliente[key] = { nombre, items: [], clienteId: c.id }
       }
-      bucket_mas90 = descuento(bucket_mas90)
-      bucket_90    = descuento(bucket_90)
-      bucket_60    = descuento(bucket_60)
-      bucket_30    = descuento(bucket_30)
+      const fecha = cargoFechaMasViejaPorCliente[c.id] || new Date().toISOString()
+      porCliente[key].items.push({ total: residualEmpresa, created_at: fecha, dias: diffDays(fecha) })
     }
 
-    const saldo_total = bucket_30 + bucket_60 + bucket_90 + bucket_mas90
-    if (saldo_total <= 0) return null  // neteo total, ya no debe nada
+    // 5. Construir resultado.
+    const result = Object.entries(porCliente).map(([key, { nombre, items, clienteId }]) => {
+      let bucket_30 = 0, bucket_60 = 0, bucket_90 = 0, bucket_mas90 = 0
+      let dias_maximo = 0
+      let ultima_compra: string | null = null
 
-    return {
-      cliente_id: clienteId,
-      cliente_nombre: nombre,
-      telefono: clienteId ? (telPorCliente[clienteId] ?? null) : null,
-      vendedor_id: clienteId ? (vendedorPorCliente[clienteId] ?? null) : null,
-      saldo_total,
-      bucket_30,
-      bucket_60,
-      bucket_90,
-      bucket_mas90,
-      dias_maximo,
-      ultima_compra,
-    }
-  })
-    .filter(Boolean)
-    .sort((a, b) => b!.dias_maximo - a!.dias_maximo)
+      for (const it of items) {
+        if (it.dias <= 30) bucket_30 += it.total
+        else if (it.dias <= 60) bucket_60 += it.total
+        else if (it.dias <= 90) bucket_90 += it.total
+        else bucket_mas90 += it.total
 
-  return NextResponse.json(result)
+        if (it.dias > dias_maximo) dias_maximo = it.dias
+        if (!ultima_compra || it.created_at > ultima_compra) ultima_compra = it.created_at
+      }
+
+      let devPendiente = devPorCliente[clienteId ?? SIN_CLIENTE] || 0
+      if (devPendiente > 0) {
+        const descuento = (bucket: number) => {
+          const aplicado = Math.min(bucket, devPendiente)
+          devPendiente -= aplicado
+          return bucket - aplicado
+        }
+        bucket_mas90 = descuento(bucket_mas90)
+        bucket_90    = descuento(bucket_90)
+        bucket_60    = descuento(bucket_60)
+        bucket_30    = descuento(bucket_30)
+      }
+
+      const saldo_total = bucket_30 + bucket_60 + bucket_90 + bucket_mas90
+      if (saldo_total <= 0.01) return null
+
+      const cliente = clienteId ? clientePorId[clienteId] : null
+      return {
+        cliente_id: clienteId,
+        cliente_nombre: nombre,
+        telefono: cliente?.telefono ?? null,
+        vendedor_id: cliente?.vendedor_id ?? null,
+        saldo_total,
+        bucket_30,
+        bucket_60,
+        bucket_90,
+        bucket_mas90,
+        dias_maximo,
+        ultima_compra,
+      }
+    })
+      .filter(Boolean)
+      .sort((a, b) => b!.dias_maximo - a!.dias_maximo)
+
+    return NextResponse.json(result)
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 500 })
+  }
 }

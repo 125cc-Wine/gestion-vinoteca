@@ -186,6 +186,24 @@ export default function AgingPage() {
         created_at: v.created_at,
         dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
       }))
+    // El saldo del cliente puede incluir deuda "cargada a mano" (Cargar
+    // deuda, migraciones de sistema anterior) que no está atada a ninguna
+    // venta — /api/aging ya la suma al saldo_total de la fila, pero acá solo
+    // pedimos ventas. Si sobra saldo sin explicar, se agrega como una línea
+    // sintética para que el detalle no quede vacío ni desactualizado.
+    const sumaVentas = ventas.reduce((a, v) => a + (v.total - (v.monto_pagado ?? 0)), 0)
+    const residual = row.saldo_total - sumaVentas
+    if (residual > 0.01) {
+      ventas.push({
+        id: `cargo-${row.cliente_id ?? 'sin-cliente'}`,
+        tipo: 'cargo',
+        total: residual,
+        monto_pagado: 0,
+        created_at: new Date(Date.now() - row.dias_maximo * 24 * 60 * 60 * 1000).toISOString(),
+        dias: row.dias_maximo,
+      })
+    }
+
     ventas.sort((a, b) => b.dias - a.dias)
     return ventas
   }
@@ -637,20 +655,24 @@ export default function AgingPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: v.tipo === 'factura' ? 'rgba(0,80,180,0.09)' : T.wineBg,
-                                color: v.tipo === 'factura' ? '#0050b4' : T.wine,
-                                border: `1px solid ${v.tipo === 'factura' ? 'rgba(0,80,180,0.25)' : 'rgba(128,0,0,0.25)'}`,
+                                background: v.tipo === 'factura' ? 'rgba(0,80,180,0.09)' : v.tipo === 'cargo' ? T.amberBg : T.wineBg,
+                                color: v.tipo === 'factura' ? '#0050b4' : v.tipo === 'cargo' ? T.amber : T.wine,
+                                border: `1px solid ${v.tipo === 'factura' ? 'rgba(0,80,180,0.25)' : v.tipo === 'cargo' ? T.amberBd : 'rgba(128,0,0,0.25)'}`,
                                 textTransform: 'uppercase' as const,
                               }}>
-                                {v.tipo}
+                                {v.tipo === 'cargo' ? 'Deuda cargada' : v.tipo}
                               </span>
-                              <span
-                                onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${empresa}`, '_blank')}
-                                title="Ver / imprimir comprobante"
-                                style={{ color: T.dim, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}
-                              >
-                                {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
-                              </span>
+                              {v.tipo === 'cargo' ? (
+                                <span style={{ color: T.dim, fontSize: 11 }}>Cargar deuda / sist. anterior</span>
+                              ) : (
+                                <span
+                                  onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${empresa}`, '_blank')}
+                                  title="Ver / imprimir comprobante"
+                                  style={{ color: T.dim, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                  {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, color: T.text }}>
