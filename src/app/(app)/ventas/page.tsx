@@ -370,6 +370,24 @@ export default function VentasPage() {
   const [tipo, setTipo] = useState<'presupuesto' | 'remito' | 'devolucion'>('presupuesto')
   const [editVentaId, setEditVentaId] = useState<string | null>(null)
   const [ventaEmpresa, setVentaEmpresa] = useState<'aroma' | 'lavid'>('aroma')
+  // El formulario de venta deja elegir una empresa (ventaEmpresa) distinta a
+  // la activa en la página (empresa) — pero el buscador de productos venía
+  // usando siempre "productos" (cargado para la empresa de la página), así
+  // que si alguien armaba una venta de La Vid estando parado en Aroma, los
+  // ítems quedaban con el producto_id de Aroma pegado a una venta de La Vid
+  // (mismo nombre y precio en las dos empresas, así que no se notaba a
+  // simple vista — solo rompía cosas que sí dependen del id, como el margen
+  // de Reportes). Se cachean acá los productos de la otra empresa, on-demand.
+  const [productosOtraEmpresa, setProductosOtraEmpresa] = useState<Producto[]>([])
+  useEffect(() => {
+    if (ventaEmpresa === empresa) return
+    let cancelado = false
+    fetch(`/api/productos?empresa=${ventaEmpresa}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelado) setProductosOtraEmpresa(Array.isArray(d) ? d : []) })
+    return () => { cancelado = true }
+  }, [ventaEmpresa, empresa])
+  const productosParaVenta = ventaEmpresa === empresa ? productos : productosOtraEmpresa
   const [saving, setSaving] = useState(false)
   const [clienteId, setClienteId] = useState('')
   const [clienteNombre, setClienteNombre] = useState('Consumidor Final')
@@ -1577,7 +1595,12 @@ export default function VentasPage() {
               <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Empresa</div>
               <div style={{ display: 'flex', background: C.surface, borderRadius: 7, padding: 3, border: `1px solid ${C.border}`, width: 'fit-content' }}>
                 {(['aroma', 'lavid'] as const).map(e => (
-                  <button key={e} className="vbtn" onClick={() => setVentaEmpresa(e)}
+                  <button key={e} className="vbtn" onClick={() => {
+                    if (e !== ventaEmpresa && items.some(i => i.producto_id)) {
+                      showToast('Revisá los ítems ya cargados — quedaron elegidos para la otra empresa, puede que haya que volver a seleccionarlos')
+                    }
+                    setVentaEmpresa(e)
+                  }}
                     style={{ ...btn(ventaEmpresa === e ? 'accent' : 'ghost', { padding: '4px 14px', fontSize: 12, borderRadius: 5 }), border: 'none' }}>
                     {EMPRESAS_DATA[e].nombre}
                   </button>
@@ -1690,7 +1713,7 @@ export default function VentasPage() {
                       <tr key={idx} className="item-row" style={{ background: 'transparent' }}>
                         <td style={{ padding: '6px 8px' }}>
                           <ProductoSearch
-                            productos={productos}
+                            productos={productosParaVenta}
                             productoId={item.producto_id}
                             clienteTipo={clienteTipo}
                             onSelect={prod => selProducto(idx, prod)}
