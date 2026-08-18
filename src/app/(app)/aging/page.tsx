@@ -263,8 +263,9 @@ export default function AgingPage() {
 
   async function marcarPagado(v: VentaDetalle) {
     const restante = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
+    const esCargo = v.tipo === 'cargo'
     const input = prompt(
-      `¿Cuánto se cobró de ${v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()}? (falta ${fmt(restante)})`,
+      `¿Cuánto se cobró de ${esCargo ? 'la deuda cargada' : v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()}? (falta ${fmt(restante)})`,
       String(restante)
     )
     if (input === null) return
@@ -275,10 +276,28 @@ export default function AgingPage() {
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
-    const res = await fetch('/api/ventas/cobrar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: v.id, empresa, monto }),
-    })
+
+    // La fila "Deuda cargada" es sintética (residuo de clientes.saldo que no
+    // se explica con ninguna venta — ver cargarVentasPendientes): su id
+    // ("cargo-<cliente_id>") no existe en la tabla ventas, así que pagarla
+    // vía /api/ventas/cobrar siempre daba 404 "Venta no encontrada" y nunca
+    // llegaba a emitir el comprobante. Se cobra en cambio como un cobro
+    // genérico de cuenta corriente (mismo endpoint que "Cobrar" del total
+    // del cliente), que sí sabe reducir clientes.saldo sin depender de una
+    // venta puntual.
+    const res = esCargo
+      ? await fetch('/api/cta-cte', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa, cliente_id: modalCliente?.cliente_id, cliente_nombre: modalCliente?.cliente_nombre,
+            tipo: 'cobro', concepto: 'Cobro deuda cargada', monto,
+            fecha: new Date().toISOString().split('T')[0],
+          }),
+        })
+      : await fetch('/api/ventas/cobrar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ venta_id: v.id, empresa, monto }),
+        })
     const data = await res.json()
     if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
     const esParcial = monto < restante - 0.01
@@ -289,7 +308,8 @@ export default function AgingPage() {
     }
     setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
     load(empresa)
-    if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=Efectivo`
+    const reciboId = esCargo ? data.id : data.movimiento_cta_cte_id
+    if (reciboId && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=Efectivo`
     else wRecibo?.close()
   }
 
