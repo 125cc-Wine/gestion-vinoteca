@@ -192,6 +192,13 @@ export default function ClienteFichaPage() {
   const [cargoFecha, setCargoFecha] = useState('')
   const [cargoGuardando, setCargoGuardando] = useState(false)
 
+  // Editar / anular un cargo cargado a mano
+  const [editarMov, setEditarMov] = useState<MovCtaCte | null>(null)
+  const [editarMonto, setEditarMonto] = useState(0)
+  const [editarConcepto, setEditarConcepto] = useState('')
+  const [editarFecha, setEditarFecha] = useState('')
+  const [editarGuardando, setEditarGuardando] = useState(false)
+
   useEffect(() => {
     async function cargarVentas(emp: string) {
       setVentasLoading(true)
@@ -302,6 +309,41 @@ export default function ClienteFichaPage() {
     cargarMovimientos()
   }
 
+  function abrirEditar(m: MovCtaCte) {
+    setEditarMov(m)
+    setEditarMonto(m.monto)
+    setEditarConcepto(m.concepto || m.descripcion || '')
+    setEditarFecha(new Date(m.created_at).toISOString().split('T')[0])
+  }
+
+  async function guardarEditar() {
+    if (!editarMov || !editarMonto || editarMonto <= 0) return
+    if (!editarConcepto.trim()) { alert('Ingresá un concepto/motivo'); return }
+    setEditarGuardando(true)
+    const res = await fetch('/api/cta-cte', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editarMov.id, accion: 'editar', monto: editarMonto, concepto: editarConcepto, fecha: editarFecha }),
+    })
+    const data = await res.json()
+    setEditarGuardando(false)
+    if (data.error) { alert('Error: ' + data.error); return }
+    setEditarMov(null)
+    setCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
+    cargarMovimientos()
+  }
+
+  async function anularCargo(m: MovCtaCte) {
+    if (!confirm(`¿Anular el cargo "${m.concepto || m.descripcion || 'Deuda cargada'}" de ${fmtMonto(m.monto)}? Se descuenta del saldo del cliente y queda marcado como anulado (no se borra, para mantener el historial).`)) return
+    const res = await fetch('/api/cta-cte', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: m.id, accion: 'anular' }),
+    })
+    const data = await res.json()
+    if (data.error) { alert('Error: ' + data.error); return }
+    setCliente(prev => prev ? { ...prev, saldo: data.saldo_nuevo } : prev)
+    cargarMovimientos()
+  }
+
   async function cargarConsignaciones(emp: string) {
     setConsLoading(true)
     const { data, error } = await supabase
@@ -361,9 +403,12 @@ export default function ClienteFichaPage() {
   // Running balance for cta-cte
   let saldoAcum = 0
   const movsConSaldo = movimientos.map(m => {
+    // Un cargo anulado ya no pesa en el saldo del cliente (se descontó al
+    // anularlo) — no debe sumar acá tampoco.
+    const esAnulado = (m.concepto || '').startsWith('[ANULADO] ')
     const esCobro = m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito'
-    saldoAcum += esCobro ? -m.monto : m.monto
-    return { ...m, saldoAcum }
+    saldoAcum += esAnulado ? 0 : (esCobro ? -m.monto : m.monto)
+    return { ...m, saldoAcum, esAnulado }
   })
 
   const nombreDisplay = cliente
@@ -583,7 +628,7 @@ export default function ClienteFichaPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: T.bg }}>
-                    {['Fecha', 'Tipo', 'Descripción', 'Monto', 'Saldo acum.'].map(h => (
+                    {['Fecha', 'Tipo', 'Descripción', 'Monto', 'Saldo acum.', ''].map(h => (
                       <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: (h === 'Monto' || h === 'Saldo acum.') ? 'right' : 'left', borderBottom: `1px solid ${T.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -591,36 +636,49 @@ export default function ClienteFichaPage() {
                 <tbody>
                   {movsConSaldo.map(m => {
                     const esCobro = m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito'
+                    const descripcionLimpia = (m.descripcion || m.concepto || '').replace('[ANULADO] ', '') || '—'
                     return (
-                      <tr key={m.id} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                      <tr key={m.id} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s', opacity: m.esAnulado ? 0.55 : 1 }}>
                         <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(m.created_at)}</td>
                         <td style={{ padding: '11px 16px' }}>
                           <Badge
-                            color={esCobro ? T.green : T.red}
-                            bg={esCobro ? T.greenBg : T.redBg}
-                            border={esCobro ? T.greenBd : T.redBd}
+                            color={m.esAnulado ? T.dim : esCobro ? T.green : T.red}
+                            bg={m.esAnulado ? 'rgba(168,152,136,0.10)' : esCobro ? T.greenBg : T.redBg}
+                            border={m.esAnulado ? 'rgba(168,152,136,0.28)' : esCobro ? T.greenBd : T.redBd}
                           >
-                            {m.tipo === 'nota_credito' ? 'Nota crédito' : esCobro ? 'Cobro/Pago' : 'Cargo'}
+                            {m.esAnulado ? 'Anulado' : m.tipo === 'nota_credito' ? 'Nota crédito' : esCobro ? 'Cobro/Pago' : 'Cargo'}
                           </Badge>
                         </td>
-                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>
-                          {m.descripcion || m.concepto || '—'}
-                          {m.tipo === 'cargo' && (m.monto_pagado || 0) > 0 && (m.monto_pagado || 0) < m.monto && (
-                            <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2 }}>
+                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text, textDecoration: m.esAnulado ? 'line-through' : 'none' }}>
+                          {descripcionLimpia}
+                          {!m.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) > 0 && (m.monto_pagado || 0) < m.monto && (
+                            <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2, textDecoration: 'none' }}>
                               Parcial: cobrado {fmtMonto(m.monto_pagado || 0)}, falta {fmtMonto(m.monto - (m.monto_pagado || 0))}
                             </div>
                           )}
-                          {m.tipo === 'cargo' && (m.monto_pagado || 0) >= m.monto && m.monto > 0 && (
-                            <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2 }}>
+                          {!m.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) >= m.monto && m.monto > 0 && (
+                            <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2, textDecoration: 'none' }}>
                               Cobrada
                             </div>
                           )}
                         </td>
-                        <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color: esCobro ? T.green : T.red }}>
+                        <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color: m.esAnulado ? T.dim : esCobro ? T.green : T.red, textDecoration: m.esAnulado ? 'line-through' : 'none' }}>
                           {esCobro ? '-' : '+'}{fmtMonto(m.monto)}
                         </td>
                         <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 12, color: T.muted }}>
                           {fmtMonto(m.saldoAcum)}
+                        </td>
+                        <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {m.tipo === 'cargo' && !m.esAnulado && (
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                              <button onClick={() => abrirEditar(m)} title="Editar monto/concepto/fecha" style={{ background: T.surface, color: T.muted, border: `1px solid ${T.border2}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                Editar
+                              </button>
+                              <button onClick={() => anularCargo(m)} title="Anular este cargo" style={{ background: T.redBg, color: T.red, border: `1px solid ${T.redBd}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                                Anular
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )
@@ -812,6 +870,51 @@ export default function ClienteFichaPage() {
               <button onClick={() => setCargoModal(false)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
               <button disabled={cargoGuardando || !cargoMonto} onClick={guardarCargo} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cargoGuardando ? 'default' : 'pointer', opacity: cargoGuardando || !cargoMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {cargoGuardando ? 'Guardando...' : 'Confirmar deuda'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal editar cargo ────────────────────────────────────────────────── */}
+      {editarMov && (
+        <div
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setEditarMov(null) })}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Editar cargo</div>
+              <button onClick={() => setEditarMov(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {(editarMov.monto_pagado || 0) > 0.01 && (editarMov.monto_pagado || 0) < editarMov.monto - 0.01 && (
+                <div style={{ fontSize: 12, color: T.amber, background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 8, padding: '8px 12px' }}>
+                  Este cargo tiene un pago parcial registrado — el monto queda fijo, solo se puede corregir el concepto o la fecha.
+                </div>
+              )}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto adeudado</label>
+                <input
+                  type="number" autoFocus value={editarMonto || ''} onChange={e => setEditarMonto(parseFloat(e.target.value) || 0)}
+                  disabled={(editarMov.monto_pagado || 0) > 0.01 && (editarMov.monto_pagado || 0) < editarMov.monto - 0.01}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Concepto / motivo</label>
+                <input value={editarConcepto} onChange={e => setEditarConcepto(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Fecha</label>
+                <input type="date" value={editarFecha} onChange={e => setEditarFecha(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+              </div>
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditarMov(null)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button disabled={editarGuardando || !editarMonto} onClick={guardarEditar} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: editarGuardando ? 'default' : 'pointer', opacity: editarGuardando || !editarMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {editarGuardando ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>
