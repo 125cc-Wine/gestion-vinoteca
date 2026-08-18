@@ -421,6 +421,7 @@ export default function ClienteFichaPage() {
     neto: number
     esAnulado: boolean
     mov?: MovCtaCte
+    fechaCobro?: string
   }
 
   const gruposPorRef = new Map<string, MovCtaCte[]>()
@@ -444,6 +445,11 @@ export default function ClienteFichaPage() {
     const fechaBase = cargos.length > 0
       ? cargos.reduce((min, m) => (m.created_at < min ? m.created_at : min), cargos[0].created_at)
       : movs[0].created_at
+    // Fecha del cobro más reciente del grupo — para poder ver cuándo se
+    // registró el pago, no solo que "está pagada".
+    const fechaCobro = cobros.length > 0
+      ? cobros.reduce((max, m) => (m.created_at > max ? m.created_at : max), cobros[0].created_at)
+      : undefined
     const conceptoBase = (cargos[0]?.concepto || movs[0].concepto || '')
       .replace(/ \(ajuste al editar\)$/, '').replace(/ \(anulado\)$/, '')
     filas.push({
@@ -456,6 +462,7 @@ export default function ClienteFichaPage() {
       cobroTotal,
       neto: parseFloat((cargoTotal - cobroTotal).toFixed(2)),
       esAnulado: false,
+      fechaCobro,
     })
   }
   for (const m of movsSueltos) {
@@ -726,12 +733,12 @@ export default function ClienteFichaPage() {
                             {f.concepto}
                             {parcial && (
                               <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2 }}>
-                                Cobrado {fmtMonto(f.cobroTotal)}, falta {fmtMonto(f.neto)}
+                                Cobrado {fmtMonto(f.cobroTotal)}{f.fechaCobro ? ` el ${fmtDate(f.fechaCobro)}` : ''}, falta {fmtMonto(f.neto)}
                               </div>
                             )}
                             {pagada && f.cobroTotal > 0.01 && (
                               <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2 }}>
-                                Cobrado
+                                Cobrado{f.fechaCobro ? ` el ${fmtDate(f.fechaCobro)}` : ''}
                               </div>
                             )}
                           </td>

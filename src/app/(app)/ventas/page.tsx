@@ -1013,7 +1013,11 @@ export default function VentasPage() {
   }
 
   function imprimirVenta(venta: Venta, _empresaNombre: string, ventanaAbierta?: Window | null) {
-    const url = `/api/print/venta?id=${venta.id}&empresa=${empresa}`
+    // Los 3 llamadores de esta función (guardar + imprimir, botón "Imprimir"
+    // de la lista, "Imprimir" en la vista previa) son casos de "imprimir
+    // ahora" de verdad — a diferencia de los botones "Ver comprobante" de
+    // otras pantallas, que solo quieren mostrarlo sin disparar el diálogo.
+    const url = `/api/print/venta?id=${venta.id}&empresa=${empresa}&autoprint=1`
     if (ventanaAbierta) ventanaAbierta.location.href = url
     else window.open(url, '_blank')
   }

@@ -85,6 +85,12 @@ h2{color:#800000;margin:0 0 12px;}p{color:#6B5D55;font-size:14px;}</style></head
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   const empresaKey = req.nextUrl.searchParams.get('empresa') || 'aroma'
+  // Antes se abría siempre con window.print() disparado solo — bien para
+  // "Imprimir" recién hecha la venta, mal para los botones "Ver comprobante"
+  // (Aging, Clientes, Cuenta corriente) que solo quieren mostrarlo: el
+  // usuario tenía que cerrar el diálogo de impresión cada vez que quería
+  // simplemente mirar un comprobante viejo. Ahora el auto-print es opt-in.
+  const autoprint = req.nextUrl.searchParams.get('autoprint') === '1'
 
   if (!id) {
     return new Response(errorHtml('Falta el parámetro id.'), {
@@ -605,7 +611,7 @@ export async function GET(req: NextRequest) {
 </div>
 
 <script>
-  window.onload = function() { window.print(); }
+  ${autoprint ? 'window.onload = function() { window.print(); }' : ''}
 </script>
 </body>
 </html>`
