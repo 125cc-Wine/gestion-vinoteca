@@ -82,6 +82,7 @@ interface MovCtaCte {
   descripcion?: string
   concepto?: string
   created_at: string
+  referencia_id?: string | null
 }
 
 interface Consignacion {
@@ -400,15 +401,84 @@ export default function ClienteFichaPage() {
   // ── Computed ──────────────────────────────────────────────────────────────
   const totalCompras = ventas.reduce((a, v) => a + v.total, 0)
 
-  // Running balance for cta-cte
-  let saldoAcum = 0
-  const movsConSaldo = movimientos.map(m => {
-    // Un cargo anulado ya no pesa en el saldo del cliente (se descontó al
-    // anularlo) — no debe sumar acá tampoco.
+  // Filas de cuenta corriente — el cargo que se genera al facturar en cta.
+  // cte. (ver /api/ventas POST) y el cobro que lo salda después (/api/ventas/
+  // cobrar) comparten referencia_id (el id de la venta), pero antes se
+  // mostraban como dos renglones sueltos ("Cargo Presupuesto 0008" y "Cobro
+  // Presupuesto 0008") que además duplicaban lo que ya se ve en la tab
+  // Comprobantes. Acá se agrupan por referencia_id en una sola fila con el
+  // neto pendiente — las deudas cargadas a mano (Cargar deuda) y los cobros
+  // genéricos sin comprobante puntual no tienen referencia_id, así que
+  // siguen mostrándose sueltos como antes.
+  interface FilaCtaCte {
+    key: string
+    fecha: string
+    esVenta: boolean
+    ventaId?: string
+    concepto: string
+    cargoTotal: number
+    cobroTotal: number
+    neto: number
+    esAnulado: boolean
+    mov?: MovCtaCte
+  }
+
+  const gruposPorRef = new Map<string, MovCtaCte[]>()
+  const movsSueltos: MovCtaCte[] = []
+  for (const m of movimientos) {
+    if (m.referencia_id) {
+      const arr = gruposPorRef.get(m.referencia_id) || []
+      arr.push(m)
+      gruposPorRef.set(m.referencia_id, arr)
+    } else {
+      movsSueltos.push(m)
+    }
+  }
+
+  const filas: FilaCtaCte[] = []
+  for (const [refId, movs] of Array.from(gruposPorRef.entries())) {
+    const cargos = movs.filter(m => m.tipo === 'cargo')
+    const cobros = movs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito')
+    const cargoTotal = cargos.reduce((a, m) => a + m.monto, 0)
+    const cobroTotal = cobros.reduce((a, m) => a + m.monto, 0)
+    const fechaBase = cargos.length > 0
+      ? cargos.reduce((min, m) => (m.created_at < min ? m.created_at : min), cargos[0].created_at)
+      : movs[0].created_at
+    const conceptoBase = (cargos[0]?.concepto || movs[0].concepto || '')
+      .replace(/ \(ajuste al editar\)$/, '').replace(/ \(anulado\)$/, '')
+    filas.push({
+      key: refId,
+      fecha: fechaBase,
+      esVenta: true,
+      ventaId: refId,
+      concepto: conceptoBase || '—',
+      cargoTotal,
+      cobroTotal,
+      neto: parseFloat((cargoTotal - cobroTotal).toFixed(2)),
+      esAnulado: false,
+    })
+  }
+  for (const m of movsSueltos) {
     const esAnulado = (m.concepto || '').startsWith('[ANULADO] ')
     const esCobro = m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito'
-    saldoAcum += esAnulado ? 0 : (esCobro ? -m.monto : m.monto)
-    return { ...m, saldoAcum, esAnulado }
+    filas.push({
+      key: m.id,
+      fecha: m.created_at,
+      esVenta: false,
+      concepto: (m.descripcion || m.concepto || '').replace('[ANULADO] ', '') || '—',
+      cargoTotal: esCobro ? 0 : m.monto,
+      cobroTotal: esCobro ? m.monto : 0,
+      neto: esAnulado ? 0 : (esCobro ? -m.monto : m.monto),
+      esAnulado,
+      mov: m,
+    })
+  }
+  filas.sort((a, b) => b.fecha.localeCompare(a.fecha))
+
+  let saldoAcum = 0
+  const filasConSaldo = filas.map(f => {
+    saldoAcum += f.neto
+    return { ...f, saldoAcum }
   })
 
   const nombreDisplay = cliente
@@ -634,42 +704,91 @@ export default function ClienteFichaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {movsConSaldo.map(m => {
-                    const esCobro = m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito'
-                    const descripcionLimpia = (m.descripcion || m.concepto || '').replace('[ANULADO] ', '') || '—'
+                  {filasConSaldo.map(f => {
+                    if (f.esVenta) {
+                      // Cargo + cobro(s) de la misma venta, unificados: antes
+                      // aparecían como dos renglones sueltos que duplicaban lo
+                      // que ya se ve en la tab Comprobantes.
+                      const pagada = f.neto <= 0.01
+                      const parcial = !pagada && f.cobroTotal > 0.01
+                      const color = pagada ? T.green : parcial ? T.amber : T.blue
+                      const bg = pagada ? T.greenBg : parcial ? T.amberBg : T.blueBg
+                      const bd = pagada ? T.greenBd : parcial ? T.amberBd : T.blueBd
+                      return (
+                        <tr key={f.key} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                          <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(f.fecha)}</td>
+                          <td style={{ padding: '11px 16px' }}>
+                            <Badge color={color} bg={bg} border={bd}>
+                              {pagada ? 'Pagado' : parcial ? 'Parcial' : 'Cta. Cte.'}
+                            </Badge>
+                          </td>
+                          <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>
+                            {f.concepto}
+                            {parcial && (
+                              <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2 }}>
+                                Cobrado {fmtMonto(f.cobroTotal)}, falta {fmtMonto(f.neto)}
+                              </div>
+                            )}
+                            {pagada && f.cobroTotal > 0.01 && (
+                              <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2 }}>
+                                Cobrado
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color }}>
+                            {fmtMonto(f.cargoTotal)}
+                          </td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 12, color: T.muted }}>
+                            {fmtMonto(f.saldoAcum)}
+                          </td>
+                          <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <button
+                              onClick={() => window.open(`/api/print/venta?id=${f.ventaId}&empresa=${empresa}`, '_blank')}
+                              title="Ver / imprimir comprobante"
+                              style={{ background: T.surface, color: T.muted, border: `1px solid ${T.border2}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+                            >
+                              Ver comprobante
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    }
+
+                    const m = f.mov!
+                    const esCobro = f.cobroTotal > 0
                     return (
-                      <tr key={m.id} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s', opacity: m.esAnulado ? 0.55 : 1 }}>
-                        <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(m.created_at)}</td>
+                      <tr key={f.key} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s', opacity: f.esAnulado ? 0.55 : 1 }}>
+                        <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(f.fecha)}</td>
                         <td style={{ padding: '11px 16px' }}>
                           <Badge
-                            color={m.esAnulado ? T.dim : esCobro ? T.green : T.red}
-                            bg={m.esAnulado ? 'rgba(168,152,136,0.10)' : esCobro ? T.greenBg : T.redBg}
-                            border={m.esAnulado ? 'rgba(168,152,136,0.28)' : esCobro ? T.greenBd : T.redBd}
+                            color={f.esAnulado ? T.dim : esCobro ? T.green : T.red}
+                            bg={f.esAnulado ? 'rgba(168,152,136,0.10)' : esCobro ? T.greenBg : T.redBg}
+                            border={f.esAnulado ? 'rgba(168,152,136,0.28)' : esCobro ? T.greenBd : T.redBd}
                           >
-                            {m.esAnulado ? 'Anulado' : m.tipo === 'nota_credito' ? 'Nota crédito' : esCobro ? 'Cobro/Pago' : 'Cargo'}
+                            {f.esAnulado ? 'Anulado' : m.tipo === 'nota_credito' ? 'Nota crédito' : esCobro ? 'Cobro/Pago' : 'Cargo'}
                           </Badge>
                         </td>
-                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text, textDecoration: m.esAnulado ? 'line-through' : 'none' }}>
-                          {descripcionLimpia}
-                          {!m.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) > 0 && (m.monto_pagado || 0) < m.monto && (
+                        <td style={{ padding: '11px 16px', fontSize: 13, color: T.text, textDecoration: f.esAnulado ? 'line-through' : 'none' }}>
+                          {f.concepto}
+                          {!f.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) > 0 && (m.monto_pagado || 0) < m.monto && (
                             <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 2, textDecoration: 'none' }}>
                               Parcial: cobrado {fmtMonto(m.monto_pagado || 0)}, falta {fmtMonto(m.monto - (m.monto_pagado || 0))}
                             </div>
                           )}
-                          {!m.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) >= m.monto && m.monto > 0 && (
+                          {!f.esAnulado && m.tipo === 'cargo' && (m.monto_pagado || 0) >= m.monto && m.monto > 0 && (
                             <div style={{ fontSize: 10, fontWeight: 400, color: T.green, marginTop: 2, textDecoration: 'none' }}>
                               Cobrada
                             </div>
                           )}
                         </td>
-                        <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color: m.esAnulado ? T.dim : esCobro ? T.green : T.red, textDecoration: m.esAnulado ? 'line-through' : 'none' }}>
+                        <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 600, fontSize: 13, color: f.esAnulado ? T.dim : esCobro ? T.green : T.red, textDecoration: f.esAnulado ? 'line-through' : 'none' }}>
                           {esCobro ? '-' : '+'}{fmtMonto(m.monto)}
                         </td>
                         <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 12, color: T.muted }}>
-                          {fmtMonto(m.saldoAcum)}
+                          {fmtMonto(f.saldoAcum)}
                         </td>
                         <td style={{ padding: '11px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          {m.tipo === 'cargo' && !m.esAnulado && (
+                          {m.tipo === 'cargo' && !f.esAnulado && (
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                               <button onClick={() => abrirEditar(m)} title="Editar monto/concepto/fecha" style={{ background: T.surface, color: T.muted, border: `1px solid ${T.border2}`, borderRadius: 6, padding: '4px 9px', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
                                 Editar
