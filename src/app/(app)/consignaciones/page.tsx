@@ -910,7 +910,12 @@ export default function ConsignacionesPage() {
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
                 {detalleModal.numero}
               </h2>
-              <button className="cbtn" style={btn('ghost')} onClick={() => setDetalleModal(null)}>✕</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="cbtn" style={btn('default')} onClick={() => window.open(`/api/print/consignacion?id=${detalleModal.id}&empresa=${detalleModal.empresa}&autoprint=1`, '_blank')}>
+                  🖨️ Imprimir
+                </button>
+                <button className="cbtn" style={btn('ghost')} onClick={() => setDetalleModal(null)}>✕</button>
+              </div>
             </div>
 
             {/* Info grid */}
