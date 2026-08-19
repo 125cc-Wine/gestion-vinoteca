@@ -485,7 +485,7 @@ export default function ConsignacionesPage() {
       }),
     })
     if (!res.ok) { showToast('Error al liquidar'); return }
-    showToast('Consignación liquidada')
+    showToast(liqTotal > 0 ? `Consignación liquidada — $${liqTotal.toLocaleString('es-AR')} cargado a cta. cte.` : 'Consignación liquidada')
     setLiquidarModal(null)
     load(empresa)
   }
@@ -909,9 +909,14 @@ export default function ConsignacionesPage() {
               </table>
             </div>
 
+            {liqTotal > 0 && (
+              <div style={{ fontSize: 12, color: T.muted, marginBottom: 14 }}>
+                Se carga a la cuenta corriente de <strong>{liquidarModal.cliente_nombre}</strong> — se cobra después desde su ficha, como cualquier otra deuda.
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>
-                Total a cobrar: <span style={{ color: T.green }}>{fmt(liqTotal)}</span>
+                Total a cargar en cta. cte.: <span style={{ color: T.green }}>{fmt(liqTotal)}</span>
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="cbtn" style={btn('default')} onClick={() => setLiquidarModal(null)}>Cancelar</button>

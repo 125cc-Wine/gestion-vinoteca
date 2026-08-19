@@ -155,6 +155,28 @@ export async function PUT(req: NextRequest) {
         if (qty <= 0) continue
         await ajustarStock(item.producto_id, qty)
       }
+
+      // Lo vendido en consignación se carga a la cuenta corriente del
+      // cliente — antes esto no generaba ningún movimiento, así que si el
+      // cliente no pagaba ahí mismo en el momento de liquidar, esa plata
+      // desaparecía del sistema sin dejar rastro de deuda.
+      const totalVendido = items.reduce((s, it) => s + (it.cantidad_vendida || 0) * (it.precio_unitario || 0), 0)
+      if (totalVendido > 0.01 && data.cliente_id) {
+        const { data: cliente } = await supabase.from('clientes').select('saldo').eq('id', data.cliente_id).single()
+        const saldoAnterior = cliente?.saldo || 0
+        const saldoNuevo = saldoAnterior + totalVendido
+        await supabase.from('clientes').update({ saldo: saldoNuevo }).eq('id', data.cliente_id)
+        await supabase.from('movimientos_cta_cte').insert([{
+          cliente_id: data.cliente_id,
+          empresa: data.empresa,
+          tipo: 'cargo',
+          concepto: `Consignación ${data.numero} liquidada`,
+          monto: totalVendido,
+          saldo_anterior: saldoAnterior,
+          saldo_nuevo: saldoNuevo,
+          referencia_id: id,
+        }])
+      }
     }
   }
 
