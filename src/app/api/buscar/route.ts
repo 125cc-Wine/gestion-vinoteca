@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       tipo: 'cliente', id: c.id,
       titulo: nombre,
       subtitulo: c.telefono || 'Cliente',
-      href: '/clientes',
+      href: `/clientes/${c.id}`,
     })
   }
   for (const p of pRes.data || []) {
