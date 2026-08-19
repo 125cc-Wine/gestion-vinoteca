@@ -763,7 +763,7 @@ export default function ConsignacionesPage() {
                             className="cinp"
                             style={{ ...INP, width: 60 }}
                             type="number"
-                            min={item.cantidad_vendida || 1}
+                            min={0}
                             placeholder="1"
                             value={item.cantidad || ''}
                             onChange={e => setItem(idx, { cantidad: e.target.value === '' ? 0 : (Number(e.target.value) || 0) })}
@@ -792,8 +792,7 @@ export default function ConsignacionesPage() {
                             className="cbtn"
                             style={btn('ghost', { padding: '2px 8px', fontSize: 14, color: T.red })}
                             onClick={() => removeItem(idx)}
-                            disabled={form.items.length <= 1 || (item.cantidad_vendida || 0) > 0}
-                            title={(item.cantidad_vendida || 0) > 0 ? 'No se puede sacar: ya tiene ventas registradas' : undefined}
+                            disabled={form.items.length <= 1}
                           >
                             ✕
                           </button>

@@ -104,20 +104,9 @@ export async function PUT(req: NextRequest) {
   const esEdicionDeItems = Array.isArray(rest.items) && (nuevoEstado === undefined || nuevoEstado === estadoAnterior) && estadoAnterior === 'activa'
 
   if (esEdicionDeItems) {
-    const oldItems: ConsItem[] = current.items || []
+    // Edición libre: se permite bajar/sacar un ítem aunque tenga ventas
+    // registradas — el que edita es responsable de que los números cierren.
     const newItems: ConsItem[] = rest.items
-    // No se puede bajar la cantidad (ni sacar el ítem del todo) por debajo
-    // de lo que ya se vendió de ese producto.
-    for (const oi of oldItems) {
-      if (!oi.producto_id || !(oi.cantidad_vendida || 0)) continue
-      const ni = newItems.find(n => n.producto_id === oi.producto_id)
-      const nuevaCantidad = ni ? (ni.cantidad || 0) : 0
-      if (nuevaCantidad < (oi.cantidad_vendida || 0)) {
-        return NextResponse.json({
-          error: `${oi.nombre || 'Un producto'}: no puede quedar en ${nuevaCantidad} — ya se vendieron ${oi.cantidad_vendida} unidades.`,
-        }, { status: 400 })
-      }
-    }
     rest.total = newItems.reduce((s, it) => s + (it.cantidad || 0) * (it.precio_unitario || 0), 0)
   }
 
