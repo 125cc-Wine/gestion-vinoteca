@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 interface ConsItem {
   producto_id: string
+  nombre?: string
   cantidad: number
   cantidad_vendida?: number
   precio_unitario?: number
@@ -93,6 +94,32 @@ export async function PUT(req: NextRequest) {
     .select('estado, items')
     .eq('id', id)
     .single()
+  if (!current) return NextResponse.json({ error: 'Consignación no encontrada' }, { status: 404 })
+
+  const nuevoEstado = rest.estado
+  const estadoAnterior = current.estado
+  // Edición de ítems mientras sigue "activa" (agregar/sacar productos,
+  // cambiar cantidades) — distinto de liquidar/devolver, que también mandan
+  // "items" pero junto con un cambio de estado.
+  const esEdicionDeItems = Array.isArray(rest.items) && (nuevoEstado === undefined || nuevoEstado === estadoAnterior) && estadoAnterior === 'activa'
+
+  if (esEdicionDeItems) {
+    const oldItems: ConsItem[] = current.items || []
+    const newItems: ConsItem[] = rest.items
+    // No se puede bajar la cantidad (ni sacar el ítem del todo) por debajo
+    // de lo que ya se vendió de ese producto.
+    for (const oi of oldItems) {
+      if (!oi.producto_id || !(oi.cantidad_vendida || 0)) continue
+      const ni = newItems.find(n => n.producto_id === oi.producto_id)
+      const nuevaCantidad = ni ? (ni.cantidad || 0) : 0
+      if (nuevaCantidad < (oi.cantidad_vendida || 0)) {
+        return NextResponse.json({
+          error: `${oi.nombre || 'Un producto'}: no puede quedar en ${nuevaCantidad} — ya se vendieron ${oi.cantidad_vendida} unidades.`,
+        }, { status: 400 })
+      }
+    }
+    rest.total = newItems.reduce((s, it) => s + (it.cantidad || 0) * (it.precio_unitario || 0), 0)
+  }
 
   const { data, error } = await supabase
     .from('consignaciones')
@@ -103,8 +130,20 @@ export async function PUT(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const nuevoEstado = rest.estado
-  const estadoAnterior = current?.estado
+  if (esEdicionDeItems) {
+    // Reconciliar stock por la diferencia: si un producto sale con más
+    // cantidad que antes, se descuenta más del depósito; si sale con menos
+    // (o se saca del todo), se devuelve la diferencia.
+    const oldMap = new Map((current.items as ConsItem[] || []).map(i => [i.producto_id, i.cantidad || 0]))
+    const newMap = new Map((rest.items as ConsItem[]).map(i => [i.producto_id, i.cantidad || 0]))
+    const todosLosIds = new Set(Array.from(oldMap.keys()).concat(Array.from(newMap.keys())))
+    for (const pid of Array.from(todosLosIds)) {
+      if (!pid) continue
+      const delta = (oldMap.get(pid) || 0) - (newMap.get(pid) || 0)
+      if (delta !== 0) await ajustarStock(pid, delta)
+    }
+    return NextResponse.json(data)
+  }
 
   // Stock adjustments on estado change
   if (nuevoEstado && nuevoEstado !== estadoAnterior) {

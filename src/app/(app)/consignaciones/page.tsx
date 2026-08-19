@@ -288,6 +288,7 @@ export default function ConsignacionesPage() {
 
   // Modal states
   const [modal, setModal] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
   const [detalleModal, setDetalleModal] = useState<Consignacion | null>(null)
@@ -365,6 +366,7 @@ export default function ConsignacionesPage() {
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
   function resetForm() {
+    setEditandoId(null)
     setForm({
       cliente_id: null,
       cliente_nombre: '',
@@ -374,6 +376,22 @@ export default function ConsignacionesPage() {
       notas: '',
       items: [{ ...ITEM_EMPTY }],
     })
+  }
+
+  // Solo se puede editar mientras sigue "activa" — liquidada/devuelta ya
+  // están resueltas, y el stock que movieron no se puede reabrir así nomás.
+  function abrirEditar(c: Consignacion) {
+    setEditandoId(c.id)
+    setForm({
+      cliente_id: c.cliente_id,
+      cliente_nombre: c.cliente_nombre,
+      vendedor_nombre: c.vendedor_nombre || '',
+      fecha_salida: c.fecha_salida,
+      fecha_retorno_estimada: c.fecha_retorno_estimada || '',
+      notas: c.notas || '',
+      items: c.items.length > 0 ? c.items.map(it => ({ ...it })) : [{ ...ITEM_EMPTY }],
+    })
+    setModal(true)
   }
 
   function setItem(idx: number, patch: Partial<ConsItem>) {
@@ -406,11 +424,12 @@ export default function ConsignacionesPage() {
     if (validItems.length === 0) { showToast('Agregue al menos un producto'); return }
 
     setSaving(true)
+    const editando = !!editandoId
     const res = await fetch('/api/consignaciones', {
-      method: 'POST',
+      method: editando ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        empresa,
+        ...(editando ? { id: editandoId } : { empresa, estado: 'activa' }),
         cliente_id: form.cliente_id,
         cliente_nombre: form.cliente_nombre,
         vendedor_nombre: form.vendedor_nombre || null,
@@ -418,12 +437,12 @@ export default function ConsignacionesPage() {
         fecha_retorno_estimada: form.fecha_retorno_estimada || null,
         notas: form.notas || null,
         items: validItems,
-        estado: 'activa',
       }),
     })
+    const data = await res.json()
     setSaving(false)
-    if (!res.ok) { showToast('Error al guardar'); return }
-    showToast('Consignación creada')
+    if (!res.ok) { showToast(data.error || 'Error al guardar'); return }
+    showToast(editando ? 'Consignación actualizada' : 'Consignación creada')
     setModal(false)
     resetForm()
     load(empresa)
@@ -589,6 +608,13 @@ export default function ConsignacionesPage() {
                           <>
                             <button
                               className="cbtn"
+                              style={btn('default', { padding: '4px 10px', fontSize: 12 })}
+                              onClick={() => abrirEditar(c)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="cbtn"
                               style={btn('green', { padding: '4px 10px', fontSize: 12 })}
                               onClick={() => openLiquidar(c)}
                             >
@@ -634,7 +660,7 @@ export default function ConsignacionesPage() {
             maxHeight: '90vh', overflowY: 'auto',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nueva consignación</h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>{editandoId ? 'Editar consignación' : 'Nueva consignación'}</h2>
               <button className="cbtn" style={btn('ghost')} onClick={tryCloseConsignacion}>✕</button>
             </div>
 
@@ -737,11 +763,14 @@ export default function ConsignacionesPage() {
                             className="cinp"
                             style={{ ...INP, width: 60 }}
                             type="number"
-                            min={1}
+                            min={item.cantidad_vendida || 1}
                             placeholder="1"
                             value={item.cantidad || ''}
                             onChange={e => setItem(idx, { cantidad: e.target.value === '' ? 0 : (Number(e.target.value) || 0) })}
                           />
+                          {(item.cantidad_vendida || 0) > 0 && (
+                            <div style={{ fontSize: 10, color: T.amber, marginTop: 2 }}>Vendido: {item.cantidad_vendida}</div>
+                          )}
                         </td>
                         <td style={{ padding: '8px 10px', width: 110 }}>
                           <input
@@ -763,7 +792,8 @@ export default function ConsignacionesPage() {
                             className="cbtn"
                             style={btn('ghost', { padding: '2px 8px', fontSize: 14, color: T.red })}
                             onClick={() => removeItem(idx)}
-                            disabled={form.items.length <= 1}
+                            disabled={form.items.length <= 1 || (item.cantidad_vendida || 0) > 0}
+                            title={(item.cantidad_vendida || 0) > 0 ? 'No se puede sacar: ya tiene ventas registradas' : undefined}
                           >
                             ✕
                           </button>
@@ -789,7 +819,7 @@ export default function ConsignacionesPage() {
               </span>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="cbtn" style={btn('default')} onClick={tryCloseConsignacion}>Cancelar</button>
-                <button className="cbtn" disabled={saving} style={{ ...btn('accent'), opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer' }} onClick={handleGuardar}>{saving ? 'Guardando...' : 'Guardar'}</button>
+                <button className="cbtn" disabled={saving} style={{ ...btn('accent'), opacity: saving ? 0.6 : 1, cursor: saving ? 'default' : 'pointer' }} onClick={handleGuardar}>{saving ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Guardar'}</button>
               </div>
             </div>
           </div>
@@ -911,6 +941,11 @@ export default function ConsignacionesPage() {
                 {detalleModal.numero}
               </h2>
               <div style={{ display: 'flex', gap: 8 }}>
+                {detalleModal.estado === 'activa' && (
+                  <button className="cbtn" style={btn('default')} onClick={() => { const c = detalleModal; setDetalleModal(null); abrirEditar(c) }}>
+                    ✏️ Editar
+                  </button>
+                )}
                 <button className="cbtn" style={btn('default')} onClick={() => window.open(`/api/print/consignacion?id=${detalleModal.id}&empresa=${detalleModal.empresa}&autoprint=1`, '_blank')}>
                   🖨️ Imprimir
                 </button>
