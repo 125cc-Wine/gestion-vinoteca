@@ -469,11 +469,21 @@ export default function ComprasPage() {
 
   async function registrarPago() {
     if (!pagoModal) return
+    const montoPagadoPrevio = pagoModal.monto_pagado || 0
+    const restante = pagoModal.total - montoPagadoPrevio
+    if (pMonto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
+    // Antes esto siempre marcaba "pagado" con lo que se hubiera puesto en el
+    // campo, aunque fuera menos que el total — una factura pagada a medias
+    // quedaba etiquetada como saldada del todo y desaparecía de "A pagar",
+    // escondiendo la deuda real. Ahora acumula sobre lo ya pagado y solo
+    // marca "pagado" cuando de verdad cubre el total.
+    const montoPagadoTotal = parseFloat((montoPagadoPrevio + pMonto).toFixed(2))
+    const cubreTotal = montoPagadoTotal >= pagoModal.total - 0.01
     setSaving(true)
     const body = {
       id: pagoModal.id,
-      estado_pago: 'pagado',
-      monto_pagado: pMonto,
+      estado_pago: cubreTotal ? 'pagado' : 'pendiente',
+      monto_pagado: montoPagadoTotal,
       fecha_pago: pFechaPago,
       notas_pago: pNotas,
     }
@@ -486,10 +496,10 @@ export default function ComprasPage() {
     if (data.error) { showToast('Error: ' + data.error); return }
     setPagoModal(null)
     if (detalle && detalle.id === pagoModal.id) {
-      setDetalle({ ...detalle, estado_pago: 'pagado', monto_pagado: pMonto, fecha_pago: pFechaPago, notas_pago: pNotas })
+      setDetalle({ ...detalle, estado_pago: body.estado_pago, monto_pagado: montoPagadoTotal, fecha_pago: pFechaPago, notas_pago: pNotas })
     }
     cargar(empresa)
-    showToast('Pago registrado')
+    showToast(cubreTotal ? 'Pago registrado' : `Pago parcial registrado — falta $${(pagoModal.total - montoPagadoTotal).toLocaleString('es-AR')}`)
   }
 
   // --- WhatsApp ---
@@ -668,6 +678,11 @@ export default function ComprasPage() {
                     <span style={{ ...(ESTADO_PAGO_STYLE[c.estado_pago || 'sin_factura'] || {}), padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
                       {ESTADO_PAGO_LABEL[c.estado_pago || 'sin_factura']}
                     </span>
+                    {c.estado_pago === 'pendiente' && (c.monto_pagado || 0) > 0 && (
+                      <div style={{ fontSize: 10, color: T.amber, marginTop: 2 }}>
+                        Parcial: pagado ${c.monto_pagado!.toLocaleString('es-AR')}, falta ${(c.total - (c.monto_pagado || 0)).toLocaleString('es-AR')}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
                     <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.wine, fontWeight: 600, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => abrirPagoModal(c)}>
@@ -924,6 +939,11 @@ export default function ComprasPage() {
                           <span style={{ color: T.muted, fontWeight: 400 }}>Vencimiento: </span>
                           {vencimientoLabel(detalle.fecha_vencimiento)}
                         </div>
+                        {(detalle.monto_pagado || 0) > 0 && (
+                          <div style={{ fontSize: 12, fontWeight: 600, color: T.amber, marginTop: 4 }}>
+                            Parcial: pagado ${detalle.monto_pagado!.toLocaleString('es-AR')}, falta ${(detalle.total - (detalle.monto_pagado || 0)).toLocaleString('es-AR')}
+                          </div>
+                        )}
                       </div>
                       <button className="btn-wine" onClick={() => abrirPagoModal(detalle)} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', marginLeft: 12 }}>
                         Registrar pago
@@ -1352,13 +1372,16 @@ export default function ComprasPage() {
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Registrar pago — {pagoModal.nro_factura || pagoModal.numero}</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>Total factura: ${pagoModal.total.toLocaleString('es-AR')}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
+                  Total factura: ${pagoModal.total.toLocaleString('es-AR')}
+                  {(pagoModal.monto_pagado || 0) > 0 && ` · Ya pagado: $${pagoModal.monto_pagado!.toLocaleString('es-AR')}`}
+                </p>
               </div>
               <button onClick={() => setPagoModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto pagado</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Monto de este pago — si es menor al total, queda &quot;Pendiente&quot; con el resto</label>
                 <input type="number" step="any" style={{ ...INP, width: '100%' }} min={0} value={pMonto || ''} onChange={e => setPMonto(parseFloat(e.target.value) || 0)} />
               </div>
               <div>

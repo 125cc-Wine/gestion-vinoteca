@@ -64,6 +64,30 @@ async function descontarStockItems(items: { producto_id?: string; cantidad: numb
   }
 }
 
+// Inversa de descontarStockItems — devuelve stock al cancelar/eliminar un
+// remito. Antes DELETE cancelaba la venta y revertía el cargo de cuenta
+// corriente, pero nunca tocaba el stock: un remito cancelado dejaba la
+// mercadería descontada para siempre aunque nunca hubiera salido.
+async function devolverStockItems(items: { producto_id?: string; cantidad: number }[]) {
+  for (const item of items) {
+    if (!item.producto_id) continue
+    const { data: prod } = await supabase
+      .from('productos')
+      .select('id, nombre, empresa, stock, unidad_medida')
+      .eq('id', item.producto_id)
+      .single()
+    if (!prod) continue
+
+    const factor = prod.unidad_medida === 'caja12' ? 12 : prod.unidad_medida === 'caja6' ? 6 : prod.unidad_medida === 'caja4' ? 4 : 1
+    const nuevoStock = (prod.stock || 0) + item.cantidad * factor
+    await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+
+    const otraEmpresa = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+    const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otraEmpresa).single()
+    if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+  }
+}
+
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
   if (!empresa) return NextResponse.json({ error: 'empresa requerida' }, { status: 400 })
@@ -279,7 +303,7 @@ export async function DELETE(req: NextRequest) {
 
   const { data: venta, error: errVenta } = await supabase
     .from('ventas')
-    .select('estado, estado_pago, total, cliente_id, empresa, numero, tipo')
+    .select('estado, estado_pago, total, cliente_id, empresa, numero, tipo, items')
     .eq('id', id)
     .single()
   if (errVenta || !venta) return NextResponse.json({ error: errVenta?.message || 'Venta no encontrada' }, { status: 404 })
@@ -290,6 +314,13 @@ export async function DELETE(req: NextRequest) {
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Si es un remito, descontó stock al crearse (o al convertirse desde
+  // presupuesto) — devolverlo al cancelar, si no ya no quedaba stock era
+  // real; guardado como "cancelado" pero fantasma para siempre.
+  if (venta.estado !== 'cancelado' && venta.tipo === 'remito' && Array.isArray(venta.items) && venta.items.length > 0) {
+    await devolverStockItems(venta.items)
+  }
 
   // Si estaba cargada en cuenta corriente, revertir el cargo — si no, el
   // saldo del cliente queda con una deuda fantasma de un comprobante que

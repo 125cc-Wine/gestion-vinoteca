@@ -114,10 +114,32 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json(data)
 }
 
+// Inversa del incremento de stock que hace PUT al marcar "recibido" —
+// eliminar o cancelar una compra ya recibida no revertía el stock, así que
+// quedaba mercadería fantasma pegada al producto para siempre.
+async function revertirStockItems(items: { producto_id?: string; nombre: string; cantidad: number }[]) {
+  for (const item of items) {
+    if (!item.producto_id) continue
+    const { data: prod } = await supabase.from('productos').select('id, stock, nombre, empresa').eq('id', item.producto_id).single()
+    if (!prod) continue
+    const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad)
+    await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+    const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
+    const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
+    if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   const hard = req.nextUrl.searchParams.get('hard') === 'true'
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
+
+  const { data: compra } = await supabase.from('compras').select('estado, items').eq('id', id).single()
+  if (compra?.estado === 'recibido' && Array.isArray(compra.items) && compra.items.length > 0) {
+    await revertirStockItems(compra.items)
+  }
+
   if (hard) {
     const { error } = await supabase.from('compras').delete().eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

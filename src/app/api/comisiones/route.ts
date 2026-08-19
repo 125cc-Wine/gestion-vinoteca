@@ -86,19 +86,26 @@ export async function GET(req: NextRequest) {
     registrosPorNombre[r.vendedor_nombre] = r
   }
 
-  // 5. Combinar: para cada vendedor activo construir la fila de comisión
+  // 5. Combinar: para cada vendedor activo construir la fila de comisión.
+  //    Si ya está "pagada", se usa el total/porcentaje/comisión CONGELADO en
+  //    el momento del pago, no el recalculado en vivo — si no, una venta de
+  //    ese período que se edita o cancela después cambia silenciosamente el
+  //    monto que se ve al lado de una comisión que ya se le pagó al
+  //    vendedor, sin ningún aviso de que ya no coincide con lo que salió.
   const resultado = (vendedores || []).map(v => {
-    const porcentaje   = registrosPorNombre[v.nombre]?.porcentaje ?? v.porcentaje_comision ?? 5
-    const total_ventas = totalPorVendedor[v.nombre] || 0
-    const monto_comision = (total_ventas * porcentaje) / 100
     const registro = registrosPorNombre[v.nombre]
+    const yaPagada = registro?.estado === 'pagada'
+
+    const porcentaje   = yaPagada ? registro.porcentaje : (registro?.porcentaje ?? v.porcentaje_comision ?? 5)
+    const total_ventas = yaPagada ? registro.total_ventas : (totalPorVendedor[v.nombre] || 0)
+    const monto_comision = yaPagada ? registro.monto_comision : (total_ventas * porcentaje) / 100
 
     return {
       id:              registro?.id ?? null,
       vendedor_id:     v.id,
       vendedor_nombre: v.nombre,
       porcentaje_comision: v.porcentaje_comision ?? 5,
-      porcentaje:      porcentaje,
+      porcentaje,
       total_ventas,
       monto_comision,
       estado:          registro?.estado ?? 'pendiente',
