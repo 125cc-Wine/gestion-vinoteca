@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       tipo: 'producto', id: p.id,
       titulo: p.nombre,
       subtitulo: `${p.bodega || ''} — Stock: ${p.stock} — $${p.precio_venta?.toLocaleString('es-AR')}`,
-      href: '/productos',
+      href: `/productos?id=${p.id}`,
     })
   }
 

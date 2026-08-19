@@ -527,6 +527,25 @@ export default function ProductosPage() {
     cargar(empresa); toast_('Producto reactivado')
   }
 
+  // Llegar acá con ?id=<producto> (desde el buscador global) filtra la tabla
+  // a ese producto y abre directamente su ficha de edición completa — antes
+  // el resultado de producto en el buscador solo mandaba a /productos sin
+  // ubicarlo ni abrirlo. Se guarda con un flag para no reabrir el modal en
+  // cada recarga posterior de `productos` (ej. al guardar un cambio).
+  const [abrioDesdeUrl, setAbrioDesdeUrl] = useState(false)
+  useEffect(() => {
+    if (abrioDesdeUrl || productos.length === 0) return
+    setAbrioDesdeUrl(true)
+    const id = new URLSearchParams(window.location.search).get('id')
+    if (!id) return
+    const p = productos.find(x => x.id === id)
+    if (p) {
+      setBusqueda(p.nombre)
+      openFullEdit(p)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productos])
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
