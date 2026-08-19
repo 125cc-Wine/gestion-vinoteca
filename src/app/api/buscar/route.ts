@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const like = `%${q}%`
 
-  const [vRes, cRes, pRes] = await Promise.all([
+  const [vRes, cRes, pRes, consRes] = await Promise.all([
     supabase.from('ventas').select('id, numero, tipo, cliente_nombre, total, created_at')
       .eq('empresa', empresa).neq('estado', 'cancelado')
       .or(`numero.ilike.${like},cliente_nombre.ilike.${like}`)
@@ -23,6 +23,10 @@ export async function GET(req: NextRequest) {
       .eq('empresa', empresa).neq('activo', false)
       .or(`nombre.ilike.${like},bodega.ilike.${like}`)
       .limit(5),
+    supabase.from('consignaciones').select('id, numero, cliente_nombre, total, estado, created_at')
+      .eq('empresa', empresa)
+      .or(`numero.ilike.${like},cliente_nombre.ilike.${like}`)
+      .order('created_at', { ascending: false }).limit(5),
   ])
 
   const results: { tipo: string; id: string; titulo: string; subtitulo: string; href: string }[] = []
@@ -50,6 +54,15 @@ export async function GET(req: NextRequest) {
       titulo: p.nombre,
       subtitulo: `${p.bodega || ''} — Stock: ${p.stock} — $${p.precio_venta?.toLocaleString('es-AR')}`,
       href: `/productos?id=${p.id}`,
+    })
+  }
+  const ESTADO_CONS_LABEL: Record<string, string> = { activa: 'Activa', liquidada: 'Liquidada', devuelta: 'Devuelta', parcial: 'Parcial' }
+  for (const c of consRes.data || []) {
+    results.push({
+      tipo: 'consignacion', id: c.id,
+      titulo: `Consignación ${c.numero}`,
+      subtitulo: `${c.cliente_nombre} — $${c.total?.toLocaleString('es-AR')} — ${ESTADO_CONS_LABEL[c.estado] ?? c.estado}`,
+      href: `/consignaciones?id=${c.id}`,
     })
   }
 

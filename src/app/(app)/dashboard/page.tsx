@@ -125,6 +125,7 @@ export default function DashboardPage() {
   const [sinMovimiento, setSinMovimiento] = useState<ProductoSinMovimiento[]>([])
   const [chequesVencer, setChequesVencer] = useState<{ nro_cheque?: string; beneficiario: string; monto: number; fecha_pago: string }[]>([])
   const [facturasVencer, setFacturasVencer] = useState<{ numero: string; proveedor_nombre: string; total: number; fecha_vencimiento: string }[]>([])
+  const [consignacionesVencer, setConsignacionesVencer] = useState<{ numero: string; cliente_nombre: string; total: number; fecha_retorno_estimada: string }[]>([])
   const [anadasResumen, setAnadasResumen] = useState<{ total: number; botTotal: number; valorTotal: number } | null>(null)
   const [loadingExtra, setLoadingExtra] = useState(false)
 
@@ -246,6 +247,17 @@ export default function DashboardPage() {
       .lte('fecha_vencimiento', limite7.toISOString().slice(0, 10))
       .order('fecha_vencimiento', { ascending: true })
     setFacturasVencer(factPronto || [])
+
+    // ── Sección F2: Consignaciones activas próximas a vencer o vencidas ──
+    const { data: consPronto } = await supabase
+      .from('consignaciones')
+      .select('numero, cliente_nombre, total, fecha_retorno_estimada')
+      .eq('empresa', emp)
+      .eq('estado', 'activa')
+      .not('fecha_retorno_estimada', 'is', null)
+      .lte('fecha_retorno_estimada', limite7.toISOString().slice(0, 10))
+      .order('fecha_retorno_estimada', { ascending: true })
+    setConsignacionesVencer(consPronto || [])
 
     // ── Sección F: Resumen añadas ──
     const { data: anadasData } = await supabase
@@ -496,8 +508,8 @@ export default function DashboardPage() {
         )}
 
         {/* ── Alertas financieras ────────────────────────────────────────────── */}
-        {(chequesVencer.length > 0 || facturasVencer.length > 0) && (
-          <div style={{ marginBottom: 24, display: 'flex', gap: 12 }}>
+        {(chequesVencer.length > 0 || facturasVencer.length > 0 || consignacionesVencer.length > 0) && (
+          <div style={{ marginBottom: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
 
             {/* Cheques próximos a vencer */}
             {chequesVencer.length > 0 && (
@@ -558,6 +570,40 @@ export default function DashboardPage() {
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <span style={{ fontWeight: 700, color: T.text }}>{fmt(f.total)}</span>
+                          <span style={{ display: 'block', fontSize: 10, color: clr, fontWeight: 600 }}>{label}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Consignaciones próximas a vencer o vencidas */}
+            {consignacionesVencer.length > 0 && (
+              <div style={{ flex: 1, background: T.surface, border: `1px solid ${T.redBd}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: T.redBg, borderBottom: `1px solid ${T.redBd}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.red }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.red }}>Consignaciones por vencer — {consignacionesVencer.length}</span>
+                  </div>
+                  <button className="lbtn" onClick={() => router.push('/consignaciones')} style={{ fontSize: 11, color: T.red, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', transition: 'opacity 0.15s' }}>Ver consignaciones →</button>
+                </div>
+                <div style={{ padding: '8px 4px' }}>
+                  {consignacionesVencer.slice(0, 5).map((c, i) => {
+                    const hoyD = new Date(); hoyD.setHours(0,0,0,0)
+                    const vD = new Date(c.fecha_retorno_estimada + 'T12:00:00')
+                    const diff = Math.round((vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24))
+                    const clr = diff < 0 ? T.red : diff === 0 ? T.red : T.amber
+                    const label = diff < 0 ? `Vencida hace ${Math.abs(diff)}d` : diff === 0 ? 'Vence hoy' : `Vence en ${diff}d`
+                    return (
+                      <div key={i} className="ralert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '6px 12px', borderRadius: 6, transition: 'background 0.1s', cursor: 'default' }}>
+                        <div>
+                          <span style={{ fontWeight: 600, color: T.text }}>{c.cliente_nombre}</span>
+                          <span style={{ color: T.dim }}> · {c.numero}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, color: T.text }}>{fmt(c.total)}</span>
                           <span style={{ display: 'block', fontSize: 10, color: clr, fontWeight: 600 }}>{label}</span>
                         </div>
                       </div>

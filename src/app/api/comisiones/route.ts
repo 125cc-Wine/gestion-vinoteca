@@ -72,6 +72,34 @@ export async function GET(req: NextRequest) {
     totalPorVendedor[nombre] = (totalPorVendedor[nombre] || 0) + (v.total || 0)
   }
 
+  // 3b. Sumar lo vendido en consignaciones liquidadas en este período — el
+  //     cargo a cta. cte. se genera recién al liquidar (ver PUT
+  //     /api/consignaciones), así que esa fecha es el momento real de la
+  //     venta a efectos de comisión, no la fecha en que se creó la
+  //     consignación (que puede ser meses antes). Antes lo vendido por
+  //     consignación no contaba para la comisión de nadie.
+  const { data: cargosConsignacion } = await supabase
+    .from('movimientos_cta_cte')
+    .select('monto, referencia_id')
+    .eq('empresa', empresa)
+    .eq('tipo', 'cargo')
+    .ilike('concepto', 'Consignación%liquidada')
+    .gte('created_at', desde)
+    .lte('created_at', hasta)
+
+  if (cargosConsignacion && cargosConsignacion.length > 0) {
+    const consIds = cargosConsignacion.map(c => c.referencia_id).filter(Boolean)
+    const { data: consData } = await supabase
+      .from('consignaciones')
+      .select('id, vendedor_nombre')
+      .in('id', consIds)
+    const vendedorPorConsId = new Map((consData || []).map(c => [c.id, c.vendedor_nombre || 'Sin asignar']))
+    for (const cargo of cargosConsignacion) {
+      const nombre = vendedorPorConsId.get(cargo.referencia_id) || 'Sin asignar'
+      totalPorVendedor[nombre] = (totalPorVendedor[nombre] || 0) + (cargo.monto || 0)
+    }
+  }
+
   // 4. Obtener registros guardados en comisiones_vendedor para este período
   const { data: registros, error: errR } = await supabase
     .from('comisiones_vendedor')

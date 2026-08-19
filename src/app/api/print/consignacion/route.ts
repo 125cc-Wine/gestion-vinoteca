@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
 
   const totalUnidades = items.reduce((s, it) => s + (it.cantidad ?? 0), 0)
   const totalVendido = items.reduce((s, it) => s + (it.cantidad_vendida ?? 0), 0)
+  const totalVendidoMonto = items.reduce((s, it) => s + (it.cantidad_vendida ?? 0) * (it.precio_unitario ?? 0), 0)
 
   const itemsRows = items.map((it, i) => {
     const pendiente = (it.cantidad ?? 0) - (it.cantidad_vendida ?? 0)
@@ -190,11 +191,25 @@ export async function GET(req: NextRequest) {
   </table>
   <div class="resumen-unidades">Total enviado: <strong>${totalUnidades}</strong> &nbsp;·&nbsp; Vendido: <strong>${totalVendido}</strong> &nbsp;·&nbsp; Pendiente de devolver o vender: <strong>${totalUnidades - totalVendido}</strong></div>
 
+  ${cons.estado === 'liquidada' ? `
+  <!-- LIQUIDACIÓN -->
+  <div class="info-box" style="margin-top:10px;">
+    <div class="info-box-title">Liquidación</div>
+    <div class="info-box-body">
+      <div class="info-row"><span class="info-label">Vendido: </span><span class="info-val" style="font-weight:600;">${totalVendido} unidades — ${moneda(totalVendidoMonto)}</span></div>
+      <div class="info-row"><span class="info-label">Devuelto al depósito: </span><span class="info-val">${totalUnidades - totalVendido} unidades</span></div>
+      ${totalVendidoMonto > 0 ? `<div class="info-row"><span class="info-label">Cargado a cuenta corriente de ${esc(cons.cliente_nombre ?? '')}: </span><span class="info-val" style="font-weight:600;">${moneda(totalVendidoMonto)}</span></div>` : ''}
+    </div>
+  </div>` : ''}
+
   <!-- TOTALES -->
   <div class="bottom-grid">
     ${cons.notas ? `<div class="notas-box">${esc(cons.notas)}</div>` : '<div></div>'}
     <div class="totales-box">
-      <div class="totales-row total-final"><span>TOTAL</span><span>${moneda(cons.total ?? 0)}</span></div>
+      ${cons.estado === 'liquidada'
+        ? `<div class="totales-row"><span>Valor consignado</span><span>${moneda(cons.total ?? 0)}</span></div>
+           <div class="totales-row total-final"><span>VENDIDO / A COBRAR</span><span>${moneda(totalVendidoMonto)}</span></div>`
+        : `<div class="totales-row total-final"><span>TOTAL</span><span>${moneda(cons.total ?? 0)}</span></div>`}
     </div>
   </div>
 

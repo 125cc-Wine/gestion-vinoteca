@@ -286,6 +286,10 @@ export default function ConsignacionesPage() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Filtros
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState<'' | 'activa' | 'liquidada' | 'devuelta' | 'vencidas'>('')
+
   // Modal states
   const [modal, setModal] = useState(false)
   const [editandoId, setEditandoId] = useState<string | null>(null)
@@ -340,6 +344,19 @@ export default function ConsignacionesPage() {
     load(e)
   }, [])
 
+  // Llegar acá con ?id=<consignacion> (desde el buscador global) abre
+  // directo su detalle, una vez que la lista terminó de cargar.
+  const [abrioDesdeUrl, setAbrioDesdeUrl] = useState(false)
+  useEffect(() => {
+    if (abrioDesdeUrl || consignaciones.length === 0) return
+    setAbrioDesdeUrl(true)
+    const id = new URLSearchParams(window.location.search).get('id')
+    if (!id) return
+    const c = consignaciones.find(x => x.id === id)
+    if (c) setDetalleModal(c)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consignaciones])
+
   const dirtyConsignacion = form.cliente_nombre !== '' || form.items.some(i => i.nombre !== '')
 
   function tryCloseConsignacion() {
@@ -363,6 +380,23 @@ export default function ConsignacionesPage() {
     const d = new Date(c.created_at)
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   }).length
+
+  const hoyStr = today()
+  function esVencida(c: Consignacion) {
+    return c.estado === 'activa' && !!c.fecha_retorno_estimada && c.fecha_retorno_estimada < hoyStr
+  }
+  const vencidas = activas.filter(esVencida)
+
+  // ─── Filtro / búsqueda ───────────────────────────────────────────────────
+  const consignacionesFiltradas = consignaciones.filter(c => {
+    if (filtroEstado === 'vencidas') { if (!esVencida(c)) return false }
+    else if (filtroEstado && c.estado !== filtroEstado) return false
+    if (!busqueda) return true
+    const q = busqueda.toLowerCase()
+    return c.numero.toLowerCase().includes(q)
+      || c.cliente_nombre.toLowerCase().includes(q)
+      || (c.vendedor_nombre || '').toLowerCase().includes(q)
+  })
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
   function resetForm() {
@@ -523,7 +557,7 @@ export default function ConsignacionesPage() {
       <div style={{ padding: '24px 28px' }}>
 
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div style={{
             background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
             padding: '18px 20px',
@@ -542,6 +576,19 @@ export default function ConsignacionesPage() {
             </div>
             <div style={{ fontSize: 28, fontWeight: 700, color: T.wine }}>{fmt(valorEnCalle)}</div>
           </div>
+          <div
+            onClick={() => setFiltroEstado(prev => prev === 'vencidas' ? '' : 'vencidas')}
+            style={{
+              background: vencidas.length > 0 ? T.redBg : T.surface, border: `1px solid ${vencidas.length > 0 ? T.redBd : T.border}`, borderRadius: 10,
+              padding: '18px 20px', cursor: 'pointer',
+              outline: filtroEstado === 'vencidas' ? `2px solid ${T.red}` : 'none',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 600, color: vencidas.length > 0 ? T.red : T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Vencidas
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: T.red }}>{vencidas.length}</div>
+          </div>
           <div style={{
             background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10,
             padding: '18px 20px',
@@ -550,6 +597,33 @@ export default function ConsignacionesPage() {
               Liquidadas este mes
             </div>
             <div style={{ fontSize: 28, fontWeight: 700, color: T.green }}>{liquidadasMes}</div>
+          </div>
+        </div>
+
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            className="cinp"
+            style={{ ...INP, width: 260 }}
+            placeholder="Buscar por número, cliente o vendedor..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+          <div style={{ display: 'flex', gap: 6 }}>
+            {([['', 'Todas'], ['activa', 'Activas'], ['liquidada', 'Liquidadas'], ['devuelta', 'Devueltas']] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setFiltroEstado(val)}
+                style={{
+                  background: filtroEstado === val ? T.wine : T.surface,
+                  color: filtroEstado === val ? '#fff' : T.muted,
+                  border: `1px solid ${filtroEstado === val ? T.wine : T.border}`,
+                  borderRadius: 99, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -563,6 +637,10 @@ export default function ConsignacionesPage() {
           ) : consignaciones.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: T.dim }}>
               No hay consignaciones. Creá la primera.
+            </div>
+          ) : consignacionesFiltradas.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: T.dim }}>
+              Sin resultados para este filtro.
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -581,7 +659,7 @@ export default function ConsignacionesPage() {
                 </tr>
               </thead>
               <tbody>
-                {consignaciones.map(c => (
+                {consignacionesFiltradas.map(c => (
                   <tr
                     key={c.id}
                     className="cons-row"
@@ -591,7 +669,10 @@ export default function ConsignacionesPage() {
                     <td style={{ padding: '11px 14px', fontSize: 13, color: T.text }}>{c.cliente_nombre}</td>
                     <td style={{ padding: '11px 14px', fontSize: 13, color: T.muted }}>{c.vendedor_nombre || '—'}</td>
                     <td style={{ padding: '11px 14px', fontSize: 13, color: T.muted }}>{c.fecha_salida}</td>
-                    <td style={{ padding: '11px 14px', fontSize: 13, color: T.muted }}>{c.fecha_retorno_estimada || '—'}</td>
+                    <td style={{ padding: '11px 14px', fontSize: 13, color: esVencida(c) ? T.red : T.muted, fontWeight: esVencida(c) ? 700 : 400 }}>
+                      {c.fecha_retorno_estimada || '—'}
+                      {esVencida(c) && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, background: T.redBg, color: T.red, border: `1px solid ${T.redBd}`, borderRadius: 4, padding: '1px 5px' }}>VENCIDA</span>}
+                    </td>
                     <td style={{ padding: '11px 14px', fontSize: 13, color: T.muted }}>{(c.items || []).length}</td>
                     <td style={{ padding: '11px 14px', fontSize: 13, fontWeight: 600, color: T.text }}>{fmt(c.total || 0)}</td>
                     <td style={{ padding: '11px 14px' }}>{estadoBadge(c.estado)}</td>
@@ -971,7 +1052,9 @@ export default function ConsignacionesPage() {
                   <div style={{ fontSize: 11, fontWeight: 600, color: T.dim, textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
                   {label === 'Estado'
                     ? estadoBadge(detalleModal.estado)
-                    : <div style={{ fontSize: 13, color: T.text }}>{value}</div>
+                    : <div style={{ fontSize: 13, color: label === 'Retorno estimado' && esVencida(detalleModal) ? T.red : T.text, fontWeight: label === 'Retorno estimado' && esVencida(detalleModal) ? 700 : 400 }}>
+                        {value}{label === 'Retorno estimado' && esVencida(detalleModal) ? ' — VENCIDA' : ''}
+                      </div>
                   }
                 </div>
               ))}
