@@ -90,10 +90,10 @@ interface HistorialPrecio {
   id: string
   producto_id: string
   empresa: string
-  precio_venta_anterior: number | null
-  precio_venta_nuevo: number | null
-  precio_costo_anterior: number | null
-  precio_costo_nuevo: number | null
+  producto_nombre: string | null
+  precio_anterior: number | null
+  precio_nuevo: number
+  tipo: 'venta' | 'costo'
   created_at: string
   usuario?: string | null
 }
@@ -2642,20 +2642,16 @@ export default function ProductosPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead style={{ position: 'sticky', top: 0, background: T.bg, zIndex: 1 }}>
                     <tr>
-                      {['Fecha', 'P. Venta anterior', 'P. Venta nuevo', 'Var. venta', 'P. Costo anterior', 'P. Costo nuevo', 'Var. costo'].map(h => (
-                        <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Fecha' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                      {['Fecha', 'Tipo', 'Anterior', 'Nuevo', 'Variación'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Fecha' || h === 'Tipo' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {historialData.map(h => {
-                      const ventaAnterior = h.precio_venta_anterior ?? null
-                      const ventaNuevo    = h.precio_venta_nuevo ?? null
-                      const costoAnterior = h.precio_costo_anterior ?? null
-                      const costoNuevo    = h.precio_costo_nuevo ?? null
-
-                      const diffVenta = (ventaAnterior !== null && ventaNuevo !== null) ? ventaNuevo - ventaAnterior : null
-                      const diffCosto = (costoAnterior !== null && costoNuevo !== null) ? costoNuevo - costoAnterior : null
+                      const anterior = h.precio_anterior
+                      const nuevo = h.precio_nuevo
+                      const diff = anterior !== null ? nuevo - anterior : null
 
                       function arrowCell(diff: number | null) {
                         if (diff === null) return <span style={{ color: T.dim }}>—</span>
@@ -2669,20 +2665,23 @@ export default function ProductosPage() {
                           <td style={{ padding: '11px 14px', color: T.muted, whiteSpace: 'nowrap' }}>
                             {new Date(h.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </td>
+                          <td style={{ padding: '11px 14px' }}>
+                            <span style={{
+                              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
+                              background: h.tipo === 'costo' ? T.amberBg : T.blueBg,
+                              color: h.tipo === 'costo' ? T.amber : T.blue,
+                              border: `1px solid ${h.tipo === 'costo' ? T.amberBd : T.blueBd}`,
+                            }}>
+                              {h.tipo === 'costo' ? 'Costo' : 'Venta'}
+                            </span>
+                          </td>
                           <td style={{ padding: '11px 14px', textAlign: 'right', color: T.dim }}>
-                            {ventaAnterior !== null ? `$${ventaAnterior.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                            {anterior !== null ? `$${anterior.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
                           </td>
                           <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>
-                            {ventaNuevo !== null ? `$${ventaNuevo.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
+                            ${nuevo.toLocaleString('es-AR')}
                           </td>
-                          <td style={{ padding: '11px 14px', textAlign: 'right' }}>{arrowCell(diffVenta)}</td>
-                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.dim }}>
-                            {costoAnterior !== null ? `$${costoAnterior.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
-                          </td>
-                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>
-                            {costoNuevo !== null ? `$${costoNuevo.toLocaleString('es-AR')}` : <span style={{ color: T.dim }}>—</span>}
-                          </td>
-                          <td style={{ padding: '11px 14px', textAlign: 'right' }}>{arrowCell(diffCosto)}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right' }}>{arrowCell(diff)}</td>
                         </tr>
                       )
                     })}

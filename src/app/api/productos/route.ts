@@ -96,23 +96,29 @@ export async function POST(req: NextRequest) {
 // verdad (no solo porque vinieron en el body — a veces se manda el mismo
 // valor). Devuelve silencioso ante error: el historial es informativo, no
 // debe hacer fallar el guardado del producto en sí.
+//
+// La tabla real (nunca tuvo un .sql en el repo, se creó a mano en Supabase)
+// NO tiene columnas separadas para venta/costo como asumía el modal que ya
+// existía en /productos — tiene una sola columna precio_anterior/precio_nuevo
+// más un "tipo" ('venta' | 'costo') que distingue de cuál se trata. Si
+// cambian los dos a la vez, se insertan dos filas.
 async function registrarHistorialPrecio(
-  productoId: string, empresa: string,
+  productoId: string, empresa: string, productoNombre: string,
   anterior: { precio_venta: number | null; precio_costo: number | null },
   nuevo: { precio_venta?: number; precio_costo?: number }
 ) {
-  const cambioVenta = nuevo.precio_venta !== undefined && nuevo.precio_venta !== anterior.precio_venta
-  const cambioCosto = nuevo.precio_costo !== undefined && nuevo.precio_costo !== anterior.precio_costo
-  if (!cambioVenta && !cambioCosto) return
+  const filas: { tipo: string; precio_anterior: number | null; precio_nuevo: number }[] = []
+  if (nuevo.precio_venta !== undefined && nuevo.precio_venta !== anterior.precio_venta) {
+    filas.push({ tipo: 'venta', precio_anterior: anterior.precio_venta, precio_nuevo: nuevo.precio_venta })
+  }
+  if (nuevo.precio_costo !== undefined && nuevo.precio_costo !== anterior.precio_costo) {
+    filas.push({ tipo: 'costo', precio_anterior: anterior.precio_costo, precio_nuevo: nuevo.precio_costo })
+  }
+  if (filas.length === 0) return
 
-  await supabase.from('historial_precios').insert([{
-    producto_id: productoId,
-    empresa,
-    precio_venta_anterior: cambioVenta ? anterior.precio_venta : null,
-    precio_venta_nuevo: cambioVenta ? nuevo.precio_venta : null,
-    precio_costo_anterior: cambioCosto ? anterior.precio_costo : null,
-    precio_costo_nuevo: cambioCosto ? nuevo.precio_costo : null,
-  }]).then(({ error }) => { if (error) console.error('historial_precios insert error:', error.message) })
+  await supabase.from('historial_precios').insert(
+    filas.map(f => ({ producto_id: productoId, empresa, producto_nombre: productoNombre, ...f }))
+  ).then(({ error }) => { if (error) console.error('historial_precios insert error:', error.message) })
 }
 
 // PUT /api/productos
@@ -138,7 +144,7 @@ export async function PUT(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (anterior) {
-    await registrarHistorialPrecio(id, data.empresa, anterior, rest)
+    await registrarHistorialPrecio(id, data.empresa, data.nombre, anterior, rest)
   }
 
   // Sincronizar con la otra empresa
@@ -161,7 +167,7 @@ export async function PUT(req: NextRequest) {
       // El precio de la contraparte también acaba de cambiar (mismo sync) —
       // su propio historial (si alguien lo abre desde la otra empresa) debe
       // reflejarlo igual.
-      await registrarHistorialPrecio(contraparte.id, otra, contraparte, rest)
+      await registrarHistorialPrecio(contraparte.id, otra, data.nombre, contraparte, rest)
     } else {
       await supabase.from('productos').insert([{
         nombre: data.nombre,
