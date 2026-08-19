@@ -92,10 +92,41 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data)
 }
 
+// Inserta en historial_precios si precio_venta y/o precio_costo cambiaron de
+// verdad (no solo porque vinieron en el body — a veces se manda el mismo
+// valor). Devuelve silencioso ante error: el historial es informativo, no
+// debe hacer fallar el guardado del producto en sí.
+async function registrarHistorialPrecio(
+  productoId: string, empresa: string,
+  anterior: { precio_venta: number | null; precio_costo: number | null },
+  nuevo: { precio_venta?: number; precio_costo?: number }
+) {
+  const cambioVenta = nuevo.precio_venta !== undefined && nuevo.precio_venta !== anterior.precio_venta
+  const cambioCosto = nuevo.precio_costo !== undefined && nuevo.precio_costo !== anterior.precio_costo
+  if (!cambioVenta && !cambioCosto) return
+
+  await supabase.from('historial_precios').insert([{
+    producto_id: productoId,
+    empresa,
+    precio_venta_anterior: cambioVenta ? anterior.precio_venta : null,
+    precio_venta_nuevo: cambioVenta ? nuevo.precio_venta : null,
+    precio_costo_anterior: cambioCosto ? anterior.precio_costo : null,
+    precio_costo_nuevo: cambioCosto ? nuevo.precio_costo : null,
+  }]).then(({ error }) => { if (error) console.error('historial_precios insert error:', error.message) })
+}
+
 // PUT /api/productos
 export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
+
+  // Se necesita el precio ANTERIOR para el historial — hay que leerlo antes
+  // de pisarlo con el update.
+  const { data: anterior } = await supabase
+    .from('productos')
+    .select('precio_venta, precio_costo')
+    .eq('id', id)
+    .single()
 
   const { data, error } = await supabase
     .from('productos')
@@ -105,6 +136,10 @@ export async function PUT(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (anterior) {
+    await registrarHistorialPrecio(id, data.empresa, anterior, rest)
+  }
 
   // Sincronizar con la otra empresa
   const otra = otraEmpresa(data.empresa)
@@ -116,13 +151,17 @@ export async function PUT(req: NextRequest) {
   if (Object.keys(camposSync).length > 0) {
     const { data: contraparte } = await supabase
       .from('productos')
-      .select('id')
+      .select('id, precio_venta, precio_costo')
       .eq('nombre', data.nombre)
       .eq('empresa', otra)
       .single()
 
     if (contraparte) {
       await supabase.from('productos').update(camposSync).eq('id', contraparte.id)
+      // El precio de la contraparte también acaba de cambiar (mismo sync) —
+      // su propio historial (si alguien lo abre desde la otra empresa) debe
+      // reflejarlo igual.
+      await registrarHistorialPrecio(contraparte.id, otra, contraparte, rest)
     } else {
       await supabase.from('productos').insert([{
         nombre: data.nombre,
