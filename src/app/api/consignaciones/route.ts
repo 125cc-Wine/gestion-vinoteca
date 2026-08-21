@@ -70,6 +70,16 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Si la ficha del cliente tiene cargada otra empresa, corregirla acá —
+  // mismo fix que /api/ventas, para que no quede invisible/sin explicación
+  // en el listado de Clientes de la empresa donde realmente opera.
+  if (body.cliente_id) {
+    const { data: cli } = await supabase.from('clientes').select('empresa').eq('id', body.cliente_id).single()
+    if (cli && cli.empresa !== body.empresa) {
+      await supabase.from('clientes').update({ empresa: body.empresa }).eq('id', body.cliente_id)
+    }
+  }
+
   // La mercadería consignada sale físicamente del depósito — antes esto
   // nunca descontaba stock, así que al liquidar/devolver (que sí sumaban de
   // vuelta lo no vendido) el stock quedaba inflado con unidades que jamás

@@ -138,6 +138,18 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Si la ficha del cliente tiene cargada otra empresa, corregirla acá —
+  // esto es lo que causaba clientes con saldo real (viendo bien las ventas)
+  // pero invisibles en el listado de Clientes o con la ficha "vacía" al
+  // abrirla parado en la empresa equivocada (ej. Angulos del Mar / Craft
+  // Sushi Fusion, saldo $880.100 sin ningún comprobante a la vista).
+  if (venta.cliente_id) {
+    const { data: cli } = await supabase.from('clientes').select('empresa').eq('id', venta.cliente_id).single()
+    if (cli && cli.empresa !== venta.empresa) {
+      await supabase.from('clientes').update({ empresa: venta.empresa }).eq('id', venta.cliente_id)
+    }
+  }
+
   // Devolver stock si es devolución (incrementar)
   if (devolverStock && venta.items) {
     for (const item of venta.items) {
