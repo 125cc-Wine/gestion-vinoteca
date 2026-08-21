@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     // las 2 empresas y empresa es solo el "origen" del cliente, no en cuál le
     // deben plata (un cliente de Aroma puede tener deuda de una venta a La
     // Vid). La fuente de verdad es ventas, igual que ya hace /api/aging.
-    supabase.from('ventas').select('cliente_id, total').eq('empresa', empresa).eq('estado_pago', 'cuenta_corriente').neq('estado', 'cancelado'),
+    supabase.from('ventas').select('cliente_id, total, monto_pagado').eq('empresa', empresa).eq('estado_pago', 'cuenta_corriente').neq('estado', 'cancelado'),
     supabase.from('ventas').select('id,numero,cliente_nombre,total,created_at').eq('empresa', empresa).eq('estado_pago', 'pendiente').lte('created_at', hace30diasStr + 'T00:00:00'),
     supabase.from('pedidos').select('id,numero,cliente_nombre').eq('empresa', empresa).eq('estado', 'pendiente'),
   ])
@@ -61,11 +61,20 @@ export async function GET(req: NextRequest) {
   const saldoCaja = ingresosHoy - egresosHoy
 
   // Clientes con saldo — agrupado desde ventas de ESTA empresa en cuenta
-  // corriente (no desde clientes.saldo, que mezcla ambas empresas)
+  // corriente (no desde clientes.saldo, que mezcla ambas empresas). Ojo:
+  // suma total - monto_pagado, no el total bruto — una venta con pago
+  // parcial (ej. factura de $573.140 con $569.000 ya pagados) seguía en
+  // estado_pago='cuenta_corriente' hasta cubrirse del todo, y sumaba acá
+  // por el total completo como si no se hubiera cobrado nada. Eso era lo
+  // que inflaba "Cuentas corrientes" en el dashboard muy por encima de lo
+  // que en realidad falta cobrar (verificado: $847.512 en pantalla vs
+  // $273.282 real en Aroma, toda la diferencia por esto).
   const saldoPorCliente = new Map<string, number>()
   for (const v of ventasCtaCte || []) {
     const key = v.cliente_id || '__sin_cliente__'
-    saldoPorCliente.set(key, (saldoPorCliente.get(key) || 0) + (v.total || 0))
+    const pendiente = (v.total || 0) - (v.monto_pagado || 0)
+    if (pendiente <= 0.01) continue
+    saldoPorCliente.set(key, (saldoPorCliente.get(key) || 0) + pendiente)
   }
   const totalCuentasCorrientes = Array.from(saldoPorCliente.values()).reduce((a, b) => a + b, 0)
   const cantidadClientesConSaldo = saldoPorCliente.size
