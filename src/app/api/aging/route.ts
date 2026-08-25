@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     //    es global (no está partido por empresa), así que ese residuo se
     //    reparte a prorrata de en qué empresa están cargados los
     //    movimientos de cta_cte del cliente.
-    const [ventasGlobales, cargos, clientesConSaldo] = await Promise.all([
+    const [ventasGlobales, movimientosCtaCte, clientesConSaldo] = await Promise.all([
       fetchAll<{ cliente_id: string | null; total: number; monto_pagado: number | null; tipo: string; estado_pago: string; estado: string }>(
         'ventas', 'cliente_id, total, monto_pagado, tipo, estado_pago, estado'
       ).then(rows => rows.filter(v =>
@@ -63,8 +63,8 @@ export async function GET(req: NextRequest) {
         v.estado_pago === 'cuenta_corriente' &&
         v.estado !== 'cancelado'
       )),
-      fetchAll<{ cliente_id: string; empresa: string; monto: number; created_at: string }>(
-        'movimientos_cta_cte', 'cliente_id, empresa, monto, created_at', { tipo: 'cargo' }
+      fetchAll<{ cliente_id: string; empresa: string; tipo: string; monto: number; referencia_id: string | null; created_at: string }>(
+        'movimientos_cta_cte', 'cliente_id, empresa, tipo, monto, referencia_id, created_at'
       ),
       fetchAll<{ id: string; nombre: string; apellido: string | null; razon_social: string | null; telefono: string | null; vendedor_id: string | null; saldo: number }>(
         'clientes', 'id, nombre, apellido, razon_social, telefono, vendedor_id, saldo'
@@ -82,16 +82,59 @@ export async function GET(req: NextRequest) {
       pendienteVentasGlobalPorCliente[v.cliente_id] = (pendienteVentasGlobalPorCliente[v.cliente_id] || 0) + pendiente
     }
 
-    // Cargos por cliente, separados por empresa (para el prorrateo) y con la
-    // fecha más vieja (para ubicar el residuo en el bucket de antigüedad
-    // correcto).
+    const cargos = movimientosCtaCte.filter(m => m.tipo === 'cargo')
+
+    // Un cargo anulado/corregido a mano queda en la tabla como un "cobro" que
+    // referencia el mismo comprobante (mismo referencia_id) y la misma
+    // empresa, por el monto exacto que lo cancela — ver ejemplo real: cargo
+    // de $72.150 en Aroma para un cliente cuya deuda real era 100% de La Vid,
+    // corregido después con un cobro de $72.150 sobre esa misma referencia.
+    // Si no se descuenta ese cargo ya anulado antes de prorratear, sigue
+    // pesando en el reparto entre empresas y le termina atribuyendo a Aroma
+    // una porción de una deuda que nunca fue de Aroma. Los cobros con
+    // referencia_id null (cobros genéricos, tipo "Cobro cta. cte." repartido
+    // FIFO) no se pueden atar a un cargo puntual, así que no participan acá
+    // — ya están reflejados en clientes.saldo, que es lo que arma
+    // residualGlobal más abajo.
+    const cargoSumPorKey: Record<string, number> = {}
+    const cobroSumPorKey: Record<string, number> = {}
+    const keyOf = (m: { cliente_id: string; referencia_id: string | null; empresa: string }) =>
+      `${m.cliente_id}|${m.referencia_id}|${m.empresa}`
+    for (const c of cargos) {
+      if (!c.referencia_id) continue
+      cargoSumPorKey[keyOf(c)] = (cargoSumPorKey[keyOf(c)] || 0) + (c.monto || 0)
+    }
+    for (const m of movimientosCtaCte) {
+      if (m.tipo !== 'cobro' || !m.referencia_id) continue
+      const key = keyOf(m)
+      if (!(key in cargoSumPorKey)) continue // no hay cargo puntual al que netear
+      cobroSumPorKey[key] = (cobroSumPorKey[key] || 0) + (m.monto || 0)
+    }
+
+    // Cargos por cliente, separados por empresa (para el prorrateo, ya
+    // neteados contra su reversa si la tuvieron) y con la fecha más vieja
+    // (para ubicar el residuo en el bucket de antigüedad correcto).
     const cargoBrutoPorCliente: Record<string, { aroma: number; lavid: number }> = {}
     const cargoFechaMasViejaPorCliente: Record<string, string> = {}
     for (const c of cargos) {
       if (!cargoBrutoPorCliente[c.cliente_id]) cargoBrutoPorCliente[c.cliente_id] = { aroma: 0, lavid: 0 }
-      if (c.empresa === 'aroma' || c.empresa === 'lavid') cargoBrutoPorCliente[c.cliente_id][c.empresa] += (c.monto || 0)
       const fechaActual = cargoFechaMasViejaPorCliente[c.cliente_id]
       if (!fechaActual || c.created_at < fechaActual) cargoFechaMasViejaPorCliente[c.cliente_id] = c.created_at
+      if (c.empresa !== 'aroma' && c.empresa !== 'lavid') continue
+      if (!c.referencia_id) { cargoBrutoPorCliente[c.cliente_id][c.empresa] += (c.monto || 0); continue }
+    }
+    // Los cargos con referencia_id se agregan netos por key (una sola vez
+    // por key, no por cada fila, para no descontar de más si hay varios
+    // cargos apilados sobre el mismo comprobante — ver "ajuste al editar").
+    const keysVistas = new Set<string>()
+    for (const c of cargos) {
+      if (!c.referencia_id) continue
+      if (c.empresa !== 'aroma' && c.empresa !== 'lavid') continue
+      const key = keyOf(c)
+      if (keysVistas.has(key)) continue
+      keysVistas.add(key)
+      const neto = Math.max(0, (cargoSumPorKey[key] || 0) - (cobroSumPorKey[key] || 0))
+      cargoBrutoPorCliente[c.cliente_id][c.empresa] += neto
     }
 
     const clientePorId: Record<string, typeof clientesConSaldo[number]> = {}
