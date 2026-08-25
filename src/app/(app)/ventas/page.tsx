@@ -131,6 +131,8 @@ function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default',
   return { ...bases[v], borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s', ...ex }
 }
 
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+
 function filtrarProductos(productos: Producto[], q: string) {
   if (!q) return productos.slice(0, 50)
   return productos.filter(p =>
@@ -450,6 +452,14 @@ export default function VentasPage() {
   const [porCobrarModal, setPorCobrarModal] = useState(false)
   const [cobrandoId, setCobrandoId] = useState<string | null>(null)
 
+  // Modal "cobrar comprobante" (fila de Ventas) — antes era un window.prompt()
+  // que solo pedía el monto y el recibo salía siempre con "Efectivo" sin
+  // importar el medio real usado.
+  const [cobroFilaModal, setCobroFilaModal] = useState<Venta | null>(null)
+  const [cobroFilaMonto, setCobroFilaMonto] = useState('')
+  const [cobroFilaMedioPago, setCobroFilaMedioPago] = useState('Efectivo')
+  const [cobroFilaGuardando, setCobroFilaGuardando] = useState(false)
+
   const dirtyVenta  = items.some(i => i.producto_id !== '') || clienteId !== ''
   const dirtyPedido = pItems.some(i => i.producto_id !== '') || pClienteId !== ''
 
@@ -751,27 +761,40 @@ export default function VentasPage() {
   // Cobrar un comprobante puntual (presupuesto/remito en cta. cte.) sin
   // tener que ir hasta la ficha del cliente o Cuentas Corrientes — mismo
   // flujo que ya usa Aging.
-  async function cobrarVentaFila(v: Venta) {
+  function cobrarVentaFila(v: Venta) {
     const restante = parseFloat(((v.total || 0) - (v.monto_pagado || 0)).toFixed(2))
-    const input = prompt(`¿Cuánto se cobró de ${v.numero}? (falta $${restante.toLocaleString('es-AR')})`, String(restante))
-    if (input === null) return
-    const monto = parseFloat(input.replace(',', '.'))
+    setCobroFilaModal(v)
+    setCobroFilaMonto(String(restante))
+    setCobroFilaMedioPago('Efectivo')
+  }
+
+  async function confirmarCobroFila() {
+    if (!cobroFilaModal) return
+    const v = cobroFilaModal
+    const restante = parseFloat(((v.total || 0) - (v.monto_pagado || 0)).toFixed(2))
+    const monto = parseFloat(cobroFilaMonto.replace(',', '.'))
     if (!monto || monto <= 0) { showToast('Monto inválido'); return }
     if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo
     // reconozca como originado por el clic del usuario y no lo bloquee.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
-    const res = await fetch('/api/ventas/cobrar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: v.id, empresa, monto }),
-    })
-    const data = await res.json()
-    if (data.error) { showToast('Error: ' + data.error); wRecibo?.close(); return }
-    await cargarTodo(empresa)
-    showToast(monto < restante - 0.01 ? 'Cobro parcial registrado' : 'Comprobante cobrado')
-    if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=Efectivo`
-    else wRecibo?.close()
+    setCobroFilaGuardando(true)
+    try {
+      const res = await fetch('/api/ventas/cobrar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venta_id: v.id, empresa, monto, medio_pago: cobroFilaMedioPago }),
+      })
+      const data = await res.json()
+      if (data.error) { showToast('Error: ' + data.error); wRecibo?.close(); return }
+      await cargarTodo(empresa)
+      showToast(monto < restante - 0.01 ? 'Cobro parcial registrado' : 'Comprobante cobrado')
+      setCobroFilaModal(null)
+      if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=${encodeURIComponent(cobroFilaMedioPago)}`
+      else wRecibo?.close()
+    } finally {
+      setCobroFilaGuardando(false)
+    }
   }
 
   function abrirFacturar(v: Venta) {
@@ -1478,6 +1501,41 @@ export default function VentasPage() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Modal cobrar comprobante (monto + medio de pago) ──────────────── */}
+      {cobroFilaModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { if (!cobroFilaGuardando) setCobroFilaModal(null) })}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 380, boxShadow: '0 8px 40px rgba(26,18,16,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text }}>Cobrar comprobante</h2>
+              <button className="vbtn" style={{ ...btn('ghost', { padding: '4px 8px', fontSize: 18 }), color: C.dim }} onClick={() => setCobroFilaModal(null)}>×</button>
+            </div>
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 12, color: C.dim }}>
+                {cobroFilaModal.numero} — falta <strong style={{ color: C.accent }}>${((cobroFilaModal.total || 0) - (cobroFilaModal.monto_pagado || 0)).toLocaleString('es-AR')}</strong>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
+                <input type="number" autoFocus value={cobroFilaMonto} onChange={e => setCobroFilaMonto(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !cobroFilaGuardando) confirmarCobroFila() }}
+                  style={INP} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
+                <select value={cobroFilaMedioPago} onChange={e => setCobroFilaMedioPago(e.target.value)} style={INP}>
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="vbtn" disabled={cobroFilaGuardando} style={btn('default')} onClick={() => setCobroFilaModal(null)}>Cancelar</button>
+              <button className="vbtn" disabled={cobroFilaGuardando || !cobroFilaMonto} style={btn('accent', { opacity: cobroFilaGuardando || !cobroFilaMonto ? 0.6 : 1 })} onClick={confirmarCobroFila}>
+                {cobroFilaGuardando ? 'Guardando...' : 'Confirmar cobro'}
+              </button>
             </div>
           </div>
         </div>

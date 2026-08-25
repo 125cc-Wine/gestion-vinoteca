@@ -12,6 +12,8 @@ const T = {
   gold: '#B88A2C', goldBg: 'rgba(184,138,44,0.08)',
 }
 
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+
 function fmt(n: number) {
   return '$' + Math.round(n).toLocaleString('es-AR')
 }
@@ -121,7 +123,16 @@ export default function AgingPage() {
   // cobro" en la ficha de cliente), en vez de tener que cobrar comprobante
   // por comprobante a mano.
   const [montoGlobal, setMontoGlobal] = useState('')
+  const [medioGlobal, setMedioGlobal] = useState('Efectivo')
   const [cobrandoGlobal, setCobrandoGlobal] = useState(false)
+
+  // Modal "marcar pagado" — antes era un window.prompt() que solo pedía el
+  // monto y el medio de pago quedaba fijo en "Efectivo" en el recibo aunque
+  // se hubiera cobrado con tarjeta/transferencia/etc.
+  const [pagoModal, setPagoModal] = useState<VentaDetalle | null>(null)
+  const [pagoMonto, setPagoMonto] = useState('')
+  const [pagoMedioPago, setPagoMedioPago] = useState('Efectivo')
+  const [pagando, setPagando] = useState(false)
 
   // Defensa extra: si por lo que sea hay dos pedidos en vuelo (ej. el usuario
   // cambia de empresa rápido en el selector), ignorar la respuesta que no es
@@ -213,6 +224,7 @@ export default function AgingPage() {
     setDetalleLoading(true)
     setDetalleVentas([])
     setMontoGlobal('')
+    setMedioGlobal('Efectivo')
     try {
       setDetalleVentas(await cargarVentasPendientes(row))
     } catch {
@@ -244,7 +256,7 @@ export default function AgingPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresa, cliente_id: modalCliente.cliente_id, cliente_nombre: modalCliente.cliente_nombre,
-          tipo: 'cobro', concepto: 'Cobro cuenta corriente (Aging)', monto,
+          tipo: 'cobro', concepto: 'Cobro cuenta corriente (Aging)', monto, medio_pago: medioGlobal,
           fecha: new Date().toISOString().split('T')[0],
         }),
       })
@@ -254,63 +266,76 @@ export default function AgingPage() {
       setDetalleVentas(await cargarVentasPendientes(modalCliente))
       setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
       load(empresa)
-      if (data.id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=Efectivo`
+      if (data.id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=${encodeURIComponent(medioGlobal)}`
       else wRecibo?.close()
     } finally {
       setCobrandoGlobal(false)
     }
   }
 
-  async function marcarPagado(v: VentaDetalle) {
+  // Abre el modal de pago en vez de cobrar directo — antes esto era un
+  // window.prompt() que solo pedía el monto, así que el medio de pago
+  // quedaba fijo en "Efectivo" en el recibo sin importar cómo se cobró
+  // realmente.
+  function marcarPagado(v: VentaDetalle) {
+    const restante = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
+    setPagoModal(v)
+    setPagoMonto(String(restante))
+    setPagoMedioPago('Efectivo')
+  }
+
+  async function confirmarPago() {
+    if (!pagoModal) return
+    const v = pagoModal
     const restante = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
     const esCargo = v.tipo === 'cargo'
-    const input = prompt(
-      `¿Cuánto se cobró de ${esCargo ? 'la deuda cargada' : v.numero ? '#' + v.numero : v.id.slice(0, 8).toUpperCase()}? (falta ${fmt(restante)})`,
-      String(restante)
-    )
-    if (input === null) return
-    const monto = parseFloat(input.replace(',', '.'))
+    const monto = parseFloat(pagoMonto.replace(',', '.'))
     if (!monto || monto <= 0) { alert('Monto inválido'); return }
     if (monto > restante + 0.01) { alert(`No puede ser mayor a lo que falta (${fmt(restante)})`); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
-
-    // La fila "Deuda cargada" es sintética (residuo de clientes.saldo que no
-    // se explica con ninguna venta — ver cargarVentasPendientes): su id
-    // ("cargo-<cliente_id>") no existe en la tabla ventas, así que pagarla
-    // vía /api/ventas/cobrar siempre daba 404 "Venta no encontrada" y nunca
-    // llegaba a emitir el comprobante. Se cobra en cambio como un cobro
-    // genérico de cuenta corriente (mismo endpoint que "Cobrar" del total
-    // del cliente), que sí sabe reducir clientes.saldo sin depender de una
-    // venta puntual.
-    const res = esCargo
-      ? await fetch('/api/cta-cte', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            empresa, cliente_id: modalCliente?.cliente_id, cliente_nombre: modalCliente?.cliente_nombre,
-            tipo: 'cobro', concepto: 'Cobro deuda cargada', monto,
-            fecha: new Date().toISOString().split('T')[0],
-          }),
-        })
-      : await fetch('/api/ventas/cobrar', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ venta_id: v.id, empresa, monto }),
-        })
-    const data = await res.json()
-    if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
-    const esParcial = monto < restante - 0.01
-    if (esParcial) {
-      setDetalleVentas(prev => prev.map(x => x.id === v.id ? { ...x, monto_pagado: (x.monto_pagado || 0) + monto } : x))
-    } else {
-      setDetalleVentas(prev => prev.filter(x => x.id !== v.id))
+    setPagando(true)
+    try {
+      // La fila "Deuda cargada" es sintética (residuo de clientes.saldo que no
+      // se explica con ninguna venta — ver cargarVentasPendientes): su id
+      // ("cargo-<cliente_id>") no existe en la tabla ventas, así que pagarla
+      // vía /api/ventas/cobrar siempre daba 404 "Venta no encontrada" y nunca
+      // llegaba a emitir el comprobante. Se cobra en cambio como un cobro
+      // genérico de cuenta corriente (mismo endpoint que "Cobrar" del total
+      // del cliente), que sí sabe reducir clientes.saldo sin depender de una
+      // venta puntual.
+      const res = esCargo
+        ? await fetch('/api/cta-cte', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              empresa, cliente_id: modalCliente?.cliente_id, cliente_nombre: modalCliente?.cliente_nombre,
+              tipo: 'cobro', concepto: 'Cobro deuda cargada', monto, medio_pago: pagoMedioPago,
+              fecha: new Date().toISOString().split('T')[0],
+            }),
+          })
+        : await fetch('/api/ventas/cobrar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ venta_id: v.id, empresa, monto, medio_pago: pagoMedioPago }),
+          })
+      const data = await res.json()
+      if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
+      const esParcial = monto < restante - 0.01
+      if (esParcial) {
+        setDetalleVentas(prev => prev.map(x => x.id === v.id ? { ...x, monto_pagado: (x.monto_pagado || 0) + monto } : x))
+      } else {
+        setDetalleVentas(prev => prev.filter(x => x.id !== v.id))
+      }
+      setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
+      load(empresa)
+      setPagoModal(null)
+      const reciboId = esCargo ? data.id : data.movimiento_cta_cte_id
+      if (reciboId && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=${encodeURIComponent(pagoMedioPago)}`
+      else wRecibo?.close()
+    } finally {
+      setPagando(false)
     }
-    setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
-    load(empresa)
-    const reciboId = esCargo ? data.id : data.movimiento_cta_cte_id
-    if (reciboId && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=Efectivo`
-    else wRecibo?.close()
   }
 
   // Filtro por vendedor — se aplica antes de los KPIs y la tabla, así todo
@@ -766,6 +791,15 @@ export default function AgingPage() {
                     border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit',
                   }}
                 />
+                <select
+                  value={medioGlobal} onChange={e => setMedioGlobal(e.target.value)}
+                  style={{
+                    padding: '8px 10px', borderRadius: 8,
+                    border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', background: '#fff',
+                  }}
+                >
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
                 <button
                   onClick={cobrarMontoGlobal}
                   disabled={cobrandoGlobal || !montoGlobal}
@@ -814,6 +848,46 @@ export default function AgingPage() {
                 }}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal marcar pagado (monto + medio de pago) ───────────────────── */}
+      {pagoModal && (
+        <div
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { if (!pagando) setPagoModal(null) })}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.4)', backdropFilter: 'blur(6px)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 380, boxShadow: '0 20px 60px rgba(26,18,16,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>Registrar cobro</div>
+              <button onClick={() => setPagoModal(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 12, color: T.muted }}>
+                {pagoModal.tipo === 'cargo' ? 'Deuda cargada' : pagoModal.numero ? `#${pagoModal.numero}` : pagoModal.id.slice(0, 8).toUpperCase()}
+                {' — falta '}<strong style={{ color: T.wine }}>{fmt(pagoModal.total - (pagoModal.monto_pagado || 0))}</strong>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
+                <input type="number" autoFocus value={pagoMonto} onChange={e => setPagoMonto(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !pagando) confirmarPago() }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
+                <select value={pagoMedioPago} onChange={e => setPagoMedioPago(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }}>
+                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setPagoModal(null)} disabled={pagando} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button disabled={pagando || !pagoMonto} onClick={confirmarPago} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: pagando ? 'default' : 'pointer', opacity: pagando || !pagoMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+                {pagando ? 'Guardando...' : 'Confirmar cobro'}
               </button>
             </div>
           </div>
