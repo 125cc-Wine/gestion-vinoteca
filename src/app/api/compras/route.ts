@@ -81,14 +81,45 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const body = await req.json()
-  const { id, estado, items: itemsRecibidos, ...rest } = body
+  const { id, estado, items: itemsRecibidos, medio_pago, ...rest } = body
 
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
+
+  // "Registrar pago" es la única llamada a este PUT que manda medio_pago —
+  // el resto (avanzar estado, cargar factura) no lo toca. Antes de esto, un
+  // pago a proveedor solo actualizaba el estado de la compra: no quedaba
+  // ningún rastro en movimientos_caja, así que la plata que salía de la caja
+  // física para pagarle a un proveedor era invisible en el arqueo diario.
+  let previoMontoPagado = 0
+  let compraPrevia: { empresa?: string; numero?: string; proveedor_nombre?: string; monto_pagado?: number } | null = null
+  if (medio_pago) {
+    const { data: prev } = await supabase
+      .from('compras').select('empresa, numero, proveedor_nombre, monto_pagado').eq('id', id).single()
+    compraPrevia = prev
+    previoMontoPagado = prev?.monto_pagado || 0
+  }
 
   const { data, error } = await supabase
     .from('compras').update({ estado, items: itemsRecibidos, ...rest }).eq('id', id).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (medio_pago && compraPrevia) {
+    const nuevoMontoPagado = rest.monto_pagado ?? 0
+    const montoDePagoActual = parseFloat((nuevoMontoPagado - previoMontoPagado).toFixed(2))
+    if (montoDePagoActual > 0.01) {
+      await supabase.from('movimientos_caja').insert([{
+        empresa: compraPrevia.empresa,
+        tipo: 'egreso',
+        concepto: `Pago a proveedor ${compraPrevia.proveedor_nombre || ''} — ${compraPrevia.numero}`,
+        monto: montoDePagoActual,
+        fecha: rest.fecha_pago || new Date().toISOString().split('T')[0],
+        categoria: 'Compras - Pago',
+        medio_pago,
+        referencia_id: id,
+      }])
+    }
+  }
 
   // Al marcar como recibido: incrementar stock de productos
   if (estado === 'recibido' && itemsRecibidos?.length) {

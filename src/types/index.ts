@@ -128,6 +128,7 @@ export type MedioPago =
   | 'QR'
   | 'MercadoPago'
   | 'Transferencia'
+  | 'Cheque'
   | 'Cta.Cte.'
 
 export interface MovimientoCaja {

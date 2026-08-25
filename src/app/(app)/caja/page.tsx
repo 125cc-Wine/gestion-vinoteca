@@ -50,7 +50,7 @@ const LBL: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5,
 }
 
-const MEDIOS_PAGO: MedioPago[] = ['Efectivo', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Transferencia', 'Cta.Cte.']
+const MEDIOS_PAGO: MedioPago[] = ['Efectivo', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Transferencia', 'Cheque', 'Cta.Cte.']
 const CATEGORIAS = ['Ventas', 'Compras', 'Gastos', 'Sueldos', 'Impuestos', 'Otros']
 
 const FORM_EMPTY = {

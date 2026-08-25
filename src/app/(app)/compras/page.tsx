@@ -201,6 +201,7 @@ export default function ComprasPage() {
   const [pFechaPago, setPFechaPago] = useState('')
   const [pMonto, setPMonto] = useState(0)
   const [pNotas, setPNotas] = useState('')
+  const [pMedioPago, setPMedioPago] = useState('Efectivo')
 
   const [proveedorId, setProveedorId] = useState('')
   const [proveedorNombre, setProveedorNombre] = useState('')
@@ -464,6 +465,7 @@ export default function ComprasPage() {
     setPMonto(c.total - (c.monto_pagado || 0))
     setPFechaPago(hoy())
     setPNotas('')
+    setPMedioPago('Efectivo')
     setPagoModal(c)
   }
 
@@ -486,6 +488,7 @@ export default function ComprasPage() {
       monto_pagado: montoPagadoTotal,
       fecha_pago: pFechaPago,
       notas_pago: pNotas,
+      medio_pago: pMedioPago,
     }
     const res = await fetch('/api/compras', {
       method: 'PUT',
@@ -1385,12 +1388,18 @@ export default function ComprasPage() {
                 <input type="number" step="any" style={{ ...INP, width: '100%' }} min={0} value={pMonto || ''} onChange={e => setPMonto(parseFloat(e.target.value) || 0)} />
               </div>
               <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Medio de pago</label>
+                <select style={{ ...INP, width: '100%' }} value={pMedioPago} onChange={e => setPMedioPago(e.target.value)}>
+                  {['Efectivo', 'Cheque', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito'].map(mp => <option key={mp}>{mp}</option>)}
+                </select>
+              </div>
+              <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha de pago</label>
                 <input type="date" style={{ ...INP, width: '100%' }} value={pFechaPago} onChange={e => setPFechaPago(e.target.value)} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
-                <input style={{ ...INP, width: '100%' }} placeholder="Ej: transferencia, cheque..." value={pNotas} onChange={e => setPNotas(e.target.value)} />
+                <input style={{ ...INP, width: '100%' }} placeholder="Ej: nº de cheque, banco..." value={pNotas} onChange={e => setPNotas(e.target.value)} />
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
