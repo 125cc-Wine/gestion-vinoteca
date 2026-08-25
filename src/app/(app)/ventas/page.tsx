@@ -714,6 +714,12 @@ export default function VentasPage() {
   async function guardar(imprimir = true) {
     if (saving) return // evita doble click / doble comprobante mientras espera la respuesta
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
+    // Una venta en Cta. Cte. sin cliente asignado queda "huérfana": no hay a
+    // quién descontarle el saldo, así que después /api/ventas/cobrar no puede
+    // generar el movimiento de cta. cte. y el cobro no emite recibo (se
+    // detectó así: presupuestos viejos en cuenta corriente con cliente_id
+    // null que al cobrarlos abrían una ventana de recibo en blanco).
+    if (estadoPago === 'cuenta_corriente' && !clienteId) { showToast('Elegí un cliente para vender a Cuenta Corriente'); return }
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup (ver
     // mismo patrón en emitirFactura).
@@ -790,8 +796,16 @@ export default function VentasPage() {
       await cargarTodo(empresa)
       showToast(monto < restante - 0.01 ? 'Cobro parcial registrado' : 'Comprobante cobrado')
       setCobroFilaModal(null)
-      if (data.movimiento_cta_cte_id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=${encodeURIComponent(cobroFilaMedioPago)}`
-      else wRecibo?.close()
+      if (data.movimiento_cta_cte_id && wRecibo) {
+        wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=${encodeURIComponent(cobroFilaMedioPago)}`
+      } else {
+        // El cobro se registró igual, pero sin cliente asignado no hay a
+        // quién descontarle saldo en cta. cte., así que no se puede armar el
+        // recibo (ver validación en guardar() que evita crear ventas nuevas
+        // así). Comprobantes viejos de "Consumidor Final" en Cta. Cte. caen acá.
+        wRecibo?.close()
+        showToast('Cobrado, pero sin cliente asignado no se puede emitir el recibo — asignale un cliente a este comprobante')
+      }
     } finally {
       setCobroFilaGuardando(false)
     }

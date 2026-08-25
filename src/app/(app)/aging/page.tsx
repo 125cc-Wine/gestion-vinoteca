@@ -331,8 +331,17 @@ export default function AgingPage() {
       load(empresa)
       setPagoModal(null)
       const reciboId = esCargo ? data.id : data.movimiento_cta_cte_id
-      if (reciboId && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=${encodeURIComponent(pagoMedioPago)}`
-      else wRecibo?.close()
+      if (reciboId && wRecibo) {
+        wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=${encodeURIComponent(pagoMedioPago)}`
+      } else {
+        // El cobro se registró igual, pero si la venta no tiene cliente
+        // asignado no hay a quién descontarle saldo en cta. cte., así que no
+        // se puede armar el recibo (ver validación en guardar() de Ventas que
+        // evita crear ventas nuevas así). Comprobantes viejos de "Consumidor
+        // Final" en Cta. Cte. caen acá.
+        wRecibo?.close()
+        alert('Cobrado, pero sin cliente asignado no se puede emitir el recibo — asignale un cliente a este comprobante')
+      }
     } finally {
       setPagando(false)
     }
