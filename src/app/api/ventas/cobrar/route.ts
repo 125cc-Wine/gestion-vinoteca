@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { labelComprobante } from '@/lib/labelComprobante'
 
 // condicion_venta (ventas) -> medio_pago (caja), igual que en /api/ventas —
 // si no hay match (ej: cobro de una cta. cte. sin condición definida) se
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
   const fechaCobro = fecha || new Date().toISOString().split('T')[0]
   const esParcial = montoCobro < restante - 0.01
   const nuevoMontoPagado = parseFloat((montoPagadoActual + montoCobro).toFixed(2))
-  const conceptoCobro = concepto || `Cobro${esParcial ? ' parcial' : ''} ${venta.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${venta.numero}`
+  const conceptoCobro = concepto || `Cobro${esParcial ? ' parcial' : ''} ${labelComprobante(venta)}`
 
   // 1. Actualizar monto_pagado y, si ya cubre el total, marcar pagada
   const { data: ventaActualizada, error: ue } = await supabase

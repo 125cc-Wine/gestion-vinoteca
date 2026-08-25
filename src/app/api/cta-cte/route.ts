@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { labelComprobante } from '@/lib/labelComprobante'
 
 export async function GET(req: NextRequest) {
   const clienteId = req.nextUrl.searchParams.get('cliente_id')
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (tipo === 'cobro' && monto > 0) {
     const { data: ventasAbiertas } = await supabase
       .from('ventas')
-      .select('id, numero, tipo, total, monto_pagado, created_at')
+      .select('id, numero, tipo, total, monto_pagado, created_at, facturado, nro_cbte_afip')
       .eq('cliente_id', cliente_id)
       .eq('empresa', empresa)
       .in('tipo', ['remito', 'presupuesto'])
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
     const pendientes: Pendiente[] = [
       ...(ventasAbiertas || []).map(v => ({
         kind: 'venta' as const, id: v.id, total: v.total, monto_pagado: v.monto_pagado || 0, created_at: v.created_at,
-        label: `${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`,
+        label: labelComprobante(v),
       })),
       ...(cargosAbiertos || [])
         .filter(c => parseFloat((c.monto - (c.monto_pagado || 0)).toFixed(2)) > 0.01)
