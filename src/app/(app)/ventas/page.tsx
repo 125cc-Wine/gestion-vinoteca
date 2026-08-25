@@ -1325,7 +1325,16 @@ export default function VentasPage() {
                     ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: C.dim }}>No hay comprobantes</td></tr>
                     : ventasFiltradas.map(v => (
                       <tr key={v.id} className="venta-row" style={{ background: 'transparent' }}>
-                        <td style={{ padding: '11px 14px', fontWeight: 600, color: C.text, fontFamily: 'monospace', fontSize: 12 }}>{v.numero}</td>
+                        <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 12 }}>
+                          {v.facturado && v.nro_cbte_afip ? (
+                            <>
+                              <div style={{ fontWeight: 700, color: C.accent }}>Factura {v.nro_cbte_afip}</div>
+                              <div style={{ fontSize: 10, color: C.dim, fontWeight: 400 }}>interno #{v.numero}</div>
+                            </>
+                          ) : (
+                            <span style={{ fontWeight: 600, color: C.text }}>{v.numero}</span>
+                          )}
+                        </td>
                         <td style={{ padding: '11px 14px' }}>
                           <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
                             background: v.tipo === 'presupuesto' ? 'rgba(128,0,0,0.08)' : v.tipo === 'devolucion' ? 'rgba(43,94,160,0.08)' : 'rgba(45,122,79,0.1)',

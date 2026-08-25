@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { labelComprobante } from '@/lib/labelComprobante'
 
 const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
 
@@ -373,7 +374,7 @@ export default function ClientesPage() {
   function abrirPagoVenta(v: Venta) {
     setPagoVenta(v)
     setPagoMonto(parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2)))
-    setPagoConcepto(`Cobro ${v.tipo === 'presupuesto' ? 'Presupuesto' : 'Remito'} ${v.numero}`)
+    setPagoConcepto(`Cobro ${labelComprobante(v)}`)
     setPagoFecha(new Date().toISOString().split('T')[0])
     setPagoMedioPago('Efectivo')
     setPagoSplit(false)
@@ -800,10 +801,13 @@ export default function ClientesPage() {
                                 <button
                                   onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${v.empresa}`, '_blank')}
                                   title="Ver / imprimir comprobante"
-                                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 11, textDecoration: 'underline' }}
+                                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 11, textDecoration: 'underline' }}
                                 >
-                                  {v.numero}
+                                  {v.facturado && v.nro_cbte_afip ? `Factura ${v.nro_cbte_afip}` : v.numero}
                                 </button>
+                                {v.facturado && v.nro_cbte_afip && (
+                                  <div style={{ fontSize: 10, color: T.dim, marginTop: 1 }}>interno #{v.numero}</div>
+                                )}
                               </td>
                               <td style={{ padding: '10px 14px' }}>
                                 {v.tipo === 'presupuesto'
@@ -930,7 +934,12 @@ export default function ClientesPage() {
               {/* Resumen del comprobante */}
               <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '12px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: T.text, fontSize: 13 }}>{pagoVenta.numero}</span>
+                  <span style={{ fontFamily: 'monospace' }}>
+                    <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{labelComprobante(pagoVenta)}</span>
+                    {pagoVenta.facturado && pagoVenta.nro_cbte_afip && (
+                      <span style={{ display: 'block', fontSize: 10.5, color: T.dim, fontWeight: 400 }}>interno #{pagoVenta.numero}</span>
+                    )}
+                  </span>
                   <span style={{ fontSize: 12, color: T.muted }}>{new Date(pagoVenta.created_at!).toLocaleDateString('es-AR')}</span>
                 </div>
                 <div style={{ fontSize: 11, color: T.dim }}>
