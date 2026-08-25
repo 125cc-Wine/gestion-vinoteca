@@ -71,6 +71,8 @@ interface Venta {
   cliente_nombre?: string
   total: number
   created_at: string
+  facturado?: boolean
+  nro_cbte_afip?: string | null
 }
 
 interface MovCtaCte {
@@ -648,10 +650,13 @@ export default function ClienteFichaPage() {
                         <button
                           onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${v.empresa}`, '_blank')}
                           title="Ver / imprimir comprobante"
-                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 12, textDecoration: 'underline' }}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'monospace', fontWeight: 600, color: T.wine, fontSize: 12, textDecoration: 'underline' }}
                         >
-                          {v.numero}
+                          {v.facturado && v.nro_cbte_afip ? `Factura ${v.nro_cbte_afip}` : v.numero}
                         </button>
+                        {v.facturado && v.nro_cbte_afip && (
+                          <div style={{ fontSize: 10, color: T.dim, marginTop: 1 }}>interno #{v.numero}</div>
+                        )}
                       </td>
                       <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(v.created_at)}</td>
                       <td style={{ padding: '11px 16px' }}>

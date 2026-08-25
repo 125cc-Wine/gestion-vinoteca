@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { labelComprobante } from '@/lib/labelComprobante'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -73,6 +74,8 @@ interface VentaDetalle {
   monto_pagado?: number
   created_at: string
   dias: number
+  facturado?: boolean
+  nro_cbte_afip?: string | null
 }
 
 function KpiCard({
@@ -183,7 +186,7 @@ export default function AgingPage() {
     const res = await fetch(url)
     const data = await res.json()
     const now = Date.now()
-    const raw: { id: string; numero?: string; total: number; monto_pagado?: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null }[] =
+    const raw: { id: string; numero?: string; total: number; monto_pagado?: number; created_at: string; tipo?: string; estado_pago?: string; cliente_id?: string | null; facturado?: boolean; nro_cbte_afip?: string | null }[] =
       Array.isArray(data) ? data : data.ventas ?? []
     const ventas: VentaDetalle[] = raw
       .filter(v => (v.tipo === 'presupuesto' || v.tipo === 'remito' || v.tipo === 'factura') && v.estado_pago === 'cuenta_corriente'
@@ -196,6 +199,8 @@ export default function AgingPage() {
         monto_pagado: v.monto_pagado ?? 0,
         created_at: v.created_at,
         dias: Math.floor((now - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+        facturado: v.facturado,
+        nro_cbte_afip: v.nro_cbte_afip,
       }))
     // El saldo del cliente puede incluir deuda "cargada a mano" (Cargar
     // deuda, migraciones de sistema anterior) que no está atada a ninguna
@@ -722,9 +727,22 @@ export default function AgingPage() {
                                 <span
                                   onClick={() => window.open(`/api/print/venta?id=${v.id}&empresa=${empresa}`, '_blank')}
                                   title="Ver / imprimir comprobante"
-                                  style={{ color: T.dim, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}
+                                  style={{ cursor: 'pointer' }}
                                 >
-                                  {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
+                                  {v.facturado && v.nro_cbte_afip ? (
+                                    <>
+                                      <span style={{ color: T.wine, fontWeight: 700, fontSize: 11, textDecoration: 'underline' }}>
+                                        Factura {v.nro_cbte_afip}
+                                      </span>
+                                      <span style={{ display: 'block', color: T.dim, fontSize: 10 }}>
+                                        interno #{v.numero}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span style={{ color: T.dim, fontSize: 11, textDecoration: 'underline' }}>
+                                      {v.numero ? `#${v.numero}` : `#${v.id.slice(0, 8).toUpperCase()}`}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -876,7 +894,9 @@ export default function AgingPage() {
             </div>
             <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 12, color: T.muted }}>
-                {pagoModal.tipo === 'cargo' ? 'Deuda cargada' : pagoModal.numero ? `#${pagoModal.numero}` : pagoModal.id.slice(0, 8).toUpperCase()}
+                {pagoModal.tipo === 'cargo'
+                  ? 'Deuda cargada'
+                  : pagoModal.numero ? labelComprobante(pagoModal) : pagoModal.id.slice(0, 8).toUpperCase()}
                 {' — falta '}<strong style={{ color: T.wine }}>{fmt(pagoModal.total - (pagoModal.monto_pagado || 0))}</strong>
               </div>
               <div>

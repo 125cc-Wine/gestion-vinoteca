@@ -13,6 +13,7 @@ import {
 import wooUrls from '@/data/wooUrls.json'
 import QRCode from 'qrcode'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { labelComprobante } from '@/lib/labelComprobante'
 
 const CBTE_TIPO_POR_LETRA_QR: Record<number, number> = { 1: 1, 6: 6, 11: 11 }
 
@@ -1470,8 +1471,17 @@ export default function VentasPage() {
                       <tr key={v.id} style={{ borderBottom: `1px solid ${C.border}` }}>
                         <td style={{ padding: '10px 16px', color: C.dim, fontSize: 12 }}>{v.created_at ? new Date(v.created_at).toLocaleDateString('es-AR') : '—'}</td>
                         <td style={{ padding: '10px 16px' }}>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 12 }}>{v.numero}</span>
-                          <span style={{ marginLeft: 6, fontSize: 10, color: C.dim, textTransform: 'uppercase' }}>{v.tipo}</span>
+                          {v.facturado && v.nro_cbte_afip ? (
+                            <>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: C.accent, fontSize: 12 }}>Factura {v.nro_cbte_afip}</span>
+                              <span style={{ display: 'block', fontSize: 10, color: C.dim }}>interno #{v.numero}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 600, color: C.text, fontSize: 12 }}>{v.numero}</span>
+                              <span style={{ marginLeft: 6, fontSize: 10, color: C.dim, textTransform: 'uppercase' }}>{v.tipo}</span>
+                            </>
+                          )}
                         </td>
                         <td style={{ padding: '10px 16px', color: C.text }}>{v.cliente_nombre}</td>
                         <td style={{ padding: '10px 16px' }}>
@@ -1513,7 +1523,8 @@ export default function VentasPage() {
             </div>
             <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 12, color: C.dim }}>
-                {cobroFilaModal.numero} — falta <strong style={{ color: C.accent }}>${((cobroFilaModal.total || 0) - (cobroFilaModal.monto_pagado || 0)).toLocaleString('es-AR')}</strong>
+                <span>{labelComprobante(cobroFilaModal)} — falta <strong style={{ color: C.accent }}>${((cobroFilaModal.total || 0) - (cobroFilaModal.monto_pagado || 0)).toLocaleString('es-AR')}</strong></span>
+                {cobroFilaModal.facturado && cobroFilaModal.nro_cbte_afip && <span style={{ display: 'block', fontSize: 10.5, color: C.dim, marginTop: 2 }}>interno #{cobroFilaModal.numero}</span>}
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
