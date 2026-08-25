@@ -450,7 +450,6 @@ export default function VentasPage() {
   const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
   const [confirmClose, setConfirmClose] = useState<null | 'venta' | 'pedido'>(null)
   const [porCobrarModal, setPorCobrarModal] = useState(false)
-  const [cobrandoId, setCobrandoId] = useState<string | null>(null)
 
   // Modal "cobrar comprobante" (fila de Ventas) — antes era un window.prompt()
   // que solo pedía el monto y el recibo salía siempre con "Efectivo" sin
@@ -798,13 +797,17 @@ export default function VentasPage() {
       setCobroFilaModal(null)
       if (data.movimiento_cta_cte_id && wRecibo) {
         wRecibo.location.href = `/api/print/recibo?id=${data.movimiento_cta_cte_id}&empresa=${empresa}&medio=${encodeURIComponent(cobroFilaMedioPago)}`
-      } else {
+      } else if (v.estado_pago === 'cuenta_corriente') {
         // El cobro se registró igual, pero sin cliente asignado no hay a
         // quién descontarle saldo en cta. cte., así que no se puede armar el
         // recibo (ver validación en guardar() que evita crear ventas nuevas
         // así). Comprobantes viejos de "Consumidor Final" en Cta. Cte. caen acá.
         wRecibo?.close()
         showToast('Cobrado, pero sin cliente asignado no se puede emitir el recibo — asignale un cliente a este comprobante')
+      } else {
+        // Venta "pendiente" (no cta. cte.): no hay movimiento de cta. cte.
+        // que recibar porque nunca lo hubo — esto es lo esperable, no un error.
+        wRecibo?.close()
       }
     } finally {
       setCobroFilaGuardando(false)
@@ -1144,25 +1147,6 @@ export default function VentasPage() {
     .filter(v => v.estado_pago !== 'pagado')
     .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
 
-  async function marcarPagadoDesdeResumen(v: Venta) {
-    const restante = parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2))
-    const input = prompt(`¿Cuánto se cobró de ${v.numero} (${v.cliente_nombre})? (falta $${restante.toLocaleString('es-AR')})`, String(restante))
-    if (input === null) return
-    const monto = parseFloat(input.replace(',', '.'))
-    if (!monto || monto <= 0) { showToast('Monto inválido'); return }
-    if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
-
-    setCobrandoId(v.id!)
-    const res = await fetch('/api/ventas/cobrar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venta_id: v.id, empresa: v.empresa, monto }),
-    })
-    const data = await res.json()
-    setCobrandoId(null)
-    if (data.error) { showToast('Error: ' + data.error); return }
-    showToast(monto < restante - 0.01 ? `${v.numero}: cobrado parcial $${monto.toLocaleString('es-AR')}` : `${v.numero} marcado como pagado`)
-    await cargarTodo(empresa)
-  }
   const ventasFiltradas = ventas.filter(v => {
     const q = busquedaVentas.toLowerCase()
     if (q && !`${v.numero} ${v.cliente_nombre}`.toLowerCase().includes(q)) return false
@@ -1503,11 +1487,10 @@ export default function VentasPage() {
                         </td>
                         <td style={{ padding: '10px 16px', textAlign: 'center' }}>
                           <button
-                            disabled={cobrandoId === v.id}
-                            onClick={() => marcarPagadoDesdeResumen(v)}
-                            style={{ background: C.greenBg, border: '1px solid rgba(45,122,79,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: C.green, cursor: cobrandoId === v.id ? 'default' : 'pointer', fontFamily: 'inherit', fontWeight: 600, opacity: cobrandoId === v.id ? 0.6 : 1, whiteSpace: 'nowrap' }}
+                            onClick={() => cobrarVentaFila(v)}
+                            style={{ background: C.greenBg, border: '1px solid rgba(45,122,79,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: C.green, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, whiteSpace: 'nowrap' }}
                           >
-                            {cobrandoId === v.id ? '...' : 'Cobrar'}
+                            Cobrar
                           </button>
                         </td>
                       </tr>
@@ -1521,7 +1504,7 @@ export default function VentasPage() {
       )}
       {/* ── Modal cobrar comprobante (monto + medio de pago) ──────────────── */}
       {cobroFilaModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { if (!cobroFilaGuardando) setCobroFilaModal(null) })}>
           <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, width: '100%', maxWidth: 380, boxShadow: '0 8px 40px rgba(26,18,16,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: `1px solid ${C.border}` }}>
