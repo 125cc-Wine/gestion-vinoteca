@@ -100,7 +100,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from('compras').update({ estado, items: itemsRecibidos, ...rest }).eq('id', id).select().single()
+    .from('compras').update({ estado, items: itemsRecibidos, ...rest, ...(medio_pago ? { medio_pago } : {}) }).eq('id', id).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

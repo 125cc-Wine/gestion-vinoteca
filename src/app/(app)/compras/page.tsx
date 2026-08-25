@@ -91,8 +91,13 @@ interface Compra {
   monto_pagado?: number | null
   fecha_pago?: string | null
   notas_pago?: string | null
+  medio_pago?: string | null
 }
 interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string }
+interface ChequePendiente {
+  id: string; empresa: string; nro_cheque: string | null; banco: string | null
+  monto: number; fecha_pago: string; beneficiario: string; compra_id: string | null
+}
 interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number; unidad_medida?: string }
 
 function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : u === 'caja4' ? 4 : 1 }
@@ -170,6 +175,7 @@ function vencimientoLabel(vencimiento: string | null | undefined): string {
 export default function ComprasPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [compras, setCompras] = useState<Compra[]>([])
+  const [chequesPendientes, setChequesPendientes] = useState<ChequePendiente[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [loading, setLoading] = useState(true)
@@ -247,18 +253,29 @@ export default function ComprasPage() {
       // lista, sin importar cuál esté seleccionada en el toggle. Productos sí
       // sigue filtrado por la empresa activa: es lo que se usa para elegir el
       // producto puntual al cargar los ítems de la compra.
-      const [cResAroma, cResLavid, provRes, prodRes] = await Promise.all([
+      const [cResAroma, cResLavid, provRes, prodRes, chResAroma, chResLavid] = await Promise.all([
         fetch(`/api/compras?empresa=aroma`),
         fetch(`/api/compras?empresa=lavid`),
         fetch('/api/proveedores'),
         fetch(`/api/productos?empresa=${emp}`),
+        fetch(`/api/cheques?empresa=aroma`),
+        fetch(`/api/cheques?empresa=lavid`),
       ])
-      const [cDataAroma, cDataLavid, provData, prodData] = await Promise.all([cResAroma.json(), cResLavid.json(), provRes.json(), prodRes.json()])
+      const [cDataAroma, cDataLavid, provData, prodData, chDataAroma, chDataLavid] = await Promise.all([
+        cResAroma.json(), cResLavid.json(), provRes.json(), prodRes.json(), chResAroma.json(), chResLavid.json(),
+      ])
       const combinadas = [...(Array.isArray(cDataAroma) ? cDataAroma : []), ...(Array.isArray(cDataLavid) ? cDataLavid : [])]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       setCompras(combinadas)
       setProveedores(Array.isArray(provData) ? provData : [])
       setProductos(Array.isArray(prodData) ? prodData : [])
+      // Cheques emitidos (a proveedores) que todavía no se acreditaron — para
+      // verlos sin salir de Compras, la pantalla de "Cuentas por Pagar"
+      // aparte se retiró por pedido del usuario: quería una sola pestaña.
+      const chequesCombinados = [...(Array.isArray(chDataAroma) ? chDataAroma : []), ...(Array.isArray(chDataLavid) ? chDataLavid : [])]
+        .filter((c: { estado: string }) => c.estado === 'emitido')
+        .sort((a: { fecha_pago: string }, b: { fecha_pago: string }) => a.fecha_pago.localeCompare(b.fecha_pago))
+      setChequesPendientes(chequesCombinados)
     } finally { setLoading(false) }
   }
 
@@ -666,6 +683,41 @@ export default function ComprasPage() {
           ))}
         </div>
 
+        {/* Cheques emitidos pendientes de acreditar — antes vivían en una
+            pantalla aparte ("Cuentas por Pagar"); se trajeron acá para tener
+            todo en una sola pestaña, junto con las facturas que pagan. */}
+        {chequesPendientes.length > 0 && (
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 20, boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+            <div style={{ padding: '12px 18px', borderBottom: `1px solid ${T.border}`, fontSize: 12.5, fontWeight: 700, color: T.text }}>
+              Cheques emitidos por acreditar ({chequesPendientes.length})
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+              <thead>
+                <tr style={{ background: T.bg }}>
+                  {['N° cheque', 'Banco', 'Beneficiario', 'Factura', 'Monto', 'Vencimiento'].map(h => (
+                    <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Monto' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {chequesPendientes.map(ch => {
+                  const compraLinkeada = ch.compra_id ? compras.find(c => c.id === ch.compra_id) : null
+                  return (
+                    <tr key={ch.id} style={{ borderBottom: `1px solid ${T.border}` }}>
+                      <td style={{ padding: '8px 14px', fontFamily: 'monospace', color: T.text }}>{ch.nro_cheque || '—'}<EmpresaBadge empresa={ch.empresa} T={T} /></td>
+                      <td style={{ padding: '8px 14px', color: T.muted }}>{ch.banco || '—'}</td>
+                      <td style={{ padding: '8px 14px', color: T.text }}>{ch.beneficiario}</td>
+                      <td style={{ padding: '8px 14px', color: T.muted, fontFamily: 'monospace' }}>{compraLinkeada?.numero || '—'}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>${ch.monto.toLocaleString('es-AR')}</td>
+                      <td style={{ padding: '8px 14px', ...vencimientoStyle(ch.fecha_pago) }}>{vencimientoLabel(ch.fecha_pago)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* Filtro estado */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
           {(['', 'pendiente', 'enviado', 'recibido', 'a_pagar', 'deudas'] as const).map(e => (
@@ -735,6 +787,21 @@ export default function ComprasPage() {
                     <span style={{ ...(ESTADO_STYLE[c.estado] || {}), padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
                       {ESTADO_LABEL[c.estado]}
                     </span>
+                    {/* "Recibido" no dice nada de si ya se pagó — antes había
+                        que entrar al detalle o cambiar de filtro para verlo. */}
+                    {c.estado === 'recibido' && (
+                      <div style={{ marginTop: 4 }}>
+                        <span style={{ ...(ESTADO_PAGO_STYLE[c.estado_pago || 'sin_factura'] || {}), padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 700, display: 'inline-block' }}>
+                          {ESTADO_PAGO_LABEL[c.estado_pago || 'sin_factura']}
+                        </span>
+                        {c.estado_pago === 'pendiente' && c.fecha_vencimiento && (
+                          <div style={{ fontSize: 10.5, marginTop: 2, ...vencimientoStyle(c.fecha_vencimiento) }}>{vencimientoLabel(c.fecha_vencimiento)}</div>
+                        )}
+                        {c.estado_pago === 'pagado' && c.medio_pago && (
+                          <div style={{ fontSize: 10.5, color: T.dim, marginTop: 2 }}>con {c.medio_pago}</div>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: T.muted }}>
                     {c.fecha_esperada ? new Date(c.fecha_esperada + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
@@ -973,7 +1040,7 @@ export default function ComprasPage() {
                         </div>
                         {(detalle.monto_pagado || 0) > 0 && (
                           <div style={{ fontSize: 12, fontWeight: 600, color: T.amber, marginTop: 4 }}>
-                            Parcial: pagado ${detalle.monto_pagado!.toLocaleString('es-AR')}, falta ${(detalle.total - (detalle.monto_pagado || 0)).toLocaleString('es-AR')}
+                            Parcial: pagado ${detalle.monto_pagado!.toLocaleString('es-AR')}{detalle.medio_pago ? ` (${detalle.medio_pago})` : ''}, falta ${(detalle.total - (detalle.monto_pagado || 0)).toLocaleString('es-AR')}
                           </div>
                         )}
                       </div>
@@ -988,6 +1055,7 @@ export default function ComprasPage() {
                   <div style={{ background: T.greenBg, border: `1px solid ${T.greenBd}`, borderRadius: 10, padding: '14px 18px' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 4 }}>
                       ✓ Pagado el {detalle.fecha_pago ? new Date(detalle.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : '—'} — ${(detalle.monto_pagado || 0).toLocaleString('es-AR')}
+                      {detalle.medio_pago && ` con ${detalle.medio_pago}`}
                     </div>
                     <div style={{ fontSize: 12, color: T.muted }}>
                       Factura: {detalle.nro_factura || '—'}
