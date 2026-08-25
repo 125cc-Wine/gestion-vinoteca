@@ -202,6 +202,12 @@ export default function ComprasPage() {
   const [pMonto, setPMonto] = useState(0)
   const [pNotas, setPNotas] = useState('')
   const [pMedioPago, setPMedioPago] = useState('Efectivo')
+  // Si el pago es con cheque, se carga junto con el pago para que quede
+  // linkeado a esta factura puntual (compra_id) — antes se cargaba aparte en
+  // Cheques sin ninguna conexión con la compra que estaba pagando.
+  const [pChBanco, setPChBanco] = useState('')
+  const [pChNumero, setPChNumero] = useState('')
+  const [pChFecha, setPChFecha] = useState('')
 
   const [proveedorId, setProveedorId] = useState('')
   const [proveedorNombre, setProveedorNombre] = useState('')
@@ -466,6 +472,9 @@ export default function ComprasPage() {
     setPFechaPago(hoy())
     setPNotas('')
     setPMedioPago('Efectivo')
+    setPChBanco('')
+    setPChNumero('')
+    setPChFecha('')
     setPagoModal(c)
   }
 
@@ -474,6 +483,7 @@ export default function ComprasPage() {
     const montoPagadoPrevio = pagoModal.monto_pagado || 0
     const restante = pagoModal.total - montoPagadoPrevio
     if (pMonto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
+    if (pMedioPago === 'Cheque' && (!pChFecha || !pChNumero)) { showToast('Completá el N° de cheque y la fecha de cobro'); return }
     // Antes esto siempre marcaba "pagado" con lo que se hubiera puesto en el
     // campo, aunque fuera menos que el total — una factura pagada a medias
     // quedaba etiquetada como saldada del todo y desaparecía de "A pagar",
@@ -495,8 +505,27 @@ export default function ComprasPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    const data = await res.json(); setSaving(false)
-    if (data.error) { showToast('Error: ' + data.error); return }
+    const data = await res.json()
+    if (data.error) { setSaving(false); showToast('Error: ' + data.error); return }
+
+    // Si se pagó con cheque, se carga acá mismo en Cheques, linkeado a esta
+    // compra (compra_id) — antes había que ir a Cheques a cargarlo a mano y
+    // sin conexión con la factura que estaba pagando.
+    if (pMedioPago === 'Cheque') {
+      await fetch('/api/cheques', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa, banco: pChBanco || null, nro_cheque: pChNumero,
+          monto: pMonto, fecha_emision: pFechaPago, fecha_pago: pChFecha,
+          beneficiario: pagoModal.proveedor_nombre,
+          concepto: `Pago ${pagoModal.numero}${pagoModal.nro_factura ? ` — Fact. ${pagoModal.nro_factura}` : ''}`,
+          proveedor_id: pagoModal.proveedor_id, compra_id: pagoModal.id,
+        }),
+      })
+    }
+
+    setSaving(false)
     setPagoModal(null)
     if (detalle && detalle.id === pagoModal.id) {
       setDetalle({ ...detalle, estado_pago: body.estado_pago, monto_pagado: montoPagadoTotal, fecha_pago: pFechaPago, notas_pago: pNotas })
@@ -1397,9 +1426,32 @@ export default function ComprasPage() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Fecha de pago</label>
                 <input type="date" style={{ ...INP, width: '100%' }} value={pFechaPago} onChange={e => setPFechaPago(e.target.value)} />
               </div>
+
+              {pMedioPago === 'Cheque' && (
+                <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Datos del cheque — se carga en Cheques, linkeado a esta factura
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, color: T.muted, marginBottom: 5 }}>N° de cheque</label>
+                      <input style={{ ...INP, width: '100%' }} value={pChNumero} onChange={e => setPChNumero(e.target.value)} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, color: T.muted, marginBottom: 5 }}>Banco</label>
+                      <input style={{ ...INP, width: '100%' }} value={pChBanco} onChange={e => setPChBanco(e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, color: T.muted, marginBottom: 5 }}>Fecha de cobro del cheque</label>
+                    <input type="date" style={{ ...INP, width: '100%' }} value={pChFecha} onChange={e => setPChFecha(e.target.value)} />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Notas <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
-                <input style={{ ...INP, width: '100%' }} placeholder="Ej: nº de cheque, banco..." value={pNotas} onChange={e => setPNotas(e.target.value)} />
+                <input style={{ ...INP, width: '100%' }} value={pNotas} onChange={e => setPNotas(e.target.value)} />
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

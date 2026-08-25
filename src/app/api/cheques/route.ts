@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { empresa, cuenta_id, banco, nro_cheque, monto, fecha_emision, fecha_pago, beneficiario, concepto, proveedor_id, notas } = body
+  const { empresa, cuenta_id, banco, nro_cheque, monto, fecha_emision, fecha_pago, beneficiario, concepto, proveedor_id, compra_id, notas } = body
 
   if (!empresa || !beneficiario || !monto || !fecha_pago) {
     return NextResponse.json({ error: 'empresa, beneficiario, monto y fecha_pago son requeridos' }, { status: 400 })
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       concepto: concepto || null,
       estado: 'emitido',
       proveedor_id: proveedor_id || null,
+      compra_id: compra_id || null,
       notas: notas || null,
     }])
     .select()
