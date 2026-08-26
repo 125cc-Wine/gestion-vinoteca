@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { labelComprobante } from '@/lib/labelComprobante'
+import { ChequeCobroFields } from '@/components/ChequeCobroFields'
 
-const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Cheque']
 
 const TIPOS = [
   { value: 'consumidor_final',    label: 'Consumidor final' },
@@ -126,6 +127,9 @@ export default function ClientesPage() {
   const [cobroSplit, setCobroSplit] = useState(false)
   const [cobroMonto2, setCobroMonto2] = useState(0)
   const [cobroMedioPago2, setCobroMedioPago2] = useState('Transferencia')
+  // Cheque recibido — un juego de campos por cada medio del split.
+  const [cobroCh1, setCobroCh1] = useState({ numero: '', banco: '', librador: '', fecha: '' })
+  const [cobroCh2, setCobroCh2] = useState({ numero: '', banco: '', librador: '', fecha: '' })
 
   // Modal importar CSV
   const [importModal, setImportModal] = useState(false)
@@ -156,6 +160,8 @@ export default function ClientesPage() {
   const [pagoMonto2, setPagoMonto2] = useState(0)
   const [pagoMedioPago2, setPagoMedioPago2] = useState('Transferencia')
   const [pagoGuardando, setPagoGuardando] = useState(false)
+  const [pagoCh1, setPagoCh1] = useState({ numero: '', banco: '', librador: '', fecha: '' })
+  const [pagoCh2, setPagoCh2] = useState({ numero: '', banco: '', librador: '', fecha: '' })
 
   const [busqueda, setBusqueda] = useState('')
   const [toast, setToast] = useState('')
@@ -300,12 +306,17 @@ export default function ClientesPage() {
     setCobroSplit(false)
     setCobroMonto2(0)
     setCobroMedioPago2('Transferencia')
+    const nombre = c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
+    setCobroCh1({ numero: '', banco: '', librador: nombre, fecha: '' })
+    setCobroCh2({ numero: '', banco: '', librador: nombre, fecha: '' })
     setCobroModal(true)
   }
 
   async function guardarCobro() {
     if (!cobroCliente || !cobroMonto || cobroMonto <= 0) { showToast('Ingresá un monto válido'); return }
     if (cobroSplit && (!cobroMonto2 || cobroMonto2 <= 0)) { showToast('Ingresá el monto del segundo medio de pago'); return }
+    if (cobroMedioPago === 'Cheque' && (!cobroCh1.numero || !cobroCh1.fecha)) { showToast('Completá el N° de cheque y la fecha de cobro (medio 1)'); return }
+    if (cobroSplit && cobroMedioPago2 === 'Cheque' && (!cobroCh2.numero || !cobroCh2.fecha)) { showToast('Completá el N° de cheque y la fecha de cobro (medio 2)'); return }
     const nombreCliente = cobroCliente.razon_social || `${cobroCliente.nombre} ${cobroCliente.apellido || ''}`.trim()
     const totalCobro = cobroMonto + (cobroSplit ? cobroMonto2 : 0)
     const body = cobroSplit
@@ -317,6 +328,19 @@ export default function ClientesPage() {
     })
     const data = await res.json()
     if (data.error) { showToast('Error: ' + data.error); return }
+
+    const crearCheque = (monto: number, ch: typeof cobroCh1) => fetch('/api/cheques', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
+        monto, fecha_emision: cobroFecha, fecha_pago: ch.fecha,
+        librador: ch.librador || nombreCliente, concepto: cobroConcepto,
+        cliente_id: cobroCliente.id,
+      }),
+    })
+    if (cobroMedioPago === 'Cheque') await crearCheque(cobroMonto, cobroCh1)
+    if (cobroSplit && cobroMedioPago2 === 'Cheque') await crearCheque(cobroMonto2, cobroCh2)
+
     setCobroModal(false); cargar(empresa)
     showToast(`Cobro de $${totalCobro.toLocaleString('es-AR')} registrado`)
     // Si el modal de historial de este mismo cliente está abierto, refrescarlo
@@ -380,12 +404,16 @@ export default function ClientesPage() {
     setPagoSplit(false)
     setPagoMonto2(0)
     setPagoMedioPago2('Transferencia')
+    setPagoCh1({ numero: '', banco: '', librador: v.cliente_nombre || '', fecha: '' })
+    setPagoCh2({ numero: '', banco: '', librador: v.cliente_nombre || '', fecha: '' })
     setPagoModal(true)
   }
 
   async function confirmarPagoVenta() {
     if (!pagoVenta || !pagoMonto || pagoMonto <= 0) return
     if (pagoSplit && (!pagoMonto2 || pagoMonto2 <= 0)) { showToast('Ingresá el monto del segundo medio de pago'); return }
+    if (pagoMedioPago === 'Cheque' && (!pagoCh1.numero || !pagoCh1.fecha)) { showToast('Completá el N° de cheque y la fecha de cobro (medio 1)'); return }
+    if (pagoSplit && pagoMedioPago2 === 'Cheque' && (!pagoCh2.numero || !pagoCh2.fecha)) { showToast('Completá el N° de cheque y la fecha de cobro (medio 2)'); return }
     setPagoGuardando(true)
     const totalCobro = pagoMonto + (pagoSplit ? pagoMonto2 : 0)
     const body = pagoSplit
@@ -396,8 +424,21 @@ export default function ClientesPage() {
       body: JSON.stringify(body),
     })
     const data = await res.json()
+    if (data.error) { setPagoGuardando(false); showToast('Error: ' + data.error); return }
+
+    const crearCheque = (monto: number, ch: typeof pagoCh1) => fetch('/api/cheques', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
+        monto, fecha_emision: pagoFecha, fecha_pago: ch.fecha,
+        librador: ch.librador || pagoVenta.cliente_nombre, concepto: pagoConcepto,
+        cliente_id: pagoVenta.cliente_id || null,
+      }),
+    })
+    if (pagoMedioPago === 'Cheque') await crearCheque(pagoMonto, pagoCh1)
+    if (pagoSplit && pagoMedioPago2 === 'Cheque') await crearCheque(pagoMonto2, pagoCh2)
+
     setPagoGuardando(false)
-    if (data.error) { showToast('Error: ' + data.error); return }
     setPagoModal(false)
     showToast(`${pagoVenta.numero}: cobrados $${totalCobro.toLocaleString('es-AR')}`)
     if (histCliente) fetchVentas(histCliente.id!)
@@ -695,6 +736,14 @@ export default function ClientesPage() {
                 </select>
               </div>
 
+              {cobroMedioPago === 'Cheque' && (
+                <ChequeCobroFields
+                  numero={cobroCh1.numero} banco={cobroCh1.banco} librador={cobroCh1.librador} fecha={cobroCh1.fecha}
+                  onNumero={v => setCobroCh1(p => ({ ...p, numero: v }))} onBanco={v => setCobroCh1(p => ({ ...p, banco: v }))}
+                  onLibrador={v => setCobroCh1(p => ({ ...p, librador: v }))} onFecha={v => setCobroCh1(p => ({ ...p, fecha: v }))}
+                />
+              )}
+
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
                 <input type="checkbox" checked={cobroSplit} onChange={e => setCobroSplit(e.target.checked)} />
                 Dividir en 2 medios de pago (ej. mitad efectivo, mitad transferencia)
@@ -712,6 +761,13 @@ export default function ClientesPage() {
                       {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                     </select>
                   </div>
+                  {cobroMedioPago2 === 'Cheque' && (
+                    <ChequeCobroFields
+                      numero={cobroCh2.numero} banco={cobroCh2.banco} librador={cobroCh2.librador} fecha={cobroCh2.fecha}
+                      onNumero={v => setCobroCh2(p => ({ ...p, numero: v }))} onBanco={v => setCobroCh2(p => ({ ...p, banco: v }))}
+                      onLibrador={v => setCobroCh2(p => ({ ...p, librador: v }))} onFecha={v => setCobroCh2(p => ({ ...p, fecha: v }))}
+                    />
+                  )}
                   <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
                     Total: ${(cobroMonto + cobroMonto2).toLocaleString('es-AR')}
                   </div>
@@ -968,6 +1024,14 @@ export default function ClientesPage() {
                 </select>
               </div>
 
+              {pagoMedioPago === 'Cheque' && (
+                <ChequeCobroFields
+                  numero={pagoCh1.numero} banco={pagoCh1.banco} librador={pagoCh1.librador} fecha={pagoCh1.fecha}
+                  onNumero={v => setPagoCh1(p => ({ ...p, numero: v }))} onBanco={v => setPagoCh1(p => ({ ...p, banco: v }))}
+                  onLibrador={v => setPagoCh1(p => ({ ...p, librador: v }))} onFecha={v => setPagoCh1(p => ({ ...p, fecha: v }))}
+                />
+              )}
+
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
                 <input type="checkbox" checked={pagoSplit} onChange={e => {
                   const on = e.target.checked
@@ -992,6 +1056,13 @@ export default function ClientesPage() {
                       {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                     </select>
                   </div>
+                  {pagoMedioPago2 === 'Cheque' && (
+                    <ChequeCobroFields
+                      numero={pagoCh2.numero} banco={pagoCh2.banco} librador={pagoCh2.librador} fecha={pagoCh2.fecha}
+                      onNumero={v => setPagoCh2(p => ({ ...p, numero: v }))} onBanco={v => setPagoCh2(p => ({ ...p, banco: v }))}
+                      onLibrador={v => setPagoCh2(p => ({ ...p, librador: v }))} onFecha={v => setPagoCh2(p => ({ ...p, fecha: v }))}
+                    />
+                  )}
                   {(() => {
                     const restante = pagoVenta.total - (pagoVenta.monto_pagado ?? 0)
                     const total = pagoMonto + pagoMonto2

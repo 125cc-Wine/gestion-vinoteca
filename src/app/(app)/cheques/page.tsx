@@ -63,12 +63,19 @@ interface Cheque {
   monto: number
   fecha_emision: string
   fecha_pago: string
-  beneficiario: string
+  beneficiario: string | null
   concepto?: string
-  estado: 'emitido' | 'acreditado' | 'rechazado' | 'anulado'
+  estado: 'emitido' | 'en_cartera' | 'acreditado' | 'rechazado' | 'anulado'
   proveedor_id?: string
   notas?: string
   created_at: string
+  // Un cheque "recibido" es al revés de uno "emitido": lo entrega un cliente
+  // como forma de pago de una venta, y la empresa lo tiene en cartera hasta
+  // depositarlo — no hay beneficiario (somos nosotros), sino librador (quién
+  // lo firmó) y opcionalmente el cliente asociado.
+  tipo?: 'emitido' | 'recibido'
+  librador?: string | null
+  cliente_id?: string | null
 }
 
 interface Cuenta {
@@ -90,10 +97,18 @@ function labelCuenta(c: Cuenta): string {
   return num ? `${c.banco} — ${num}` : c.banco
 }
 
+// Estado "pendiente" inicial: 'emitido' para cheques que la empresa entrega,
+// 'en_cartera' para los que un cliente entrega (la empresa los tiene pero
+// todavía no los depositó) — ambos comparten el resto del ciclo (acreditado/
+// rechazado/anulado).
+function esPendiente(ch: Cheque): boolean {
+  return ch.estado === 'emitido' || ch.estado === 'en_cartera'
+}
+
 function fechaPagoStyle(ch: Cheque): React.CSSProperties {
   if (ch.estado === 'acreditado') return { color: T.green, fontWeight: 600 }
   if (ch.estado === 'rechazado') return { color: T.red, fontWeight: 600 }
-  if (ch.estado !== 'emitido') return { color: T.muted }
+  if (!esPendiente(ch)) return { color: T.muted }
   const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0)
   const vD = new Date(ch.fecha_pago + 'T12:00:00')
   const diff = (vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24)
@@ -106,7 +121,7 @@ function fechaPagoLabel(ch: Cheque): string {
   const fechaStr = ch.fecha_pago
     ? new Date(ch.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR')
     : '—'
-  if (ch.estado !== 'emitido') return fechaStr
+  if (!esPendiente(ch)) return fechaStr
   const hoyD = new Date(); hoyD.setHours(0, 0, 0, 0)
   const vD = new Date(ch.fecha_pago + 'T12:00:00')
   const diff = (vD.getTime() - hoyD.getTime()) / (1000 * 60 * 60 * 24)
@@ -116,6 +131,7 @@ function fechaPagoLabel(ch: Cheque): string {
 
 const ESTADO_STYLE: Record<string, React.CSSProperties> = {
   emitido:    { background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}` },
+  en_cartera: { background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}` },
   acreditado: { background: T.greenBg, color: T.green, border: `1px solid ${T.greenBd}` },
   rechazado:  { background: T.redBg,   color: T.red,   border: `1px solid ${T.redBd}` },
   anulado:    { background: T.bg,      color: T.dim,   border: `1px solid ${T.border}` },
@@ -123,6 +139,7 @@ const ESTADO_STYLE: Record<string, React.CSSProperties> = {
 
 const ESTADO_LABEL: Record<string, string> = {
   emitido: 'Emitido',
+  en_cartera: 'En cartera',
   acreditado: 'Acreditado',
   rechazado: 'Rechazado',
   anulado: 'Anulado',
@@ -133,6 +150,7 @@ export default function ChequesPage() {
   const [cheques, setCheques] = useState<Cheque[]>([])
   const [cuentas, setCuentas] = useState<Cuenta[]>([])
   const [loading, setLoading] = useState(true)
+  const [tipoVista, setTipoVista] = useState<'emitido' | 'recibido'>('emitido')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroCuenta, setFiltroCuenta] = useState('')
   const [modal, setModal] = useState(false)
@@ -142,6 +160,7 @@ export default function ChequesPage() {
   const [toast, setToast] = useState('')
 
   // Form cheque
+  const [fTipo, setFTipo] = useState<'emitido' | 'recibido'>('emitido')
   const [fCuentaId, setFCuentaId] = useState('')
   const [fBanco, setFBanco] = useState('')
   const [fNroCheque, setFNroCheque] = useState('')
@@ -149,6 +168,7 @@ export default function ChequesPage() {
   const [fFechaEmision, setFFechaEmision] = useState(hoy())
   const [fFechaPago, setFFechaPago] = useState('')
   const [fBeneficiario, setFBeneficiario] = useState('')
+  const [fLibrador, setFLibrador] = useState('')
   const [fConcepto, setFConcepto] = useState('')
   const [fNotas, setFNotas] = useState('')
 
@@ -194,6 +214,7 @@ export default function ChequesPage() {
   }
 
   function abrirNuevo() {
+    setFTipo(tipoVista)
     setFCuentaId('')
     setFBanco('')
     setFNroCheque('')
@@ -201,6 +222,7 @@ export default function ChequesPage() {
     setFFechaEmision(hoy())
     setFFechaPago('')
     setFBeneficiario('')
+    setFLibrador('')
     setFConcepto('')
     setFNotas('')
     setModal(true)
@@ -213,7 +235,9 @@ export default function ChequesPage() {
   }
 
   async function guardarCheque() {
-    if (!fBeneficiario.trim()) { showToast('Ingresá el beneficiario'); return }
+    const esRecibido = fTipo === 'recibido'
+    if (esRecibido && !fLibrador.trim()) { showToast('Ingresá quién firmó el cheque (librador)'); return }
+    if (!esRecibido && !fBeneficiario.trim()) { showToast('Ingresá el beneficiario'); return }
     if (!fMonto || Number(fMonto) <= 0) { showToast('Ingresá un monto válido'); return }
     if (!fFechaPago) { showToast('Ingresá la fecha de pago'); return }
     setSaving(true)
@@ -222,13 +246,15 @@ export default function ChequesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         empresa,
+        tipo: fTipo,
         cuenta_id: fCuentaId || null,
         banco: fBanco || null,
         nro_cheque: fNroCheque || null,
         monto: Number(fMonto),
         fecha_emision: fFechaEmision,
         fecha_pago: fFechaPago,
-        beneficiario: fBeneficiario,
+        beneficiario: esRecibido ? null : fBeneficiario,
+        librador: esRecibido ? fLibrador : null,
         concepto: fConcepto || null,
         notas: fNotas || null,
       }),
@@ -291,22 +317,26 @@ export default function ChequesPage() {
     showToast('Cheque anulado')
   }
 
+  const esRecibidos = tipoVista === 'recibido'
+  const chequesVista = cheques.filter(c => (c.tipo || 'emitido') === tipoVista)
+  const estadoInicial = esRecibidos ? 'en_cartera' : 'emitido'
+
   // KPIs
   const hoyStr = hoy()
   const mesActual = hoyStr.slice(0, 7)
 
-  const totalEmitidoMonto = cheques
-    .filter(c => c.estado === 'emitido')
+  const totalPendienteMonto = chequesVista
+    .filter(c => c.estado === estadoInicial)
     .reduce((a, c) => a + c.monto, 0)
 
-  const pendientesAcreditar = cheques.filter(c => c.estado === 'emitido' && c.fecha_pago <= hoyStr).length
+  const pendientesAcreditar = chequesVista.filter(c => c.estado === estadoInicial && c.fecha_pago <= hoyStr).length
 
-  const acreditadosEsteMes = cheques.filter(c => c.estado === 'acreditado' && c.fecha_pago?.slice(0, 7) === mesActual)
+  const acreditadosEsteMes = chequesVista.filter(c => c.estado === 'acreditado' && c.fecha_pago?.slice(0, 7) === mesActual)
 
   const totalAcreditadoMes = acreditadosEsteMes.reduce((a, c) => a + c.monto, 0)
 
   // Filtrado
-  const filtrados = cheques.filter(c => {
+  const filtrados = chequesVista.filter(c => {
     if (filtroEstado && c.estado !== filtroEstado) return false
     if (filtroCuenta && c.cuenta_id !== filtroCuenta) return false
     return true
@@ -329,10 +359,25 @@ export default function ChequesPage() {
       {/* Page header */}
       <div style={{ background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Cheques emitidos</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Cheques {esRecibidos ? 'recibidos' : 'emitidos'}</h1>
           <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>{esAroma ? 'Aroma de Vid' : 'La Vid Consultora'}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Switch emitidos/recibidos */}
+          <div style={{ display: 'flex', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: 3, gap: 3 }}>
+            {(['emitido', 'recibido'] as const).map(t => (
+              <button key={t} onClick={() => { setTipoVista(t); setFiltroEstado('') }}
+                style={{
+                  background: tipoVista === t ? T.wine : 'transparent',
+                  color: tipoVista === t ? '#fff' : T.muted,
+                  border: 'none', borderRadius: 6,
+                  padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s',
+                }}>
+                {t === 'emitido' ? 'A proveedores' : 'De clientes'}
+              </button>
+            ))}
+          </div>
           {/* Switch empresa */}
           <div style={{ display: 'flex', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: 3, gap: 3 }}>
             {(['aroma', 'lavid'] as const).map(e => (
@@ -359,8 +404,8 @@ export default function ChequesPage() {
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
           {[
-            { label: 'Total emitido', value: `$${totalEmitidoMonto.toLocaleString('es-AR')}`, color: T.amber },
-            { label: 'Pendientes a acreditar', value: pendientesAcreditar, color: T.red },
+            { label: esRecibidos ? 'Total en cartera' : 'Total emitido', value: `$${totalPendienteMonto.toLocaleString('es-AR')}`, color: T.amber },
+            { label: esRecibidos ? 'Pendientes de depositar' : 'Pendientes a acreditar', value: pendientesAcreditar, color: T.red },
             { label: 'Acreditados este mes', value: acreditadosEsteMes.length, color: T.green },
             { label: 'Total acreditado (mes)', value: `$${totalAcreditadoMes.toLocaleString('es-AR')}`, color: T.text },
           ].map(k => (
@@ -374,20 +419,22 @@ export default function ChequesPage() {
         {/* Filtros */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {(['', 'emitido', 'acreditado', 'rechazado'] as const).map(e => (
+            {(['', estadoInicial, 'acreditado', 'rechazado'] as const).map(e => (
               <button key={e} onClick={() => setFiltroEstado(e)}
                 style={{ background: filtroEstado === e ? T.wine : T.surface, color: filtroEstado === e ? '#fff' : T.muted, border: `1px solid ${filtroEstado === e ? T.wine : T.border}`, borderRadius: 7, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                 {e === '' ? 'Todos' : ESTADO_LABEL[e]}
               </button>
             ))}
           </div>
-          <select value={filtroCuenta} onChange={e => setFiltroCuenta(e.target.value)}
-            style={{ ...INP, width: 'auto', minWidth: 180, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>
-            <option value="">Todas las cuentas</option>
-            {cuentas.map(c => (
-              <option key={c.id} value={c.id}>{labelCuenta(c)}</option>
-            ))}
-          </select>
+          {!esRecibidos && (
+            <select value={filtroCuenta} onChange={e => setFiltroCuenta(e.target.value)}
+              style={{ ...INP, width: 'auto', minWidth: 180, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>
+              <option value="">Todas las cuentas</option>
+              {cuentas.map(c => (
+                <option key={c.id} value={c.id}>{labelCuenta(c)}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Tabla */}
@@ -396,7 +443,7 @@ export default function ChequesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
               <thead>
                 <tr style={{ background: T.bg }}>
-                  {['N° cheque', 'Banco / Cuenta', 'Beneficiario', 'Concepto', 'Fecha emisión', 'Fecha pago', 'Monto', 'Estado', ''].map(h => (
+                  {['N° cheque', 'Banco / Cuenta', esRecibidos ? 'Librador' : 'Beneficiario', 'Concepto', 'Fecha emisión', 'Fecha pago', 'Monto', 'Estado', ''].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -417,7 +464,7 @@ export default function ChequesPage() {
                         {ch.nro_cheque || <span style={{ color: T.dim }}>—</span>}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: T.muted, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cuentaLabel}</td>
-                      <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{ch.beneficiario}</td>
+                      <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: T.text }}>{esRecibidos ? ch.librador : ch.beneficiario}</td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: T.muted, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.concepto || <span style={{ color: T.dim }}>—</span>}</td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
                         {ch.fecha_emision ? new Date(ch.fecha_emision + 'T12:00:00').toLocaleDateString('es-AR') : '—'}
@@ -434,12 +481,12 @@ export default function ChequesPage() {
                         </span>
                       </td>
                       <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
-                        {ch.estado === 'emitido' && (
+                        {esPendiente(ch) && (
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="btn-row"
                               style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, fontWeight: 600, transition: 'all 0.12s', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
                               onClick={() => cambiarEstado(ch.id, 'acreditado')}>
-                              Acreditado
+                              {esRecibidos ? 'Depositado' : 'Acreditado'}
                             </button>
                             <button className="btn-row"
                               style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.red, fontWeight: 600, transition: 'all 0.12s', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
@@ -464,38 +511,67 @@ export default function ChequesPage() {
           onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setModal(false) })}>
           <div style={{ background: T.surface, borderRadius: 14, border: `1px solid ${T.border2}`, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: T.surface, zIndex: 1, borderRadius: '14px 14px 0 0' }}>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nuevo cheque emitido</h2>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>Nuevo cheque {fTipo === 'recibido' ? 'recibido' : 'emitido'}</h2>
               <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
 
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Cuenta bancaria + botón nueva */}
+              {/* Tipo: a un proveedor (nosotros lo emitimos) o de un cliente (nos lo entregan) */}
               <div>
-                <label style={LBL}>Cuenta bancaria</label>
+                <label style={LBL}>Tipo</label>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <select style={{ ...INP, flex: 1 }} value={fCuentaId} onChange={e => onSelectCuenta(e.target.value)}>
-                    <option value="">Seleccionar cuenta...</option>
-                    {cuentas.map(c => (
-                      <option key={c.id} value={c.id}>{labelCuenta(c)}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => { setCuentaModal(true) }}
-                    style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, padding: '9px 12px', cursor: 'pointer', color: T.wine, fontSize: 16, fontWeight: 700, lineHeight: 1, flexShrink: 0, transition: 'border-color 0.12s', fontFamily: 'inherit' }}
-                    title="Agregar cuenta bancaria">+</button>
+                  {(['emitido', 'recibido'] as const).map(t => (
+                    <button key={t} type="button" onClick={() => setFTipo(t)}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: fTipo === t ? T.wineBg : T.surface, border: `1px solid ${fTipo === t ? T.wine : T.border}`, color: fTipo === t ? T.wine : T.muted }}>
+                      {t === 'emitido' ? 'A un proveedor' : 'De un cliente'}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* Cuenta bancaria + botón nueva — solo aplica a cheques propios */}
+              {fTipo === 'emitido' && (
+                <div>
+                  <label style={LBL}>Cuenta bancaria</label>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <select style={{ ...INP, flex: 1 }} value={fCuentaId} onChange={e => onSelectCuenta(e.target.value)}>
+                      <option value="">Seleccionar cuenta...</option>
+                      {cuentas.map(c => (
+                        <option key={c.id} value={c.id}>{labelCuenta(c)}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => { setCuentaModal(true) }}
+                      style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, padding: '9px 12px', cursor: 'pointer', color: T.wine, fontSize: 16, fontWeight: 700, lineHeight: 1, flexShrink: 0, transition: 'border-color 0.12s', fontFamily: 'inherit' }}
+                      title="Agregar cuenta bancaria">+</button>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={LBL}>N° de cheque</label>
                   <input style={INP} placeholder="Ej: 00012345" value={fNroCheque} onChange={e => setFNroCheque(e.target.value)} />
                 </div>
-                <div>
-                  <label style={LBL}>Beneficiario <span style={{ color: T.red }}>*</span></label>
-                  <input style={INP} placeholder="Nombre del beneficiario" value={fBeneficiario} onChange={e => setFBeneficiario(e.target.value)} />
-                </div>
+                {fTipo === 'emitido' ? (
+                  <div>
+                    <label style={LBL}>Beneficiario <span style={{ color: T.red }}>*</span></label>
+                    <input style={INP} placeholder="Nombre del beneficiario" value={fBeneficiario} onChange={e => setFBeneficiario(e.target.value)} />
+                  </div>
+                ) : (
+                  <div>
+                    <label style={LBL}>Librador <span style={{ color: T.red }}>*</span> <span style={{ fontWeight: 400, color: T.dim, textTransform: 'none' }}>(quién lo firmó)</span></label>
+                    <input style={INP} placeholder="Nombre del cliente / titular" value={fLibrador} onChange={e => setFLibrador(e.target.value)} />
+                  </div>
+                )}
               </div>
+
+              {fTipo === 'recibido' && (
+                <div>
+                  <label style={LBL}>Banco <span style={{ fontWeight: 400, color: T.dim }}>(opcional)</span></label>
+                  <input style={INP} placeholder="Ej: Banco Galicia, BBVA..." value={fBanco} onChange={e => setFBanco(e.target.value)} />
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
@@ -591,7 +667,7 @@ export default function ChequesPage() {
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
                   Cheque {detalle.nro_cheque ? `N° ${detalle.nro_cheque}` : 'sin número'}
                 </h2>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: T.muted }}>{detalle.beneficiario}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: T.muted }}>{detalle.tipo === 'recibido' ? detalle.librador : detalle.beneficiario}</p>
               </div>
               <span style={{ ...(ESTADO_STYLE[detalle.estado] || {}), padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block', flexShrink: 0 }}>
                 {ESTADO_LABEL[detalle.estado]}
@@ -630,12 +706,12 @@ export default function ChequesPage() {
               )}
 
               {/* Acciones de estado */}
-              {detalle.estado === 'emitido' && (
+              {esPendiente(detalle) && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-green"
                     onClick={() => cambiarEstado(detalle.id, 'acreditado')}
                     style={{ flex: 1, background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.12s' }}>
-                    ✓ Marcar acreditado
+                    {detalle.tipo === 'recibido' ? '✓ Marcar depositado' : '✓ Marcar acreditado'}
                   </button>
                   <button className="btn-red"
                     onClick={() => cambiarEstado(detalle.id, 'rechazado')}

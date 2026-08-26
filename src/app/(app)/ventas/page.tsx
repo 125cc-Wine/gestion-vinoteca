@@ -132,7 +132,7 @@ function btn(v: 'default' | 'accent' | 'ghost' | 'danger' | 'green' = 'default',
   return { ...bases[v], borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s', ...ex }
 }
 
-const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Cheque']
 
 function filtrarProductos(productos: Producto[], q: string) {
   if (!q) return productos.slice(0, 50)
@@ -459,6 +459,12 @@ export default function VentasPage() {
   const [cobroFilaMonto, setCobroFilaMonto] = useState('')
   const [cobroFilaMedioPago, setCobroFilaMedioPago] = useState('Efectivo')
   const [cobroFilaGuardando, setCobroFilaGuardando] = useState(false)
+  // Si el cliente paga con cheque, se carga acá mismo en Cheques (tipo
+  // "recibido") — la empresa lo tiene en cartera hasta depositarlo.
+  const [cobroFilaChNumero, setCobroFilaChNumero] = useState('')
+  const [cobroFilaChBanco, setCobroFilaChBanco] = useState('')
+  const [cobroFilaChFecha, setCobroFilaChFecha] = useState('')
+  const [cobroFilaChLibrador, setCobroFilaChLibrador] = useState('')
 
   const dirtyVenta  = items.some(i => i.producto_id !== '') || clienteId !== ''
   const dirtyPedido = pItems.some(i => i.producto_id !== '') || pClienteId !== ''
@@ -772,6 +778,8 @@ export default function VentasPage() {
     setCobroFilaModal(v)
     setCobroFilaMonto(String(restante))
     setCobroFilaMedioPago('Efectivo')
+    setCobroFilaChNumero(''); setCobroFilaChBanco(''); setCobroFilaChFecha('')
+    setCobroFilaChLibrador(v.cliente_nombre || '')
   }
 
   async function confirmarCobroFila() {
@@ -781,6 +789,7 @@ export default function VentasPage() {
     const monto = parseFloat(cobroFilaMonto.replace(',', '.'))
     if (!monto || monto <= 0) { showToast('Monto inválido'); return }
     if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
+    if (cobroFilaMedioPago === 'Cheque' && (!cobroFilaChNumero || !cobroFilaChFecha)) { showToast('Completá el N° de cheque y la fecha de cobro'); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo
     // reconozca como originado por el clic del usuario y no lo bloquee.
@@ -793,6 +802,20 @@ export default function VentasPage() {
       })
       const data = await res.json()
       if (data.error) { showToast('Error: ' + data.error); wRecibo?.close(); return }
+
+      if (cobroFilaMedioPago === 'Cheque') {
+        await fetch('/api/cheques', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa, tipo: 'recibido', banco: cobroFilaChBanco || null, nro_cheque: cobroFilaChNumero,
+            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: cobroFilaChFecha,
+            librador: cobroFilaChLibrador || v.cliente_nombre,
+            concepto: `Cobro ${labelComprobante(v)}`,
+            cliente_id: v.cliente_id || null,
+          }),
+        })
+      }
+
       await cargarTodo(empresa)
       showToast(monto < restante - 0.01 ? 'Cobro parcial registrado' : 'Comprobante cobrado')
       setCobroFilaModal(null)
@@ -1547,6 +1570,21 @@ export default function VentasPage() {
                   {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                 </select>
               </div>
+
+              {cobroFilaMedioPago === 'Cheque' && (
+                <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Datos del cheque</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input placeholder="N° de cheque" value={cobroFilaChNumero} onChange={e => setCobroFilaChNumero(e.target.value)} style={{ ...INP, flex: 1 }} />
+                    <input placeholder="Banco" value={cobroFilaChBanco} onChange={e => setCobroFilaChBanco(e.target.value)} style={{ ...INP, flex: 1 }} />
+                  </div>
+                  <input placeholder="Librador (quién lo firmó)" value={cobroFilaChLibrador} onChange={e => setCobroFilaChLibrador(e.target.value)} style={INP} />
+                  <div>
+                    <label style={{ fontSize: 10.5, color: C.dim, display: 'block', marginBottom: 4 }}>Fecha de cobro</label>
+                    <input type="date" value={cobroFilaChFecha} onChange={e => setCobroFilaChFecha(e.target.value)} style={INP} />
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ padding: '14px 22px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="vbtn" disabled={cobroFilaGuardando} style={btn('default')} onClick={() => setCobroFilaModal(null)}>Cancelar</button>

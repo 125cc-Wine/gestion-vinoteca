@@ -17,29 +17,50 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data)
 }
 
+// tipo='emitido' (default, sin cambios): la empresa le paga a un proveedor —
+//   requiere beneficiario, arranca en estado 'emitido'.
+// tipo='recibido': un cliente paga una venta con un cheque de su propia
+//   cuenta — la empresa lo tiene en cartera hasta depositarlo. Requiere
+//   librador (quién lo firmó) en vez de beneficiario, arranca en
+//   'en_cartera' en vez de 'emitido'.
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { empresa, cuenta_id, banco, nro_cheque, monto, fecha_emision, fecha_pago, beneficiario, concepto, proveedor_id, compra_id, notas } = body
+  const {
+    empresa, cuenta_id, banco, nro_cheque, monto, fecha_emision, fecha_pago,
+    beneficiario, concepto, proveedor_id, compra_id, notas,
+    tipo, librador, cliente_id,
+  } = body
 
-  if (!empresa || !beneficiario || !monto || !fecha_pago) {
-    return NextResponse.json({ error: 'empresa, beneficiario, monto y fecha_pago son requeridos' }, { status: 400 })
+  const esRecibido = tipo === 'recibido'
+
+  if (!empresa || !monto || !fecha_pago) {
+    return NextResponse.json({ error: 'empresa, monto y fecha_pago son requeridos' }, { status: 400 })
+  }
+  if (esRecibido && !librador) {
+    return NextResponse.json({ error: 'librador es requerido para un cheque recibido' }, { status: 400 })
+  }
+  if (!esRecibido && !beneficiario) {
+    return NextResponse.json({ error: 'beneficiario es requerido' }, { status: 400 })
   }
 
   const { data, error } = await supabase
     .from('cheques')
     .insert([{
       empresa,
+      tipo: esRecibido ? 'recibido' : 'emitido',
       cuenta_id: cuenta_id || null,
       banco: banco || null,
       nro_cheque: nro_cheque || null,
       monto: Number(monto),
       fecha_emision: fecha_emision || new Date().toISOString().slice(0, 10),
       fecha_pago,
-      beneficiario,
+      beneficiario: esRecibido ? null : beneficiario,
+      librador: esRecibido ? librador : null,
+      cliente_id: esRecibido ? (cliente_id || null) : null,
       concepto: concepto || null,
-      estado: 'emitido',
-      proveedor_id: proveedor_id || null,
-      compra_id: compra_id || null,
+      estado: esRecibido ? 'en_cartera' : 'emitido',
+      proveedor_id: esRecibido ? null : (proveedor_id || null),
+      compra_id: esRecibido ? null : (compra_id || null),
       notas: notas || null,
     }])
     .select()

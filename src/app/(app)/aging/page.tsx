@@ -13,7 +13,7 @@ const T = {
   gold: '#B88A2C', goldBg: 'rgba(184,138,44,0.08)',
 }
 
-const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago']
+const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Cheque']
 
 function fmt(n: number) {
   return '$' + Math.round(n).toLocaleString('es-AR')
@@ -128,6 +128,11 @@ export default function AgingPage() {
   const [montoGlobal, setMontoGlobal] = useState('')
   const [medioGlobal, setMedioGlobal] = useState('Efectivo')
   const [cobrandoGlobal, setCobrandoGlobal] = useState(false)
+  // Cheque recibido — mismos 4 campos que en el resto de los flujos de cobro.
+  const [globalChNumero, setGlobalChNumero] = useState('')
+  const [globalChBanco, setGlobalChBanco] = useState('')
+  const [globalChFecha, setGlobalChFecha] = useState('')
+  const [globalChLibrador, setGlobalChLibrador] = useState('')
 
   // Modal "marcar pagado" — antes era un window.prompt() que solo pedía el
   // monto y el medio de pago quedaba fijo en "Efectivo" en el recibo aunque
@@ -136,6 +141,10 @@ export default function AgingPage() {
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoMedioPago, setPagoMedioPago] = useState('Efectivo')
   const [pagando, setPagando] = useState(false)
+  const [pagoChNumero, setPagoChNumero] = useState('')
+  const [pagoChBanco, setPagoChBanco] = useState('')
+  const [pagoChFecha, setPagoChFecha] = useState('')
+  const [pagoChLibrador, setPagoChLibrador] = useState('')
 
   // Defensa extra: si por lo que sea hay dos pedidos en vuelo (ej. el usuario
   // cambia de empresa rápido en el selector), ignorar la respuesta que no es
@@ -230,6 +239,8 @@ export default function AgingPage() {
     setDetalleVentas([])
     setMontoGlobal('')
     setMedioGlobal('Efectivo')
+    setGlobalChNumero(''); setGlobalChBanco(''); setGlobalChFecha('')
+    setGlobalChLibrador(row.cliente_nombre || '')
     try {
       setDetalleVentas(await cargarVentasPendientes(row))
     } catch {
@@ -252,6 +263,7 @@ export default function AgingPage() {
     if (monto > modalCliente.saldo_total + 0.01) {
       if (!confirm(`El monto (${fmt(monto)}) es mayor al saldo adeudado (${fmt(modalCliente.saldo_total)}). ¿Igual querés registrarlo? El excedente queda como saldo a favor del cliente.`)) return
     }
+    if (medioGlobal === 'Cheque' && (!globalChNumero || !globalChFecha)) { alert('Completá el N° de cheque y la fecha de cobro'); return }
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic/Enter del usuario y no lo bloquee como popup.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
@@ -267,6 +279,20 @@ export default function AgingPage() {
       })
       const data = await res.json()
       if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
+
+      if (medioGlobal === 'Cheque') {
+        await fetch('/api/cheques', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa, tipo: 'recibido', banco: globalChBanco || null, nro_cheque: globalChNumero,
+            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: globalChFecha,
+            librador: globalChLibrador || modalCliente.cliente_nombre,
+            concepto: 'Cobro cuenta corriente (Aging)',
+            cliente_id: modalCliente.cliente_id,
+          }),
+        })
+      }
+
       setMontoGlobal('')
       setDetalleVentas(await cargarVentasPendientes(modalCliente))
       setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
@@ -287,6 +313,8 @@ export default function AgingPage() {
     setPagoModal(v)
     setPagoMonto(String(restante))
     setPagoMedioPago('Efectivo')
+    setPagoChNumero(''); setPagoChBanco(''); setPagoChFecha('')
+    setPagoChLibrador(modalCliente?.cliente_nombre || '')
   }
 
   async function confirmarPago() {
@@ -297,6 +325,7 @@ export default function AgingPage() {
     const monto = parseFloat(pagoMonto.replace(',', '.'))
     if (!monto || monto <= 0) { alert('Monto inválido'); return }
     if (monto > restante + 0.01) { alert(`No puede ser mayor a lo que falta (${fmt(restante)})`); return }
+    if (pagoMedioPago === 'Cheque' && (!pagoChNumero || !pagoChFecha)) { alert('Completá el N° de cheque y la fecha de cobro'); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
@@ -326,6 +355,20 @@ export default function AgingPage() {
           })
       const data = await res.json()
       if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
+
+      if (pagoMedioPago === 'Cheque') {
+        await fetch('/api/cheques', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa, tipo: 'recibido', banco: pagoChBanco || null, nro_cheque: pagoChNumero,
+            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: pagoChFecha,
+            librador: pagoChLibrador || modalCliente?.cliente_nombre,
+            concepto: esCargo ? 'Cobro deuda cargada' : `Cobro ${v.numero ? `#${v.numero}` : ''}`,
+            cliente_id: modalCliente?.cliente_id,
+          }),
+        })
+      }
+
       const esParcial = monto < restante - 0.01
       if (esParcial) {
         setDetalleVentas(prev => prev.map(x => x.id === v.id ? { ...x, monto_pagado: (x.monto_pagado || 0) + monto } : x))
@@ -802,43 +845,50 @@ export default function AgingPage() {
 
             {/* Cobrar un monto global — se reparte solo del comprobante más viejo al más nuevo */}
             {modalCliente.cliente_id && detalleVentas.length > 0 && (
-              <div style={{
-                padding: '14px 22px', borderTop: `1px solid ${T.border}`,
-                background: T.bg, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-              }}>
-                <div style={{ fontSize: 12, color: T.muted, flex: '1 1 220px' }}>
-                  <strong style={{ color: T.text }}>Cobrar un monto</strong> — se descuenta solo del comprobante más viejo, y sigue con el siguiente si sobra.
+              <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, background: T.bg, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 12, color: T.muted, flex: '1 1 220px' }}>
+                    <strong style={{ color: T.text }}>Cobrar un monto</strong> — se descuenta solo del comprobante más viejo, y sigue con el siguiente si sobra.
+                  </div>
+                  <input
+                    type="number" min="0" step="0.01" placeholder="Monto"
+                    value={montoGlobal} onChange={e => setMontoGlobal(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !cobrandoGlobal) cobrarMontoGlobal() }}
+                    style={{
+                      width: 140, padding: '8px 10px', borderRadius: 8,
+                      border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit',
+                    }}
+                  />
+                  <select
+                    value={medioGlobal} onChange={e => setMedioGlobal(e.target.value)}
+                    style={{
+                      padding: '8px 10px', borderRadius: 8,
+                      border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', background: '#fff',
+                    }}
+                  >
+                    {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
+                  </select>
+                  <button
+                    onClick={cobrarMontoGlobal}
+                    disabled={cobrandoGlobal || !montoGlobal}
+                    style={{
+                      background: T.wine, color: '#fff', border: 'none', borderRadius: 8,
+                      padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                      cursor: cobrandoGlobal ? 'default' : 'pointer', fontFamily: 'inherit',
+                      opacity: cobrandoGlobal || !montoGlobal ? 0.6 : 1,
+                    }}
+                  >
+                    {cobrandoGlobal ? 'Aplicando...' : 'Cobrar'}
+                  </button>
                 </div>
-                <input
-                  type="number" min="0" step="0.01" placeholder="Monto"
-                  value={montoGlobal} onChange={e => setMontoGlobal(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !cobrandoGlobal) cobrarMontoGlobal() }}
-                  style={{
-                    width: 140, padding: '8px 10px', borderRadius: 8,
-                    border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit',
-                  }}
-                />
-                <select
-                  value={medioGlobal} onChange={e => setMedioGlobal(e.target.value)}
-                  style={{
-                    padding: '8px 10px', borderRadius: 8,
-                    border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', background: '#fff',
-                  }}
-                >
-                  {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
-                </select>
-                <button
-                  onClick={cobrarMontoGlobal}
-                  disabled={cobrandoGlobal || !montoGlobal}
-                  style={{
-                    background: T.wine, color: '#fff', border: 'none', borderRadius: 8,
-                    padding: '8px 18px', fontSize: 13, fontWeight: 600,
-                    cursor: cobrandoGlobal ? 'default' : 'pointer', fontFamily: 'inherit',
-                    opacity: cobrandoGlobal || !montoGlobal ? 0.6 : 1,
-                  }}
-                >
-                  {cobrandoGlobal ? 'Aplicando...' : 'Cobrar'}
-                </button>
+                {medioGlobal === 'Cheque' && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', background: '#fff', border: `1px solid ${T.border}`, borderRadius: 8, padding: 10 }}>
+                    <input placeholder="N° de cheque" value={globalChNumero} onChange={e => setGlobalChNumero(e.target.value)} style={{ flex: '1 1 120px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
+                    <input placeholder="Banco" value={globalChBanco} onChange={e => setGlobalChBanco(e.target.value)} style={{ flex: '1 1 120px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
+                    <input placeholder="Librador" value={globalChLibrador} onChange={e => setGlobalChLibrador(e.target.value)} style={{ flex: '1 1 140px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
+                    <input type="date" value={globalChFecha} onChange={e => setGlobalChFecha(e.target.value)} style={{ flex: '1 1 140px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
+                  </div>
+                )}
               </div>
             )}
 
@@ -912,6 +962,21 @@ export default function AgingPage() {
                   {MEDIOS_PAGO_COBRO.map(mp => <option key={mp}>{mp}</option>)}
                 </select>
               </div>
+
+              {pagoMedioPago === 'Cheque' && (
+                <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Datos del cheque</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input placeholder="N° de cheque" value={pagoChNumero} onChange={e => setPagoChNumero(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
+                    <input placeholder="Banco" value={pagoChBanco} onChange={e => setPagoChBanco(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
+                  </div>
+                  <input placeholder="Librador" value={pagoChLibrador} onChange={e => setPagoChLibrador(e.target.value)} style={{ padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
+                  <div>
+                    <label style={{ fontSize: 10.5, color: T.dim, display: 'block', marginBottom: 4 }}>Fecha de cobro</label>
+                    <input type="date" value={pagoChFecha} onChange={e => setPagoChFecha(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPagoModal(null)} disabled={pagando} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
