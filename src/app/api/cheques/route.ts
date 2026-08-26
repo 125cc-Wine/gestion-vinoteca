@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
       monto: Number(monto),
       fecha_emision: fecha_emision || new Date().toISOString().slice(0, 10),
       fecha_pago,
-      beneficiario: esRecibido ? null : beneficiario,
+      // beneficiario tiene NOT NULL en la base — no aplica a un cheque
+      // recibido (el beneficiario somos nosotros), pero no se puede mandar
+      // null. Nadie lee este campo para tipo='recibido' (la UI siempre usa
+      // "librador" en ese caso), así que un string vacío es inofensivo.
+      beneficiario: esRecibido ? '' : beneficiario,
       librador: esRecibido ? librador : null,
       cliente_id: esRecibido ? (cliente_id || null) : null,
       concepto: concepto || null,
