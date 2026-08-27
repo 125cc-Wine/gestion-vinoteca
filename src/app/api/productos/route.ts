@@ -130,7 +130,7 @@ export async function PUT(req: NextRequest) {
   // de pisarlo con el update.
   const { data: anterior } = await supabase
     .from('productos')
-    .select('precio_venta, precio_costo')
+    .select('precio_venta, precio_costo, stock')
     .eq('id', id)
     .single()
 
@@ -145,6 +145,18 @@ export async function PUT(req: NextRequest) {
 
   if (anterior) {
     await registrarHistorialPrecio(id, data.empresa, data.nombre, anterior, rest)
+  }
+
+  // Edición manual de stock desde la pantalla de Productos — antes esto no
+  // dejaba rastro en Movimientos, así que una corrección a mano (o un error
+  // de tipeo) no se podía auditar después.
+  if ('stock' in rest && anterior && rest.stock !== anterior.stock) {
+    await supabase.from('movimientos_stock').insert([{
+      empresa: data.empresa, producto_id: id,
+      nombre: `${data.nombre} — edición manual`,
+      delta: (rest.stock as number) - (anterior.stock || 0),
+      nuevo_stock: rest.stock, modo: 'agregar',
+    }])
   }
 
   // Sincronizar con la otra empresa

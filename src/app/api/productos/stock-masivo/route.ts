@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const ids = updates.map(u => u.id)
   const { data: productos, error: fetchErr } = await supabase
     .from('productos')
-    .select('id, nombre, empresa')
+    .select('id, nombre, empresa, stock')
     .in('id', ids)
 
   if (fetchErr || !productos) {
@@ -52,6 +52,15 @@ export async function POST(req: NextRequest) {
       if (stock === undefined) return null
       const r1 = await supabase.from('productos').update({ stock }).eq('id', p.id)
       if (r1.error) return { nombre: p.nombre, error: r1.error.message }
+
+      // Antes esta carga (la más habitual para actualizar stock de golpe) no
+      // dejaba ningún rastro en Movimientos.
+      if (stock !== p.stock) {
+        await supabase.from('movimientos_stock').insert([{
+          empresa, producto_id: p.id, nombre: `${p.nombre} — carga masiva Excel`,
+          delta: stock - (p.stock || 0), nuevo_stock: stock, modo: 'agregar',
+        }])
+      }
 
       const contraparteId = contraparteIdPorNombre.get(p.nombre)
       if (contraparteId) {

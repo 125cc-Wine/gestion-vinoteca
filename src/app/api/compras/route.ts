@@ -51,6 +51,11 @@ export async function POST(req: NextRequest) {
       if (!prod) continue
       const nuevoStock = (prod.stock || 0) + item.cantidad
       await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+      await supabase.from('movimientos_stock').insert([{
+        empresa: prod.empresa, producto_id: prod.id,
+        nombre: `${prod.nombre} — Compra ${numero}`, delta: item.cantidad,
+        nuevo_stock: nuevoStock, modo: 'agregar',
+      }])
       const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
       const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
       if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
@@ -131,6 +136,11 @@ export async function PUT(req: NextRequest) {
 
       const nuevoStock = (prod.stock || 0) + item.cantidad
       await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+      await supabase.from('movimientos_stock').insert([{
+        empresa: prod.empresa, producto_id: prod.id,
+        nombre: `${prod.nombre} — Compra recibida`, delta: item.cantidad,
+        nuevo_stock: nuevoStock, modo: 'agregar',
+      }])
 
       // Sync contraparte
       const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
@@ -155,6 +165,11 @@ async function revertirStockItems(items: { producto_id?: string; nombre: string;
     if (!prod) continue
     const nuevoStock = Math.max(0, (prod.stock || 0) - item.cantidad)
     await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+    await supabase.from('movimientos_stock').insert([{
+      empresa: prod.empresa, producto_id: prod.id,
+      nombre: `${prod.nombre} — Compra cancelada/revertida`, delta: -item.cantidad,
+      nuevo_stock: nuevoStock, modo: 'agregar',
+    }])
     const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
     const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
     if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)

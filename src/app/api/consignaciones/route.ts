@@ -13,11 +13,18 @@ interface ConsItem {
 // Ajusta el stock de un producto (delta positivo o negativo) y sincroniza la
 // contraparte en la otra empresa — mismo patrón que usan ventas y compras
 // para el depósito compartido. Clampeado en 0 para no ir a negativo.
-async function ajustarStock(productoId: string, delta: number) {
+// `motivo` queda en movimientos_stock (antes esta función no dejaba ningún
+// rastro — la mercadería salía/volvía del depósito por consignación sin
+// aparecer nunca en la pantalla de Movimientos).
+async function ajustarStock(productoId: string, delta: number, motivo: string) {
   const { data: prod } = await supabase.from('productos').select('id, stock, nombre, empresa').eq('id', productoId).single()
   if (!prod) return
   const nuevoStock = Math.max(0, (prod.stock || 0) + delta)
   await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
+  await supabase.from('movimientos_stock').insert([{
+    empresa: prod.empresa, producto_id: prod.id,
+    nombre: `${prod.nombre} — ${motivo}`, delta, nuevo_stock: nuevoStock, modo: 'agregar',
+  }])
   const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
   const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
   if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
@@ -86,7 +93,7 @@ export async function POST(req: NextRequest) {
   // se habían restado.
   for (const item of items) {
     if (!item.producto_id) continue
-    await ajustarStock(item.producto_id, -(item.cantidad || 0))
+    await ajustarStock(item.producto_id, -(item.cantidad || 0), `Consignación ${numero}`)
   }
 
   return NextResponse.json(data)
@@ -139,7 +146,7 @@ export async function PUT(req: NextRequest) {
     for (const pid of Array.from(todosLosIds)) {
       if (!pid) continue
       const delta = (oldMap.get(pid) || 0) - (newMap.get(pid) || 0)
-      if (delta !== 0) await ajustarStock(pid, delta)
+      if (delta !== 0) await ajustarStock(pid, delta, `Consignación ${data.numero} — edición de ítems`)
     }
     return NextResponse.json(data)
   }
@@ -155,7 +162,7 @@ export async function PUT(req: NextRequest) {
         if (!item.producto_id) continue
         const qty = (item.cantidad || 0) - (item.cantidad_vendida || 0)
         if (qty <= 0) continue
-        await ajustarStock(item.producto_id, qty)
+        await ajustarStock(item.producto_id, qty, `Consignación ${data.numero} devuelta`)
       }
     } else if (nuevoEstado === 'liquidada') {
       // Return only what wasn't sold: cantidad - cantidad_vendida
@@ -163,7 +170,7 @@ export async function PUT(req: NextRequest) {
         if (!item.producto_id) continue
         const qty = (item.cantidad || 0) - (item.cantidad_vendida || 0)
         if (qty <= 0) continue
-        await ajustarStock(item.producto_id, qty)
+        await ajustarStock(item.producto_id, qty, `Consignación ${data.numero} liquidada`)
       }
 
       // Lo vendido en consignación se carga a la cuenta corriente del
@@ -200,12 +207,12 @@ export async function DELETE(req: NextRequest) {
   // Si se borra una consignación todavía "activa" (o "parcial"), la
   // mercadería consignada sigue afuera — hay que devolverla al stock antes
   // de borrar el registro, si no desaparece del sistema para siempre.
-  const { data: cons } = await supabase.from('consignaciones').select('estado, items').eq('id', id).single()
+  const { data: cons } = await supabase.from('consignaciones').select('numero, estado, items').eq('id', id).single()
   if (cons && (cons.estado === 'activa' || cons.estado === 'parcial') && Array.isArray(cons.items)) {
     for (const item of cons.items as ConsItem[]) {
       if (!item.producto_id) continue
       const pendiente = (item.cantidad || 0) - (item.cantidad_vendida || 0)
-      if (pendiente > 0) await ajustarStock(item.producto_id, pendiente)
+      if (pendiente > 0) await ajustarStock(item.producto_id, pendiente, `Consignación ${cons.numero} borrada`)
     }
   }
 

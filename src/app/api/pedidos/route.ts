@@ -88,12 +88,16 @@ export async function PUT(req: NextRequest) {
           if (prod) {
             const nuevoStock = Math.max(0, (prod.stock ?? 0) - item.cantidad)
             await supabase.from('productos').update({ stock: nuevoStock }).eq('id', item.producto_id)
+            // Ojo: la tabla es nombre/delta/nuevo_stock/modo, NO tipo/cantidad/motivo
+            // (con esas columnas el insert fallaba silenciosamente y nunca quedaba
+            // registrado — ver movimientos.md / auditoría 2026-08-27).
             await supabase.from('movimientos_stock').insert([{
               producto_id: item.producto_id,
               empresa: current.empresa,
-              tipo: 'salida',
-              cantidad: item.cantidad,
-              motivo: `Pedido entregado — ${id}`,
+              nombre: `${item.nombre} — Pedido entregado`,
+              delta: -item.cantidad,
+              nuevo_stock: nuevoStock,
+              modo: 'agregar',
             }])
           }
         })

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const nombres = Array.from(new Set(seleccionados.map(p => p.nombre)))
   const { data: todos, error: todosErr } = await supabase
     .from('productos')
-    .select('id, precio_venta, precio_costo')
+    .select('id, nombre, empresa, precio_venta, precio_costo, stock')
     .in('nombre', nombres)
     .eq('activo', true)
 
@@ -96,12 +96,28 @@ export async function POST(req: NextRequest) {
     }
 
   } else if (accion === 'stock_fijo') {
-    const { count, error } = await supabase
-      .from('productos')
-      .update({ stock: Number(valor) }, { count: 'exact' })
-      .in('id', todosIds)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    afectados = count ?? 0
+    // Antes esta edición masiva (fijar el mismo stock a varios productos de
+    // una) no dejaba rastro en Movimientos.
+    const nuevoStock = Number(valor)
+    const BATCH = 50
+    for (let i = 0; i < todos.length; i += BATCH) {
+      const lote = todos.slice(i, i + BATCH)
+      const results = await Promise.all(
+        lote.map(async p => {
+          const r = await supabase.from('productos').update({ stock: nuevoStock }).eq('id', p.id)
+          if (!r.error && nuevoStock !== p.stock) {
+            await supabase.from('movimientos_stock').insert([{
+              empresa: p.empresa, producto_id: p.id, nombre: `${p.nombre} — edición masiva`,
+              delta: nuevoStock - (p.stock || 0), nuevo_stock: nuevoStock, modo: 'agregar',
+            }])
+          }
+          return r
+        })
+      )
+      const errFound = results.find(r => r.error)
+      if (errFound?.error) return NextResponse.json({ error: errFound.error.message }, { status: 500 })
+      afectados += lote.length
+    }
 
   } else if (accion === 'costo_fijo') {
     const { count, error } = await supabase
