@@ -17,14 +17,14 @@ export async function GET(req: NextRequest) {
   // Paginado por las dudas — Supabase corta en 1000 filas por default, y un
   // rango de fechas amplio (o "ambas" empresas) puede superarlo con el
   // tiempo, cortando ventas en silencio y desviando todos los KPIs.
-  const ventas: { id: string; numero: string; tipo: string; total: number; created_at: string; cliente_nombre: string; vendedor_nombre: string | null; items: unknown; estado_pago: string | null; condicion_venta: string | null }[] = []
+  const ventas: { id: string; numero: string; tipo: string; total: number; monto_pagado: number | null; created_at: string; cliente_nombre: string; vendedor_nombre: string | null; items: unknown; estado_pago: string | null; condicion_venta: string | null }[] = []
   {
     const PAGE = 1000
     let from = 0
     while (true) {
       let q = supabase
         .from('ventas')
-        .select('id, numero, tipo, total, created_at, cliente_nombre, vendedor_nombre, items, estado_pago, condicion_venta')
+        .select('id, numero, tipo, total, monto_pagado, created_at, cliente_nombre, vendedor_nombre, items, estado_pago, condicion_venta')
         .neq('estado', 'cancelado')
         .order('created_at', { ascending: true })
         .range(from, from + PAGE - 1)
@@ -143,8 +143,17 @@ export async function GET(req: NextRequest) {
   const ticketPromedio = cantVentas ? totalVentas / cantVentas : 0
   // Facturado vs. efectivamente cobrado en el período — antes el reporte
   // solo mostraba lo facturado, sin distinguir cuánto de eso ya se cobró.
-  const cobrado        = list.filter(v => v.estado_pago === 'pagado').reduce((a, v) => a + v.total, 0)
-  const pendienteCobro  = totalVentas - cobrado
+  // "cobrado" sumaba el total ENTERO de las ventas con estado_pago='pagado'
+  // y nada más — una venta en cuenta_corriente/pendiente con pago PARCIAL
+  // (monto_pagado > 0 pero no cubre el total) no restaba nada, así que
+  // "Pendiente de cobro" contaba su total bruto como si no se hubiera
+  // cobrado ni un peso. Mismo bug que ya se había corregido en el KPI
+  // "Cuentas corrientes" del Dashboard (commit 9beecf6), nunca aplicado acá.
+  // Verificado: Aroma jun-ago mostraba $1.013.478 pendiente; lo real, sumando
+  // total - monto_pagado de cada venta abierta, es $439.248 — coincide exacto
+  // con lo que ya muestra Cuentas Corrientes.
+  const cobrado         = list.reduce((a, v) => a + (v.monto_pagado || 0), 0)
+  const pendienteCobro   = list.filter(v => v.estado_pago !== 'pagado').reduce((a, v) => a + (v.total - (v.monto_pagado || 0)), 0)
   const margenTotal     = Object.values(prodMap).reduce((a, p) => a + p.margen, 0)
 
   return NextResponse.json({
