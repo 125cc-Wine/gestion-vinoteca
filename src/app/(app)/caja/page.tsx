@@ -171,11 +171,24 @@ export default function CajaPage() {
 
   // Solo afecta la pestaña Movimientos — Cierre del día sigue mirando
   // `movimientos` completo, que ya se filtra por fecha por su cuenta.
+  //
+  // Un cheque (emitido a un proveedor o recibido de un cliente) no es un
+  // movimiento de plata inmediato: la plata recién se mueve el día que se
+  // cobra, no el día que se firma/registra — pero el movimiento en
+  // movimientos_caja se carga con la fecha de registro (hoy), no la fecha
+  // de cobro del cheque (que ni siquiera llega a este endpoint). Si se
+  // suma igual que Efectivo, un solo pago grande a proveedor con cheque
+  // hace que "Saldo neto" de hoy se vaya profundamente negativo aunque no
+  // haya salido un peso de la caja física todavía — y al revés, un cobro
+  // grande con cheque de un cliente infla el saldo de hoy con plata que
+  // tampoco entró. Se excluye de estos 3 totales (queda igual visible en
+  // la tabla de movimientos, con su medio de pago, para seguimiento).
   const movimientosFiltrados = movimientos.filter(m =>
     (!filtroDesde || m.fecha >= filtroDesde) && (!filtroHasta || m.fecha <= filtroHasta)
   )
-  const totalIngresos = movimientosFiltrados.filter(m => m.tipo === 'ingreso').reduce((a, m) => a + m.monto, 0)
-  const totalEgresos  = movimientosFiltrados.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
+  const movimientosSaldo = movimientosFiltrados.filter(m => m.medio_pago !== 'Cheque')
+  const totalIngresos = movimientosSaldo.filter(m => m.tipo === 'ingreso').reduce((a, m) => a + m.monto, 0)
+  const totalEgresos  = movimientosSaldo.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
   const saldo = totalIngresos - totalEgresos
 
   // Efectivo del día seleccionado para cierre
