@@ -55,9 +55,15 @@ export async function GET(req: NextRequest) {
     porVendedor[key].cantidad++
   }
 
-  // Caja hoy
-  const ingresosHoy = (cajaHoy || []).filter(m => m.tipo === 'ingreso' && m.categoria !== 'Apertura de caja').reduce((a, m) => a + m.monto, 0)
-  const egresosHoy = (cajaHoy || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
+  // Caja hoy — un cheque no es plata que entró/salió hoy (recién se mueve el
+  // día que se cobra, y ese día ni siquiera llega a este endpoint), así que
+  // se excluye del saldo igual que ya se excluye "Apertura de caja". Mismo
+  // criterio que caja/page.tsx (ver ese archivo para el detalle del bug real:
+  // un pago a proveedor con cheque hundía este saldo aunque no saliera un
+  // peso de la caja física).
+  const cajaHoySinCheque = (cajaHoy || []).filter(m => m.medio_pago !== 'Cheque')
+  const ingresosHoy = cajaHoySinCheque.filter(m => m.tipo === 'ingreso' && m.categoria !== 'Apertura de caja').reduce((a, m) => a + m.monto, 0)
+  const egresosHoy = cajaHoySinCheque.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0)
   const saldoCaja = ingresosHoy - egresosHoy
 
   // Clientes con saldo — agrupado desde ventas de ESTA empresa en cuenta
