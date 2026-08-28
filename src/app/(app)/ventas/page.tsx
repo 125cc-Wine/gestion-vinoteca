@@ -14,6 +14,7 @@ import wooUrls from '@/data/wooUrls.json'
 import QRCode from 'qrcode'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { labelComprobante } from '@/lib/labelComprobante'
+import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 const CBTE_TIPO_POR_LETRA_QR: Record<number, number> = { 1: 1, 6: 6, 11: 11 }
 
@@ -460,11 +461,11 @@ export default function VentasPage() {
   const [cobroFilaMedioPago, setCobroFilaMedioPago] = useState('Efectivo')
   const [cobroFilaGuardando, setCobroFilaGuardando] = useState(false)
   // Si el cliente paga con cheque, se carga acá mismo en Cheques (tipo
-  // "recibido") — la empresa lo tiene en cartera hasta depositarlo.
-  const [cobroFilaChNumero, setCobroFilaChNumero] = useState('')
-  const [cobroFilaChBanco, setCobroFilaChBanco] = useState('')
-  const [cobroFilaChFecha, setCobroFilaChFecha] = useState('')
-  const [cobroFilaChLibrador, setCobroFilaChLibrador] = useState('')
+  // "recibido") — la empresa lo tiene en cartera hasta depositarlo. Es una
+  // lista porque un mismo cobro a veces se cubre con varios cheques a
+  // fechas distintas.
+  const [cobroFilaCheques, setCobroFilaCheques] = useState<ChequeRecibido[]>([nuevoChequeRecibido()])
+  const cobroFilaChequesTotal = sumaCheques(cobroFilaCheques)
 
   const dirtyVenta  = items.some(i => i.producto_id !== '') || clienteId !== ''
   const dirtyPedido = pItems.some(i => i.producto_id !== '') || pClienteId !== ''
@@ -778,18 +779,17 @@ export default function VentasPage() {
     setCobroFilaModal(v)
     setCobroFilaMonto(String(restante))
     setCobroFilaMedioPago('Efectivo')
-    setCobroFilaChNumero(''); setCobroFilaChBanco(''); setCobroFilaChFecha('')
-    setCobroFilaChLibrador(v.cliente_nombre || '')
+    setCobroFilaCheques([{ ...nuevoChequeRecibido(v.cliente_nombre || ''), monto: restante }])
   }
 
   async function confirmarCobroFila() {
     if (!cobroFilaModal) return
     const v = cobroFilaModal
     const restante = parseFloat(((v.total || 0) - (v.monto_pagado || 0)).toFixed(2))
-    const monto = parseFloat(cobroFilaMonto.replace(',', '.'))
+    const monto = cobroFilaMedioPago === 'Cheque' ? cobroFilaChequesTotal : parseFloat(cobroFilaMonto.replace(',', '.'))
     if (!monto || monto <= 0) { showToast('Monto inválido'); return }
     if (monto > restante + 0.01) { showToast(`No puede ser mayor a lo que falta ($${restante.toLocaleString('es-AR')})`); return }
-    if (cobroFilaMedioPago === 'Cheque' && (!cobroFilaChNumero || !cobroFilaChFecha)) { showToast('Completá el N° de cheque y la fecha de cobro'); return }
+    if (cobroFilaMedioPago === 'Cheque' && !chequesCompletos(cobroFilaCheques)) { showToast('Completá N° de cheque, monto y fecha de cobro en cada cheque'); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo
     // reconozca como originado por el clic del usuario y no lo bloquee.
@@ -804,16 +804,18 @@ export default function VentasPage() {
       if (data.error) { showToast('Error: ' + data.error); wRecibo?.close(); return }
 
       if (cobroFilaMedioPago === 'Cheque') {
-        await fetch('/api/cheques', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            empresa, tipo: 'recibido', banco: cobroFilaChBanco || null, nro_cheque: cobroFilaChNumero,
-            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: cobroFilaChFecha,
-            librador: cobroFilaChLibrador || v.cliente_nombre,
-            concepto: `Cobro ${labelComprobante(v)}`,
-            cliente_id: v.cliente_id || null,
-          }),
-        })
+        for (const ch of cobroFilaCheques) {
+          await fetch('/api/cheques', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
+              monto: ch.monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: ch.fecha,
+              librador: ch.librador || v.cliente_nombre,
+              concepto: `Cobro ${labelComprobante(v)}`,
+              cliente_id: v.cliente_id || null,
+            }),
+          })
+        }
       }
 
       await cargarTodo(empresa)
@@ -1559,10 +1561,16 @@ export default function VentasPage() {
                 {cobroFilaModal.facturado && cobroFilaModal.nro_cbte_afip && <span style={{ display: 'block', fontSize: 10.5, color: C.dim, marginTop: 2 }}>interno #{cobroFilaModal.numero}</span>}
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
-                <input type="number" autoFocus value={cobroFilaMonto} onChange={e => setCobroFilaMonto(e.target.value)}
+                <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                  Monto cobrado
+                  {cobroFilaMedioPago === 'Cheque' && <span style={{ fontWeight: 400, color: C.dim, textTransform: 'none', letterSpacing: 0 }}> (suma de los cheques)</span>}
+                </label>
+                <input type="number" autoFocus
+                  disabled={cobroFilaMedioPago === 'Cheque'}
+                  value={cobroFilaMedioPago === 'Cheque' ? (cobroFilaChequesTotal || '') : cobroFilaMonto}
+                  onChange={e => setCobroFilaMonto(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !cobroFilaGuardando) confirmarCobroFila() }}
-                  style={INP} />
+                  style={{ ...INP, ...(cobroFilaMedioPago === 'Cheque' ? { background: C.bg, color: C.dim } : {}) }} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
@@ -1572,23 +1580,12 @@ export default function VentasPage() {
               </div>
 
               {cobroFilaMedioPago === 'Cheque' && (
-                <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Datos del cheque</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input placeholder="N° de cheque" value={cobroFilaChNumero} onChange={e => setCobroFilaChNumero(e.target.value)} style={{ ...INP, flex: 1 }} />
-                    <input placeholder="Banco" value={cobroFilaChBanco} onChange={e => setCobroFilaChBanco(e.target.value)} style={{ ...INP, flex: 1 }} />
-                  </div>
-                  <input placeholder="Librador (quién lo firmó)" value={cobroFilaChLibrador} onChange={e => setCobroFilaChLibrador(e.target.value)} style={INP} />
-                  <div>
-                    <label style={{ fontSize: 10.5, color: C.dim, display: 'block', marginBottom: 4 }}>Fecha de cobro</label>
-                    <input type="date" value={cobroFilaChFecha} onChange={e => setCobroFilaChFecha(e.target.value)} style={INP} />
-                  </div>
-                </div>
+                <ChequesRecibidosFieldset cheques={cobroFilaCheques} onChange={setCobroFilaCheques} />
               )}
             </div>
             <div style={{ padding: '14px 22px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="vbtn" disabled={cobroFilaGuardando} style={btn('default')} onClick={() => setCobroFilaModal(null)}>Cancelar</button>
-              <button className="vbtn" disabled={cobroFilaGuardando || !cobroFilaMonto} style={btn('accent', { opacity: cobroFilaGuardando || !cobroFilaMonto ? 0.6 : 1 })} onClick={confirmarCobroFila}>
+              <button className="vbtn" disabled={cobroFilaGuardando || (cobroFilaMedioPago === 'Cheque' ? !cobroFilaChequesTotal : !cobroFilaMonto)} style={btn('accent', { opacity: cobroFilaGuardando || (cobroFilaMedioPago === 'Cheque' ? !cobroFilaChequesTotal : !cobroFilaMonto) ? 0.6 : 1 })} onClick={confirmarCobroFila}>
                 {cobroFilaGuardando ? 'Guardando...' : 'Confirmar cobro'}
               </button>
             </div>

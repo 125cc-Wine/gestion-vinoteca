@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { labelComprobante } from '@/lib/labelComprobante'
+import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
@@ -128,11 +129,10 @@ export default function AgingPage() {
   const [montoGlobal, setMontoGlobal] = useState('')
   const [medioGlobal, setMedioGlobal] = useState('Efectivo')
   const [cobrandoGlobal, setCobrandoGlobal] = useState(false)
-  // Cheque recibido — mismos 4 campos que en el resto de los flujos de cobro.
-  const [globalChNumero, setGlobalChNumero] = useState('')
-  const [globalChBanco, setGlobalChBanco] = useState('')
-  const [globalChFecha, setGlobalChFecha] = useState('')
-  const [globalChLibrador, setGlobalChLibrador] = useState('')
+  // Cheques recibidos — lista, porque un mismo cobro a veces se cubre con
+  // varios cheques a fechas distintas.
+  const [globalCheques, setGlobalCheques] = useState<ChequeRecibido[]>([nuevoChequeRecibido()])
+  const globalChequesTotal = sumaCheques(globalCheques)
 
   // Modal "marcar pagado" — antes era un window.prompt() que solo pedía el
   // monto y el medio de pago quedaba fijo en "Efectivo" en el recibo aunque
@@ -141,10 +141,8 @@ export default function AgingPage() {
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoMedioPago, setPagoMedioPago] = useState('Efectivo')
   const [pagando, setPagando] = useState(false)
-  const [pagoChNumero, setPagoChNumero] = useState('')
-  const [pagoChBanco, setPagoChBanco] = useState('')
-  const [pagoChFecha, setPagoChFecha] = useState('')
-  const [pagoChLibrador, setPagoChLibrador] = useState('')
+  const [pagoCheques, setPagoCheques] = useState<ChequeRecibido[]>([nuevoChequeRecibido()])
+  const pagoChequesTotal = sumaCheques(pagoCheques)
 
   // Defensa extra: si por lo que sea hay dos pedidos en vuelo (ej. el usuario
   // cambia de empresa rápido en el selector), ignorar la respuesta que no es
@@ -239,8 +237,7 @@ export default function AgingPage() {
     setDetalleVentas([])
     setMontoGlobal('')
     setMedioGlobal('Efectivo')
-    setGlobalChNumero(''); setGlobalChBanco(''); setGlobalChFecha('')
-    setGlobalChLibrador(row.cliente_nombre || '')
+    setGlobalCheques([nuevoChequeRecibido(row.cliente_nombre || '')])
     try {
       setDetalleVentas(await cargarVentasPendientes(row))
     } catch {
@@ -258,12 +255,12 @@ export default function AgingPage() {
   // monto queda como saldo a favor hasta cobrarla aparte.
   async function cobrarMontoGlobal() {
     if (!modalCliente || !modalCliente.cliente_id) return
-    const monto = parseFloat(montoGlobal.replace(',', '.'))
+    const monto = medioGlobal === 'Cheque' ? globalChequesTotal : parseFloat(montoGlobal.replace(',', '.'))
     if (!monto || monto <= 0) { alert('Ingresá un monto válido'); return }
     if (monto > modalCliente.saldo_total + 0.01) {
       if (!confirm(`El monto (${fmt(monto)}) es mayor al saldo adeudado (${fmt(modalCliente.saldo_total)}). ¿Igual querés registrarlo? El excedente queda como saldo a favor del cliente.`)) return
     }
-    if (medioGlobal === 'Cheque' && (!globalChNumero || !globalChFecha)) { alert('Completá el N° de cheque y la fecha de cobro'); return }
+    if (medioGlobal === 'Cheque' && !chequesCompletos(globalCheques)) { alert('Completá N° de cheque, monto y fecha de cobro en cada cheque'); return }
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic/Enter del usuario y no lo bloquee como popup.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
@@ -281,16 +278,18 @@ export default function AgingPage() {
       if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
 
       if (medioGlobal === 'Cheque') {
-        await fetch('/api/cheques', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            empresa, tipo: 'recibido', banco: globalChBanco || null, nro_cheque: globalChNumero,
-            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: globalChFecha,
-            librador: globalChLibrador || modalCliente.cliente_nombre,
-            concepto: 'Cobro cuenta corriente (Aging)',
-            cliente_id: modalCliente.cliente_id,
-          }),
-        })
+        for (const ch of globalCheques) {
+          await fetch('/api/cheques', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
+              monto: ch.monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: ch.fecha,
+              librador: ch.librador || modalCliente.cliente_nombre,
+              concepto: 'Cobro cuenta corriente (Aging)',
+              cliente_id: modalCliente.cliente_id,
+            }),
+          })
+        }
       }
 
       setMontoGlobal('')
@@ -313,8 +312,7 @@ export default function AgingPage() {
     setPagoModal(v)
     setPagoMonto(String(restante))
     setPagoMedioPago('Efectivo')
-    setPagoChNumero(''); setPagoChBanco(''); setPagoChFecha('')
-    setPagoChLibrador(modalCliente?.cliente_nombre || '')
+    setPagoCheques([nuevoChequeRecibido(modalCliente?.cliente_nombre || '')])
   }
 
   async function confirmarPago() {
@@ -322,10 +320,10 @@ export default function AgingPage() {
     const v = pagoModal
     const restante = parseFloat((v.total - (v.monto_pagado || 0)).toFixed(2))
     const esCargo = v.tipo === 'cargo'
-    const monto = parseFloat(pagoMonto.replace(',', '.'))
+    const monto = pagoMedioPago === 'Cheque' ? pagoChequesTotal : parseFloat(pagoMonto.replace(',', '.'))
     if (!monto || monto <= 0) { alert('Monto inválido'); return }
     if (monto > restante + 0.01) { alert(`No puede ser mayor a lo que falta (${fmt(restante)})`); return }
-    if (pagoMedioPago === 'Cheque' && (!pagoChNumero || !pagoChFecha)) { alert('Completá el N° de cheque y la fecha de cobro'); return }
+    if (pagoMedioPago === 'Cheque' && !chequesCompletos(pagoCheques)) { alert('Completá N° de cheque, monto y fecha de cobro en cada cheque'); return }
 
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
@@ -357,16 +355,18 @@ export default function AgingPage() {
       if (data.error) { alert('Error: ' + data.error); wRecibo?.close(); return }
 
       if (pagoMedioPago === 'Cheque') {
-        await fetch('/api/cheques', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            empresa, tipo: 'recibido', banco: pagoChBanco || null, nro_cheque: pagoChNumero,
-            monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: pagoChFecha,
-            librador: pagoChLibrador || modalCliente?.cliente_nombre,
-            concepto: esCargo ? 'Cobro deuda cargada' : `Cobro ${v.numero ? `#${v.numero}` : ''}`,
-            cliente_id: modalCliente?.cliente_id,
-          }),
-        })
+        for (const ch of pagoCheques) {
+          await fetch('/api/cheques', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
+              monto: ch.monto, fecha_emision: new Date().toISOString().split('T')[0], fecha_pago: ch.fecha,
+              librador: ch.librador || modalCliente?.cliente_nombre,
+              concepto: esCargo ? 'Cobro deuda cargada' : `Cobro ${v.numero ? `#${v.numero}` : ''}`,
+              cliente_id: modalCliente?.cliente_id,
+            }),
+          })
+        }
       }
 
       const esParcial = monto < restante - 0.01
@@ -852,11 +852,14 @@ export default function AgingPage() {
                   </div>
                   <input
                     type="number" min="0" step="0.01" placeholder="Monto"
-                    value={montoGlobal} onChange={e => setMontoGlobal(e.target.value)}
+                    disabled={medioGlobal === 'Cheque'}
+                    value={medioGlobal === 'Cheque' ? (globalChequesTotal || '') : montoGlobal}
+                    onChange={e => setMontoGlobal(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !cobrandoGlobal) cobrarMontoGlobal() }}
                     style={{
                       width: 140, padding: '8px 10px', borderRadius: 8,
                       border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit',
+                      ...(medioGlobal === 'Cheque' ? { background: T.bg, color: T.muted } : {}),
                     }}
                   />
                   <select
@@ -870,24 +873,19 @@ export default function AgingPage() {
                   </select>
                   <button
                     onClick={cobrarMontoGlobal}
-                    disabled={cobrandoGlobal || !montoGlobal}
+                    disabled={cobrandoGlobal || (medioGlobal === 'Cheque' ? !globalChequesTotal : !montoGlobal)}
                     style={{
                       background: T.wine, color: '#fff', border: 'none', borderRadius: 8,
                       padding: '8px 18px', fontSize: 13, fontWeight: 600,
                       cursor: cobrandoGlobal ? 'default' : 'pointer', fontFamily: 'inherit',
-                      opacity: cobrandoGlobal || !montoGlobal ? 0.6 : 1,
+                      opacity: cobrandoGlobal || (medioGlobal === 'Cheque' ? !globalChequesTotal : !montoGlobal) ? 0.6 : 1,
                     }}
                   >
                     {cobrandoGlobal ? 'Aplicando...' : 'Cobrar'}
                   </button>
                 </div>
                 {medioGlobal === 'Cheque' && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', background: '#fff', border: `1px solid ${T.border}`, borderRadius: 8, padding: 10 }}>
-                    <input placeholder="N° de cheque" value={globalChNumero} onChange={e => setGlobalChNumero(e.target.value)} style={{ flex: '1 1 120px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
-                    <input placeholder="Banco" value={globalChBanco} onChange={e => setGlobalChBanco(e.target.value)} style={{ flex: '1 1 120px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
-                    <input placeholder="Librador" value={globalChLibrador} onChange={e => setGlobalChLibrador(e.target.value)} style={{ flex: '1 1 140px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
-                    <input type="date" value={globalChFecha} onChange={e => setGlobalChFecha(e.target.value)} style={{ flex: '1 1 140px', padding: '7px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 12, fontFamily: 'inherit' }} />
-                  </div>
+                  <ChequesRecibidosFieldset cheques={globalCheques} onChange={setGlobalCheques} />
                 )}
               </div>
             )}
@@ -950,10 +948,16 @@ export default function AgingPage() {
                 {' — falta '}<strong style={{ color: T.wine }}>{fmt(pagoModal.total - (pagoModal.monto_pagado || 0))}</strong>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto cobrado</label>
-                <input type="number" autoFocus value={pagoMonto} onChange={e => setPagoMonto(e.target.value)}
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                  Monto cobrado
+                  {pagoMedioPago === 'Cheque' && <span style={{ fontWeight: 400, color: T.dim, textTransform: 'none', letterSpacing: 0 }}> (suma de los cheques)</span>}
+                </label>
+                <input type="number" autoFocus
+                  disabled={pagoMedioPago === 'Cheque'}
+                  value={pagoMedioPago === 'Cheque' ? (pagoChequesTotal || '') : pagoMonto}
+                  onChange={e => setPagoMonto(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !pagando) confirmarPago() }}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', ...(pagoMedioPago === 'Cheque' ? { background: T.bg, color: T.muted } : {}) }} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
@@ -964,23 +968,12 @@ export default function AgingPage() {
               </div>
 
               {pagoMedioPago === 'Cheque' && (
-                <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Datos del cheque</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input placeholder="N° de cheque" value={pagoChNumero} onChange={e => setPagoChNumero(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
-                    <input placeholder="Banco" value={pagoChBanco} onChange={e => setPagoChBanco(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
-                  </div>
-                  <input placeholder="Librador" value={pagoChLibrador} onChange={e => setPagoChLibrador(e.target.value)} style={{ padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit' }} />
-                  <div>
-                    <label style={{ fontSize: 10.5, color: T.dim, display: 'block', marginBottom: 4 }}>Fecha de cobro</label>
-                    <input type="date" value={pagoChFecha} onChange={e => setPagoChFecha(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 7, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }} />
-                  </div>
-                </div>
+                <ChequesRecibidosFieldset cheques={pagoCheques} onChange={setPagoCheques} />
               )}
             </div>
             <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setPagoModal(null)} disabled={pagando} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
-              <button disabled={pagando || !pagoMonto} onClick={confirmarPago} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: pagando ? 'default' : 'pointer', opacity: pagando || !pagoMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+              <button disabled={pagando || (pagoMedioPago === 'Cheque' ? !pagoChequesTotal : !pagoMonto)} onClick={confirmarPago} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: pagando ? 'default' : 'pointer', opacity: pagando || (pagoMedioPago === 'Cheque' ? !pagoChequesTotal : !pagoMonto) ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {pagando ? 'Guardando...' : 'Confirmar cobro'}
               </button>
             </div>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
-import { ChequeCobroFields } from '@/components/ChequeCobroFields'
+import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
 const T = {
@@ -190,8 +190,10 @@ export default function ClienteFichaPage() {
   const [cobroMonto2, setCobroMonto2] = useState(0)
   const [cobroMedioPago2, setCobroMedioPago2] = useState('Transferencia')
   const [cobroGuardando, setCobroGuardando] = useState(false)
-  const [cobroCh1, setCobroCh1] = useState({ numero: '', banco: '', librador: '', fecha: '' })
-  const [cobroCh2, setCobroCh2] = useState({ numero: '', banco: '', librador: '', fecha: '' })
+  const [cobroCheques1, setCobroCheques1] = useState<ChequeRecibido[]>([nuevoChequeRecibido()])
+  const [cobroCheques2, setCobroCheques2] = useState<ChequeRecibido[]>([nuevoChequeRecibido()])
+  const cobroMonto1Final = cobroMedioPago === 'Cheque' ? sumaCheques(cobroCheques1) : cobroMonto
+  const cobroMonto2Final = cobroMedioPago2 === 'Cheque' ? sumaCheques(cobroCheques2) : cobroMonto2
   const [cargoModal, setCargoModal] = useState(false)
   const [cargoMonto, setCargoMonto] = useState(0)
   const [cargoConcepto, setCargoConcepto] = useState('')
@@ -252,24 +254,27 @@ export default function ClienteFichaPage() {
     setCobroMonto2(0)
     setCobroMedioPago2('Transferencia')
     const nombre = cliente?.razon_social || `${cliente?.nombre ?? ''} ${cliente?.apellido ?? ''}`.trim()
-    setCobroCh1({ numero: '', banco: '', librador: nombre, fecha: '' })
-    setCobroCh2({ numero: '', banco: '', librador: nombre, fecha: '' })
+    setCobroCheques1([nuevoChequeRecibido(nombre)])
+    setCobroCheques2([nuevoChequeRecibido(nombre)])
     setCobroModal(true)
   }
 
   async function guardarCobro() {
-    if (!cliente || !cobroMonto || cobroMonto <= 0) return
-    if (cobroSplit && (!cobroMonto2 || cobroMonto2 <= 0)) { alert('Ingresá el monto del segundo medio de pago'); return }
-    if (cobroMedioPago === 'Cheque' && (!cobroCh1.numero || !cobroCh1.fecha)) { alert('Completá el N° de cheque y la fecha de cobro (medio 1)'); return }
-    if (cobroSplit && cobroMedioPago2 === 'Cheque' && (!cobroCh2.numero || !cobroCh2.fecha)) { alert('Completá el N° de cheque y la fecha de cobro (medio 2)'); return }
+    if (!cliente) return
+    const monto1 = cobroMedioPago === 'Cheque' ? sumaCheques(cobroCheques1) : cobroMonto
+    const monto2 = cobroSplit ? (cobroMedioPago2 === 'Cheque' ? sumaCheques(cobroCheques2) : cobroMonto2) : 0
+    if (!monto1 || monto1 <= 0) return
+    if (cobroSplit && (!monto2 || monto2 <= 0)) { alert('Ingresá el monto del segundo medio de pago'); return }
+    if (cobroMedioPago === 'Cheque' && !chequesCompletos(cobroCheques1)) { alert('Completá N° de cheque, monto y fecha de cobro en cada cheque (medio 1)'); return }
+    if (cobroSplit && cobroMedioPago2 === 'Cheque' && !chequesCompletos(cobroCheques2)) { alert('Completá N° de cheque, monto y fecha de cobro en cada cheque (medio 2)'); return }
     // Se abre acá, antes del primer await, para que el navegador lo reconozca
     // como originado por el clic del usuario y no lo bloquee como popup.
     const wRecibo = window.open('', '_blank', 'width=650,height=850')
     setCobroGuardando(true)
     const nombreCliente = cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim()
     const body = cobroSplit
-      ? { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, fecha: cobroFecha, pagos: [{ monto: cobroMonto, medio_pago: cobroMedioPago }, { monto: cobroMonto2, medio_pago: cobroMedioPago2 }] }
-      : { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: cobroMonto, fecha: cobroFecha, medio_pago: cobroMedioPago }
+      ? { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, fecha: cobroFecha, pagos: [{ monto: monto1, medio_pago: cobroMedioPago }, { monto: monto2, medio_pago: cobroMedioPago2 }] }
+      : { empresa, cliente_id: id, cliente_nombre: nombreCliente, tipo: 'cobro', concepto: cobroConcepto, monto: monto1, fecha: cobroFecha, medio_pago: cobroMedioPago }
     const res = await fetch('/api/cta-cte', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -277,17 +282,17 @@ export default function ClienteFichaPage() {
     const data = await res.json()
     if (data.error) { setCobroGuardando(false); alert('Error: ' + data.error); wRecibo?.close(); return }
 
-    const crearCheque = (monto: number, ch: typeof cobroCh1) => fetch('/api/cheques', {
+    const crearCheque = (ch: ChequeRecibido) => fetch('/api/cheques', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         empresa, tipo: 'recibido', banco: ch.banco || null, nro_cheque: ch.numero,
-        monto, fecha_emision: cobroFecha, fecha_pago: ch.fecha,
+        monto: ch.monto, fecha_emision: cobroFecha, fecha_pago: ch.fecha,
         librador: ch.librador || nombreCliente, concepto: cobroConcepto,
         cliente_id: id,
       }),
     })
-    if (cobroMedioPago === 'Cheque') await crearCheque(cobroMonto, cobroCh1)
-    if (cobroSplit && cobroMedioPago2 === 'Cheque') await crearCheque(cobroMonto2, cobroCh2)
+    if (cobroMedioPago === 'Cheque') for (const ch of cobroCheques1) await crearCheque(ch)
+    if (cobroSplit && cobroMedioPago2 === 'Cheque') for (const ch of cobroCheques2) await crearCheque(ch)
 
     setCobroGuardando(false)
     setCobroModal(false)
@@ -929,9 +934,13 @@ export default function ClienteFichaPage() {
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
                   {cobroSplit ? 'Monto — medio 1' : 'Monto cobrado'}
+                  {cobroMedioPago === 'Cheque' && <span style={{ fontWeight: 400, color: T.dim, textTransform: 'none', letterSpacing: 0 }}> (suma de los cheques)</span>}
                 </label>
-                <input type="number" autoFocus value={cobroMonto || ''} onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+                <input type="number" autoFocus
+                  disabled={cobroMedioPago === 'Cheque'}
+                  value={cobroMedioPago === 'Cheque' ? (cobroMonto1Final || '') : (cobroMonto || '')}
+                  onChange={e => setCobroMonto(parseFloat(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit', ...(cobroMedioPago === 'Cheque' ? { background: T.bg, color: T.muted } : {}) }} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago</label>
@@ -942,11 +951,7 @@ export default function ClienteFichaPage() {
               </div>
 
               {cobroMedioPago === 'Cheque' && (
-                <ChequeCobroFields
-                  numero={cobroCh1.numero} banco={cobroCh1.banco} librador={cobroCh1.librador} fecha={cobroCh1.fecha}
-                  onNumero={v => setCobroCh1(p => ({ ...p, numero: v }))} onBanco={v => setCobroCh1(p => ({ ...p, banco: v }))}
-                  onLibrador={v => setCobroCh1(p => ({ ...p, librador: v }))} onFecha={v => setCobroCh1(p => ({ ...p, fecha: v }))}
-                />
+                <ChequesRecibidosFieldset cheques={cobroCheques1} onChange={setCobroCheques1} />
               )}
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
@@ -957,9 +962,15 @@ export default function ClienteFichaPage() {
               {cobroSplit && (
                 <>
                   <div>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Monto — medio 2</label>
-                    <input type="number" value={cobroMonto2 || ''} onChange={e => setCobroMonto2(parseFloat(e.target.value) || 0)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit' }} />
+                    <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>
+                      Monto — medio 2
+                      {cobroMedioPago2 === 'Cheque' && <span style={{ fontWeight: 400, color: T.dim, textTransform: 'none', letterSpacing: 0 }}> (suma de los cheques)</span>}
+                    </label>
+                    <input type="number"
+                      disabled={cobroMedioPago2 === 'Cheque'}
+                      value={cobroMedioPago2 === 'Cheque' ? (cobroMonto2Final || '') : (cobroMonto2 || '')}
+                      onChange={e => setCobroMonto2(parseFloat(e.target.value) || 0)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 14, fontFamily: 'inherit', ...(cobroMedioPago2 === 'Cheque' ? { background: T.bg, color: T.muted } : {}) }} />
                   </div>
                   <div>
                     <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Medio de pago — medio 2</label>
@@ -969,14 +980,10 @@ export default function ClienteFichaPage() {
                     </select>
                   </div>
                   {cobroMedioPago2 === 'Cheque' && (
-                    <ChequeCobroFields
-                      numero={cobroCh2.numero} banco={cobroCh2.banco} librador={cobroCh2.librador} fecha={cobroCh2.fecha}
-                      onNumero={v => setCobroCh2(p => ({ ...p, numero: v }))} onBanco={v => setCobroCh2(p => ({ ...p, banco: v }))}
-                      onLibrador={v => setCobroCh2(p => ({ ...p, librador: v }))} onFecha={v => setCobroCh2(p => ({ ...p, fecha: v }))}
-                    />
+                    <ChequesRecibidosFieldset cheques={cobroCheques2} onChange={setCobroCheques2} />
                   )}
                   <div style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
-                    Total: {fmtMonto(cobroMonto + cobroMonto2)}
+                    Total: {fmtMonto(cobroMonto1Final + cobroMonto2Final)}
                   </div>
                 </>
               )}
@@ -994,7 +1001,7 @@ export default function ClienteFichaPage() {
             </div>
             <div style={{ padding: '14px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setCobroModal(false)} style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 18px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
-              <button disabled={cobroGuardando || !cobroMonto} onClick={guardarCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cobroGuardando ? 'default' : 'pointer', opacity: cobroGuardando || !cobroMonto ? 0.6 : 1, fontFamily: 'inherit' }}>
+              <button disabled={cobroGuardando || !cobroMonto1Final} onClick={guardarCobro} style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: cobroGuardando ? 'default' : 'pointer', opacity: cobroGuardando || !cobroMonto1Final ? 0.6 : 1, fontFamily: 'inherit' }}>
                 {cobroGuardando ? 'Guardando...' : 'Confirmar cobro'}
               </button>
             </div>
