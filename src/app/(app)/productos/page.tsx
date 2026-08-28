@@ -1764,8 +1764,8 @@ export default function ProductosPage() {
 
       {/* ── Keyboard shortcuts modal ──────────────────────────────── */}
       {showKb && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowKb(false)}>
-          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, minWidth: 320, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => setShowKb(false))}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, padding: 24, minWidth: 320, boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: T.text }}>Atajos de teclado</h3>
               <button onClick={() => setShowKb(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1 }}>×</button>
