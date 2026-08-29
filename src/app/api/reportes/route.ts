@@ -62,13 +62,13 @@ export async function GET(req: NextRequest) {
   // matchee ningún producto (borrado, o de la otra empresa).
   // Paginado porque Supabase corta en 1000 filas por default y hay >1000
   // productos por empresa (>2700 en total).
-  const productosCosto: { id: string; nombre: string; precio_costo: number | null }[] = []
+  const productosCosto: { id: string; nombre: string; bodega: string | null; precio_costo: number | null }[] = []
   {
     const PAGE = 1000
     let from = 0
     while (true) {
       const { data, error: errCosto } = await supabase
-        .from('productos').select('id, nombre, precio_costo').range(from, from + PAGE - 1)
+        .from('productos').select('id, nombre, bodega, precio_costo').range(from, from + PAGE - 1)
       if (errCosto || !data || data.length === 0) break
       productosCosto.push(...data)
       if (data.length < PAGE) break
@@ -77,6 +77,15 @@ export async function GET(req: NextRequest) {
   }
   const costoPorId = new Map(productosCosto.map(p => [p.id, p.precio_costo || 0]))
   const costoPorNombre = new Map(productosCosto.map(p => [p.nombre.trim().toLowerCase(), p.precio_costo || 0]))
+  // Nombre CANÓNICO actual de cada producto (nombre + bodega), para agrupar
+  // el ranking por producto real en vez de por el texto que quedó congelado
+  // en cada venta — un mismo producto puede tener el ítem guardado como
+  // "Nombre" en una venta vieja (bodega vacía en ese momento) y como
+  // "Nombre - Bodega" en una más nueva (bodega cargada después), y quedaban
+  // como dos filas separadas en vez de sumarse. Caso real: "Serbal Cabernet
+  // Franc Atamisque" (producto 124b5f1a…) con 2 ventas sin sufijo de bodega
+  // y 1 con "- Atamisque".
+  const nombrePorId = new Map(productosCosto.map(p => [p.id, `${p.nombre}${p.bodega ? ' - ' + p.bodega : ''}`]))
 
   // 1. Ventas por día
   const porDia: Record<string, number> = {}
@@ -90,8 +99,14 @@ export async function GET(req: NextRequest) {
   const prodMap: Record<string, { nombre: string; cantidad: number; total: number; margen: number }> = {}
   for (const v of list) {
     for (const item of (v.items as { nombre: string; cantidad: number; subtotal: number; producto_id?: string }[] || [])) {
-      const key = item.nombre
-      if (!prodMap[key]) prodMap[key] = { nombre: item.nombre, cantidad: 0, total: 0, margen: 0 }
+      // Agrupar por producto_id cuando resuelve a un producto real — el
+      // nombre congelado en el ítem puede variar entre ventas del mismo
+      // producto (ver comentario de nombrePorId arriba). Si el id no
+      // resuelve (producto borrado, o id de la otra empresa — bug viejo del
+      // selector), se cae al nombre crudo del ítem, igual que antes.
+      const nombreCanonico = item.producto_id ? nombrePorId.get(item.producto_id) : undefined
+      const key = item.producto_id && nombreCanonico ? item.producto_id : item.nombre
+      if (!prodMap[key]) prodMap[key] = { nombre: nombreCanonico || item.nombre, cantidad: 0, total: 0, margen: 0 }
       prodMap[key].cantidad += item.cantidad
       prodMap[key].total   += item.subtotal || 0
       // Primero por id (más preciso); si no matchea ningún producto (id de
