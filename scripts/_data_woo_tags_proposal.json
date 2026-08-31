@@ -1,0 +1,1774 @@
+[
+  {
+    "id": 11931,
+    "name": "Corral de Palos Rose",
+    "categories": [
+      "Rosados"
+    ],
+    "proposed": [
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11929,
+    "name": "Cuvelier Los Andes La Petite Cuvée Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11928,
+    "name": "Cuvelier Los Andes La Petite Cuvée Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11927,
+    "name": "Tinkunaco Petit Verdot",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 1088,
+        "name": "Petit Verdot"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11926,
+    "name": "Tinkunaco Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11924,
+    "name": "Cuarto Surco Pleno Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11923,
+    "name": "Cuarto Surco Pleno Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11922,
+    "name": "Cuarto Surco Pleno Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11921,
+    "name": "Sur de los Andes Reserva Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11920,
+    "name": "Antigal UNO Red Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11918,
+    "name": "Pasión 4 Petit Verdot Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11896,
+    "name": "Tapiz Sparkling Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 194,
+        "name": "Espumoso"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11895,
+    "name": "Tapiz Reserve Cabernet Merlot",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 1093,
+        "name": "Merlot"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11894,
+    "name": "Tapiz Reserve Cabernet Sauvignon",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11893,
+    "name": "Tapiz Reserve Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11885,
+    "name": "Mahakala Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11884,
+    "name": "Kamala Malbec Terroir Selection Chacayes",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11883,
+    "name": "Kamala Cabernet Franc Rosado",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11880,
+    "name": "Antigal Puro Uno Extra Brut",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 194,
+        "name": "Espumoso"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11879,
+    "name": "Antigal Aduentus Classic Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11878,
+    "name": "Antigal Aduentus Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11877,
+    "name": "Antigal Aduentus Blend Mediterraneo",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11875,
+    "name": "Antigal UNO Rosé",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11874,
+    "name": "Antigal UNO Pinot Grigio",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "name": "Pinot Gris"
+      },
+      {
+        "id": 197,
+        "name": "Blanco"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11870,
+    "name": "Sur de los Andes Rosé",
+    "categories": [
+      "Bodegas",
+      "Malbec",
+      "Sur De Los Andes",
+      "Syrah",
+      "Valle de Uco",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11850,
+    "name": "Finca Flichman Dedicado Gran Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11774,
+    "name": "La Igriega Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11773,
+    "name": "Finca La Anita Magna Finca Cabernet Sauvignon",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2250,
+    "name": "Lorca Fantasía El Mirador Moscatel",
+    "categories": [
+      "Artículos varios",
+      "Bodegas",
+      "Lorca"
+    ],
+    "proposed": [
+      {
+        "name": "moscatel"
+      },
+      {
+        "id": 197,
+        "name": "Blanco"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11642,
+    "name": "Sur de los Andes Cabernet Franc Reserva",
+    "categories": [
+      "Cabernet Franc",
+      "Bodegas",
+      "Sur De Los Andes",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11636,
+    "name": "Sur de los Andes Malbec Reserva",
+    "categories": [
+      "Bodegas",
+      "Malbec",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11557,
+    "name": "Kamala Skin Contanct Naranjo",
+    "categories": [
+      "Blend de Blancas",
+      "Bodegas",
+      "Dharma Wines",
+      "Mendoza",
+      "Naranjo",
+      "Valle de Uco",
+      "Vinos",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "name": "Naranjo"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11554,
+    "name": "Kamala Criolla",
+    "categories": [
+      "Bodegas",
+      "Criolla",
+      "Dharma Wines",
+      "Mendoza",
+      "Valle de Uco",
+      "Vinos",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 211,
+        "name": "criolla"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11552,
+    "name": "Kamala Cabernet Franc",
+    "categories": [
+      "Bodegas",
+      "Cabernet Franc",
+      "Dharma Wines",
+      "Mendoza",
+      "Valle de Uco",
+      "Vinos",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11516,
+    "name": "Finca DECERO Signature Syrah",
+    "categories": [
+      "Agrelo",
+      "Finca Decero",
+      "Luján de Cuyo",
+      "Mendoza",
+      "Syrah"
+    ],
+    "proposed": [
+      {
+        "id": 1108,
+        "name": "Syrah"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11420,
+    "name": "Kaiken Ultra Cabernet Franc",
+    "categories": [
+      "Bodegas",
+      "Cabernet Franc",
+      "Kaiken",
+      "Mendoza",
+      "Tintas",
+      "Vinos",
+      "Vinos Tintos",
+      "Vistalba",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11136,
+    "name": "Juan Cruz Navarro Torre Gran Malbec",
+    "categories": [
+      "Blend de tintas",
+      "Bodegas",
+      "Córdoba",
+      "Estancia Las Cañitas",
+      "Malbec",
+      "Valle de Calamuchita",
+      "Vinos",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11133,
+    "name": "Las Cañitas Familia Navarro Torres Blend",
+    "categories": [
+      "Blend de tintas",
+      "Bodegas",
+      "Cabernet Sauvignon",
+      "Córdoba",
+      "Estancia Las Cañitas",
+      "Malbec",
+      "Valle de Calamuchita",
+      "Vinos",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11112,
+    "name": "Leonce Vermouth Rosado de Criolla Orgánico",
+    "categories": [
+      "Aperitivo",
+      "Bodegas",
+      "Especiales",
+      "Espirituosas",
+      "Nacional",
+      "Nacional",
+      "Piedra Negra",
+      "Vermouth"
+    ],
+    "proposed": [
+      {
+        "id": 658,
+        "name": "vermouth"
+      },
+      {
+        "id": 996,
+        "name": "organico"
+      }
+    ],
+    "category": "vermouth"
+  },
+  {
+    "id": 11107,
+    "name": "Leonce Vermouth de Malbec Orgánico",
+    "categories": [
+      "Aperitivo",
+      "Bodegas",
+      "Especiales",
+      "Espirituosas",
+      "Nacional",
+      "Nacional",
+      "Piedra Negra",
+      "Vermouth"
+    ],
+    "proposed": [
+      {
+        "id": 658,
+        "name": "vermouth"
+      },
+      {
+        "id": 996,
+        "name": "organico"
+      }
+    ],
+    "category": "vermouth"
+  },
+  {
+    "id": 11063,
+    "name": "COMBO ENVIO",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [],
+    "category": "no-aplica",
+    "skip": true
+  },
+  {
+    "id": 3113,
+    "name": "Mom Gin",
+    "categories": [
+      "Espirituosas",
+      "Gin",
+      "Importado"
+    ],
+    "proposed": [
+      {
+        "id": 807,
+        "name": "gin importado"
+      }
+    ],
+    "category": "gin"
+  },
+  {
+    "id": 3109,
+    "name": "Yzaguirre Rojo Vermouth Clásico",
+    "categories": [
+      "Especiales",
+      "Importado",
+      "Vermouth"
+    ],
+    "proposed": [
+      {
+        "id": 658,
+        "name": "vermouth"
+      }
+    ],
+    "category": "vermouth"
+  },
+  {
+    "id": 2149,
+    "name": "ALTA VISTA ESTATE PREMIUM MALBEC",
+    "categories": [
+      "Alta Vista",
+      "Bodegas",
+      "El Cepillo",
+      "Luján de Cuyo",
+      "Malbec",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2161,
+    "name": "VIVE RED BLEND",
+    "categories": [
+      "Alta Vista",
+      "Blend de tintas",
+      "Bodegas",
+      "Mendoza",
+      "Vinos Tintos"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2238,
+    "name": "Quieto Syrah",
+    "categories": [
+      "Agrelo",
+      "Bodegas",
+      "Luján de Cuyo",
+      "Mendoza",
+      "Monte Quieto",
+      "Syrah",
+      "Vinos",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 1108,
+        "name": "Syrah"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2619,
+    "name": "Joffre Gran Cuatro Uvas",
+    "categories": [
+      "Blend de tintas",
+      "Bodegas",
+      "Cabernet Franc",
+      "Cabernet Sauvignon",
+      "Joffre",
+      "Malbec",
+      "Mendoza",
+      "Petit Verdot",
+      "Top Ten",
+      "Tunuyán",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2036,
+    "name": "Kaiken Ultra Chardonnay",
+    "categories": [
+      "Altamira",
+      "Blancas",
+      "Bodegas",
+      "Chardonnay",
+      "Kaiken",
+      "Mendoza",
+      "Uvas",
+      "Valle de Uco",
+      "Vino Blancos",
+      "Vinos",
+      "Vistalba",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 199,
+        "name": "Chardonnay"
+      },
+      {
+        "id": 197,
+        "name": "Blanco"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2035,
+    "name": "Kaiken Ultra Merlot",
+    "categories": [
+      "Bodegas",
+      "Kaiken",
+      "Luján de Cuyo",
+      "Merlot",
+      "Tintas",
+      "Vinos",
+      "Vinos Tintos",
+      "Vistalba",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 1093,
+        "name": "Merlot"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2034,
+    "name": "Kaiken Ultra Cabernet Sauvignon",
+    "categories": [
+      "Bodegas",
+      "Cabernet Sauvignon",
+      "Kaiken",
+      "Mendoza",
+      "Tintas",
+      "Vinos",
+      "Vinos Tintos",
+      "Vistalba",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2033,
+    "name": "Kaiken Ultra Malbec",
+    "categories": [
+      "Agrelo",
+      "Bodegas",
+      "Kaiken",
+      "Malbec",
+      "Mendoza",
+      "Tintas",
+      "Tupungato",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Vistalba",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11925,
+    "name": "Trivento Maximum Red Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11919,
+    "name": "Absurdo Blend",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11898,
+    "name": "Tapiz Sparkling Torrontés",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 367,
+        "name": "torrontes riojano"
+      },
+      {
+        "id": 194,
+        "name": "Espumoso"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11897,
+    "name": "Tapiz Sparkling Chardonnay Pinot",
+    "categories": [
+      "Tapiz",
+      "Espumosos",
+      "Malbec"
+    ],
+    "proposed": [
+      {
+        "id": 199,
+        "name": "Chardonnay"
+      },
+      {
+        "id": 194,
+        "name": "Espumoso"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11891,
+    "name": "Despeinado Blend de Tintas",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11889,
+    "name": "Corral de Palos Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11888,
+    "name": "Corral de Palos Viognier",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 1098,
+        "name": "Viognier"
+      },
+      {
+        "id": 197,
+        "name": "Blanco"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11886,
+    "name": "Mahakala Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11876,
+    "name": "Antigal UNO Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11873,
+    "name": "Antigal AQUI Malbec",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11775,
+    "name": "Artesano Cabernet Franc",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 181,
+        "name": "Cabernet Franc"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11769,
+    "name": "Regalos 2020 3 botellas",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 859,
+        "name": "regalos"
+      }
+    ],
+    "category": "regalo"
+  },
+  {
+    "id": 11768,
+    "name": "Regalos 2020 RF",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 859,
+        "name": "regalos"
+      }
+    ],
+    "category": "regalo"
+  },
+  {
+    "id": 11767,
+    "name": "Regalos 2020 LB",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 859,
+        "name": "regalos"
+      }
+    ],
+    "category": "regalo"
+  },
+  {
+    "id": 11762,
+    "name": "Calonia Negre, Estela Riera",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11751,
+    "name": "María Extra Brut + 2 Copas + Corazón Ferrero Rocher",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 859,
+        "name": "regalos"
+      }
+    ],
+    "category": "regalo"
+  },
+  {
+    "id": 11750,
+    "name": "Sin Fin Guarda de Familia",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 387,
+        "name": "vino de guarda"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11748,
+    "name": "Piedra Negra Alta Colección Rosado Pinot Gris",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "name": "Pinot Gris"
+      },
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11746,
+    "name": "Pulenta Gran Pinot Noir XV 2016",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 1095,
+        "name": "Pinot Noir"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11745,
+    "name": "Pulenta Gran Merlot XVI 2013",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 1093,
+        "name": "Merlot"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11744,
+    "name": "Pulenta Gran Corte VII 2015",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11743,
+    "name": "Pulenta Gran Cabernet Sauvignon IV 2014",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11741,
+    "name": "Pulenta Single Vineyard Malbec LA ZULEMA 2014",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 185,
+        "name": "Single Vineyard"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11740,
+    "name": "Pulenta Single Vineyard Malbec GUALTALLARY 2014",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 185,
+        "name": "Single Vineyard"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11739,
+    "name": "Pulenta Single Vineyard Malbec DON ANTONIO 2014",
+    "categories": [
+      "Artículos varios"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 185,
+        "name": "Single Vineyard"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11644,
+    "name": "Sur de los Andes Pinot Noir",
+    "categories": [
+      "Bodegas",
+      "Pinot Noir",
+      "Sur De Los Andes",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 1095,
+        "name": "Pinot Noir"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11638,
+    "name": "Sur de los Andes Cabernet Sauvignon Reserva",
+    "categories": [
+      "Bodegas",
+      "Cabernet Sauvignon",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      },
+      {
+        "id": 1104,
+        "name": "Reserva"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11550,
+    "name": "Kamala Pinot Noir",
+    "categories": [
+      "Bodegas",
+      "Dharma Wines",
+      "Mendoza",
+      "Pinot Noir",
+      "Valle de Uco",
+      "Vinos",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 1095,
+        "name": "Pinot Noir"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11530,
+    "name": "The Owl & The Dust Devil Malbec",
+    "categories": [
+      "Agrelo",
+      "Finca Decero",
+      "Luján de Cuyo",
+      "Malbec",
+      "Mendoza",
+      "Vinos Tintos"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11506,
+    "name": "The Owl & The Dust Devil Cabernet Sauvignon",
+    "categories": [
+      "Agrelo",
+      "Cabernet Sauvignon",
+      "Finca Decero",
+      "Luján de Cuyo",
+      "Mendoza"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11275,
+    "name": "Kamala Malbec",
+    "categories": [
+      "Bodegas",
+      "Dharma Wines",
+      "Malbec",
+      "Mendoza",
+      "Valle de Uco",
+      "Vinos",
+      "Vinos Tintos",
+      "Vista Flores",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 125,
+        "name": "Malbec"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 11131,
+    "name": "Las Cañitas Blend",
+    "categories": [
+      "Blend de tintas",
+      "Bodegas",
+      "Cabernet Sauvignon",
+      "Córdoba",
+      "Estancia Las Cañitas",
+      "Malbec",
+      "Syrah",
+      "Valle de Calamuchita",
+      "Vinos",
+      "Vinos Tintos",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 180,
+        "name": "Blend"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 4596,
+    "name": "Príncipe de los Apóstoles Rosa Mosqueta Edición Limitada",
+    "categories": [
+      "Espirituosas",
+      "Gin",
+      "Nacional"
+    ],
+    "proposed": [
+      {
+        "id": 797,
+        "name": "gin nacional"
+      }
+    ],
+    "category": "gin"
+  },
+  {
+    "id": 2155,
+    "name": "Alta Vista ESTATE PREMIUM CABERNET SAUVIGNON",
+    "categories": [
+      "Alta Vista",
+      "Bodegas",
+      "Cabernet Sauvignon",
+      "La Consulta",
+      "Valle de Uco",
+      "Vinos Tintos",
+      "Vista Flores"
+    ],
+    "proposed": [
+      {
+        "id": 182,
+        "name": "Cabernet Sauvignon"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2159,
+    "name": "Vive Rose",
+    "categories": [
+      "Alta Vista",
+      "Bodegas",
+      "Malbec",
+      "Mendoza",
+      "Rosados"
+    ],
+    "proposed": [
+      {
+        "id": 271,
+        "name": "rosado"
+      }
+    ],
+    "category": "vino"
+  },
+  {
+    "id": 2053,
+    "name": "Finca La Anita Petit Verdot",
+    "categories": [
+      "Agrelo",
+      "Bodegas",
+      "Luján de Cuyo",
+      "Mendoza",
+      "Petit Verdot",
+      "Tintas",
+      "Uvas",
+      "Vinos",
+      "Vinos Tintos",
+      "Zona alta del Río Mendoza",
+      "Zonas de Producción"
+    ],
+    "proposed": [
+      {
+        "id": 1088,
+        "name": "Petit Verdot"
+      },
+      {
+        "id": 124,
+        "name": "Tinto"
+      }
+    ],
+    "category": "vino"
+  }
+]
