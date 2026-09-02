@@ -918,5 +918,140 @@
     "status": "creado",
     "woo_id": 12321,
     "fecha": "2026-09-02T13:30:50.734Z"
+  },
+  "Tempus Pleno Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$360, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Pleno": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$910, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$900, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Cabernet Sauvignon": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$900, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Syarh": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$900, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Merlot": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$135, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Tempus Tempranillo": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO SISTEMATICO: precio=$900, absurdamente bajo para un vino (el resto del catalogo Tanda 2 va de $8000 a +$100000). Los 7 productos de Tempus Alba tienen este mismo problema, probablemente el precio esta en una unidad/escala distinta (ej. USD o le faltan digitos). No se creo ninguno hasta confirmar precio real."
+  },
+  "Cruzat Cosecha Temprana Rosé Eb": {
+    "status": "creado",
+    "woo_id": 12322,
+    "fecha": "2026-09-02T13:32:30.817Z"
+  },
+  "Cruzat Pet Nat Chardonnay": {
+    "status": "creado",
+    "woo_id": 12323,
+    "fecha": "2026-09-02T13:32:32.857Z"
+  },
+  "Cruzat Pet Nat Rose": {
+    "status": "creado",
+    "woo_id": 12324,
+    "fecha": "2026-09-02T13:32:34.496Z"
+  },
+  "Cruzat Ice": {
+    "status": "creado",
+    "woo_id": 12325,
+    "fecha": "2026-09-02T13:32:36.114Z"
+  },
+  "Cruzat Reserva Brut": {
+    "status": "creado",
+    "woo_id": 12326,
+    "fecha": "2026-09-02T13:32:37.646Z"
+  },
+  "Cruzat Organico": {
+    "status": "creado",
+    "woo_id": 12327,
+    "fecha": "2026-09-02T13:32:39.465Z"
+  },
+  "Cruzat Naranjo": {
+    "status": "creado",
+    "woo_id": 12328,
+    "fecha": "2026-09-02T13:32:41.121Z"
+  },
+  "Pleno Cabernet Suavignon Cuarto Surco": {
+    "status": "creado",
+    "woo_id": 12329,
+    "fecha": "2026-09-02T13:32:43.683Z"
+  },
+  "Latente Bonarda Cuarto Surco": {
+    "status": "creado",
+    "woo_id": 12330,
+    "fecha": "2026-09-02T13:32:46.114Z"
+  },
+  "Latente Malbec Cuarto Surco": {
+    "status": "creado",
+    "woo_id": 12331,
+    "fecha": "2026-09-02T13:32:47.662Z"
+  },
+  "Latente Pinot Noir Cuarto Surco": {
+    "status": "creado",
+    "woo_id": 12332,
+    "fecha": "2026-09-02T13:32:49.370Z"
+  },
+  "Latente Rva Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12333,
+    "fecha": "2026-09-02T13:32:50.899Z"
+  },
+  "Latente Cab. Franc Cuarto Surco": {
+    "status": "creado",
+    "woo_id": 12334,
+    "fecha": "2026-09-02T13:32:52.578Z"
+  },
+  "Zedryc Apple": {
+    "status": "creado",
+    "woo_id": 12335,
+    "fecha": "2026-09-02T13:32:54.172Z"
+  },
+  "El Peral Sauv. Blanc Uruco": {
+    "status": "creado",
+    "woo_id": 12336,
+    "fecha": "2026-09-02T13:32:56.694Z"
+  },
+  "Uruco Blend": {
+    "status": "creado",
+    "woo_id": 12337,
+    "fecha": "2026-09-02T13:32:58.526Z"
+  },
+  "Uruco Bonarda": {
+    "status": "creado",
+    "woo_id": 12338,
+    "fecha": "2026-09-02T13:33:00.004Z"
+  },
+  "El Peral Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12339,
+    "fecha": "2026-09-02T13:33:01.631Z"
+  },
+  "Uruco Merlot": {
+    "status": "creado",
+    "woo_id": 12340,
+    "fecha": "2026-09-02T13:33:03.125Z"
+  },
+  "Uruco Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12341,
+    "fecha": "2026-09-02T13:33:04.630Z"
   }
 }

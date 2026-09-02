@@ -1,0 +1,72 @@
+[
+  {
+    "nombre": "Pleno Cabernet Suavignon Cuarto Surco",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Cuarto Surco",
+    "precio": 21900,
+    "ids": { "aroma": "3423f2fc-a305-499f-9714-4b52b01b2b0f", "lavid": "ec1f7e8d-0931-448a-b2ed-56615bf2dfea" },
+    "descripcion": "Pleno Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Pleno de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Latente Bonarda Cuarto Surco",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "Cuarto Surco",
+    "precio": 16500,
+    "ids": { "aroma": "265fb66a-8526-48ab-8c13-f58c6693255e", "lavid": "d7f0b5a5-a288-4fba-a959-8e6f1d068dd8" },
+    "descripcion": "Latente Bonarda es un vino tinto elaborado con uvas Bonarda, de la línea Latente de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Latente Malbec Cuarto Surco",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Cuarto Surco",
+    "precio": 16500,
+    "ids": { "aroma": "769acbb7-bd81-4417-a001-a669eba6a3dd", "lavid": "cc0c67ec-795f-4353-ac35-c5c79cceafde" },
+    "descripcion": "Latente Malbec es un vino tinto elaborado con uvas Malbec, de la línea Latente de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Latente Pinot Noir Cuarto Surco",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Cuarto Surco",
+    "precio": 16500,
+    "ids": { "aroma": "3841d80e-3008-4eae-8233-aaa9f353f32b", "lavid": "5e4da343-02a1-4fb3-8045-6db5ea5b45dd" },
+    "descripcion": "Latente Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Latente de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Latente Rva Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Cuarto Surco",
+    "precio": 13900,
+    "ids": { "lavid": "0b88a028-27c8-47fc-8fe2-7005e6ac5384", "aroma": "a15f0746-e818-4b9a-ba82-8fa9f3b574b5" },
+    "descripcion": "Latente Reserva Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Latente de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Latente Cab. Franc Cuarto Surco",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Cuarto Surco",
+    "precio": 16500,
+    "ids": { "lavid": "6b1a5307-0969-4970-944d-1abf5a5c5c22", "aroma": "c5f0a3b2-d87e-4fb2-943c-5ea3519762d3" },
+    "descripcion": "Latente Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea Latente de Bodega Cuarto Surco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Zedryc Apple",
+    "categoria": "Espumante",
+    "varietal": "Sidra",
+    "bodega": "Cuarto Surco",
+    "precio": 15500,
+    "ids": { "aroma": "bba832d0-8e4d-4f4c-b730-1e753d8b12ed", "lavid": "01412445-5a2c-44ec-9d1c-72d1d23993f4" },
+    "descripcion": "Zedryc Apple es una sidra de manzana, de Bodega Cuarto Surco.",
+    "imagen": null
+  }
+]

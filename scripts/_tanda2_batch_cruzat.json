@@ -1,0 +1,72 @@
+[
+  {
+    "nombre": "Cruzat Cosecha Temprana Rosé Eb",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Cruzat",
+    "precio": 29000,
+    "ids": { "lavid": "8076f47f-a4e2-497c-808a-1dcd6c5f3220", "aroma": "415e4fdb-3554-4644-87e6-4a2a0bbe7e4c" },
+    "descripcion": "Cruzat Cosecha Temprana Rosé Extra Brut es un vino espumante rosado elaborado con uvas de cosecha temprana, de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Pet Nat Chardonnay",
+    "categoria": "Espumante",
+    "varietal": "Chardonnay",
+    "bodega": "Cruzat",
+    "precio": 29000,
+    "ids": { "aroma": "fdf3355e-9beb-4073-8405-73ab9dbcaf7d", "lavid": "1e6cc6ad-b561-42b0-9efe-bc3f6436e7b2" },
+    "descripcion": "Cruzat Pet Nat Chardonnay es un vino espumante estilo pétillant naturel elaborado con uvas Chardonnay, de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Pet Nat Rose",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Cruzat",
+    "precio": 29000,
+    "ids": { "aroma": "beed4992-b527-4189-8bbf-79617297d071", "lavid": "c26e873c-6612-4026-b419-875b660d6b36" },
+    "descripcion": "Cruzat Pet Nat Rosé es un vino espumante rosado estilo pétillant naturel, de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Ice",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Cruzat",
+    "precio": 29000,
+    "ids": { "aroma": "4b8a593a-2626-4f2e-913c-a3ba69ad764f", "lavid": "fcb6d326-e407-4270-9b50-13b9902e6dbf" },
+    "descripcion": "Cruzat Ice es un vino espumante pensado para tomar con hielo, de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Reserva Brut",
+    "categoria": "Espumante",
+    "varietal": "Brut",
+    "bodega": "Cruzat",
+    "precio": 39900,
+    "ids": { "aroma": "cdb5b253-1762-4586-ac10-2afc4e44e09a", "lavid": "e040e2fb-0bb2-4b97-b473-591ce39f8706" },
+    "descripcion": "Cruzat Reserva Brut es un vino espumante de la línea Reserva de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Organico",
+    "categoria": "Espumante",
+    "varietal": "Brut",
+    "bodega": "Cruzat",
+    "precio": 53100,
+    "ids": { "aroma": "b2c03f3c-7511-4a78-bcd4-8750e7615c6e", "lavid": "2a7ef960-3ed6-4b3f-8d93-faced2ffe767" },
+    "descripcion": "Cruzat Orgánico es un vino espumante orgánico de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cruzat Naranjo",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Cruzat",
+    "precio": 29000,
+    "ids": { "aroma": "ffb009a6-f377-4514-b686-e751e014b808", "lavid": "2e5f1d02-63b1-4e91-bfac-0a26bf469844" },
+    "descripcion": "Cruzat Naranjo es un vino espumante elaborado con maceración en contacto con los hollejos (estilo vino naranjo), de Bodega Cruzat, Mendoza.",
+    "imagen": null
+  }
+]

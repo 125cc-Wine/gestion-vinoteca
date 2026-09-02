@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "El Peral Sauv. Blanc Uruco",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Uruco Wines",
+    "precio": 12000,
+    "ids": { "aroma": "a50904f5-df2f-40d9-a553-4c94887600f9", "lavid": "3679587e-a8d2-4753-a200-92ba503797aa" },
+    "descripcion": "Finca El Peral Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea El Peral de Uruco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Uruco Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Uruco Wines",
+    "precio": 30000,
+    "ids": { "aroma": "eaf26f87-6714-4ebe-8952-99c1e4dc99fa", "lavid": "c077e6b8-aee7-42fa-b94a-64ab72d3f2d7" },
+    "descripcion": "Uruco Blend es un vino tinto de corte, de Uruco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Uruco Bonarda",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "Uruco Wines",
+    "precio": 20000,
+    "ids": { "aroma": "c570d3c3-0016-4831-811f-71d08c2931e9", "lavid": "43efb9a7-8119-479f-97fc-b550205ea569" },
+    "descripcion": "Uruco Bonarda es un vino tinto elaborado con uvas Bonarda, de Uruco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Peral Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Uruco Wines",
+    "precio": 12000,
+    "ids": { "lavid": "42681b27-2e69-4db6-9404-7a44b1be80e3", "aroma": "5b9d8261-3459-47f2-aa07-1cf59b25d500" },
+    "descripcion": "Finca El Peral Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea El Peral de Uruco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Uruco Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Uruco Wines",
+    "precio": 20000,
+    "ids": { "aroma": "25afa8a9-c736-49e3-9d48-f2c5de872863", "lavid": "780210c8-85a8-46bf-8b38-01b223a16dd2" },
+    "descripcion": "Uruco Merlot es un vino tinto elaborado con uvas Merlot, de Uruco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Uruco Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Uruco Wines",
+    "precio": 20000,
+    "ids": { "aroma": "a3c97478-e711-48e7-8952-2a651e7ded8c", "lavid": "c5035b67-233d-474c-a378-880f18169952" },
+    "descripcion": "Uruco Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Uruco Wines, Mendoza.",
+    "imagen": null
+  }
+]
