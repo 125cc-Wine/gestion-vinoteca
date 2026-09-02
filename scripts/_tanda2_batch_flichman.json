@@ -1,0 +1,82 @@
+[
+  {
+    "nombre": "Finca Flichman Gran Reserva Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Finca Flichman",
+    "precio": 23000,
+    "ids": { "lavid": "3529c783-8cb3-4978-a163-de0bc011b37f", "aroma": "b60a3e3a-dadd-46ec-8f43-9a1193c3aba2" },
+    "descripcion": "Finca Flichman Gran Reserva Merlot es un vino tinto elaborado con uvas Merlot, de la línea Gran Reserva de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Estate Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Finca Flichman",
+    "precio": 8000,
+    "ids": { "aroma": "a2de1ad4-ee5f-4e9e-b400-eb4556b65adc", "lavid": "fcd3e381-0c34-4a96-b562-363deb8ee613" },
+    "descripcion": "Finca Flichman Estate Malbec es un vino tinto elaborado con uvas Malbec, de la línea Estate de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Estate Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Finca Flichman",
+    "precio": 8000,
+    "ids": { "aroma": "6a7bcd2a-fcfd-4d0e-a8f5-21f107a33ae0", "lavid": "00bb5eea-29f6-4a4e-a48a-f209b135a1f8" },
+    "descripcion": "Finca Flichman Estate Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Estate de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Finca Flichman",
+    "precio": 10000,
+    "ids": { "aroma": "65a18c7b-fe2a-4d04-8313-e12ee96f45d8", "lavid": "bcdf4f46-b040-42ac-bec7-9117b4d0f8df" },
+    "descripcion": "Finca Flichman Merlot es un vino tinto elaborado con uvas Merlot, de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Expresiones Tupungato",
+    "categoria": "Tinto",
+    "varietal": "Teroldego",
+    "bodega": "Finca Flichman",
+    "precio": 23000,
+    "ids": { "lavid": "a1cb044f-76e4-4a72-a156-11969aa58125", "aroma": "0bbed7d6-cbec-4955-8fec-a6b19e03becb" },
+    "descripcion": "Finca Flichman Expresiones Tupungato es un vino tinto elaborado con uvas Teroldego provenientes de Tupungato, Valle de Uco, Mendoza, de la línea de vinos de origen Expresiones de Bodega Finca Flichman.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Expresiones Barrancas",
+    "categoria": "Tinto",
+    "varietal": "Teroldego",
+    "bodega": "Finca Flichman",
+    "precio": 23000,
+    "ids": { "aroma": "c2643253-f21d-4d95-b370-4bee5bd2632f", "lavid": "5f38bb9c-2607-4052-bae8-17a71b42d786" },
+    "descripcion": "Finca Flichman Expresiones Barrancas es un vino tinto elaborado con uvas Teroldego provenientes de Barrancas, Maipú, Mendoza, de la línea de vinos de origen Expresiones de Bodega Finca Flichman.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Misterio Acellotta",
+    "categoria": "Tinto",
+    "varietal": "Ancellotta",
+    "bodega": "Finca Flichman",
+    "precio": 9500,
+    "ids": { "lavid": "8b488f11-c5f9-4d22-95a3-236367f8d344", "aroma": "db3bac9a-a75e-43e6-b4c1-ee8eae6fea86" },
+    "descripcion": "Finca Flichman Misterio Ancellotta es un vino tinto elaborado con uvas Ancellotta, de la línea Misterio de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Flichman Misterio Malbec Organico",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Finca Flichman",
+    "precio": 9500,
+    "ids": { "lavid": "858f8465-33ee-4048-85e2-c06a186c258a", "aroma": "53704874-d0dc-405a-9c36-d135d93a93b0" },
+    "descripcion": "Finca Flichman Misterio Malbec Orgánico es un vino tinto orgánico elaborado con uvas Malbec, de la línea Misterio de Bodega Finca Flichman, Mendoza.",
+    "imagen": null
+  }
+]

@@ -36,7 +36,7 @@ async function main() {
         stock_status: 'outofstock',
         description: item.descripcion,
         short_description: [item.varietal, item.categoria, item.bodega].filter(Boolean).join(' | '),
-        categories: [{ id: CAT_IDS[item.categoria] }],
+        categories: (item.categoria_ids || [CAT_IDS[item.categoria]]).filter(Boolean).map(id => ({ id })),
         tags: buildTags({ bodega: item.bodega, varietal: item.varietal, categoria: item.categoria }),
         images: item.imagen ? [{ src: item.imagen }] : [],
       }

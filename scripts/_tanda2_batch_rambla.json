@@ -1,0 +1,123 @@
+[
+  {
+    "nombre": "Rambla Blanco 500 Cc",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "Rambla",
+    "precio": 12500,
+    "ids": { "aroma": "e28bc8c0-2bb4-4865-9135-d5c16d87934e", "lavid": "6032701a-ae75-45f4-90fb-fb5709e7221e" },
+    "descripcion": "Rambla Vermouth Blanco es un aperitivo vermouth argentino, en presentación de 500cc.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Mendoza 1 Litro",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth",
+    "bodega": "Rambla",
+    "precio": 24000,
+    "ids": { "aroma": "9754b1d2-e414-4617-9d5d-73c67ef3e48e", "lavid": "82fc9707-48cb-4c95-bb05-266c51579a81" },
+    "descripcion": "Rambla Mendoza es un aperitivo vermouth argentino, en presentación de 1 litro.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Bib 2 Lts",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth",
+    "bodega": "Rambla",
+    "precio": 44000,
+    "ids": { "aroma": "8c31306f-8171-4597-bb38-5565ae785015", "lavid": "086b4b31-d81f-40b7-a46c-3e8833d43b8a" },
+    "descripcion": "Rambla Vermouth es un aperitivo argentino, en presentación Bag in Box de 2 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Bib 2 Lts Tto",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Tinto",
+    "bodega": "Rambla",
+    "precio": 72000,
+    "ids": { "lavid": "fb42378c-f0bd-4064-9591-6d676d0cdec1", "aroma": "9c81aa10-6767-4d4f-b9f8-76595dd118a8" },
+    "descripcion": "Rambla Vermouth Tinto es un aperitivo argentino, en presentación Bag in Box de 2 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Mendoza 500 Cc",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth",
+    "bodega": "Rambla",
+    "precio": 12500,
+    "ids": { "aroma": "b5f5797e-c9c1-4597-a2fd-bd309c332db7", "lavid": "c57d92e5-d979-4cf5-8dd5-ab276aa01909" },
+    "descripcion": "Rambla Mendoza es un aperitivo vermouth argentino, en presentación de 500cc.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Bib 3 Lts Blanco",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "Rambla",
+    "precio": 76000,
+    "ids": { "lavid": "332950d9-7aef-4459-a842-594f19a7ff0a", "aroma": "4ba5707c-2c16-407d-8a36-f62771e7d7d8" },
+    "descripcion": "Rambla Vermouth Blanco es un aperitivo argentino, en presentación Bag in Box de 3 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Bib 3 Lts Rosado",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Rosado",
+    "bodega": "Rambla",
+    "precio": 76000,
+    "ids": { "aroma": "1c3486a2-702f-4b62-a74e-95e260ce0822", "lavid": "f5f9f847-c1d4-4a02-887f-ee32c9af33d8" },
+    "descripcion": "Rambla Vermouth Rosado es un aperitivo argentino, en presentación Bag in Box de 3 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Mendoza 5 Lt",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth",
+    "bodega": "Rambla",
+    "precio": 120000,
+    "ids": { "lavid": "9c30bf37-d32d-4f6a-beb5-6ce06f00c529", "aroma": "dcc1e7aa-66ad-491e-82de-ad410dd40a97" },
+    "descripcion": "Rambla Mendoza es un aperitivo vermouth argentino, en presentación de 5 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Bib 3 Lts Tto",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Tinto",
+    "bodega": "Rambla",
+    "precio": 76000,
+    "ids": { "aroma": "a0d28bac-0d89-4cd7-9a29-dd043689fd7a", "lavid": "241e5561-eb55-485a-82a6-df4eb83c22be" },
+    "descripcion": "Rambla Vermouth Tinto es un aperitivo argentino, en presentación Bag in Box de 3 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Mendoza 10 Lts",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth",
+    "bodega": "Rambla",
+    "precio": 210000,
+    "ids": { "lavid": "180b7ac2-98e9-4c9c-9a56-e1a40132f531", "aroma": "673f129c-2461-4fff-b060-4014136a62de" },
+    "descripcion": "Rambla Mendoza es un aperitivo vermouth argentino, en presentación de 10 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rambla Blanco 1 Litro",
+    "categoria": "Otro",
+    "categoria_ids": [586, 588, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "Rambla",
+    "precio": 24000,
+    "ids": { "aroma": "7aff3563-b37c-45cb-af96-fb5924716d1a", "lavid": "66a09b46-9c9e-4c41-960e-f3b5432aaaa6" },
+    "descripcion": "Rambla Vermouth Blanco es un aperitivo vermouth argentino, en presentación de 1 litro.",
+    "imagen": null
+  }
+]

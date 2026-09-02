@@ -318,5 +318,110 @@
     "status": "creado",
     "woo_id": 12216,
     "fecha": "2026-09-02T13:16:07.130Z"
+  },
+  "Rambla Blanco 500 Cc": {
+    "status": "creado",
+    "woo_id": 12217,
+    "fecha": "2026-09-02T13:17:41.202Z"
+  },
+  "Rambla Mendoza 1 Litro": {
+    "status": "creado",
+    "woo_id": 12218,
+    "fecha": "2026-09-02T13:17:43.115Z"
+  },
+  "Rambla Bib 2 Lts": {
+    "status": "creado",
+    "woo_id": 12219,
+    "fecha": "2026-09-02T13:17:44.828Z"
+  },
+  "Rambla Bib 2 Lts Tto": {
+    "status": "creado",
+    "woo_id": 12220,
+    "fecha": "2026-09-02T13:17:46.653Z"
+  },
+  "Rambla Mendoza 500 Cc": {
+    "status": "creado",
+    "woo_id": 12221,
+    "fecha": "2026-09-02T13:17:48.291Z"
+  },
+  "Rambla Bib 3 Lts Blanco": {
+    "status": "creado",
+    "woo_id": 12222,
+    "fecha": "2026-09-02T13:17:49.999Z"
+  },
+  "Rambla Bib 3 Lts Rosado": {
+    "status": "creado",
+    "woo_id": 12223,
+    "fecha": "2026-09-02T13:17:51.458Z"
+  },
+  "Rambla Mendoza 5 Lt": {
+    "status": "creado",
+    "woo_id": 12224,
+    "fecha": "2026-09-02T13:17:53.074Z"
+  },
+  "Rambla Bib 3 Lts Tto": {
+    "status": "creado",
+    "woo_id": 12225,
+    "fecha": "2026-09-02T13:17:54.559Z"
+  },
+  "Rambla Mendoza 10 Lts": {
+    "status": "creado",
+    "woo_id": 12226,
+    "fecha": "2026-09-02T13:17:56.082Z"
+  },
+  "Rambla Blanco 1 Litro": {
+    "status": "creado",
+    "woo_id": 12227,
+    "fecha": "2026-09-02T13:17:57.599Z"
+  },
+  "Finca Flichman Estate Chardonnay-Viogner": {
+    "status": "sospechoso-revisar",
+    "candidato": "Finca Flichman Estate Chardo-Viog (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO: nombre casi identico (mismo blend Chardonnay-Viognier linea Estate), pero precios distintos ($7800 vs $4452, 43% diff). Requiere confirmar si son el mismo vino cargado dos veces o dos anhos/precios distintos."
+  },
+  "Finca Flichman Estate Chardo-Viog": {
+    "status": "sospechoso-revisar",
+    "candidato": "Finca Flichman Estate Chardonnay-Viogner (mismo Tanda 2, no Woo)",
+    "motivo": "Ver Finca Flichman Estate Chardonnay-Viogner."
+  },
+  "Finca Flichman Gran Reserva Merlot": {
+    "status": "creado",
+    "woo_id": 12228,
+    "fecha": "2026-09-02T13:19:04.376Z"
+  },
+  "Finca Flichman Estate Malbec": {
+    "status": "creado",
+    "woo_id": 12229,
+    "fecha": "2026-09-02T13:19:06.113Z"
+  },
+  "Finca Flichman Estate Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12230,
+    "fecha": "2026-09-02T13:19:07.520Z"
+  },
+  "Finca Flichman Merlot": {
+    "status": "creado",
+    "woo_id": 12231,
+    "fecha": "2026-09-02T13:19:09.264Z"
+  },
+  "Finca Flichman Expresiones Tupungato": {
+    "status": "creado",
+    "woo_id": 12232,
+    "fecha": "2026-09-02T13:19:10.923Z"
+  },
+  "Finca Flichman Expresiones Barrancas": {
+    "status": "creado",
+    "woo_id": 12233,
+    "fecha": "2026-09-02T13:19:12.413Z"
+  },
+  "Finca Flichman Misterio Acellotta": {
+    "status": "creado",
+    "woo_id": 12234,
+    "fecha": "2026-09-02T13:19:14.215Z"
+  },
+  "Finca Flichman Misterio Malbec Organico": {
+    "status": "creado",
+    "woo_id": 12235,
+    "fecha": "2026-09-02T13:19:15.681Z"
   }
 }
