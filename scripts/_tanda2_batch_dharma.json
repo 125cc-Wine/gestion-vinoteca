@@ -1,0 +1,72 @@
+[
+  {
+    "nombre": "Mahakala Torrontes Dharma",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "Dharma",
+    "precio": 27500,
+    "ids": { "aroma": "7f3d0665-7753-470d-af6d-451a8ae76378", "lavid": "70e45ce2-1943-4ff5-a5a5-f6654ae9c149" },
+    "descripcion": "Mahakala Torrontés es un vino blanco elaborado con uvas Torrontés, de la línea Mahakala de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Mahakala Cabernet Sauvignon Dharma",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Dharma",
+    "precio": 27500,
+    "ids": { "aroma": "5cf5595c-db78-4b79-a088-627fff84fcdd", "lavid": "f9ef8894-84ef-4808-8f3d-ee28ad78fce5" },
+    "descripcion": "Mahakala Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Mahakala de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nirvana Chardonnay Dharma",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Dharma",
+    "precio": 49900,
+    "ids": { "aroma": "249d7ba3-d239-4c24-b16b-8267a2551476", "lavid": "86f16545-532b-4713-90e3-9495eb589b72" },
+    "descripcion": "Nirvana Chardonnay es un vino blanco de alta gama elaborado con uvas Chardonnay, de la línea Nirvana de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nirvana Malbec Dharma",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Dharma",
+    "precio": 55000,
+    "ids": { "aroma": "dd89c915-c3fa-431d-a640-69ce777c2454", "lavid": "4d10680a-40e9-473d-9206-4720eb2d568e" },
+    "descripcion": "Nirvana Malbec es un vino tinto de alta gama elaborado con uvas Malbec, de la línea Nirvana de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kamala Extra Brut Dharma",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Dharma",
+    "precio": 16000,
+    "ids": { "aroma": "09ba18b8-64f3-483a-ab57-17995fc22684", "lavid": "19e20e03-c61f-46ea-bc15-bd452982f1bf" },
+    "descripcion": "Kamala Extra Brut es un vino espumante de la línea Kamala de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nirvana Cabernet Franc Dharma",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Dharma",
+    "precio": 55000,
+    "ids": { "aroma": "6143ac4a-35de-42de-a830-2c1e2bd76610", "lavid": "3bb4bcf2-94a9-4c66-a4ef-4895b36e5fe4" },
+    "descripcion": "Nirvana Cabernet Franc es un vino tinto de alta gama elaborado con uvas Cabernet Franc, de la línea Nirvana de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nirvana Blend Dharma",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Dharma",
+    "precio": 59900,
+    "ids": { "aroma": "3ed59bf5-3427-4ece-88ef-aaf1d29e0096", "lavid": "812e61d5-9be8-4209-a5ef-dd5cfc6b8105" },
+    "descripcion": "Nirvana Blend es un vino tinto de corte de alta gama, de la línea Nirvana de Bodega Dharma, Cafayate, Salta.",
+    "imagen": null
+  }
+]

@@ -708,5 +708,110 @@
     "status": "creado",
     "woo_id": 12281,
     "fecha": "2026-09-02T13:26:23.499Z"
+  },
+  "Vuela Brut Nature Piedra Negra": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$2582.64, muy por debajo de los demas productos Piedra Negra ($14000-43700). Probable error de carga (falta un digito)."
+  },
+  "Mahakala Torrontes Dharma": {
+    "status": "creado",
+    "woo_id": 12282,
+    "fecha": "2026-09-02T13:27:56.500Z"
+  },
+  "Mahakala Cabernet Sauvignon Dharma": {
+    "status": "creado",
+    "woo_id": 12283,
+    "fecha": "2026-09-02T13:27:58.245Z"
+  },
+  "Nirvana Chardonnay Dharma": {
+    "status": "creado",
+    "woo_id": 12284,
+    "fecha": "2026-09-02T13:27:59.679Z"
+  },
+  "Nirvana Malbec Dharma": {
+    "status": "creado",
+    "woo_id": 12285,
+    "fecha": "2026-09-02T13:28:01.322Z"
+  },
+  "Kamala Extra Brut Dharma": {
+    "status": "creado",
+    "woo_id": 12286,
+    "fecha": "2026-09-02T13:28:02.798Z"
+  },
+  "Nirvana Cabernet Franc Dharma": {
+    "status": "creado",
+    "woo_id": 12287,
+    "fecha": "2026-09-02T13:28:04.542Z"
+  },
+  "Nirvana Blend Dharma": {
+    "status": "creado",
+    "woo_id": 12288,
+    "fecha": "2026-09-02T13:28:05.968Z"
+  },
+  "Gauchezco Reserva Red Blend": {
+    "status": "creado",
+    "woo_id": 12289,
+    "fecha": "2026-09-02T13:28:09.096Z"
+  },
+  "Gauchezco Rva Malbec": {
+    "status": "creado",
+    "woo_id": 12290,
+    "fecha": "2026-09-02T13:28:11.422Z"
+  },
+  "Gauchezco Estate Malbec": {
+    "status": "creado",
+    "woo_id": 12291,
+    "fecha": "2026-09-02T13:28:13.224Z"
+  },
+  "Gauchezco Rva Franc": {
+    "status": "creado",
+    "woo_id": 12292,
+    "fecha": "2026-09-02T13:28:14.849Z"
+  },
+  "Gauchezco Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12293,
+    "fecha": "2026-09-02T13:28:16.756Z"
+  },
+  "Gauchezco Rva Petit Verdot": {
+    "status": "creado",
+    "woo_id": 12294,
+    "fecha": "2026-09-02T13:28:18.219Z"
+  },
+  "Gauchezco Estate Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12295,
+    "fecha": "2026-09-02T13:28:19.819Z"
+  },
+  "Santa Celina Malbec": {
+    "status": "creado",
+    "woo_id": 12296,
+    "fecha": "2026-09-02T13:28:22.504Z"
+  },
+  "Piedra Negra Orgánico Cab. Sauv.": {
+    "status": "creado",
+    "woo_id": 12297,
+    "fecha": "2026-09-02T13:28:23.932Z"
+  },
+  "Gran Lurton Jackot Piedra Negra": {
+    "status": "creado",
+    "woo_id": 12298,
+    "fecha": "2026-09-02T13:28:25.441Z"
+  },
+  "Piedra Negra Reserva Viognier": {
+    "status": "creado",
+    "woo_id": 12299,
+    "fecha": "2026-09-02T13:28:26.968Z"
+  },
+  "Vuela Sirah  Piedra Negra": {
+    "status": "creado",
+    "woo_id": 12300,
+    "fecha": "2026-09-02T13:28:28.511Z"
+  },
+  "Piedra Negra Verjus Leonce": {
+    "status": "creado",
+    "woo_id": 12301,
+    "fecha": "2026-09-02T13:28:30.325Z"
   }
 }

@@ -1,0 +1,72 @@
+[
+  {
+    "nombre": "Gauchezco Reserva Red Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Gauchezco",
+    "precio": 15000,
+    "ids": { "aroma": "508809d8-4a9d-4ad5-9451-5db8c517b253", "lavid": "ff403d8f-f51e-4c4c-b55e-106b4fd63f6d" },
+    "descripcion": "Gauchezco Reserva Red Blend es un vino tinto de corte, de la línea Reserva de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Rva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Gauchezco",
+    "precio": 15000,
+    "ids": { "aroma": "a5452396-190f-4bb2-9610-12b680f60099", "lavid": "0b11e9a4-20d5-4ff2-9e78-d84caef5bdb3" },
+    "descripcion": "Gauchezco Reserva Malbec es un vino tinto elaborado con uvas Malbec, de la línea Reserva de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Estate Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Gauchezco",
+    "precio": 11300,
+    "ids": { "aroma": "902d8553-fd9d-4ff4-b985-ceb4261125f5", "lavid": "ebdc63b3-3fdf-46c3-976c-638a6de9be44" },
+    "descripcion": "Gauchezco Estate Malbec es un vino tinto elaborado con uvas Malbec, de la línea Estate de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Rva Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Gauchezco",
+    "precio": 15000,
+    "ids": { "aroma": "842a4a56-0560-4664-8c61-ab9ee4200428", "lavid": "2af8bdbf-87c5-4645-89fb-70437838ed8f" },
+    "descripcion": "Gauchezco Reserva Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea Reserva de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Gauchezco",
+    "precio": 11300,
+    "ids": { "aroma": "6042b761-5158-41b1-aab0-3ab8dbf11031", "lavid": "fba8c530-cec4-4b5b-9f4b-39058d58cdd2" },
+    "descripcion": "Gauchezco Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Rva Petit Verdot",
+    "categoria": "Tinto",
+    "varietal": "Petit Verdot",
+    "bodega": "Gauchezco",
+    "precio": 15000,
+    "ids": { "aroma": "4fd7a210-edc3-4f65-b372-1ed8e80d9115", "lavid": "cf13d39f-7739-4170-ab17-2170d99c32c9" },
+    "descripcion": "Gauchezco Reserva Petit Verdot es un vino tinto elaborado con uvas Petit Verdot, de la línea Reserva de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gauchezco Estate Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Gauchezco",
+    "precio": 11500,
+    "ids": { "aroma": "6268fc1b-070f-4f91-977d-9be0181b0f5d", "lavid": "619e1df9-3107-4118-9207-bf48a16a8d78" },
+    "descripcion": "Gauchezco Estate Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Estate de Bodega Gauchezco, Mendoza.",
+    "imagen": null
+  }
+]

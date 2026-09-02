@@ -1,0 +1,63 @@
+[
+  {
+    "nombre": "Santa Celina Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Piedra Negra",
+    "precio": 14000,
+    "ids": { "aroma": "517b99bb-da9b-43d6-a771-23f3aef32e13", "lavid": "fd8d0c23-3eed-418c-913f-8b0262664f9b" },
+    "descripcion": "Santa Celina Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Piedra Negra, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Piedra Negra Orgánico Cab. Sauv.",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Piedra Negra",
+    "precio": 16100,
+    "ids": { "aroma": "716610d3-ca6a-42ce-a5d5-4105b9fa480d", "lavid": "aef50fbc-091a-4988-bedd-7b9662e0bd83" },
+    "descripcion": "Piedra Negra Orgánico Cabernet Sauvignon es un vino tinto orgánico elaborado con uvas Cabernet Sauvignon, de Bodega Piedra Negra, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gran Lurton Jackot Piedra Negra",
+    "categoria": "Blanco",
+    "varietal": "Pinot Grigio",
+    "bodega": "Piedra Negra",
+    "precio": 43700,
+    "ids": { "aroma": "26562963-2829-4b47-a9df-67a1366baedb", "lavid": "4c07d9db-a947-4735-9cb0-015490237d5d" },
+    "descripcion": "Gran Lurton Jackot es un vino blanco de alta gama elaborado con uvas Pinot Grigio, de Bodega Piedra Negra (François Lurton), Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Piedra Negra Reserva Viognier",
+    "categoria": "Blanco",
+    "varietal": "Viognier",
+    "bodega": "Piedra Negra",
+    "precio": 20500,
+    "ids": { "aroma": "30cd5115-4226-4f1c-8389-1e57976bad10", "lavid": "a80ad6b1-e450-471c-a1fb-0ff2d0b84c0e" },
+    "descripcion": "Piedra Negra Reserva Viognier es un vino blanco elaborado con uvas Viognier, de la línea Reserva de Bodega Piedra Negra, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Vuela Sirah  Piedra Negra",
+    "categoria": "Tinto",
+    "varietal": "Syrah",
+    "bodega": "Piedra Negra",
+    "precio": 18400,
+    "ids": { "lavid": "0aa9cae7-8b0b-414e-8f30-9022bbdcc3aa", "aroma": "ac11f6f8-3bc7-4095-b13d-530d80fe2a8e" },
+    "descripcion": "Vuelá Syrah es un vino tinto elaborado con uvas Syrah, de la línea Vuelá de Bodega Piedra Negra, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Piedra Negra Verjus Leonce",
+    "categoria": "Otro",
+    "categoria_ids": [590],
+    "varietal": "Mosto",
+    "bodega": "Piedra Negra",
+    "precio": 15000,
+    "ids": { "aroma": "bd0a996f-3503-4be3-ac76-4a3ac6408a93", "lavid": "df2f3128-16fd-4994-810a-e2e9ed38df2f" },
+    "descripcion": "Verjus Leonce es un producto elaborado a partir de jugo de uva verde (agraz) sin fermentar, de Bodega Piedra Negra, Mendoza. Se utiliza como aderezo o sustituto de vinagre/vino en gastronomía.",
+    "imagen": null
+  }
+]
