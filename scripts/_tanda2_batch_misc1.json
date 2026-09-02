@@ -1,0 +1,202 @@
+[
+  {
+    "nombre": "Sunal Salvaje Luracatao Malbec A. Lanús",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Agustín Lanús",
+    "precio": 38700,
+    "ids": { "aroma": "a38c4df3-e15c-40b6-b56e-2db326bbb4ee", "lavid": "e31d7520-9151-4021-bbc6-9d44300572d3" },
+    "descripcion": "Sunal Salvaje Luracatao es un vino tinto de origen único elaborado con uvas Malbec provenientes de Luracatao, Salta, de la línea Sunal Salvaje de Bodega Agustín Lanús.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lamadrid Zun Zun Tinto",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Lamadrid",
+    "precio": 16135,
+    "ids": { "lavid": "bf90aca1-d332-4d89-b140-0e79441d38ff", "aroma": "d3ca151a-5db4-41df-bc37-493b0081cf98" },
+    "descripcion": "Lamadrid Zun Zun Tinto es un vino tinto de corte, de la línea Zun Zun de Bodega Lamadrid, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Castore Sobresaliente Malbec Collovati",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Castore",
+    "precio": 26300,
+    "ids": { "aroma": "5fa0be31-25ac-4b38-bc5b-ade68220d47e", "lavid": "42fce0d7-b8e5-4af5-b9e7-b51fa56d4d3a" },
+    "descripcion": "Castore Sobresaliente Malbec es un vino tinto elaborado con uvas Malbec, de la línea Sobresaliente de Bodega Castore (Collovati), Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Sur de Los Andes Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Sur de los Andes",
+    "precio": 19800,
+    "ids": { "aroma": "a205f61f-1346-4722-9517-b73814763f73", "lavid": "09d36219-0132-4680-8868-466fe70f33e0" },
+    "descripcion": "Sur de los Andes Chardonnay es un vino blanco elaborado con uvas Chardonnay, de Bodega Sur de los Andes, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Alpamanta Astral",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Alpamanta",
+    "precio": 20520,
+    "ids": { "aroma": "b6d219ce-6d8e-447a-bbea-062631670d89", "lavid": "ed0bf333-b891-41c2-8b8f-3dcc38390b01" },
+    "descripcion": "Alpamanta Astral es un vino tinto biodinámico de corte, de Bodega Alpamanta, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tinkunako Torrontés",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "Benegas",
+    "precio": 11300,
+    "ids": { "lavid": "21631ee0-2f6a-40f8-b663-defd2c9e79c3", "aroma": "bea56135-3448-4dc7-b85a-c84cb2a38151" },
+    "descripcion": "Tinkunako Torrontés es un vino blanco elaborado con uvas Torrontés, de Bodega Benegas.",
+    "imagen": null
+  },
+  {
+    "nombre": "Pulenta Estate Naranjo",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Pulenta",
+    "precio": 21000,
+    "ids": { "aroma": "ada31d29-a333-488e-a77a-827036c1564c", "lavid": "6423207b-541c-49d9-96f6-065e1059b712" },
+    "descripcion": "Pulenta Estate es una línea de vinos de Bodega Pulenta Estate, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Casa Petrini",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Petrini",
+    "precio": 12200,
+    "ids": { "aroma": "86ef22fd-de0f-4104-bb74-cb16d592e6c0", "lavid": "c5a399da-c2a5-432d-aff3-774a355cfaa6" },
+    "descripcion": "Casa Petrini es un vino tinto elaborado con uvas Malbec, de Bodega Petrini, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Costa y Pampa Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Trapiche",
+    "precio": 20000,
+    "ids": { "aroma": "c3f06b0a-18e5-4b5b-8d31-252dc69fef69", "lavid": "480b1751-c67c-44a3-962a-efd7dc6b1014" },
+    "descripcion": "Costa y Pampa Sauvignon Blanc es un vino blanco de origen atlántico, elaborado con uvas Sauvignon Blanc, de la línea Costa y Pampa de Bodega Trapiche.",
+    "imagen": null
+  },
+  {
+    "nombre": "Atlántico Sur Rva Tannat",
+    "categoria": "Tinto",
+    "varietal": "Tannat",
+    "bodega": "Deicas",
+    "precio": 60000,
+    "ids": { "lavid": "8a16488c-fc57-44cc-af6e-420507421c9c", "aroma": "3bac350c-3ee3-4345-90dd-131d633c9adf" },
+    "descripcion": "Atlántico Sur Reserva Tannat es un vino tinto uruguayo elaborado con uvas Tannat, de Bodega Familia Deicas.",
+    "imagen": null
+  },
+  {
+    "nombre": "Costa y Pampa Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Trapiche",
+    "precio": 22000,
+    "ids": { "lavid": "ed043ba4-0879-47f6-a407-9d997a353c9b", "aroma": "d40f2526-015c-4486-9890-c75c65c7a514" },
+    "descripcion": "Costa y Pampa Pinot Noir es un vino tinto de origen atlántico, elaborado con uvas Pinot Noir, de la línea Costa y Pampa de Bodega Trapiche.",
+    "imagen": null
+  },
+  {
+    "nombre": "Iaccarini Cavas Don Niocasio Gran Rva",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Iaccarini",
+    "precio": 50000,
+    "ids": { "lavid": "8915cba2-5110-4f88-aa1e-dcdb8ca9047a", "aroma": "ec6929b3-19e7-416a-926f-fbee0ef35018" },
+    "descripcion": "Iaccarini Cavas Don Nicasio Gran Reserva es un vino tinto de alta gama, de Bodega Iaccarini.",
+    "imagen": null
+  },
+  {
+    "nombre": "Sunal Salvaje Cachi Malbec A. Lanús",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Agustín Lanús",
+    "precio": 38700,
+    "ids": { "lavid": "26f3f589-e649-4b42-affe-017a6453fb45", "aroma": "306420d6-6eeb-4896-831d-7b01cb333172" },
+    "descripcion": "Sunal Salvaje Cachi es un vino tinto de origen único elaborado con uvas Malbec provenientes de Cachi, Salta, de la línea Sunal Salvaje de Bodega Agustín Lanús.",
+    "imagen": null
+  },
+  {
+    "nombre": "Bad Brother Facón Malbec A. Lanús",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Agustín Lanús",
+    "precio": 53800,
+    "ids": { "lavid": "99da777a-4db8-4908-992a-929e048730b2", "aroma": "195c2401-5d9f-4a64-b7ea-0efcdf16e701" },
+    "descripcion": "Bad Brother Facón es un vino tinto elaborado con uvas Malbec, de la línea Bad Brother de Bodega Agustín Lanús.",
+    "imagen": null
+  },
+  {
+    "nombre": "Altus Reserva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Altus",
+    "precio": 16000,
+    "ids": { "lavid": "d92be50a-6dc8-431a-aed1-4c2231014595", "aroma": "17256fa6-2def-4e4f-bf50-38c9b65e02cd" },
+    "descripcion": "Altus Reserva Malbec es un vino tinto elaborado con uvas Malbec provenientes de Gualtallary, Valle de Uco, Mendoza, de Bodega Altus.",
+    "imagen": null
+  },
+  {
+    "nombre": "Chateau Subsonico Falasco",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Falasco Wines",
+    "precio": 16000,
+    "ids": { "aroma": "6f73aa31-a7bc-400a-b600-8503c932d38f", "lavid": "67961d57-f4fb-40e6-a611-db548b738d57" },
+    "descripcion": "Château Subsónico es un vino tinto elaborado con uvas Malbec, de Falasco Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Sin Fin Interminable Blend Me-Pn-Sangio",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Sin Fin",
+    "precio": 17900,
+    "ids": { "lavid": "bb3f1acc-2cbb-4f18-a4ad-a807be5fbd9e", "aroma": "a8803889-7b19-4694-b046-290655c88d23" },
+    "descripcion": "Sin Fin El Interminable Blend Merlot-Pinot Noir-Sangiovese es un vino tinto de corte, de Bodega Sin Fin.",
+    "imagen": null
+  },
+  {
+    "nombre": "Bianchi Cuarta Generación Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Bianchi",
+    "precio": 45900,
+    "ids": { "lavid": "423ecdef-24e4-4d55-92a9-1ee6a37118e5", "aroma": "f1b83472-8273-4446-8fc1-93bab50c90a9" },
+    "descripcion": "Bianchi Cuarta Generación Malbec es un vino tinto de alta gama elaborado con uvas Malbec, de Bodega Bianchi, San Rafael, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Huarpe Reserva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Huarpe",
+    "precio": 18900,
+    "ids": { "aroma": "3324c5a4-9df0-4195-9964-fa636ed57a3c", "lavid": "2239e6f6-ff67-4fe7-9f6b-33909733a0b0" },
+    "descripcion": "Huarpe Reserva Malbec es un vino tinto elaborado con uvas Malbec, de la línea Reserva de Bodega Huarpe, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Uno Platinum Cabernet Franc Antigal",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Antigal",
+    "precio": 27800,
+    "ids": { "aroma": "87a77617-ffe8-4337-ac1e-57183a403769", "lavid": "b047b2a0-a93e-43c7-ae26-8f6d8934e313" },
+    "descripcion": "Antigal UNO Platinum Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea UNO Platinum de Bodega Antigal, Mendoza.",
+    "imagen": null
+  }
+]

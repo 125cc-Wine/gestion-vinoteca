@@ -1253,5 +1253,115 @@
     "status": "creado",
     "woo_id": 12380,
     "fecha": "2026-09-02T13:37:27.900Z"
+  },
+  "Primmo Vermut": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$0. No se puede publicar sin precio real."
+  },
+  "Hermandad Brut Nature": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$0. No se puede publicar sin precio real."
+  },
+  "Sunal Salvaje Luracatao Malbec A. Lanús": {
+    "status": "creado",
+    "woo_id": 12381,
+    "fecha": "2026-09-02T13:39:41.929Z"
+  },
+  "Lamadrid Zun Zun Tinto": {
+    "status": "creado",
+    "woo_id": 12382,
+    "fecha": "2026-09-02T13:39:43.719Z"
+  },
+  "Castore Sobresaliente Malbec Collovati": {
+    "status": "creado",
+    "woo_id": 12383,
+    "fecha": "2026-09-02T13:39:45.575Z"
+  },
+  "Sur de Los Andes Chardonnay": {
+    "status": "creado",
+    "woo_id": 12384,
+    "fecha": "2026-09-02T13:39:47.578Z"
+  },
+  "Alpamanta Astral": {
+    "status": "creado",
+    "woo_id": 12385,
+    "fecha": "2026-09-02T13:39:49.057Z"
+  },
+  "Tinkunako Torrontés": {
+    "status": "creado",
+    "woo_id": 12386,
+    "fecha": "2026-09-02T13:39:50.663Z"
+  },
+  "Pulenta Estate Naranjo": {
+    "status": "creado",
+    "woo_id": 12387,
+    "fecha": "2026-09-02T13:39:52.502Z"
+  },
+  "Casa Petrini": {
+    "status": "creado",
+    "woo_id": 12388,
+    "fecha": "2026-09-02T13:39:54.297Z"
+  },
+  "Costa y Pampa Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12389,
+    "fecha": "2026-09-02T13:39:55.970Z"
+  },
+  "Atlántico Sur Rva Tannat": {
+    "status": "creado",
+    "woo_id": 12390,
+    "fecha": "2026-09-02T13:39:57.558Z"
+  },
+  "Costa y Pampa Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12391,
+    "fecha": "2026-09-02T13:39:59.075Z"
+  },
+  "Iaccarini Cavas Don Niocasio Gran Rva": {
+    "status": "creado",
+    "woo_id": 12392,
+    "fecha": "2026-09-02T13:40:00.692Z"
+  },
+  "Sunal Salvaje Cachi Malbec A. Lanús": {
+    "status": "creado",
+    "woo_id": 12393,
+    "fecha": "2026-09-02T13:40:02.360Z"
+  },
+  "Bad Brother Facón Malbec A. Lanús": {
+    "status": "creado",
+    "woo_id": 12394,
+    "fecha": "2026-09-02T13:40:04.135Z"
+  },
+  "Altus Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12395,
+    "fecha": "2026-09-02T13:40:05.873Z"
+  },
+  "Chateau Subsonico Falasco": {
+    "status": "creado",
+    "woo_id": 12396,
+    "fecha": "2026-09-02T13:40:07.581Z"
+  },
+  "Sin Fin Interminable Blend Me-Pn-Sangio": {
+    "status": "creado",
+    "woo_id": 12397,
+    "fecha": "2026-09-02T13:40:09.292Z"
+  },
+  "Bianchi Cuarta Generación Malbec": {
+    "status": "creado",
+    "woo_id": 12398,
+    "fecha": "2026-09-02T13:40:10.795Z"
+  },
+  "Huarpe Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12399,
+    "fecha": "2026-09-02T13:40:12.485Z"
+  },
+  "Uno Platinum Cabernet Franc Antigal": {
+    "status": "creado",
+    "woo_id": 12400,
+    "fecha": "2026-09-02T13:40:14.136Z"
   }
 }
