@@ -1,0 +1,234 @@
+[
+  {
+    "nombre": "Sur de Los Andes Gran Rva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Sur de los Andes",
+    "precio": 33500,
+    "ids": { "lavid": "b3857c6f-20c7-4a3d-ba73-a9933478cf17", "aroma": "78ff61f6-85c0-4a59-86d5-34dc3ff90133" },
+    "descripcion": "Sur de los Andes Gran Reserva Malbec es un vino tinto elaborado con uvas Malbec, de la línea Gran Reserva de Bodega Sur de los Andes, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Reventón Nâ° 17",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "El Reventón",
+    "precio": 50000,
+    "ids": { "aroma": "4739a431-60e7-4c49-98c1-21957a5946da", "lavid": "59f3a7ca-c897-4818-8a1f-4e80cdcde79d" },
+    "descripcion": "El Reventón N° 17 es un vino tinto de la línea El Reventón, de producción artesanal argentina.",
+    "imagen": null
+  },
+  {
+    "nombre": "Urqo Malbec Del Mirador",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Urqo",
+    "precio": 42100,
+    "ids": { "lavid": "48d081d8-b062-4af9-b9a1-317dba5f61fa", "aroma": "80091a83-7b55-4509-a583-cd1380b6b9a8" },
+    "descripcion": "Urqo Malbec del Mirador es un vino tinto de origen único elaborado con uvas Malbec, de Bodega Urqo.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tatu Syrah Ernesto Catena",
+    "categoria": "Tinto",
+    "varietal": "Syrah",
+    "bodega": "Tatu",
+    "precio": 13600,
+    "ids": { "lavid": "f4c4820f-cb4d-4d09-bc84-b4e614680c6a", "aroma": "85c388a3-4617-4722-ba7e-7f7c857136c9" },
+    "descripcion": "Tatú Syrah es un vino tinto elaborado con uvas Syrah, de la línea Tatú de Ernesto Catena Vineyards, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Chento Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Cuarto Dominio",
+    "precio": 20000,
+    "ids": { "lavid": "72573121-13f6-4d41-b51c-c756834be218", "aroma": "efb3be52-d457-42a9-8d5a-c80cee108fae" },
+    "descripcion": "Chento Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea Chento de Bodega Cuarto Dominio, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Absurdo Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Absurdo",
+    "precio": 8900,
+    "ids": { "lavid": "409684fc-465f-4a5c-b944-c37e9644d52e", "aroma": "75b2f2a9-e99c-455a-a84d-504a073202b2" },
+    "descripcion": "Absurdo Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Absurdo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Punto Final Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Renacer",
+    "precio": 26400,
+    "ids": { "aroma": "6d524c92-823d-4096-8c8f-adb1f45df0e2", "lavid": "b2c38436-0679-4cfd-ada3-c0f3a837b8ee" },
+    "descripcion": "Punto Final Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea Punto Final de Bodega Renacer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Mara Semillón de Uco",
+    "categoria": "Blanco",
+    "varietal": "Semillón",
+    "bodega": "Mara",
+    "precio": 16000,
+    "ids": { "aroma": "8fde09bb-ed5a-42e3-8663-4b99521943dd", "lavid": "b9c71732-db35-4af2-a1d5-e7f99a6a26ef" },
+    "descripcion": "Mara Semillón de Uco es un vino blanco elaborado con uvas Semillón provenientes del Valle de Uco, Mendoza, de Bodega Mara.",
+    "imagen": null
+  },
+  {
+    "nombre": "Zun Zun Naranjo",
+    "categoria": "Blanco",
+    "varietal": "Naranjo",
+    "bodega": "Lamadrid",
+    "precio": 16200,
+    "ids": { "aroma": "8475bf42-5d16-49b2-afd7-f2433a533f91", "lavid": "28440c16-e1c6-4502-af65-d5a5a44f4833" },
+    "descripcion": "Lamadrid Zun Zun Naranjo es un vino blanco elaborado con maceración en contacto con los hollejos (estilo vino naranjo), de la línea Zun Zun de Bodega Lamadrid, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tercos Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Ricardo Santos",
+    "precio": 6500,
+    "ids": { "aroma": "02f58867-2afc-40ec-9ab5-ef1cab822668", "lavid": "4dbfc35a-cc91-4d9d-8aa5-814bee46f1a7" },
+    "descripcion": "Tercos Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Ricardo Santos, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Bira Rosso D'Uco",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Bira Wines",
+    "precio": 26000,
+    "ids": { "lavid": "4f6a8ac2-a50d-4a1a-a757-0f4b9bf5dd1b", "aroma": "a932a79c-3655-4131-a8f0-7cfbb1a0d610" },
+    "descripcion": "Bira Rosso D'Uco es un vino tinto de corte, proveniente del Valle de Uco, de Bira Wines, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tatu Sangiovese",
+    "categoria": "Tinto",
+    "varietal": "Sangiovese",
+    "bodega": "Tatu",
+    "precio": 13600,
+    "ids": { "lavid": "3b51ca0d-57af-425b-ac4a-d032a13d73f9", "aroma": "0616eabb-3615-4329-9385-9ab2fad45d05" },
+    "descripcion": "Tatú Sangiovese es un vino tinto elaborado con uvas Sangiovese, de la línea Tatú de Ernesto Catena Vineyards, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Demencial Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Finca las Moras",
+    "precio": 12000,
+    "ids": { "aroma": "394efef9-2254-4951-8263-d7b112cf8a3f", "lavid": "96681265-9c5b-4da5-bf29-f3c2bf4d4083" },
+    "descripcion": "Demencial Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Demencial de Finca Las Moras, San Juan.",
+    "imagen": null
+  },
+  {
+    "nombre": "Riglos Quinto Rva Malbec Petit Verdot",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Riglos",
+    "precio": 22000,
+    "ids": { "aroma": "f89b247b-83ca-44e5-86fe-3f9b81a2d9f1", "lavid": "51c6fe08-686d-48b9-b74a-1893bbfc3073" },
+    "descripcion": "Riglos Quinto Reserva Malbec-Petit Verdot es un vino tinto de corte, de la línea Quinto de Bodega Riglos, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Pulenta Rose S'Ilvous Plait",
+    "categoria": "Rosado",
+    "varietal": "Rose",
+    "bodega": "Pulenta",
+    "precio": 21000,
+    "ids": { "aroma": "a4539958-49bf-4197-91cc-dd29d291f8b9", "lavid": "2ccc1b2b-a367-4861-b491-36c1de5a2fb0" },
+    "descripcion": "Pulenta Rosé S'il Vous Plaît es un vino rosado de Bodega Pulenta Estate, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Despeinado Blend de Blancas",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Corral de Palos",
+    "precio": 8220,
+    "ids": { "lavid": "e5a114c4-912c-4ca0-a21b-33def3467574", "aroma": "957a34e8-00c2-4f51-95ab-452e2200ac22" },
+    "descripcion": "Despeinado Blend de Blancas es un vino blanco de corte, de la línea Despeinado de Corral de Palos.",
+    "imagen": null
+  },
+  {
+    "nombre": "Iaccarini Assemblage III",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Iaccarini",
+    "precio": 22000,
+    "ids": { "aroma": "0cb200ac-d59a-4456-87ed-cec9e046c3ca", "lavid": "76118de2-13f5-4e5a-97cc-3004574c5cdb" },
+    "descripcion": "Iaccarini Assemblage III es un vino tinto de corte, de Bodega Iaccarini.",
+    "imagen": null
+  },
+  {
+    "nombre": "Corral de Palos Syrah",
+    "categoria": "Tinto",
+    "varietal": "Syrah",
+    "bodega": "Corral de Palos",
+    "precio": 16000,
+    "ids": { "aroma": "8fbc1930-9377-499f-a41f-a1af29fe5276", "lavid": "aa8230de-f14c-4953-a33b-91993462d295" },
+    "descripcion": "Corral de Palos Syrah es un vino tinto elaborado con uvas Syrah, de Corral de Palos.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rivas Malbec Lopez",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Lopez",
+    "precio": 12000,
+    "ids": { "aroma": "dbb665a4-a64f-45d0-a6ae-aad97c470a4b", "lavid": "63c3717f-ad85-423c-ab5f-fc7c382791d2" },
+    "descripcion": "Rivas Malbec es un vino tinto elaborado con uvas Malbec, de Bodega López, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "45° Otronia Brut Rose",
+    "categoria": "Espumante",
+    "varietal": "Brut",
+    "bodega": "Otronia",
+    "precio": 85000,
+    "ids": { "aroma": "60dcae92-c130-4c9b-bbd9-a17cf133f6b0", "lavid": "6880bcd9-175d-4114-9933-3071521adf4a" },
+    "descripcion": "45° Otronia Brut Rosé es un vino espumante rosado de Bodega Otronia, Chubut (Patagonia).",
+    "imagen": null
+  },
+  {
+    "nombre": "Quieto Reserva Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Monte Quieto",
+    "precio": 29200,
+    "ids": { "aroma": "e54ff13b-d23f-4907-9e6f-85759aa547c9", "lavid": "f6dfd6dd-cb79-4430-8237-f2fb7f5a97fa" },
+    "descripcion": "Monte Quieto Reserva Blend es un vino tinto de corte, de la línea Reserva de Bodega Monte Quieto.",
+    "imagen": null
+  },
+  {
+    "nombre": "Hippocrates Rosado",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Rosado",
+    "bodega": "Hippocrates",
+    "precio": 19500,
+    "ids": { "lavid": "1a3424db-0174-44a2-9452-4a7e807150a3", "aroma": "75b34fb6-f27a-4b9b-b687-21183c544a1b" },
+    "descripcion": "Hippócrates Rosado es un vermouth rosado, de la línea Hippócrates.",
+    "imagen": null
+  },
+  {
+    "nombre": "Hippocrates Blanco",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "Hippocrates",
+    "precio": 19500,
+    "ids": { "lavid": "a202be9f-3da5-4262-888a-a572850e062b", "aroma": "bb244f53-6a31-43af-b4a3-18468198875f" },
+    "descripcion": "Hippócrates Blanco es un vermouth blanco, de la línea Hippócrates.",
+    "imagen": null
+  }
+]
