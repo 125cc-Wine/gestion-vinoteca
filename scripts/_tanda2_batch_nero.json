@@ -1,0 +1,79 @@
+[
+  {
+    "nombre": "Nero 53 Citrus",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 13200,
+    "ids": { "aroma": "6b077db7-be25-4e65-a351-b318c8474337", "lavid": "d92f78ef-dbda-4e80-9cfd-d44472f82b9b" },
+    "descripcion": "Nero 53 Citrus es un fernet argentino sabor cítrico, de la línea Nero 53.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nero 53 Barrel Blend",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 21300,
+    "ids": { "aroma": "d206b701-e91d-4e41-ab3d-6807766ed64d", "lavid": "1bb8c30a-b0e0-43dc-9a3d-c02256ea975f" },
+    "descripcion": "Nero 53 Barrel Blend es un fernet argentino añejado en barrica, de la línea Nero 53.",
+    "imagen": null
+  },
+  {
+    "nombre": "M 81 Bag In Box",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 116400,
+    "ids": { "aroma": "09aa0c35-0cb3-4f73-8fd1-8bbb5eeea758", "lavid": "bab42e1d-899e-45d6-b8bf-a1863393b9c2" },
+    "descripcion": "M 81 es un fernet en presentación Bag in Box, de la marca Nero.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nero 53",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 13200,
+    "ids": { "lavid": "233bdb25-a12b-47cb-8fbd-f241f6bf8923", "aroma": "437c5d98-53b5-406a-b176-f0ed81e95226" },
+    "descripcion": "Nero 53 es un fernet argentino, la presentación clásica de la línea Nero 53.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nero 53 Estuche 2 Vasos",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 13200,
+    "ids": { "aroma": "52c5339d-0dfa-47ab-b4bc-301187e193be", "lavid": "591a780a-aeb2-4241-8582-35b867cda601" },
+    "descripcion": "Nero 53 en estuche con 2 vasos es un fernet argentino de la línea Nero 53, presentado junto con 2 vasos de regalo.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nero 53 Maracuya",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 13200,
+    "ids": { "lavid": "42b4a2c9-56cd-4833-b752-080ea3c07f48", "aroma": "e93ba95b-fc6b-46c2-b577-4f8eed2b94b6" },
+    "descripcion": "Nero 53 Maracuyá es un fernet argentino sabor maracuyá, de la línea Nero 53.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nero 53 Berries",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Nero",
+    "precio": 13200,
+    "ids": { "aroma": "cf7dc690-ad33-4d2b-9b77-50c1bf53f19c", "lavid": "901f49f9-d6a7-4eb9-9083-ced522a7f9ec" },
+    "descripcion": "Nero 53 Berries es un fernet argentino sabor frutos rojos, de la línea Nero 53.",
+    "imagen": null
+  }
+]

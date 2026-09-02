@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "Finca Ferrer Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Finca Ferrer",
+    "precio": 14600,
+    "ids": { "lavid": "33fe545e-575e-4322-aa6e-244bce3eae1b", "aroma": "59cca42b-b9c4-49d3-ab42-ade140bff109" },
+    "descripcion": "Finca Ferrer Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Ferrer 1310 Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Finca Ferrer",
+    "precio": 22000,
+    "ids": { "lavid": "b8153069-37b3-4dfc-9fd0-4f3764906a60", "aroma": "42ad03aa-cfa3-439a-859b-a5dbe7b69202" },
+    "descripcion": "Finca Ferrer 1310 Chardonnay es un vino blanco elaborado con uvas Chardonnay, de la línea 1310 de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Ferrer Syrah",
+    "categoria": "Tinto",
+    "varietal": "Syrah",
+    "bodega": "Finca Ferrer",
+    "precio": 14000,
+    "ids": { "aroma": "d32cd1b6-f21f-4936-8e74-f0e7d7223531", "lavid": "f7963c11-cac9-4501-a2ec-964712d3db9a" },
+    "descripcion": "Finca Ferrer Syrah es un vino tinto elaborado con uvas Syrah, de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Ferrer 1310 Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Finca Ferrer",
+    "precio": 22000,
+    "ids": { "aroma": "ba7cfd32-7512-4f52-9584-5681b0a1a0ab", "lavid": "6eafc228-949f-4f1b-bbf3-b142668be2ad" },
+    "descripcion": "Finca Ferrer 1310 Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea 1310 de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Ferrer Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Finca Ferrer",
+    "precio": 14000,
+    "ids": { "lavid": "1d644acd-3eb7-4fb3-b191-eb2391773f3c", "aroma": "517e8b71-b57d-446a-a798-c34754072d81" },
+    "descripcion": "Finca Ferrer Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca Ferrer 1310 Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Finca Ferrer",
+    "precio": 22000,
+    "ids": { "aroma": "f5af5568-65b0-4f0f-a7ca-228ca990ea8a", "lavid": "8d42101f-ea06-4ab3-9a81-b25df446e74e" },
+    "descripcion": "Finca Ferrer 1310 Malbec es un vino tinto elaborado con uvas Malbec, de la línea 1310 de Bodega Finca Ferrer, Mendoza.",
+    "imagen": null
+  }
+]

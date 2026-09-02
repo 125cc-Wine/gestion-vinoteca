@@ -813,5 +813,110 @@
     "status": "creado",
     "woo_id": 12301,
     "fecha": "2026-09-02T13:28:30.325Z"
+  },
+  "Finca Ferrer Acordeon": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "Inconsistencia de datos: varietal=Chardonnay (uva blanca) pero categoria=Tinto. No se pudo determinar con certeza cual campo es el erroneo."
+  },
+  "Nero 53 Citrus": {
+    "status": "creado",
+    "woo_id": 12302,
+    "fecha": "2026-09-02T13:30:16.998Z"
+  },
+  "Nero 53 Barrel Blend": {
+    "status": "creado",
+    "woo_id": 12303,
+    "fecha": "2026-09-02T13:30:19.126Z"
+  },
+  "M 81 Bag In Box": {
+    "status": "creado",
+    "woo_id": 12304,
+    "fecha": "2026-09-02T13:30:20.907Z"
+  },
+  "Nero 53": {
+    "status": "creado",
+    "woo_id": 12305,
+    "fecha": "2026-09-02T13:30:22.436Z"
+  },
+  "Nero 53 Estuche 2 Vasos": {
+    "status": "creado",
+    "woo_id": 12306,
+    "fecha": "2026-09-02T13:30:23.846Z"
+  },
+  "Nero 53 Maracuya": {
+    "status": "creado",
+    "woo_id": 12307,
+    "fecha": "2026-09-02T13:30:25.314Z"
+  },
+  "Nero 53 Berries": {
+    "status": "creado",
+    "woo_id": 12308,
+    "fecha": "2026-09-02T13:30:26.764Z"
+  },
+  "Finca Ferrer Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12309,
+    "fecha": "2026-09-02T13:30:29.705Z"
+  },
+  "Finca Ferrer 1310 Chardonnay": {
+    "status": "creado",
+    "woo_id": 12310,
+    "fecha": "2026-09-02T13:30:31.496Z"
+  },
+  "Finca Ferrer Syrah": {
+    "status": "creado",
+    "woo_id": 12311,
+    "fecha": "2026-09-02T13:30:33.166Z"
+  },
+  "Finca Ferrer 1310 Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12312,
+    "fecha": "2026-09-02T13:30:34.878Z"
+  },
+  "Finca Ferrer Malbec": {
+    "status": "creado",
+    "woo_id": 12313,
+    "fecha": "2026-09-02T13:30:36.405Z"
+  },
+  "Finca Ferrer 1310 Malbec": {
+    "status": "creado",
+    "woo_id": 12314,
+    "fecha": "2026-09-02T13:30:38.380Z"
+  },
+  "Particular Malbec": {
+    "status": "creado",
+    "woo_id": 12315,
+    "fecha": "2026-09-02T13:30:40.866Z"
+  },
+  "Cantina No Trad. Blend Tinto": {
+    "status": "creado",
+    "woo_id": 12316,
+    "fecha": "2026-09-02T13:30:42.367Z"
+  },
+  "El Reventón La Reina": {
+    "status": "creado",
+    "woo_id": 12317,
+    "fecha": "2026-09-02T13:30:44.140Z"
+  },
+  "El Reventón Nâ° 17": {
+    "status": "creado",
+    "woo_id": 12318,
+    "fecha": "2026-09-02T13:30:45.871Z"
+  },
+  "On The Road Merlot": {
+    "status": "creado",
+    "woo_id": 12319,
+    "fecha": "2026-09-02T13:30:47.535Z"
+  },
+  "On The Road Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12320,
+    "fecha": "2026-09-02T13:30:49.001Z"
+  },
+  "Eureka Vermouht": {
+    "status": "creado",
+    "woo_id": 12321,
+    "fecha": "2026-09-02T13:30:50.734Z"
   }
 }

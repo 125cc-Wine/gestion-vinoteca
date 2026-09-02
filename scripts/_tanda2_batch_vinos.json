@@ -1,0 +1,73 @@
+[
+  {
+    "nombre": "Particular Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Particular",
+    "precio": 28500,
+    "ids": { "aroma": "79263cac-ed96-483c-bcc8-e8e3b44a8ac4", "lavid": "0fc6c236-3a54-43c2-9ee2-4c9787fd59b2" },
+    "descripcion": "Particular Malbec es un vino tinto elaborado con uvas Malbec, de la línea Particular.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cantina No Trad. Blend Tinto",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Cantina No Tradicional",
+    "precio": 20780,
+    "ids": { "aroma": "4ef65bee-8730-4151-8e25-7cb712a3d0a2", "lavid": "b993c465-09cf-4259-85d1-6ef0a2cbda90" },
+    "descripcion": "Cantina No Tradicional Blend Tinto es un vino tinto de corte, de la línea Cantina No Tradicional.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Reventón La Reina",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "El Reventón",
+    "precio": 65000,
+    "ids": { "aroma": "b5f4a50e-b1a3-492f-93b6-c4ff6092c34a", "lavid": "5200e305-7441-447f-bd5b-9f92e4e39fad" },
+    "descripcion": "El Reventón La Reina es un vino tinto de la línea El Reventón, de producción artesanal argentina.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Reventón Nâ° 17",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "El Reventón",
+    "precio": 50000,
+    "ids": { "aroma": "4739a431-60e7-4c49-98c1-21957a5946da", "lavid": "59f3a7ca-c897-4818-8a1f-4e80cdcde79d" },
+    "descripcion": "El Reventón N° 17 es un vino tinto de la línea El Reventón, de producción artesanal argentina.",
+    "imagen": null
+  },
+  {
+    "nombre": "On The Road Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "On The Road",
+    "precio": 24000,
+    "ids": { "aroma": "5d668b19-ab17-4b0e-b2ed-8bd8fc90d982", "lavid": "ea8b12b5-06e4-4522-9173-faf440f3da96" },
+    "descripcion": "On The Road Merlot es un vino tinto elaborado con uvas Merlot, de la línea On The Road.",
+    "imagen": null
+  },
+  {
+    "nombre": "On The Road Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "On The Road",
+    "precio": 24000,
+    "ids": { "lavid": "f586b1e6-0023-417c-be38-665504b22bbc", "aroma": "2bdbb20a-8f76-4f86-a959-4418f98c991f" },
+    "descripcion": "On The Road Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea On The Road.",
+    "imagen": null
+  },
+  {
+    "nombre": "Eureka Vermouht",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth",
+    "bodega": "Eureka",
+    "precio": 19500,
+    "ids": { "aroma": "0da18a85-11c3-422c-8c54-b849f4d5af4c", "lavid": "06092257-337c-4623-8da2-7835865ff4e0" },
+    "descripcion": "Eureka Vermouth es un aperitivo vermouth argentino, de la línea Eureka.",
+    "imagen": null
+  }
+]
