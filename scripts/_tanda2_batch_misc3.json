@@ -1,0 +1,181 @@
+[
+  {
+    "nombre": "Myrica",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "Myrica",
+    "precio": 19200,
+    "ids": { "aroma": "26217cc3-4eef-4efd-a7bb-11f644bb1e8e", "lavid": "0318a6fb-1b53-43dd-a725-8cbe9ec61ef0" },
+    "descripcion": "Myrica es un gin patagónico premium.",
+    "imagen": null
+  },
+  {
+    "nombre": "Myrica Frutos Patagonicos",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "Myrica",
+    "precio": 22000,
+    "ids": { "aroma": "079cac33-153e-48ed-8c35-0b01d6be28f7", "lavid": "f43674f6-7b3e-437f-a40f-dc43a5b93a4b" },
+    "descripcion": "Myrica Frutos Patagónicos es un gin patagónico premium con infusión de frutos patagónicos.",
+    "imagen": null
+  },
+  {
+    "nombre": "Branca Litro",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Fernet",
+    "bodega": "Branca",
+    "precio": 22000,
+    "ids": { "aroma": "ebac60fe-3a04-45c9-9a44-7735fa702ae0", "lavid": "4ad9a2b2-b18d-4b9d-a93e-b5aac677b2e1" },
+    "descripcion": "Fernet Branca es un amaro italiano clásico, en presentación de 1 litro.",
+    "imagen": null
+  },
+  {
+    "nombre": "Susana Balbo Signature Rosé",
+    "categoria": "Rosado",
+    "varietal": "Blend",
+    "bodega": "Susana Balbo",
+    "precio": 5536,
+    "ids": { "aroma": "1331ec6f-db64-4e7b-8cdf-9cfb65256f8b", "lavid": "e619c17e-5c97-4805-83a1-d84b005cebeb" },
+    "descripcion": "Susana Balbo Signature Rosé es un vino rosado de la línea Signature de Bodega Susana Balbo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "The London N°1 Gin Blue",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "The London N°1",
+    "precio": 95000,
+    "ids": { "aroma": "c55bacb2-1fba-489e-9dde-42104e9e164d", "lavid": "0312205b-0b1a-4bb6-b813-f501fb8141cd" },
+    "descripcion": "The London N°1 Gin Blue es un gin premium británico reconocible por su color azul.",
+    "imagen": null
+  },
+  {
+    "nombre": "The London N° 1 Sherry Cask Gin",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "The London N°1",
+    "precio": 133000,
+    "ids": { "aroma": "e1cd5340-7cb4-4d3e-b6f6-28bbcd74e409", "lavid": "2a32e5d6-79a3-47fb-85f4-1e3596101c6b" },
+    "descripcion": "The London N°1 Sherry Cask Gin es un gin premium británico añejado en barricas de Sherry.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tomatin 12 Years Old",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Whisky",
+    "bodega": "Tomatin",
+    "precio": 221500,
+    "ids": { "aroma": "d52c0793-ef9c-4b69-9771-f8a9070b1050", "lavid": "8155be54-1726-466a-bc55-03f68311d646" },
+    "descripcion": "Tomatin 12 Years Old es un whisky escocés single malt añejado 12 años, de la destilería Tomatin.",
+    "imagen": null
+  },
+  {
+    "nombre": "Marittimo Vermouth",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth",
+    "bodega": "Marittimo",
+    "precio": 19500,
+    "ids": { "aroma": "d016a111-6add-4870-9450-0e454bb6a5cd", "lavid": "3a330124-8c58-4707-8410-74e4f764add6" },
+    "descripcion": "Marittimo Vermouth es un aperitivo vermouth argentino.",
+    "imagen": null
+  },
+  {
+    "nombre": "Philippe Caraguel Extra Brut Blanc Atamisque",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Atamisque",
+    "precio": 17500,
+    "ids": { "lavid": "210a0d71-cd06-491e-8799-bacfe4ef8db8", "aroma": "b85ea57f-eb28-48f2-85e4-099bd135386a" },
+    "descripcion": "Philippe Caraguel Extra Brut Blanc es un vino espumante elaborado por método tradicional, de la línea Philippe Caraguel de Bodega Atamisque, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Bianchi Extra Brut",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Bianchi",
+    "precio": 15800,
+    "ids": { "aroma": "2f0ab15a-cbcc-43a1-a038-43b3174b8ed0", "lavid": "dcefbe8e-fb97-42d9-bf7d-d986737120bd" },
+    "descripcion": "Bianchi Extra Brut es un vino espumante de Bodega Bianchi, San Rafael, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Famiglia Bianchi Extra Brut",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Bianchi",
+    "precio": 9500,
+    "ids": { "aroma": "bb6968f2-e6e3-4ea2-a474-11b8da41f0d2", "lavid": "f0e566fc-793d-49fa-8844-f2542ee7605b" },
+    "descripcion": "Famiglia Bianchi Extra Brut es un vino espumante de la línea Famiglia Bianchi de Bodega Bianchi, San Rafael, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Philippe Caraguel Extra Brut Rose Atamisque",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut Rose",
+    "bodega": "Atamisque",
+    "precio": 17500,
+    "ids": { "aroma": "0820909f-5ba9-43b9-8d8e-6dc7cfbe7d14", "lavid": "e33d1b9b-8a43-40bc-89f7-fdd9754f660b" },
+    "descripcion": "Philippe Caraguel Extra Brut Rosé es un vino espumante rosado elaborado por método tradicional, de la línea Philippe Caraguel de Bodega Atamisque, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Hippocrates Rosso",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Rosso",
+    "bodega": "Hippocrates",
+    "precio": 19500,
+    "ids": { "lavid": "8a06be83-5d0b-4116-882e-6b0e2eae84fe", "aroma": "7daeeceb-5cf9-4113-bf5b-969292243e81" },
+    "descripcion": "Hippócrates Rosso es un vermouth rojo, de la línea Hippócrates.",
+    "imagen": null
+  },
+  {
+    "nombre": "Quinde Vermouth Blanco",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "Quinde",
+    "precio": 17500,
+    "ids": { "aroma": "98ec6f11-e682-44aa-904d-54d2af52fad3", "lavid": "36ff8b94-80d7-46fd-817e-3495f22ada07" },
+    "descripcion": "Quinde Vermouth Blanco es un aperitivo vermouth argentino, de la línea Quinde.",
+    "imagen": null
+  },
+  {
+    "nombre": "Unique Etoile",
+    "categoria": "Espumante",
+    "varietal": "Brut Nature",
+    "bodega": "Unique Etoile",
+    "precio": 26000,
+    "ids": { "aroma": "c2bf5825-e102-42ea-8aa0-480a5346a5ee", "lavid": "f732c915-a1ea-4f79-85ae-a39a68d21946" },
+    "descripcion": "Unique Étoile es un vino espumante Brut Nature.",
+    "imagen": null
+  },
+  {
+    "nombre": "San Pedro de Yacochuya Torrontes",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "Yacochuya",
+    "precio": 18000,
+    "ids": { "aroma": "3372498a-542b-42eb-8d8e-4d3419fb8067", "lavid": "b69be85a-c40a-4616-b3e5-42739e4dd0b9" },
+    "descripcion": "San Pedro de Yacochuya Torrontés es un vino blanco elaborado con uvas Torrontés, de Bodega Yacochuya, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Yacochucha Miskilas Torrontes",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "Yacochuya",
+    "precio": 18000,
+    "ids": { "lavid": "165915c3-1a4b-489c-9699-a4b93f6933dd", "aroma": "79022c24-310d-4ae1-8bed-92858505df13" },
+    "descripcion": "Miskilas Torrontés es un vino blanco elaborado con uvas Torrontés, de Bodega Yacochuya, Cafayate, Salta.",
+    "imagen": null
+  }
+]
