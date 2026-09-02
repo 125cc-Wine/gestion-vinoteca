@@ -1,0 +1,72 @@
+[
+  {
+    "nombre": "Tío Excéntrico Naranjo G. Riili",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 34200,
+    "ids": { "aroma": "ce1913e4-a952-40f5-9d43-082d9d71b4e7", "lavid": "2bb1ba26-69b5-41e1-93b5-9e6442d4e3db" },
+    "descripcion": "Tío Excéntrico Naranjo es un vino blanco elaborado con maceración en contacto con los hollejos (estilo vino naranjo), de la línea Tío Excéntrico de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tío Excéntrico Blend de Rosados G. Riili",
+    "categoria": "Rosado",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 34200,
+    "ids": { "aroma": "1235a5eb-2e40-4952-872f-4a0f86804bd8", "lavid": "b14d9501-0a21-4716-a53c-cf9b5db80cfb" },
+    "descripcion": "Tío Excéntrico Blend de Rosados es un vino rosado de corte, de la línea Tío Excéntrico de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Padres Ded. Espumante Champeniose G. Riili",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 49100,
+    "ids": { "aroma": "cc276f8c-2daf-431c-a66e-75d25f63ade5", "lavid": "fc619c50-0cfd-4123-864c-5419d8b21d98" },
+    "descripcion": "Padres Dedicados Espumante Champenoise es un vino espumante elaborado por método champenoise, de la línea Padres Dedicados de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tío Excéntrico Blend de Blancas G. Riili",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 34200,
+    "ids": { "aroma": "cacafaa4-815a-4c9b-83cd-7637607328c7", "lavid": "742abf66-a51f-4a45-b8ec-5f0efc16bd2a" },
+    "descripcion": "Tío Excéntrico Blend de Blancas es un vino blanco de corte, de la línea Tío Excéntrico de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gimenez Riili Brut Nature",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 28100,
+    "ids": { "aroma": "19295192-4be0-4e4a-9ca5-5779e39fc469", "lavid": "6d2ae86b-5c1a-402a-8b86-be1e33b828b5" },
+    "descripcion": "Gimenez Riili Brut Nature es un vino espumante de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gimenez Riili Extra Brut",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 28100,
+    "ids": { "aroma": "f34c7529-1c15-4976-9c3e-759767057234", "lavid": "e8fab2d1-91f1-49b7-a226-f563614fb48f" },
+    "descripcion": "Gimenez Riili Extra Brut es un vino espumante de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Buenos Hnos. Blend G. Riili",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Gimenez Riili",
+    "precio": 22400,
+    "ids": { "lavid": "537408d8-a9ce-414c-9400-0b02159b112e", "aroma": "a572da6e-9e5b-4821-8648-183bae5b58db" },
+    "descripcion": "Buenos Hermanos Blend es un vino tinto de corte, de la línea Buenos Hermanos de Bodega Gimenez Riili, Mendoza.",
+    "imagen": null
+  }
+]

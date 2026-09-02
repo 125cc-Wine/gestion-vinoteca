@@ -513,5 +513,85 @@
     "status": "creado",
     "woo_id": 12253,
     "fecha": "2026-09-02T13:21:27.274Z"
+  },
+  "Las Perdices Champenoise Extra Brut": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$2040.99, muy por debajo de sus hermanos de linea Reserva ($20950). Probable error de carga (falta un digito)."
+  },
+  "Las Perdices Extra Brut": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$0. No se puede publicar sin precio real."
+  },
+  "Las Perdices Viognier": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$2528, muy por debajo de sus hermanos blancos de la bodega (Sauvignon Blanc $20950, Gewurztraminer $26400). Probable error de carga."
+  },
+  "Las Perdices Sweety": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$2528 (identico al de Las Perdices Viognier, sospechoso), muy por debajo de otros espumantes de la bodega. Probable error de carga."
+  },
+  "Las Perdices Reserva Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12254,
+    "fecha": "2026-09-02T13:22:20.800Z"
+  },
+  "Las Perdices Reserva Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12255,
+    "fecha": "2026-09-02T13:22:22.441Z"
+  },
+  "Las Perdices Reserva Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12256,
+    "fecha": "2026-09-02T13:22:23.919Z"
+  },
+  "Las Perdices Gewurztraminer": {
+    "status": "creado",
+    "woo_id": 12257,
+    "fecha": "2026-09-02T13:22:25.638Z"
+  },
+  "Las Perdices Gin Perdix": {
+    "status": "creado",
+    "woo_id": 12258,
+    "fecha": "2026-09-02T13:22:27.058Z"
+  },
+  "Tío Excéntrico Naranjo G. Riili": {
+    "status": "creado",
+    "woo_id": 12259,
+    "fecha": "2026-09-02T13:23:16.065Z"
+  },
+  "Tío Excéntrico Blend de Rosados G. Riili": {
+    "status": "creado",
+    "woo_id": 12260,
+    "fecha": "2026-09-02T13:23:17.561Z"
+  },
+  "Padres Ded. Espumante Champeniose G. Riili": {
+    "status": "creado",
+    "woo_id": 12261,
+    "fecha": "2026-09-02T13:23:19.171Z"
+  },
+  "Tío Excéntrico Blend de Blancas G. Riili": {
+    "status": "creado",
+    "woo_id": 12262,
+    "fecha": "2026-09-02T13:23:20.641Z"
+  },
+  "Gimenez Riili Brut Nature": {
+    "status": "creado",
+    "woo_id": 12263,
+    "fecha": "2026-09-02T13:23:22.518Z"
+  },
+  "Gimenez Riili Extra Brut": {
+    "status": "creado",
+    "woo_id": 12264,
+    "fecha": "2026-09-02T13:23:24.221Z"
+  },
+  "Buenos Hnos. Blend G. Riili": {
+    "status": "creado",
+    "woo_id": 12265,
+    "fecha": "2026-09-02T13:23:25.825Z"
   }
 }

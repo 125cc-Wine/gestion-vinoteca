@@ -1,0 +1,53 @@
+[
+  {
+    "nombre": "Las Perdices Reserva Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Las Perdices",
+    "precio": 20950,
+    "ids": { "aroma": "c312d722-7317-49f7-86d3-80e63b7999a8", "lavid": "cb335f02-4bbb-4dd1-a35d-c614bd9864ae" },
+    "descripcion": "Las Perdices Reserva Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Reserva de Bodega Las Perdices, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Las Perdices Reserva Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Las Perdices",
+    "precio": 20950,
+    "ids": { "aroma": "861c046f-b0d1-40ad-8348-0b178f45007a", "lavid": "559e4a22-fc27-440f-841d-293411fd4172" },
+    "descripcion": "Las Perdices Reserva Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Reserva de Bodega Las Perdices, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Las Perdices Reserva Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Las Perdices",
+    "precio": 20950,
+    "ids": { "lavid": "fca04bc7-0990-4d5c-997e-67685429579c", "aroma": "12505c11-671d-453f-97f1-9a8869259ef7" },
+    "descripcion": "Las Perdices Reserva Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea Reserva de Bodega Las Perdices, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Las Perdices Gewurztraminer",
+    "categoria": "Blanco",
+    "varietal": "Gewürztraminer",
+    "bodega": "Las Perdices",
+    "precio": 26400,
+    "ids": { "aroma": "72705da4-a49e-4dc4-9974-41239fc56c3b", "lavid": "730a0486-ecdc-4cc8-81de-39ae0e3707fa" },
+    "descripcion": "Las Perdices Gewürztraminer es un vino blanco elaborado con uvas Gewürztraminer, de Bodega Las Perdices, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Las Perdices Gin Perdix",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "Las Perdices",
+    "precio": 62900,
+    "ids": { "lavid": "9f517bb1-8e90-4920-8195-a5985e73dde6", "aroma": "5094db99-d133-423b-a9fd-1a2eb77d1a05" },
+    "descripcion": "Perdix es un gin premium elaborado por Bodega Las Perdices, Mendoza.",
+    "imagen": null
+  }
+]
