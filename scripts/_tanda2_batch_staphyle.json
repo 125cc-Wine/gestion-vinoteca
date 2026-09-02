@@ -1,0 +1,22 @@
+[
+  {
+    "nombre": "Staphyle Part. Ltda. Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Staphyle",
+    "precio": 3300,
+    "ids": { "lavid": "ae9e3c7b-9258-4ddf-904a-6ecf8e87d54a", "aroma": "1e17705f-2e84-4ea5-b92d-07490ec772ee" },
+    "descripcion": "Staphyle Partida Limitada Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Staphyle, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kyrios Cabernet Franc Staphyle",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Staphyle",
+    "precio": 16000,
+    "ids": { "lavid": "16de8dcf-669e-41bb-82c1-a7c297ed70c7", "aroma": "697137fa-f989-4fff-84f3-7c691b9b72d8" },
+    "descripcion": "Kyrios Cabernet Franc es un vino tinto de alta gama elaborado con uvas Cabernet Franc, de la línea Kyrios de Bodega Staphyle, Mendoza.",
+    "imagen": null
+  }
+]

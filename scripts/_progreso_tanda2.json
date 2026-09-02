@@ -633,5 +633,80 @@
     "status": "creado",
     "woo_id": 12273,
     "fecha": "2026-09-02T13:24:40.356Z"
+  },
+  "Staphyle Premium Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": "Silenio Malbec Staphyle (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO: mismo precio exacto ($11500), mismo varietal, misma bodega Staphyle. \"Silenio\" y \"Premium\" podrian ser la misma linea cargada dos veces con nombres distintos (patron repetido en las 3 variedades Malbec/Cabernet Franc/Merlot)."
+  },
+  "Silenio Malbec Staphyle": {
+    "status": "sospechoso-revisar",
+    "candidato": "Staphyle Premium Malbec (mismo Tanda 2, no Woo)",
+    "motivo": "Ver Staphyle Premium Malbec."
+  },
+  "Staphyle Premium Cabernet Franc": {
+    "status": "sospechoso-revisar",
+    "candidato": "Silenio Cabernet Franc Staphyle (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO: mismo precio exacto ($11500), mismo varietal, misma bodega Staphyle. \"Silenio\" y \"Premium\" podrian ser la misma linea cargada dos veces con nombres distintos (patron repetido en las 3 variedades Malbec/Cabernet Franc/Merlot)."
+  },
+  "Silenio Cabernet Franc Staphyle": {
+    "status": "sospechoso-revisar",
+    "candidato": "Staphyle Premium Cabernet Franc (mismo Tanda 2, no Woo)",
+    "motivo": "Ver Staphyle Premium Cabernet Franc."
+  },
+  "Staphyle Premium Merlot": {
+    "status": "sospechoso-revisar",
+    "candidato": "Silenio Merlot Staphyle (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO: mismo precio exacto ($11500), mismo varietal, misma bodega Staphyle. \"Silenio\" y \"Premium\" podrian ser la misma linea cargada dos veces con nombres distintos (patron repetido en las 3 variedades Malbec/Cabernet Franc/Merlot)."
+  },
+  "Silenio Merlot Staphyle": {
+    "status": "sospechoso-revisar",
+    "candidato": "Staphyle Premium Merlot (mismo Tanda 2, no Woo)",
+    "motivo": "Ver Staphyle Premium Merlot."
+  },
+  "Staphyle Part. Ltda. Malbec": {
+    "status": "creado",
+    "woo_id": 12274,
+    "fecha": "2026-09-02T13:25:33.852Z"
+  },
+  "Kyrios Cabernet Franc Staphyle": {
+    "status": "creado",
+    "woo_id": 12275,
+    "fecha": "2026-09-02T13:25:36.035Z"
+  },
+  "Pasión 4 Malbec Bonarda": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$290, muy por debajo de sus hermanos de linea Pasion 4 ($14300-15100). Probable error de carga (faltan digitos)."
+  },
+  "Joffré Blend de Selección Cab-Mer": {
+    "status": "creado",
+    "woo_id": 12276,
+    "fecha": "2026-09-02T13:26:14.905Z"
+  },
+  "Joffré Expresiones Chardonnay": {
+    "status": "creado",
+    "woo_id": 12277,
+    "fecha": "2026-09-02T13:26:16.544Z"
+  },
+  "Joffré Gran Blend Bon-Pn": {
+    "status": "creado",
+    "woo_id": 12278,
+    "fecha": "2026-09-02T13:26:18.088Z"
+  },
+  "Pasion 4 Cab Franc P. Verdot Joffré": {
+    "status": "creado",
+    "woo_id": 12279,
+    "fecha": "2026-09-02T13:26:19.945Z"
+  },
+  "Rj Distinto Vertical  Joffré": {
+    "status": "creado",
+    "woo_id": 12280,
+    "fecha": "2026-09-02T13:26:21.774Z"
+  },
+  "Pasion 4 Pinot Noir Joffré": {
+    "status": "creado",
+    "woo_id": 12281,
+    "fecha": "2026-09-02T13:26:23.499Z"
   }
 }

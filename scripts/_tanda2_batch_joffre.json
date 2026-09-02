@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "Joffré Blend de Selección Cab-Mer",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Joffre",
+    "precio": 15000,
+    "ids": { "aroma": "e8f8325f-6506-4601-b9d8-69c91e63884e", "lavid": "2f7c7c43-a4f0-4a9e-917f-cf0b1badde2b" },
+    "descripcion": "Joffré Blend de Selección Cabernet Sauvignon-Merlot es un vino tinto de corte, de la línea Blend de Selección de Bodega Joffré, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Joffré Expresiones Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Joffre",
+    "precio": 12000,
+    "ids": { "aroma": "b454c80e-91ff-4b1c-863a-2f7f53518201", "lavid": "06f8e3ca-876a-4f08-b274-f6f72632ac7e" },
+    "descripcion": "Joffré Expresiones Chardonnay es un vino blanco elaborado con uvas Chardonnay, de la línea Expresiones de Bodega Joffré, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Joffré Gran Blend Bon-Pn",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "Joffre",
+    "precio": 20000,
+    "ids": { "lavid": "d9ea1a9e-6940-40eb-a786-db4548c24665", "aroma": "19a8276b-771a-4cd3-a699-aa735eb25901" },
+    "descripcion": "Joffré Gran Blend Bonarda-Pinot Noir es un vino tinto de corte, de la línea Gran de Bodega Joffré, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Pasion 4 Cab Franc P. Verdot Joffré",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Joffre",
+    "precio": 14300,
+    "ids": { "aroma": "5edb0cdd-d75d-4f62-a75b-9aa310b4c4aa", "lavid": "9c86284a-a519-47a9-96b3-afc130ad8bf7" },
+    "descripcion": "Pasión 4 Cabernet Franc-Petit Verdot es un vino tinto de corte, de la línea Pasión 4 de Bodega Joffré, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rj Distinto Vertical  Joffré",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Joffre",
+    "precio": 200000,
+    "ids": { "lavid": "ee08f33e-bbc3-4871-8a7d-f9d687c7e889", "aroma": "8d7a8555-b959-4e58-adb9-2839c9e9958a" },
+    "descripcion": "RJ Distinto Vertical es un pack vertical (varias añadas) del vino RJ Distinto Blend, de Bodega Joffré, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Pasion 4 Pinot Noir Joffré",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Joffre",
+    "precio": 15100,
+    "ids": { "aroma": "ebc86752-da19-4279-bb23-5c9441dbdd74", "lavid": "1876dd33-cf99-4b38-bfca-af7e0235cf6e" },
+    "descripcion": "Pasión 4 Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Pasión 4 de Bodega Joffré, Mendoza.",
+    "imagen": null
+  }
+]
