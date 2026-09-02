@@ -1558,5 +1558,165 @@
     "status": "creado",
     "woo_id": 12439,
     "fecha": "2026-09-02T13:43:28.558Z"
+  },
+  "El Reventón Nâ° 17": {
+    "status": "creado",
+    "woo_id": 12318,
+    "fecha": "2026-09-02T13:30:45.871Z"
+  },
+  "Monteagrelo Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$395, muy por debajo de sus hermanos Monteagrelo (Cabernet Sauvignon y Syrah a $5500). Probable error de carga."
+  },
+  "Monteagrelo Cabernet Franc": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$530, muy por debajo de sus hermanos Monteagrelo (Cabernet Sauvignon y Syrah a $5500). Probable error de carga."
+  },
+  "Ginebra El Profeta": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$662.91, absurdamente bajo para una ginebra (otros gins del catalogo van de $19200 a $95000+). Probable error de carga."
+  },
+  "Malamado Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "Multiples inconsistencias de datos: varietal=Sauvignon Blanc y categoria=Blanco para un producto llamado \"Malamado Malbec\" (Malamado es un conocido vino fortificado tinto de Malbec, no un blanco). Precio=$1735.54 tambien parece muy bajo para este producto premium. Requiere revision manual antes de crear."
+  },
+  "Lui Espumoso": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$0. No se puede publicar sin precio real."
+  },
+  "Monteagrelo Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12440,
+    "fecha": "2026-09-02T13:46:17.828Z"
+  },
+  "Monteagrelo Syrah": {
+    "status": "creado",
+    "woo_id": 12441,
+    "fecha": "2026-09-02T13:46:19.543Z"
+  },
+  "Amaro Pampeano": {
+    "status": "creado",
+    "woo_id": 12442,
+    "fecha": "2026-09-02T13:46:21.016Z"
+  },
+  "Mendel Rosadia": {
+    "status": "creado",
+    "woo_id": 12443,
+    "fecha": "2026-09-02T13:46:22.525Z"
+  },
+  "Lunfa Rojo": {
+    "status": "creado",
+    "woo_id": 12444,
+    "fecha": "2026-09-02T13:46:23.976Z"
+  },
+  "Lunfa Verbena": {
+    "status": "creado",
+    "woo_id": 12445,
+    "fecha": "2026-09-02T13:46:25.624Z"
+  },
+  "Talisker Single Malt": {
+    "status": "creado",
+    "woo_id": 12446,
+    "fecha": "2026-09-02T13:46:27.224Z"
+  },
+  "Tomero Malbec Vistalba": {
+    "status": "creado",
+    "woo_id": 12447,
+    "fecha": "2026-09-02T13:46:29.083Z"
+  },
+  "Montes Outer Limits Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12448,
+    "fecha": "2026-09-02T13:46:30.627Z"
+  },
+  "Montes Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12449,
+    "fecha": "2026-09-02T13:46:32.102Z"
+  },
+  "Montes Twins": {
+    "status": "creado",
+    "woo_id": 12450,
+    "fecha": "2026-09-02T13:46:33.801Z"
+  },
+  "Gin Mom Royal Smoothnes": {
+    "status": "creado",
+    "woo_id": 12451,
+    "fecha": "2026-09-02T13:46:35.341Z"
+  },
+  "Patente X Joven": {
+    "status": "creado",
+    "woo_id": 12452,
+    "fecha": "2026-09-02T13:46:37.100Z"
+  },
+  "Patente X Gran Reserva": {
+    "status": "creado",
+    "woo_id": 12453,
+    "fecha": "2026-09-02T13:46:38.733Z"
+  },
+  "Tribu Tardio": {
+    "status": "creado",
+    "woo_id": 12454,
+    "fecha": "2026-09-02T13:46:40.697Z"
+  },
+  "Los Helechos Malbec": {
+    "status": "creado",
+    "woo_id": 12455,
+    "fecha": "2026-09-02T13:46:42.540Z"
+  },
+  "Los Helechos Cabernet Suavignon": {
+    "status": "creado",
+    "woo_id": 12456,
+    "fecha": "2026-09-02T13:46:44.155Z"
+  },
+  "Cuvelier Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12457,
+    "fecha": "2026-09-02T13:46:45.865Z"
+  },
+  "Tierra Del Fuego Tardío": {
+    "status": "creado",
+    "woo_id": 12458,
+    "fecha": "2026-09-02T13:46:47.260Z"
+  },
+  "La Igriega Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12459,
+    "fecha": "2026-09-02T13:46:48.890Z"
+  },
+  "45º Rugiente Rosé Otronia": {
+    "status": "creado",
+    "woo_id": 12460,
+    "fecha": "2026-09-02T13:46:50.275Z"
+  },
+  "Taylor'S Port 10 Years": {
+    "status": "creado",
+    "woo_id": 12461,
+    "fecha": "2026-09-02T13:46:51.961Z"
+  },
+  "Taittinger Brut Reserve": {
+    "status": "creado",
+    "woo_id": 12462,
+    "fecha": "2026-09-02T13:46:53.335Z"
+  },
+  "Taylors Fine White": {
+    "status": "creado",
+    "woo_id": 12463,
+    "fecha": "2026-09-02T13:46:55.015Z"
+  },
+  "Gin Mom Royal Rocks Purity": {
+    "status": "creado",
+    "woo_id": 12464,
+    "fecha": "2026-09-02T13:46:56.719Z"
+  },
+  "El Amateur Rosso": {
+    "status": "creado",
+    "woo_id": 12465,
+    "fecha": "2026-09-02T13:46:58.222Z"
   }
 }

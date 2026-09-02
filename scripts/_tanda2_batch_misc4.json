@@ -1,0 +1,271 @@
+[
+  {
+    "nombre": "Monteagrelo Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Monteagrelo",
+    "precio": 5500,
+    "ids": { "aroma": "e508c569-d98b-4a66-bf6a-a86cdec032ec", "lavid": "a632b9d1-e434-4bf9-9e5e-214ce890920a" },
+    "descripcion": "Monteagrelo Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Monteagrelo.",
+    "imagen": null
+  },
+  {
+    "nombre": "Monteagrelo Syrah",
+    "categoria": "Tinto",
+    "varietal": "Syrah",
+    "bodega": "Monteagrelo",
+    "precio": 5500,
+    "ids": { "lavid": "af740fad-82c5-4859-983f-21c9860258d0", "aroma": "4680b458-3033-4081-84b6-998c5e44e304" },
+    "descripcion": "Monteagrelo Syrah es un vino tinto elaborado con uvas Syrah, de Bodega Monteagrelo.",
+    "imagen": null
+  },
+  {
+    "nombre": "Amaro Pampeano",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Amaro",
+    "bodega": "Amaro Pampeano",
+    "precio": 20000,
+    "ids": { "aroma": "5fecdef9-ed28-4ca3-9330-bc2a4d12b9ed", "lavid": "13b95a04-39aa-4548-b865-5eea2fd8e776" },
+    "descripcion": "Amaro Pampeano es un amaro argentino elaborado con hierbas de la Pampa.",
+    "imagen": null
+  },
+  {
+    "nombre": "Mendel Rosadia",
+    "categoria": "Rosado",
+    "varietal": "Merlot",
+    "bodega": "Mendel",
+    "precio": 54000,
+    "ids": { "lavid": "d9f90c4c-30f4-46b2-a854-ebeec7b15e2d", "aroma": "bb2dc9e6-f103-496d-b8cb-e4f0a1683473" },
+    "descripcion": "Mendel Rosadia es un vino rosado elaborado con uvas Merlot, de Bodega Mendel, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lunfa Rojo",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Rojo",
+    "bodega": "Lunfa",
+    "precio": 22000,
+    "ids": { "lavid": "64b0c8a2-94a6-42fe-b5e3-eb7810bf3b5c", "aroma": "f2e83e70-9d42-4941-b574-131ca83f68ef" },
+    "descripcion": "Lunfa Rojo es un vermouth rojo argentino, de la línea Lunfa.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lunfa Verbena",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth",
+    "bodega": "Lunfa",
+    "precio": 22000,
+    "ids": { "aroma": "a9db62fa-8df8-4d6e-8ee2-31daaf599fb1", "lavid": "c48eee11-706e-403b-8c53-1e4b070e8266" },
+    "descripcion": "Lunfa Verbena es un vermouth argentino saborizado con verbena, de la línea Lunfa.",
+    "imagen": null
+  },
+  {
+    "nombre": "Talisker Single Malt",
+    "categoria": "Otro",
+    "categoria_ids": [115, 548],
+    "varietal": "Whisky",
+    "bodega": "Talisker",
+    "precio": 133000,
+    "ids": { "aroma": "20ceb623-5a3f-42ec-b115-b3876f9b0662", "lavid": "5d4fa280-6d74-4b2e-b85f-41707f1ea215" },
+    "descripcion": "Talisker Single Malt es un whisky escocés single malt de la destilería Talisker, Isla de Skye.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tomero Malbec Vistalba",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Tomero",
+    "precio": 2890,
+    "ids": { "aroma": "93339358-d8ea-4298-a49e-947e1615cc14", "lavid": "a884f9e5-cbe2-4c59-b13d-48a64cb9d1fb" },
+    "descripcion": "Tomero Malbec es un vino tinto elaborado con uvas Malbec provenientes de Vistalba, Luján de Cuyo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Montes Outer Limits Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Montes",
+    "precio": 26000,
+    "ids": { "aroma": "0ccae6a0-3ce4-4482-8073-b4f7c7543bf8", "lavid": "2a5f22d6-4405-4b46-aad6-85cfe99a7f0f" },
+    "descripcion": "Montes Outer Limits Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Outer Limits de Bodega Montes, Chile.",
+    "imagen": null
+  },
+  {
+    "nombre": "Montes Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Montes",
+    "precio": 18200,
+    "ids": { "lavid": "d4551154-2ce7-418c-a5b4-1b95968fd972", "aroma": "1557fa26-64ed-4982-9771-8c42c3d6a62e" },
+    "descripcion": "Montes Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Montes, Chile.",
+    "imagen": null
+  },
+  {
+    "nombre": "Montes Twins",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Montes",
+    "precio": 5000,
+    "ids": { "aroma": "a5b2cff5-7ae6-4eec-ad17-0c582666fc1a", "lavid": "30e58f3c-268e-47b1-978f-ce4e5d355366" },
+    "descripcion": "Montes Twins es un vino tinto de corte de línea accesible, de Bodega Montes, Chile.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gin Mom Royal Smoothnes",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "Mom",
+    "precio": 64000,
+    "ids": { "lavid": "1f544e8b-58a6-46df-b542-c94a05311dd7", "aroma": "bbf00e50-9be9-4a90-8309-319e1dff5319" },
+    "descripcion": "Mom Gin Royal Smoothness es un gin premium.",
+    "imagen": null
+  },
+  {
+    "nombre": "Patente X Joven",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Patente X",
+    "precio": 8770,
+    "ids": { "lavid": "c4558326-0288-40b2-af1b-8008a6736c48", "aroma": "d0bcf2c7-2dfc-45d9-90ff-887da475e7f4" },
+    "descripcion": "Patente X Joven es un vino tinto elaborado con uvas Malbec, de Bodega Patente X, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Patente X Gran Reserva",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Patente X",
+    "precio": 12965,
+    "ids": { "aroma": "33eaad99-e2c7-4c62-9ab4-470feea12d8f", "lavid": "d3dfc0b1-a12c-4379-aed8-4719148a5d85" },
+    "descripcion": "Patente X Gran Reserva es un vino tinto elaborado con uvas Malbec, de la línea Gran Reserva de Bodega Patente X, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tribu Tardio",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Tribu",
+    "precio": 4500,
+    "ids": { "aroma": "46723465-1d8d-4f5b-97ec-14816150e121", "lavid": "514f90ea-1df7-4bc3-91bd-32e11bafaa34" },
+    "descripcion": "Tribu Tardío es un vino blanco de cosecha tardía elaborado con uvas Sauvignon Blanc.",
+    "imagen": null
+  },
+  {
+    "nombre": "Los Helechos Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Los Helechos",
+    "precio": 10200,
+    "ids": { "aroma": "605eb055-455a-4ed8-ba41-5a8281749aaf", "lavid": "9afedf49-aa80-4145-8975-1a61b1875bcd" },
+    "descripcion": "Los Helechos Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Los Helechos.",
+    "imagen": null
+  },
+  {
+    "nombre": "Los Helechos Cabernet Suavignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Los Helechos",
+    "precio": 10200,
+    "ids": { "lavid": "c0b28a94-dbcf-4e22-a2b5-82383fea7257", "aroma": "f74ae477-7227-42b2-a698-52979572b51d" },
+    "descripcion": "Los Helechos Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Los Helechos.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cuvelier Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Cuvelier Los Andes",
+    "precio": 14000,
+    "ids": { "lavid": "17b21b32-5883-4105-8483-aaa7ee2723b2", "aroma": "40e67c8d-a080-4bf8-8c43-e239beca0694" },
+    "descripcion": "Cuvelier Los Andes Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de Bodega Cuvelier Los Andes, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tierra Del Fuego Tardío",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Tierra del Fuego",
+    "precio": 6000,
+    "ids": { "aroma": "69d313bb-e7e5-44db-8ff2-b8f4a3621002", "lavid": "d22ebaad-25da-4378-ad25-0fc36cf10f2e" },
+    "descripcion": "Tierra del Fuego Tardío es un vino blanco de cosecha tardía.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Igriega Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "La Igriega",
+    "precio": 13200,
+    "ids": { "lavid": "033f62b4-f07c-40c4-b6e7-7806bbf9befa", "aroma": "5973f2d1-61fe-4b43-b8c3-ddca207cf9cf" },
+    "descripcion": "La Igriega Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de Bodega La Igriega.",
+    "imagen": null
+  },
+  {
+    "nombre": "45º Rugiente Rosé Otronia",
+    "categoria": "Rosado",
+    "varietal": "Blend",
+    "bodega": "Otronia",
+    "precio": 44500,
+    "ids": { "aroma": "37191c64-f25d-4ebc-a73b-e63a01e542ea", "lavid": "45dc50f3-e576-437a-801f-7459fb4f0a1b" },
+    "descripcion": "45° Rugiente Rosé es un vino rosado de Bodega Otronia, Chubut (Patagonia).",
+    "imagen": null
+  },
+  {
+    "nombre": "Taylor'S Port 10 Years",
+    "categoria": "Otro",
+    "categoria_ids": [593],
+    "varietal": "Oporto",
+    "bodega": "Taylor's",
+    "precio": 109000,
+    "ids": { "aroma": "0d6dbc98-897f-4dc7-b909-482cb28f3683", "lavid": "b6199a74-87a6-444b-b5dd-1f83e4cd759b" },
+    "descripcion": "Taylor's Port 10 Years Old es un vino generoso (Oporto) portugués añejado 10 años, de la casa Taylor's.",
+    "imagen": null
+  },
+  {
+    "nombre": "Taittinger Brut Reserve",
+    "categoria": "Espumante",
+    "varietal": "Brut",
+    "bodega": "Taittinger",
+    "precio": 245000,
+    "ids": { "aroma": "23fce2c4-bdc6-41bc-af47-e90a16974abe", "lavid": "7ff38dc9-4fef-487d-921e-5e4f2438fdb8" },
+    "descripcion": "Taittinger Brut Réserve es un champagne francés de la Maison Taittinger, Reims.",
+    "imagen": null
+  },
+  {
+    "nombre": "Taylors Fine White",
+    "categoria": "Otro",
+    "categoria_ids": [593],
+    "varietal": "Oporto",
+    "bodega": "Taylor's",
+    "precio": 48000,
+    "ids": { "lavid": "fa04507b-8a97-4015-9b6a-2f11bd1ec953", "aroma": "6602f911-e86a-4f27-ba33-3fbe44556f7c" },
+    "descripcion": "Taylor's Fine White Port es un vino generoso (Oporto) blanco portugués, de la casa Taylor's.",
+    "imagen": null
+  },
+  {
+    "nombre": "Gin Mom Royal Rocks Purity",
+    "categoria": "Otro",
+    "categoria_ids": [87],
+    "varietal": "Gin",
+    "bodega": "Mom",
+    "precio": 64000,
+    "ids": { "lavid": "0f5c3dcd-5b70-453f-af28-53264624db2b", "aroma": "110e24ea-6f9e-4d7e-a0dd-f111bc583a3c" },
+    "descripcion": "Mom Gin Royal Rocks Purity es un gin premium.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Amateur Rosso",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Rosso",
+    "bodega": "El Amateur",
+    "precio": 19500,
+    "ids": { "aroma": "3e356c5b-20bb-468a-b6cc-4603865324af", "lavid": "65668510-59d8-43bb-87a9-adecef3b11fd" },
+    "descripcion": "El Amateur Rosso es un vermouth rojo argentino, de la línea El Amateur.",
+    "imagen": null
+  }
+]
