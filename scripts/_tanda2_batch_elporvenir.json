@@ -1,0 +1,102 @@
+[
+  {
+    "nombre": "Amauta Torrontés Dulce El Porvenir",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "El Porvenir",
+    "precio": 16500,
+    "ids": { "aroma": "58443829-3f3a-46ef-8c3e-d7093152659f", "lavid": "6018a274-70a8-4ec7-a757-1137331d9497" },
+    "descripcion": "Amauta Torrontés Dulce es un vino blanco dulce elaborado con uvas Torrontés, de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Laborum Torrontes",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "El Porvenir",
+    "precio": 29800,
+    "ids": { "lavid": "921d4847-6c2e-4693-b0b4-a76b6ea9c22a", "aroma": "4cdd102e-028d-4cdb-8882-a220899099a5" },
+    "descripcion": "Laborum Torrontés es un vino blanco elaborado con uvas Torrontés, de la línea Laborum de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Laborum Malbec, El Porvenir",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "El Porvenir",
+    "precio": 31000,
+    "ids": { "lavid": "9658ded8-1cfa-456a-9ca5-bf340c72daed", "aroma": "5792fcc7-7d6d-4fb7-9979-7a0918f6814e" },
+    "descripcion": "Laborum Malbec es un vino tinto elaborado con uvas Malbec, de la línea Laborum de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Rosa Rosa El Porvenir",
+    "categoria": "Rosado",
+    "varietal": "Malbec",
+    "bodega": "El Porvenir",
+    "precio": 24000,
+    "ids": { "aroma": "c7cd593c-1d60-4de8-8705-4278a201cb53", "lavid": "369632e0-ca5a-4d95-9b82-bf23a0ea251b" },
+    "descripcion": "Rosa Rosa es un vino rosado elaborado con uvas Malbec, de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Laborum Cabernet Sauvignon, El Porvenir",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "El Porvenir",
+    "precio": 29800,
+    "ids": { "lavid": "1683688c-3d64-4edc-bb7b-b9b214b2bf26", "aroma": "bc6a8dba-53fb-42e8-a70f-9be422617a4e" },
+    "descripcion": "Laborum Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Laborum de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "Laborum Tannat",
+    "categoria": "Tinto",
+    "varietal": "Tannat",
+    "bodega": "El Porvenir",
+    "precio": 31000,
+    "ids": { "aroma": "0c1b35c8-2c46-4823-beb0-92263df5701f", "lavid": "50bb7b4e-742d-482b-bb0b-88dbb31265b6" },
+    "descripcion": "Laborum Tannat es un vino tinto elaborado con uvas Tannat, de la línea Laborum de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Porvenir, Bonarda Peq. Fermentacion",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "El Porvenir",
+    "precio": 33000,
+    "ids": { "lavid": "b3c8610a-fddb-4450-84b0-c7c244fc1aad", "aroma": "56942f46-d1bf-4d32-a072-ba8118b995c0" },
+    "descripcion": "El Porvenir Bonarda es un vino tinto elaborado con uvas Bonarda, de la línea Pequeñas Fermentaciones de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Porvenir, Naranjo Peq. Fermentacion",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "El Porvenir",
+    "precio": 34500,
+    "ids": { "lavid": "a8c4c27d-06f1-4a5e-8e8f-54e310f9787e", "aroma": "9fd913bf-8af0-4f6f-bd22-4ff21be339a9" },
+    "descripcion": "El Porvenir Naranjo es un vino blanco elaborado con maceración en contacto con los hollejos (estilo vino naranjo), de la línea Pequeñas Fermentaciones de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Porvenir Garnacha, Peq Fermentaciones",
+    "categoria": "Tinto",
+    "varietal": "Garnacha",
+    "bodega": "El Porvenir",
+    "precio": 34500,
+    "ids": { "lavid": "7bfa07c8-7137-46fc-b09f-52efe567d1af", "aroma": "7ac0c07c-9eb1-4fdf-88e2-8ee579ba6342" },
+    "descripcion": "El Porvenir Garnacha es un vino tinto elaborado con uvas Garnacha, de la línea Pequeñas Fermentaciones de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  },
+  {
+    "nombre": "El Porvenir Gsm Peq Fermentacion",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "El Porvenir",
+    "precio": 34500,
+    "ids": { "lavid": "1271de88-8732-494f-b2bf-550303dc182f", "aroma": "60a3293f-eda9-4274-871f-51b99fb03bab" },
+    "descripcion": "El Porvenir GSM es un vino tinto de corte (blend Garnacha-Syrah-Mourvèdre), de la línea Pequeñas Fermentaciones de Bodega El Porvenir de los Andes, Cafayate, Salta.",
+    "imagen": null
+  }
+]

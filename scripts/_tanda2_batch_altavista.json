@@ -1,0 +1,82 @@
+[
+  {
+    "nombre": "Alta Vista Alto 2021",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Alta Vista",
+    "precio": 165900,
+    "ids": { "lavid": "14323fd9-2cd3-4cb1-98f4-740fa43f374a", "aroma": "0958f263-18e0-4305-831b-7f7c06afcf6f" },
+    "descripcion": "Alta Vista Alto es el vino ícono de Bodega Alta Vista, un corte de alta gama liderado por Malbec, Mendoza. Añada 2021.",
+    "imagen": null
+  },
+  {
+    "nombre": "Alta Vista Estate Premium Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Alta Vista",
+    "precio": 17300,
+    "ids": { "aroma": "07529c14-7ce2-4434-866f-339255166cb5", "lavid": "3545a4ef-959e-45fd-9665-531f8ed77210" },
+    "descripcion": "Alta Vista Estate Premium Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea Estate Premium de Bodega Alta Vista, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Atemporal E. B. Rosé Alta Vista",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Alta Vista",
+    "precio": 37200,
+    "ids": { "lavid": "51051779-b6a2-4fa3-a156-74de96bc1ca3", "aroma": "ae5551a4-2a23-49a5-b72d-ad1bcaf1e8dd" },
+    "descripcion": "Alta Vista Atemporal Extra Brut Rosé es un vino espumante rosado elaborado por método tradicional, de la línea Atemporal de Bodega Alta Vista, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Vive Sweet Alta Vista",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Alta Vista",
+    "precio": 15000,
+    "ids": { "lavid": "94a6629f-7445-4ada-b88e-9d2069e78eed", "aroma": "517ac714-21c9-4c55-b7b5-7f73433208da" },
+    "descripcion": "Alta Vista Vive Sweet es un vino espumante dulce de la línea Vive de Bodega Alta Vista, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Alta Vista Albaneve Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Alta Vista",
+    "precio": 69000,
+    "ids": { "lavid": "d43b31fc-1259-4b34-b2aa-38dd83fcfb6d", "aroma": "dab818ea-8e61-403a-8c1b-cc6497d21b07" },
+    "descripcion": "Alta Vista Albaneve Malbec es un vino tinto de alta gama elaborado con uvas Malbec, de Bodega Alta Vista, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Alta Vista Olympe Torrontés",
+    "categoria": "Blanco",
+    "varietal": "Torrontés",
+    "bodega": "Alta Vista",
+    "precio": 48000,
+    "ids": { "aroma": "74b58366-bb28-4225-a792-1030b7b95b87", "lavid": "e555f088-8bcd-42a3-902e-e572f1c49a56" },
+    "descripcion": "Alta Vista Olympe Torrontés es un vino blanco de alta gama elaborado con uvas Torrontés, de Bodega Alta Vista.",
+    "imagen": null
+  },
+  {
+    "nombre": "Alta Vista Terroir Malbec Salta",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Alta Vista",
+    "precio": 34000,
+    "ids": { "lavid": "0b7a9c23-1e8d-4be1-b0d1-577ada32cbd6", "aroma": "7ed31d16-056d-436a-b7d3-abe6115b7190" },
+    "descripcion": "Alta Vista Terroir Selection Malbec Salta es un vino tinto elaborado con uvas Malbec provenientes de Salta, de la línea Terroir Selection de Bodega Alta Vista.",
+    "imagen": null
+  },
+  {
+    "nombre": "Vive Chardonnay Alta Vista",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Alta Vista",
+    "precio": 12900,
+    "ids": { "aroma": "76a8b823-c569-4f3e-92a2-831358802d8d", "lavid": "9aa3ba53-f1e9-4ae9-bd9f-e54777a7b338" },
+    "descripcion": "Alta Vista Vive Chardonnay es un vino blanco elaborado con uvas Chardonnay, de la línea Vive de Bodega Alta Vista, Mendoza.",
+    "imagen": null
+  }
+]
