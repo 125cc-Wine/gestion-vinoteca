@@ -21,7 +21,7 @@ async function crearProductoWoo(payload) {
 async function main() {
   let ok = 0, err = 0
   for (const item of items) {
-    if (progress[item.nombre]) {
+    if (progress[item.nombre] && progress[item.nombre].status !== 'error') {
       console.log(`SKIP (ya procesado): ${item.nombre}`)
       continue
     }

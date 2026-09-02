@@ -1,0 +1,82 @@
+[
+  {
+    "nombre": "Kaiken Aventura Malbec Los Chacayes Norte",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Kaiken",
+    "precio": 41300,
+    "ids": { "aroma": "3d3e83fa-a6d2-43f2-b6a1-5b54aa5d6046", "lavid": "8b9b2e81-d358-403c-b44c-95e8ed70ea2b" },
+    "descripcion": "Kaiken Aventura Malbec Los Chacayes Norte es un vino tinto de origen único, elaborado con uvas Malbec provenientes de Los Chacayes, Valle de Uco, Mendoza, de la línea Aventura de Bodega Kaiken.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kaiken Aventura Malbec Valle de Canota",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Kaiken",
+    "precio": 41300,
+    "ids": { "aroma": "d1b34871-bd6d-45ed-b4bd-f2e5722ecc5b", "lavid": "2e938f80-f301-43d4-a818-c99c3eb425c5" },
+    "descripcion": "Kaiken Aventura Malbec Valle de Canota es un vino tinto de origen único, elaborado con uvas Malbec provenientes del Valle de Canota, Lujan de Cuyo, Mendoza, de la línea Aventura de Bodega Kaiken.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kaiken Aventura Malbec Los Chacayes Sur",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Kaiken",
+    "precio": 41300,
+    "ids": { "lavid": "8d18b21c-9aed-4b38-8fbe-7a28022243be", "aroma": "e3b4074f-b05d-4b87-8bd3-9fadc99b23a3" },
+    "descripcion": "Kaiken Aventura Malbec Los Chacayes Sur es un vino tinto de origen único, elaborado con uvas Malbec provenientes de Los Chacayes, Valle de Uco, Mendoza, de la línea Aventura de Bodega Kaiken.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kaiken Brut",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Kaiken",
+    "precio": 32000,
+    "ids": { "aroma": "a13b2f77-5c93-4bf4-bc8f-f5f51d704f08", "lavid": "955bf539-6e3d-4b47-ab15-6368209b0502" },
+    "descripcion": "Kaiken Brut es un vino espumante de Bodega Kaiken, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kaiken Brut Rose",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Kaiken",
+    "precio": 32000,
+    "ids": { "aroma": "19d88f1c-aef9-479c-9da7-208a2fbd2493", "lavid": "4e6e118f-281b-442d-9c49-f5df8ff123ab" },
+    "descripcion": "Kaiken Brut Rosé es un vino espumante rosado de Bodega Kaiken, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Desbandado Cabernet Franc Kaiken",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Kaiken",
+    "precio": 21400,
+    "ids": { "aroma": "6c8450ef-5176-44b3-91ea-3668f381c46c", "lavid": "7089bcb4-b237-41ff-9a68-b1da8de45225" },
+    "descripcion": "Desbandado Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea Desbandado de Bodega Kaiken, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Kaiken Frankly",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Kaiken",
+    "precio": 69300,
+    "ids": { "aroma": "fca43c3b-25a7-4a3b-8863-f343eb0e4970", "lavid": "29672d0d-9080-4712-b454-fcb6b5ed1518" },
+    "descripcion": "Kaiken Frankly es un vino tinto de alta gama elaborado con uvas Cabernet Franc, de Bodega Kaiken, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Divina Chardonnay Kaiken",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Kaiken",
+    "precio": 36200,
+    "ids": { "aroma": "d95383cf-2d57-4c98-bd3a-bb430dac2eba", "lavid": "77c27cea-f499-4b17-81bc-6946820ebd48" },
+    "descripcion": "Divina Chardonnay es un vino blanco elaborado con uvas Chardonnay, de Bodega Kaiken, Mendoza.",
+    "imagen": null
+  }
+]

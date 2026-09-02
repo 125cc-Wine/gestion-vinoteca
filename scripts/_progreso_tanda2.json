@@ -593,5 +593,45 @@
     "status": "creado",
     "woo_id": 12265,
     "fecha": "2026-09-02T13:23:25.825Z"
+  },
+  "Kaiken Aventura Malbec Los Chacayes Norte": {
+    "status": "creado",
+    "woo_id": 12266,
+    "fecha": "2026-09-02T13:24:12.010Z"
+  },
+  "Kaiken Aventura Malbec Los Chacayes Sur": {
+    "status": "creado",
+    "woo_id": 12267,
+    "fecha": "2026-09-02T13:24:14.402Z"
+  },
+  "Kaiken Brut": {
+    "status": "creado",
+    "woo_id": 12268,
+    "fecha": "2026-09-02T13:24:16.725Z"
+  },
+  "Kaiken Brut Rose": {
+    "status": "creado",
+    "woo_id": 12269,
+    "fecha": "2026-09-02T13:24:18.252Z"
+  },
+  "Desbandado Cabernet Franc Kaiken": {
+    "status": "creado",
+    "woo_id": 12270,
+    "fecha": "2026-09-02T13:24:19.853Z"
+  },
+  "Kaiken Frankly": {
+    "status": "creado",
+    "woo_id": 12271,
+    "fecha": "2026-09-02T13:24:21.514Z"
+  },
+  "Divina Chardonnay Kaiken": {
+    "status": "creado",
+    "woo_id": 12272,
+    "fecha": "2026-09-02T13:24:23.166Z"
+  },
+  "Kaiken Aventura Malbec Valle de Canota": {
+    "status": "creado",
+    "woo_id": 12273,
+    "fecha": "2026-09-02T13:24:40.356Z"
   }
 }
