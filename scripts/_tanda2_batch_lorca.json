@@ -1,0 +1,152 @@
+[
+  {
+    "nombre": "Lorca Inspirado Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Lorca",
+    "precio": 97345,
+    "ids": { "lavid": "b0fe25a0-18fc-4c7e-a374-a0a6cd86f5be", "aroma": "acc86e95-156d-4042-938d-ae3158f366d7" },
+    "descripcion": "Lorca Inspirado Cabernet Franc es un vino tinto de alta gama elaborado con uvas Cabernet Franc, de la línea Inspirado de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca El Mirador Pedro Ximénez",
+    "categoria": "Blanco",
+    "varietal": "Pedro Ximénez",
+    "bodega": "Lorca",
+    "precio": 12470,
+    "ids": { "aroma": "b68bda80-88b9-4f4f-8832-ca023ff82862", "lavid": "3319b028-f48d-4f54-9b92-7ccf0f7eaac2" },
+    "descripcion": "Lorca El Mirador Pedro Ximénez es un vino blanco elaborado con uvas Pedro Ximénez, de la línea El Mirador de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca El Mirador Criolla Blanca",
+    "categoria": "Blanco",
+    "varietal": "Criolla",
+    "bodega": "Lorca",
+    "precio": 12470,
+    "ids": { "aroma": "7dd7afb3-08cb-4f5d-ace3-ec02f7f2f5cf", "lavid": "1dd10337-22b9-4551-bba7-a7e94d005eb5" },
+    "descripcion": "Lorca El Mirador Criolla Blanca es un vino blanco elaborado con uvas Criolla, de la línea El Mirador de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Joven Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Lorca",
+    "precio": 10635,
+    "ids": { "aroma": "d13d209c-fec8-4c19-b6d1-209e6d57edba", "lavid": "2076a94e-e405-4a08-b80b-55176f04bc5e" },
+    "descripcion": "Lorca Joven Malbec es un vino tinto elaborado con uvas Malbec, de la línea de entrada de Bodega Lorca, Mendoza, pensado para consumo joven.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Opalo Semillon Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Semillón-Sauvignon Blanc",
+    "bodega": "Lorca",
+    "precio": 18510,
+    "ids": { "aroma": "56e6e8b5-86dc-4a8b-ad47-841b91a5c1d3", "lavid": "6fcbe73e-8413-4340-a8fc-1183608355f8" },
+    "descripcion": "Lorca Ópalo Semillón-Sauvignon Blanc es un vino blanco de corte, elaborado con uvas Semillón y Sauvignon Blanc, de la línea Ópalo de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Skin Contact Viognier",
+    "categoria": "Blanco",
+    "varietal": "Viognier",
+    "bodega": "Lorca",
+    "precio": 22875,
+    "ids": { "aroma": "7a2064e5-b95f-4029-bcb8-a5c2ef072802", "lavid": "a89871be-a3e1-4d9d-9a84-6c387559a8a8" },
+    "descripcion": "Lorca Skin Contact Viognier es un vino blanco elaborado con uvas Viognier vinificadas con maceración en contacto con los hollejos (estilo skin contact / naranjo), de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Inspirado Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Lorca",
+    "precio": 97345,
+    "ids": { "aroma": "9145d9f8-7bcd-41c3-985e-94ff7883ff8b", "lavid": "e46fa088-77fc-4e05-96f0-00fe563d1688" },
+    "descripcion": "Lorca Inspirado Chardonnay es un vino blanco de alta gama elaborado con uvas Chardonnay, de la línea Inspirado de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Ancestral Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Lorca",
+    "precio": 143955,
+    "ids": { "aroma": "e60ecc58-22e3-452d-97a1-657443689684", "lavid": "4f2cfcf4-2588-492b-8005-97ef60e1ae34" },
+    "descripcion": "Lorca Ancestral Blend es un vino tinto de corte, de la línea ícono Ancestral de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Ancestral White Blend",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Lorca",
+    "precio": 143955,
+    "ids": { "aroma": "79420ad9-e33b-4c43-804d-c1fbeadcfbcf", "lavid": "3f844843-2bed-403d-9d46-18c55a76383b" },
+    "descripcion": "Lorca Ancestral White Blend es un vino blanco de corte, de la línea ícono Ancestral de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca El Mirador Ancellotta-Malbec bajo alcohol",
+    "categoria": "Tinto",
+    "varietal": "Ancellotta-Malbec",
+    "bodega": "Lorca",
+    "precio": 12470,
+    "ids": { "aroma": "ee17d629-b898-41a2-8ae3-5737732a323e", "lavid": "643a5e99-4c53-499c-a03f-32622fc30714" },
+    "descripcion": "Lorca El Mirador Ancellotta-Malbec bajo alcohol es un vino tinto de bajo contenido alcohólico, elaborado con uvas Ancellotta y Malbec, de la línea El Mirador de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca El Mirador Ancellotta-Malbec",
+    "categoria": "Tinto",
+    "varietal": "Ancellotta-Malbec",
+    "bodega": "Lorca",
+    "precio": 12470,
+    "ids": { "lavid": "a01f3c04-2946-404c-815a-8defa5c22932", "aroma": "418daeff-b607-43c1-8ffd-6a401afc1d15" },
+    "descripcion": "Lorca El Mirador Ancellotta-Malbec es un vino tinto elaborado con uvas Ancellotta y Malbec, de la línea El Mirador de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Bib Malbec 3 Litros",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Lorca",
+    "precio": 2459,
+    "ids": { "lavid": "3946729f-58d7-4f55-8ad6-8b3411245541", "aroma": "bb5cffc0-bd08-46ca-a297-83f636d22f78" },
+    "descripcion": "Lorca Malbec es un vino tinto elaborado con uvas Malbec, de Bodega Lorca, Mendoza, en presentación Bag in Box de 3 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Bib Blend 5 Litros",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Lorca",
+    "precio": 2725,
+    "ids": { "lavid": "cc3c813a-0799-4a9e-bb26-44a1aaff7827", "aroma": "0dd2fac7-1b36-4be1-b60b-17208cddc96f" },
+    "descripcion": "Lorca Blend es un vino tinto de corte, de Bodega Lorca, Mendoza, en presentación Bag in Box de 5 litros.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Gran Poetico Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Lorca",
+    "precio": 54785,
+    "ids": { "aroma": "b11ad21d-61df-47c6-a487-f0c48d22bcd5", "lavid": "cc358c6e-6fde-4d0a-bd81-e0a9b853bc8b" },
+    "descripcion": "Lorca Gran Poético Blend es un vino tinto de corte, de la línea Gran Poético de Bodega Lorca, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lorca Gran Poetico Petit Verdot",
+    "categoria": "Tinto",
+    "varietal": "Petit Verdot",
+    "bodega": "Lorca",
+    "precio": 54785,
+    "ids": { "lavid": "5caa74c6-11f9-457d-af55-0217dc4f29a5", "aroma": "74904aa0-67ee-48c7-b79e-4e6d33a04bc1" },
+    "descripcion": "Lorca Gran Poético Petit Verdot es un vino tinto elaborado con uvas Petit Verdot, de la línea Gran Poético de Bodega Lorca, Mendoza.",
+    "imagen": null
+  }
+]

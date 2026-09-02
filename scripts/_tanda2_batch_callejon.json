@@ -1,0 +1,102 @@
+[
+  {
+    "nombre": "Callejón Del Crimen Gran Rva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Callejón del Crimen",
+    "precio": 18900,
+    "ids": { "aroma": "4c73b58a-3b48-43e9-82c2-9e8471bbf77f", "lavid": "9a61caa8-d3b6-4f34-a7a0-8332337b4f8d" },
+    "descripcion": "Callejón del Crimen Gran Reserva Malbec es un vino tinto elaborado con uvas Malbec, de la línea Gran Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón Del Crimen Gran Reserva Sangiovese",
+    "categoria": "Tinto",
+    "varietal": "Sangiovese",
+    "bodega": "Callejón del Crimen",
+    "precio": 18900,
+    "ids": { "aroma": "3ce85d98-e18d-4dc5-8a98-5acd90acfa20", "lavid": "5fb3675c-c5ae-46d3-99fd-1c3261af3728" },
+    "descripcion": "Callejón del Crimen Gran Reserva Sangiovese es un vino tinto elaborado con uvas Sangiovese, de la línea Gran Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón Del Crimen Cab Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "aroma": "c3d2a40a-3ca0-4d69-bc49-4e291eb19418", "lavid": "0f4dd617-65d2-49e2-8da9-ec38b639acb6" },
+    "descripcion": "Callejón del Crimen Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón del Crimen Gran Rva Petit Verdot",
+    "categoria": "Tinto",
+    "varietal": "Petit Verdot",
+    "bodega": "Callejón del Crimen",
+    "precio": 22500,
+    "ids": { "aroma": "7ba562a8-e1ce-412c-9496-ad8c46b783e5", "lavid": "cc99c42a-28ee-43ab-87a8-985648ee1f2f" },
+    "descripcion": "Callejón del Crimen Gran Reserva Petit Verdot es un vino tinto elaborado con uvas Petit Verdot, de la línea Gran Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón Del Crimen Reserva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "aroma": "88094d41-e773-4061-a7a5-df3d02fd3498", "lavid": "9e5ff6d6-91a2-4d60-935c-c084f21f9fed" },
+    "descripcion": "Callejón del Crimen Reserva Malbec es un vino tinto elaborado con uvas Malbec, de la línea Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón Del Crimen Reserva Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "aroma": "52acc91d-ee5e-4afa-b68b-69dc507ddc8e", "lavid": "7e79f3ba-e839-4f94-a76f-61ccb2842b34" },
+    "descripcion": "Callejón del Crimen Reserva Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, de la línea Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Callejón Del Crimen Gran R Ancellotta",
+    "categoria": "Tinto",
+    "varietal": "Ancellotta",
+    "bodega": "Callejón del Crimen",
+    "precio": 18900,
+    "ids": { "aroma": "211b7483-17b3-450e-aadc-f94befae3a38", "lavid": "29d920c7-d71e-44f7-a4a6-c1243eb64f55" },
+    "descripcion": "Callejón del Crimen Gran Reserva Ancellotta es un vino tinto elaborado con uvas Ancellotta, de la línea Gran Reserva de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Perlas Del Callejón Tocai",
+    "categoria": "Tinto",
+    "varietal": "Tocai",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "aroma": "799ccbcf-1701-4536-9895-a81bad4aff6f", "lavid": "339089f2-1ffb-40af-9f82-d33426f9f56a" },
+    "descripcion": "Perlas del Callejón Tocai es un vino elaborado con uvas Tocai, de la línea Perlas del Callejón de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Perlas Del Callejón Criolla",
+    "categoria": "Tinto",
+    "varietal": "Criolla",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "lavid": "45eb7fd8-4947-4d32-a01f-bf0d4f44c924", "aroma": "c48c7cc5-8370-4aea-8be4-648d8b1a62bc" },
+    "descripcion": "Perlas del Callejón Criolla es un vino elaborado con uvas Criolla, de la línea Perlas del Callejón de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Perlas de Callejón Orgánico Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Callejón del Crimen",
+    "precio": 15900,
+    "ids": { "aroma": "621f7473-20b7-4ad9-a8d8-ce6f937029e3", "lavid": "531753a1-e9a9-4fb0-b1bd-50b58c90deec" },
+    "descripcion": "Perlas del Callejón Orgánico Merlot es un vino tinto orgánico elaborado con uvas Merlot, de la línea Perlas del Callejón de Bodega Callejón del Crimen, Mendoza.",
+    "imagen": null
+  }
+]

@@ -173,5 +173,150 @@
     "status": "creado",
     "woo_id": 12191,
     "fecha": "2026-09-01T15:53:54.070Z"
+  },
+  "Lorca Inspirado Cabernet-Cabernet": {
+    "status": "sospechoso-revisar",
+    "candidato": "Lorca Inspirado Red Blend (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO: mismo precio exacto ($97345), misma linea Inspirado, ambos varietal=Blend, categoria=Tinto. Podrian ser el mismo vino cargado dos veces con nombres distintos."
+  },
+  "Lorca Inspirado Red Blend": {
+    "status": "sospechoso-revisar",
+    "candidato": "Lorca Inspirado Cabernet-Cabernet (mismo Tanda 2, no Woo)",
+    "motivo": "Ver Lorca Inspirado Cabernet-Cabernet."
+  },
+  "Lorca Inspirado Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12192,
+    "fecha": "2026-09-02T13:14:17.185Z"
+  },
+  "Lorca El Mirador Pedro Ximénez": {
+    "status": "creado",
+    "woo_id": 12193,
+    "fecha": "2026-09-02T13:14:19.179Z"
+  },
+  "Lorca El Mirador Criolla Blanca": {
+    "status": "creado",
+    "woo_id": 12194,
+    "fecha": "2026-09-02T13:14:21.014Z"
+  },
+  "Lorca Joven Malbec": {
+    "status": "creado",
+    "woo_id": 12195,
+    "fecha": "2026-09-02T13:14:22.846Z"
+  },
+  "Lorca Opalo Semillon Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12196,
+    "fecha": "2026-09-02T13:14:24.728Z"
+  },
+  "Lorca Skin Contact Viognier": {
+    "status": "creado",
+    "woo_id": 12197,
+    "fecha": "2026-09-02T13:14:26.425Z"
+  },
+  "Lorca Inspirado Chardonnay": {
+    "status": "creado",
+    "woo_id": 12198,
+    "fecha": "2026-09-02T13:14:28.069Z"
+  },
+  "Lorca Ancestral Blend": {
+    "status": "creado",
+    "woo_id": 12199,
+    "fecha": "2026-09-02T13:14:29.997Z"
+  },
+  "Lorca Ancestral White Blend": {
+    "status": "creado",
+    "woo_id": 12200,
+    "fecha": "2026-09-02T13:14:31.613Z"
+  },
+  "Lorca El Mirador Ancellotta-Malbec bajo alcohol": {
+    "status": "creado",
+    "woo_id": 12201,
+    "fecha": "2026-09-02T13:14:33.325Z"
+  },
+  "Lorca El Mirador Ancellotta-Malbec": {
+    "status": "creado",
+    "woo_id": 12202,
+    "fecha": "2026-09-02T13:14:35.337Z"
+  },
+  "Lorca Bib Malbec 3 Litros": {
+    "status": "creado",
+    "woo_id": 12203,
+    "fecha": "2026-09-02T13:14:37.038Z"
+  },
+  "Lorca Bib Blend 5 Litros": {
+    "status": "creado",
+    "woo_id": 12204,
+    "fecha": "2026-09-02T13:14:38.858Z"
+  },
+  "Lorca Gran Poetico Blend": {
+    "status": "creado",
+    "woo_id": 12205,
+    "fecha": "2026-09-02T13:14:40.716Z"
+  },
+  "Lorca Gran Poetico Petit Verdot": {
+    "status": "creado",
+    "woo_id": 12206,
+    "fecha": "2026-09-02T13:14:42.452Z"
+  },
+  "Callejón Del Crimen Gran Rva Cabernet": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$550, muy por debajo de sus hermanos de la misma linea Gran Reserva ($18900-$22500). Probable error de carga (falta un digito o error de punto decimal). No se creo hasta confirmar precio real."
+  },
+  "Callejón Del Crimen Gran Rva Merlot": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$795, muy por debajo de sus hermanos de la misma linea Gran Reserva ($18900-$22500). Probable error de carga. No se creo hasta confirmar precio real."
+  },
+  "Callejón Del Crimen Gran Rva Malbec": {
+    "status": "creado",
+    "woo_id": 12207,
+    "fecha": "2026-09-02T13:15:51.929Z"
+  },
+  "Callejón Del Crimen Gran Reserva Sangiovese": {
+    "status": "creado",
+    "woo_id": 12208,
+    "fecha": "2026-09-02T13:15:53.581Z"
+  },
+  "Callejón Del Crimen Cab Franc": {
+    "status": "creado",
+    "woo_id": 12209,
+    "fecha": "2026-09-02T13:15:55.340Z"
+  },
+  "Callejón del Crimen Gran Rva Petit Verdot": {
+    "status": "creado",
+    "woo_id": 12210,
+    "fecha": "2026-09-02T13:15:57.053Z"
+  },
+  "Callejón Del Crimen Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12211,
+    "fecha": "2026-09-02T13:15:58.830Z"
+  },
+  "Callejón Del Crimen Reserva Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12212,
+    "fecha": "2026-09-02T13:16:00.657Z"
+  },
+  "Callejón Del Crimen Gran R Ancellotta": {
+    "status": "creado",
+    "woo_id": 12213,
+    "fecha": "2026-09-02T13:16:02.182Z"
+  },
+  "Perlas Del Callejón Tocai": {
+    "status": "creado",
+    "woo_id": 12214,
+    "fecha": "2026-09-02T13:16:03.776Z"
+  },
+  "Perlas Del Callejón Criolla": {
+    "status": "creado",
+    "woo_id": 12215,
+    "fecha": "2026-09-02T13:16:05.571Z"
+  },
+  "Perlas de Callejón Orgánico Merlot": {
+    "status": "creado",
+    "woo_id": 12216,
+    "fecha": "2026-09-02T13:16:07.130Z"
   }
 }
