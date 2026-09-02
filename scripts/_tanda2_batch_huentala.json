@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "Huentala La Isabel Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Huentala",
+    "precio": 52000,
+    "ids": { "aroma": "45447d1c-d746-46d7-8743-4d0908be64cb", "lavid": "85a90d9c-d0c7-4a0c-9e6f-932e4dac152b" },
+    "descripcion": "Huentala La Isabel Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de la línea La Isabel de Bodega Huentala, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Huentala Block 19 & 20",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Huentala",
+    "precio": 105000,
+    "ids": { "lavid": "4d4cbe53-4742-4126-81cb-0cbb5d989337", "aroma": "e2f3e126-32fb-4aee-bb6f-bf8df69488e1" },
+    "descripcion": "Huentala Block 19 & 20 es un vino tinto ícono elaborado con uvas Malbec de parcelas específicas del viñedo, de Bodega Huentala, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Huentala Malbec La Isabel",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Huentala",
+    "precio": 52000,
+    "ids": { "lavid": "344dc841-acf7-4171-bb43-a1d46c6dfa9b", "aroma": "b1104fac-1b14-4864-adca-22a683b76d47" },
+    "descripcion": "Huentala La Isabel Malbec es un vino tinto elaborado con uvas Malbec, de la línea La Isabel de Bodega Huentala, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Sombrero Sauvignon Blanc Huentala",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Huentala",
+    "precio": 14500,
+    "ids": { "lavid": "41aacf66-7ba0-4f24-83e7-fadd11c57b81", "aroma": "cdb4c492-3397-4574-8cd8-e22fcf2969be" },
+    "descripcion": "Sombrero Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea Sombrero de Bodega Huentala, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Huentala Austral",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Huentala",
+    "precio": 105000,
+    "ids": { "aroma": "2828708c-1bf7-482b-8786-d72b43972f96", "lavid": "b7b099ae-0ad1-4d33-bc26-a63c457b35a8" },
+    "descripcion": "Huentala Austral es un vino tinto ícono de corte, de Bodega Huentala, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Huentala Boreal",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Huentala",
+    "precio": 105000,
+    "ids": { "aroma": "a449abee-8467-4857-bf61-cef5bdde2a4c", "lavid": "1f43729b-4360-4c19-bd49-0b827cee6b42" },
+    "descripcion": "Huentala Boreal es un vino tinto ícono de corte, de Bodega Huentala, Mendoza.",
+    "imagen": null
+  }
+]

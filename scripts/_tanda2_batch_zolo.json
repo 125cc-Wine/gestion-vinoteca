@@ -1,0 +1,42 @@
+[
+  {
+    "nombre": "Zolo Zero Espumante Rosé",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Zolo",
+    "precio": 23800,
+    "ids": { "lavid": "a3412804-e06c-46b8-898a-52dbc6b3c24c", "aroma": "6489abf2-76df-42c7-9a4c-f095cd279b34" },
+    "descripcion": "Zolo Zero Espumante Rosé es un vino espumante rosado, de la línea Zero de Bodega Zolo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Zolo Red Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Zolo",
+    "precio": 15000,
+    "ids": { "aroma": "4bee1670-9212-41cc-8481-b2ab91c06b8f", "lavid": "8b41c9d9-4186-4c7e-95ac-65e3728d59d9" },
+    "descripcion": "Zolo Red Blend es un vino tinto de corte, de Bodega Zolo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Zolo Bonarda",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "Zolo",
+    "precio": 15000,
+    "ids": { "aroma": "e8b878ee-4a38-40ca-98c4-ec83bafefdf3", "lavid": "97d04c8c-31d2-4f96-be98-adc51514f238" },
+    "descripcion": "Zolo Bonarda es un vino tinto elaborado con uvas Bonarda, de Bodega Zolo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Zolo White Blend",
+    "categoria": "Blanco",
+    "varietal": "Blend",
+    "bodega": "Zolo",
+    "precio": 15000,
+    "ids": { "aroma": "2e4eccdc-5197-4cde-b9f9-d49c0ea3ec4c", "lavid": "8640fc78-5a6a-4024-9e44-835a7be43d88" },
+    "descripcion": "Zolo White Blend es un vino blanco de corte, de Bodega Zolo, Mendoza.",
+    "imagen": null
+  }
+]

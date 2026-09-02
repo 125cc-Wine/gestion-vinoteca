@@ -1053,5 +1053,130 @@
     "status": "creado",
     "woo_id": 12341,
     "fecha": "2026-09-02T13:33:04.630Z"
+  },
+  "La Poderosa Sauvignon Blanc": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "BUG DE PRECIO: precio=$0. No se puede publicar sin precio real."
+  },
+  "La Fuerza Sideral Barrica Unica": {
+    "status": "creado",
+    "woo_id": 12342,
+    "fecha": "2026-09-02T13:34:59.557Z"
+  },
+  "La Fuerza Sideral": {
+    "status": "creado",
+    "woo_id": 12343,
+    "fecha": "2026-09-02T13:35:01.177Z"
+  },
+  "La Fuerza Valientes Blanco": {
+    "status": "creado",
+    "woo_id": 12344,
+    "fecha": "2026-09-02T13:35:02.657Z"
+  },
+  "La Fuerza Valientes Rose": {
+    "status": "creado",
+    "woo_id": 12345,
+    "fecha": "2026-09-02T13:35:04.134Z"
+  },
+  "Saurus Select Malbec": {
+    "status": "creado",
+    "woo_id": 12346,
+    "fecha": "2026-09-02T13:35:06.639Z"
+  },
+  "Saurus Select Merlot": {
+    "status": "creado",
+    "woo_id": 12347,
+    "fecha": "2026-09-02T13:35:08.062Z"
+  },
+  "Saurus Barrel Cab. Franc": {
+    "status": "creado",
+    "woo_id": 12348,
+    "fecha": "2026-09-02T13:35:09.668Z"
+  },
+  "Saurus Select Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12349,
+    "fecha": "2026-09-02T13:35:11.354Z"
+  },
+  "Saurus Barrel Malbec": {
+    "status": "creado",
+    "woo_id": 12350,
+    "fecha": "2026-09-02T13:35:12.811Z"
+  },
+  "Saurus Barrel Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12351,
+    "fecha": "2026-09-02T13:35:14.424Z"
+  },
+  "Huentala La Isabel Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12352,
+    "fecha": "2026-09-02T13:35:16.969Z"
+  },
+  "Huentala Block 19 & 20": {
+    "status": "creado",
+    "woo_id": 12353,
+    "fecha": "2026-09-02T13:35:18.554Z"
+  },
+  "Huentala Malbec La Isabel": {
+    "status": "creado",
+    "woo_id": 12354,
+    "fecha": "2026-09-02T13:35:20.064Z"
+  },
+  "Sombrero Sauvignon Blanc Huentala": {
+    "status": "creado",
+    "woo_id": 12355,
+    "fecha": "2026-09-02T13:35:21.461Z"
+  },
+  "Huentala Austral": {
+    "status": "creado",
+    "woo_id": 12356,
+    "fecha": "2026-09-02T13:35:23.222Z"
+  },
+  "Huentala Boreal": {
+    "status": "creado",
+    "woo_id": 12357,
+    "fecha": "2026-09-02T13:35:24.651Z"
+  },
+  "Zolo Zero Espumante Rosé": {
+    "status": "creado",
+    "woo_id": 12358,
+    "fecha": "2026-09-02T13:35:27.503Z"
+  },
+  "Zolo Red Blend": {
+    "status": "creado",
+    "woo_id": 12359,
+    "fecha": "2026-09-02T13:35:29.162Z"
+  },
+  "Zolo Bonarda": {
+    "status": "creado",
+    "woo_id": 12360,
+    "fecha": "2026-09-02T13:35:30.565Z"
+  },
+  "Zolo White Blend": {
+    "status": "creado",
+    "woo_id": 12361,
+    "fecha": "2026-09-02T13:35:32.087Z"
+  },
+  "Fin Del Mundo Reserva Merlot": {
+    "status": "creado",
+    "woo_id": 12362,
+    "fecha": "2026-09-02T13:35:34.868Z"
+  },
+  "La Poderosa Blend": {
+    "status": "creado",
+    "woo_id": 12363,
+    "fecha": "2026-09-02T13:35:36.467Z"
+  },
+  "La Poderosa Malbec": {
+    "status": "creado",
+    "woo_id": 12364,
+    "fecha": "2026-09-02T13:35:37.910Z"
+  },
+  "La Poderosa Extra Brut": {
+    "status": "creado",
+    "woo_id": 12365,
+    "fecha": "2026-09-02T13:35:39.414Z"
   }
 }

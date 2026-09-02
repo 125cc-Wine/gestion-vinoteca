@@ -1,0 +1,46 @@
+[
+  {
+    "nombre": "La Fuerza Sideral Barrica Unica",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Aperitivo",
+    "bodega": "La Fuerza",
+    "precio": 38000,
+    "ids": { "lavid": "9c1d23a5-4b39-4583-b264-4fdeac52b4fa", "aroma": "1cf3afb3-3dc1-48f1-a628-01264944ce7a" },
+    "descripcion": "La Fuerza Sideral Barrica Única es un aperitivo de edición especial envejecido en una única barrica, de La Fuerza.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Fuerza Sideral",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Aperitivo",
+    "bodega": "La Fuerza",
+    "precio": 34000,
+    "ids": { "lavid": "c2eb7dcf-eb95-4af7-b56f-9e6af83014f1", "aroma": "e647f1ea-1365-44e3-a929-fd2578284ec0" },
+    "descripcion": "La Fuerza Sideral es un aperitivo de La Fuerza.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Fuerza Valientes Blanco",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Blanco",
+    "bodega": "La Fuerza",
+    "precio": 3300,
+    "ids": { "lavid": "4e71b347-6f76-4acb-a3b8-91469791366c", "aroma": "cc844dcd-7c3c-4bff-bf28-603b82f884a7" },
+    "descripcion": "La Fuerza Valientes Blanco es un vermouth blanco, de la línea Valientes de La Fuerza.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Fuerza Valientes Rose",
+    "categoria": "Otro",
+    "categoria_ids": [586, 590],
+    "varietal": "Vermouth Rosado",
+    "bodega": "La Fuerza",
+    "precio": 3300,
+    "ids": { "aroma": "6f45137b-a2e1-440f-8ab1-3b0dbbdafcc5", "lavid": "951c92df-ab6f-42c1-9af1-af68d2eda9db" },
+    "descripcion": "La Fuerza Valientes Rosé es un vermouth rosado, de la línea Valientes de La Fuerza.",
+    "imagen": null
+  }
+]

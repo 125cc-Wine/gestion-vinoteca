@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "Saurus Select Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Flia. Schroeder",
+    "precio": 11340,
+    "ids": { "lavid": "999a1f99-017f-4deb-a247-0ef7727f269b", "aroma": "8172021b-3d6e-4926-80ab-78e5552b5e8b" },
+    "descripcion": "Saurus Select Malbec es un vino tinto elaborado con uvas Malbec, de la línea Saurus Select de Familia Schroeder, Patagonia.",
+    "imagen": null
+  },
+  {
+    "nombre": "Saurus Select Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Flia. Schroeder",
+    "precio": 11340,
+    "ids": { "lavid": "937998f5-83d0-4915-aa0f-49c8b09c557e", "aroma": "043624dd-18aa-42f3-91f2-2d1d2db9f4eb" },
+    "descripcion": "Saurus Select Merlot es un vino tinto elaborado con uvas Merlot, de la línea Saurus Select de Familia Schroeder, Patagonia.",
+    "imagen": null
+  },
+  {
+    "nombre": "Saurus Barrel Cab. Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Flia. Schroeder",
+    "precio": 22000,
+    "ids": { "aroma": "07c9af42-47dc-492b-8f9c-156d101f7d58", "lavid": "f223490f-487e-40e4-b39c-6bb8a29cf299" },
+    "descripcion": "Saurus Barrel Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc y crianza en barrica, de la línea Saurus Barrel de Familia Schroeder, Patagonia.",
+    "imagen": null
+  },
+  {
+    "nombre": "Saurus Select Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Flia. Schroeder",
+    "precio": 11340,
+    "ids": { "lavid": "00e63c8e-0a73-49d7-9250-989cd5014ea5", "aroma": "46690819-9666-4af6-924b-e996b8fd4450" },
+    "descripcion": "Saurus Select Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la línea Saurus Select de Familia Schroeder, Patagonia.",
+    "imagen": null
+  },
+  {
+    "nombre": "Saurus Barrel Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Flia. Schroeder",
+    "precio": 22000,
+    "ids": { "lavid": "708c29bf-edb6-444f-bfc2-6e7b53d9df14", "aroma": "92dcf751-5056-46a4-8d45-9ecf04260c3f" },
+    "descripcion": "Saurus Barrel Malbec es un vino tinto elaborado con uvas Malbec y crianza en barrica, de la línea Saurus Barrel de Familia Schroeder, Patagonia.",
+    "imagen": null
+  },
+  {
+    "nombre": "Saurus Barrel Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Flia. Schroeder",
+    "precio": 22000,
+    "ids": { "lavid": "cb28476a-b55c-4d8a-adcf-a1890b2e6fc9", "aroma": "f72636a1-9761-422e-b0cf-8ca2ea3eb35d" },
+    "descripcion": "Saurus Barrel Pinot Noir es un vino tinto elaborado con uvas Pinot Noir y crianza en barrica, de la línea Saurus Barrel de Familia Schroeder, Patagonia.",
+    "imagen": null
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "nombre": "Fin Del Mundo Reserva Merlot",
+    "categoria": "Tinto",
+    "varietal": "Merlot",
+    "bodega": "Fin del Mundo",
+    "precio": 15100,
+    "ids": { "lavid": "59ab4623-1a21-493c-9ced-df553679cb14", "aroma": "6a684cd8-9a4a-4729-b345-9b60f00e39ca" },
+    "descripcion": "Fin del Mundo Reserva Merlot es un vino tinto elaborado con uvas Merlot, de la línea Reserva de Bodega Fin del Mundo, Neuquén.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Poderosa Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Fin del Mundo",
+    "precio": 8000,
+    "ids": { "lavid": "342fa73a-d232-4766-bf77-e09a712c68f6", "aroma": "5a5e86f6-b2d7-4280-805a-0cb7d2d4e9d7" },
+    "descripcion": "La Poderosa Blend es un vino tinto de corte, de la línea La Poderosa de Bodega Fin del Mundo, Neuquén.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Poderosa Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Fin del Mundo",
+    "precio": 7400,
+    "ids": { "lavid": "5a83fffb-3f36-4f1b-863b-13f09e696ee0", "aroma": "916e50c6-99b5-415a-8be9-961724978bf6" },
+    "descripcion": "La Poderosa Malbec es un vino tinto elaborado con uvas Malbec, de la línea La Poderosa de Bodega Fin del Mundo, Neuquén.",
+    "imagen": null
+  },
+  {
+    "nombre": "La Poderosa Extra Brut",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Fin del Mundo",
+    "precio": 12000,
+    "ids": { "aroma": "fdd2def6-fbdd-47a9-a7bd-1844a0dd8fa6", "lavid": "738061d0-090b-4bb1-a425-78b5f99ff6d3" },
+    "descripcion": "La Poderosa Extra Brut es un vino espumante, de la línea La Poderosa de Bodega Fin del Mundo, Neuquén.",
+    "imagen": null
+  }
+]
