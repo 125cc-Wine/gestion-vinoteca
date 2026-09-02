@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "Tapiz Alta Collection Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Tapiz",
+    "precio": 20500,
+    "ids": { "aroma": "a4755e57-f78e-4551-ba39-7967c9370027", "lavid": "15834a53-178f-405c-8cf7-938fcbaae470" },
+    "descripcion": "Tapiz Alta Collection Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la línea Alta Collection de Bodega Tapiz, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tapiz Reserva Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Tapiz",
+    "precio": 20800,
+    "ids": { "aroma": "409c1b24-b2cf-423f-8ee4-2eb5531b08ea", "lavid": "b7c35e65-9261-4126-b11a-2043a390250d" },
+    "descripcion": "Tapiz Reserva Chardonnay es un vino blanco elaborado con uvas Chardonnay, de la línea Reserva de Bodega Tapiz, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Tapiz Malbec Orgánico",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Tapiz",
+    "precio": 18000,
+    "ids": { "aroma": "b9fdb143-c617-4284-aaff-0343d0d9b76d", "lavid": "9b086aed-5bec-4b62-b9cf-5955f8c016ab" },
+    "descripcion": "Tapiz Malbec Orgánico es un vino tinto orgánico elaborado con uvas Malbec, de Bodega Tapiz, Mendoza.",
+    "imagen": null
+  }
+]

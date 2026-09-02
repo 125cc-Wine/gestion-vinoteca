@@ -1,0 +1,42 @@
+[
+  {
+    "nombre": "Finca La Anita Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Finca La Anita",
+    "precio": 20650,
+    "ids": { "lavid": "26ad0d9b-7be4-4d70-adc2-61b2ea82aa9a", "aroma": "e5304415-10d8-4395-bb26-48c1f678220f" },
+    "descripcion": "Finca La Anita Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de Bodega Finca La Anita, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca La Anita Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Finca La Anita",
+    "precio": 18400,
+    "ids": { "aroma": "f6ac6ee5-9112-4afe-be33-c071cfe9708e", "lavid": "970b7428-1e75-4466-8124-7653238a080b" },
+    "descripcion": "Finca La Anita Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de Bodega Finca La Anita, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca La Anita Chardonnay",
+    "categoria": "Blanco",
+    "varietal": "Chardonnay",
+    "bodega": "Finca La Anita",
+    "precio": 18400,
+    "ids": { "aroma": "174cca01-d36d-45da-9585-86dbf0d5295d", "lavid": "61c81a07-da57-4e84-a7ff-115cf213ca33" },
+    "descripcion": "Finca La Anita Chardonnay es un vino blanco elaborado con uvas Chardonnay, de Bodega Finca La Anita, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Finca La Anita Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Finca La Anita",
+    "precio": 20700,
+    "ids": { "aroma": "bcebdc4d-6b56-4df9-888a-3a07586d3b39", "lavid": "6564a7d2-dd19-48e5-b51d-73cca2818332" },
+    "descripcion": "Finca La Anita Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de Bodega Finca La Anita, Mendoza.",
+    "imagen": null
+  }
+]

@@ -1178,5 +1178,80 @@
     "status": "creado",
     "woo_id": 12365,
     "fecha": "2026-09-02T13:35:39.414Z"
+  },
+  "Nido Del Tigre Ripasso Dal Giardino Tinto": {
+    "status": "creado",
+    "woo_id": 12366,
+    "fecha": "2026-09-02T13:37:03.092Z"
+  },
+  "Nido Del Tigre Malbec": {
+    "status": "creado",
+    "woo_id": 12367,
+    "fecha": "2026-09-02T13:37:04.815Z"
+  },
+  "Nido Del Tigre Alcaparrosa Tinto": {
+    "status": "creado",
+    "woo_id": 12368,
+    "fecha": "2026-09-02T13:37:06.474Z"
+  },
+  "Nido Del Tigre Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12369,
+    "fecha": "2026-09-02T13:37:08.006Z"
+  },
+  "Foster Firmado Bonarda": {
+    "status": "creado",
+    "woo_id": 12370,
+    "fecha": "2026-09-02T13:37:10.643Z"
+  },
+  "Pink Malbec Rosé Foster": {
+    "status": "creado",
+    "woo_id": 12371,
+    "fecha": "2026-09-02T13:37:12.085Z"
+  },
+  "Lois Blanc de Blancs E. Foster": {
+    "status": "creado",
+    "woo_id": 12372,
+    "fecha": "2026-09-02T13:37:13.731Z"
+  },
+  "Lois Espumante Dulce Foster": {
+    "status": "creado",
+    "woo_id": 12373,
+    "fecha": "2026-09-02T13:37:15.137Z"
+  },
+  "Finca La Anita Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12374,
+    "fecha": "2026-09-02T13:37:17.678Z"
+  },
+  "Finca La Anita Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12375,
+    "fecha": "2026-09-02T13:37:19.435Z"
+  },
+  "Finca La Anita Chardonnay": {
+    "status": "creado",
+    "woo_id": 12376,
+    "fecha": "2026-09-02T13:37:20.862Z"
+  },
+  "Finca La Anita Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12377,
+    "fecha": "2026-09-02T13:37:22.300Z"
+  },
+  "Tapiz Alta Collection Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12378,
+    "fecha": "2026-09-02T13:37:24.960Z"
+  },
+  "Tapiz Reserva Chardonnay": {
+    "status": "creado",
+    "woo_id": 12379,
+    "fecha": "2026-09-02T13:37:26.379Z"
+  },
+  "Tapiz Malbec Orgánico": {
+    "status": "creado",
+    "woo_id": 12380,
+    "fecha": "2026-09-02T13:37:27.900Z"
   }
 }

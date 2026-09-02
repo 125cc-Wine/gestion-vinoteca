@@ -1,0 +1,42 @@
+[
+  {
+    "nombre": "Nido Del Tigre Ripasso Dal Giardino Tinto",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Bodega del Carmen",
+    "precio": 18000,
+    "ids": { "aroma": "c3934bbe-84e2-4163-b682-353bdf1b889e", "lavid": "238d9086-9423-4b02-b035-0800b74952f0" },
+    "descripcion": "Nido del Tigre Ripasso Dal Giardino es un vino tinto elaborado con método Ripasso, de la línea Nido del Tigre de Bodega del Carmen.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nido Del Tigre Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Bodega del Carmen",
+    "precio": 18000,
+    "ids": { "aroma": "582d93b0-f14e-4ee1-a71a-c0cdfc1a1cca", "lavid": "4a62aabb-dfb0-4d13-983f-f4142915bd22" },
+    "descripcion": "Nido del Tigre Malbec es un vino tinto elaborado con uvas Malbec, de Bodega del Carmen.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nido Del Tigre Alcaparrosa Tinto",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Bodega del Carmen",
+    "precio": 18000,
+    "ids": { "lavid": "5dc3f8ee-6b83-4f21-9bde-a0a905a15e8d", "aroma": "e677ab15-41c8-465a-b271-7dd5e4060f7b" },
+    "descripcion": "Nido del Tigre Alcaparrosa Tinto es un vino tinto de origen Alcaparrosa, de Bodega del Carmen.",
+    "imagen": null
+  },
+  {
+    "nombre": "Nido Del Tigre Cabernet Franc",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Franc",
+    "bodega": "Bodega del Carmen",
+    "precio": 18000,
+    "ids": { "lavid": "63eed478-f108-418e-b1c4-dbc4364a2713", "aroma": "4207d6da-68dd-4464-88e5-85d4fcac55d9" },
+    "descripcion": "Nido del Tigre Cabernet Franc es un vino tinto elaborado con uvas Cabernet Franc, de Bodega del Carmen.",
+    "imagen": null
+  }
+]

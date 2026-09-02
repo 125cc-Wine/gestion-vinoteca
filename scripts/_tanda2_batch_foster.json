@@ -1,0 +1,42 @@
+[
+  {
+    "nombre": "Foster Firmado Bonarda",
+    "categoria": "Tinto",
+    "varietal": "Bonarda",
+    "bodega": "Enrique Foster",
+    "precio": 97345,
+    "ids": { "aroma": "5adb8159-bee1-4e4b-8100-c702e372f7de", "lavid": "9ee02c54-32fd-4c6d-940e-baff6da33366" },
+    "descripcion": "Enrique Foster Firmado Bonarda es un vino tinto de alta gama elaborado con uvas Bonarda, de la línea Firmado de Bodega Enrique Foster, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Pink Malbec Rosé Foster",
+    "categoria": "Rosado",
+    "varietal": "Malbec",
+    "bodega": "Enrique Foster",
+    "precio": 12000,
+    "ids": { "aroma": "a76491b8-4eae-4267-8c96-05d1898dac7e", "lavid": "70be4d4a-6550-474f-b0ab-c7409df89d51" },
+    "descripcion": "Pink Malbec Rosé es un vino rosado elaborado con uvas Malbec, de Bodega Enrique Foster, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lois Blanc de Blancs E. Foster",
+    "categoria": "Espumante",
+    "varietal": "Extra Brut",
+    "bodega": "Enrique Foster",
+    "precio": 24695,
+    "ids": { "aroma": "b0af037c-8b83-4bd6-995e-f9b5c21e31ae", "lavid": "f3eb45fb-a5c8-4883-af1e-b13e8d1a4701" },
+    "descripcion": "Lois Blanc de Blancs es un vino espumante elaborado con uvas blancas, de la línea Lois de Bodega Enrique Foster, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Lois Espumante Dulce Foster",
+    "categoria": "Espumante",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Enrique Foster",
+    "precio": 24695,
+    "ids": { "aroma": "7df543e3-6edb-45cb-a25f-cee147b6cf45", "lavid": "9a70acc8-5323-4f80-a6cc-8e48f349e43a" },
+    "descripcion": "Lois Espumante Dulce es un vino espumante dulce elaborado con uvas Sauvignon Blanc, de la línea Lois de Bodega Enrique Foster, Mendoza.",
+    "imagen": null
+  }
+]
