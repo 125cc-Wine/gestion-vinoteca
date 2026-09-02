@@ -1,0 +1,233 @@
+[
+  {
+    "nombre": "Trivento Reserve Malbec 375cc.",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 6000,
+    "ids": { "lavid": "9efd1396-613c-4afa-b3eb-0be6637d292e", "aroma": "55993c2d-5ed5-45c8-b476-cf7833afe7a9" },
+    "descripcion": "Trivento Reserve Malbec es un vino tinto elaborado con uvas Malbec de Mendoza, de la línea Reserve de Bodega Trivento. Esta presentación es de formato reducido (375cc, media botella), ideal para porciones individuales.",
+    "imagen": "https://trivento.com/uploads/wine/1773029750_reserve-malbec-corchonov2.png"
+  },
+  {
+    "nombre": "Trivento Finjamos Demencia",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Trivento",
+    "precio": 4900,
+    "ids": { "aroma": "3d309c2c-f293-46e0-b978-9ee105ed721e", "lavid": "1e3083ad-bdaf-49e9-a105-694de12b545e" },
+    "descripcion": "Trivento Finjamos Demencia es un vino tinto de edición especial de Bodega Trivento, Mendoza, pensado como una propuesta descontracturada para el día a día.",
+    "imagen": null
+  },
+  {
+    "nombre": "Casillero Del Diablo Extra Brut Trivento",
+    "categoria": "Espumante",
+    "varietal": "Blend",
+    "bodega": "Casillero del Diablo",
+    "precio": 8900,
+    "ids": { "aroma": "32e54291-618c-402c-b2ba-0e3aed2e27c4", "lavid": "fc677de6-7882-4243-8b6e-2338a2a690aa" },
+    "descripcion": "Casillero del Diablo Extra Brut es un vino espumante de la reconocida marca chilena Casillero del Diablo (Concha y Toro), distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Gaudeo Malbec Tupungato",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 32000,
+    "ids": { "aroma": "94026d6d-cbff-493f-b291-b0f4ff9b225d", "lavid": "d780d01f-94a6-458a-a747-7266e25c32fa" },
+    "descripcion": "Trivento Gaudeo Malbec Tupungato es un vino tinto de la línea de vinos de origen (Gaudeo) de Bodega Trivento, elaborado con uvas Malbec provenientes de Tupungato, Valle de Uco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento White Malbec",
+    "categoria": "Rosado",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 12300,
+    "ids": { "aroma": "410f0e45-f4fc-473f-aa19-983c7cf84ba7", "lavid": "2f986f31-da9a-4e9a-860b-e09bdf7f7a3d" },
+    "descripcion": "Trivento White Malbec es un vino de estilo claro elaborado con uvas Malbec vinificadas sin maceración con los hollejos (estilo blanc de noir), de la línea Reserve de Bodega Trivento, Mendoza.",
+    "imagen": "https://trivento.com/uploads/wine/1773029743_reserve-white-malbecnov2.png"
+  },
+  {
+    "nombre": "Trivento Rose Malbec",
+    "categoria": "Rosado",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 12300,
+    "ids": { "lavid": "3f1d54f3-5b49-46b4-9d8b-7701272a3b6f", "aroma": "6d26bae0-6e87-439d-81f5-01f99c2e1a4c" },
+    "descripcion": "Trivento Rosé Malbec es un vino rosado elaborado con uvas Malbec, de la línea Reserve de Bodega Trivento, Mendoza.",
+    "imagen": "https://trivento.com/uploads/wine/1773029777_reserve-malbec-rosenov2.png"
+  },
+  {
+    "nombre": "Cono Sur Carmenere Trivento",
+    "categoria": "Tinto",
+    "varietal": "Carmenere",
+    "bodega": "Cono Sur",
+    "precio": 24000,
+    "ids": { "lavid": "ef67c1e1-bf05-423f-a339-b085032a7139", "aroma": "8a3049e6-938a-4aeb-9399-eb99a1e2f6b4" },
+    "descripcion": "Cono Sur Carmenère es un vino tinto elaborado con uvas Carmenère, de la bodega chilena Cono Sur, distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Cono Sur Pinot Noir",
+    "categoria": "Tinto",
+    "varietal": "Pinot Noir",
+    "bodega": "Cono Sur",
+    "precio": 24000,
+    "ids": { "aroma": "a06a606a-4434-4015-bc7d-6c09a4540194", "lavid": "82473399-7eb2-40de-8e9d-bd72553d5193" },
+    "descripcion": "Cono Sur Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, de la bodega chilena Cono Sur, distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Reserve Cab. Sauv.",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Trivento",
+    "precio": 8900,
+    "ids": { "lavid": "684d510b-5c62-409b-956e-413ebb7a28fd", "aroma": "e06eb79c-30f8-4565-b5d3-8813ad5a82fd" },
+    "descripcion": "Trivento Reserve Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon de Mendoza, de la línea Reserve de Bodega Trivento.",
+    "imagen": "https://trivento.com/uploads/wine/1773029817_reserve-cab-sauv-corchonov2.png"
+  },
+  {
+    "nombre": "Trivento Established Semillón",
+    "categoria": "Blanco",
+    "varietal": "Semillón",
+    "bodega": "Trivento",
+    "precio": 23000,
+    "ids": { "aroma": "afbe21a9-062d-4993-934b-b668da21045a", "lavid": "cb8d3bcd-c773-46d1-93a0-325931f8f448" },
+    "descripcion": "Trivento Established Semillón es un vino blanco elaborado con uvas Semillón de Mendoza, de la línea Established de Bodega Trivento.",
+    "imagen": null,
+    "fixSupabaseCategoria": "Blanco"
+  },
+  {
+    "nombre": "Terrunyo Malbec Trivento",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 40000,
+    "ids": { "aroma": "affb0b7e-af4f-4a7c-9f36-b8b0b2942e93", "lavid": "8b3fca87-5207-4e2a-9fe1-89fa4ad90ae9" },
+    "descripcion": "Terruño Malbec es un vino tinto de origen elaborado con uvas Malbec, de Bodega Trivento, Mendoza, perteneciente a su línea de vinos de terruño.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Gaudeo San Pablo",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 32000,
+    "ids": { "lavid": "aa80468a-729a-438e-8c82-51da4a79f91c", "aroma": "7fa4fcbe-16d6-49c4-8939-db2745dc3c47" },
+    "descripcion": "Trivento Gaudeo San Pablo es un vino tinto de la línea de vinos de origen (Gaudeo) de Bodega Trivento, elaborado con uvas Malbec provenientes de San Pablo, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Gaudeo Malbec Altamira",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 32000,
+    "ids": { "aroma": "e074a0d4-cb89-493b-8f57-50cb0a5e3318", "lavid": "3eec3ebf-bc07-477c-9e7b-7e28d52307a3" },
+    "descripcion": "Trivento Gaudeo Malbec Altamira es un vino tinto de la línea de vinos de origen (Gaudeo) de Bodega Trivento, elaborado con uvas Malbec provenientes de Altamira, Valle de Uco, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Stratus Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Trivento",
+    "precio": 55000,
+    "ids": { "lavid": "a0208ce8-1ccb-41df-acd6-d5fa09ae6d88", "aroma": "233cee31-e1a0-45ab-b6d4-ee8a7dbfd3a8" },
+    "descripcion": "Trivento Stratus es un vino tinto de corte (blend) de la línea Premium de Bodega Trivento, proveniente del Valle de Uco, Mendoza.",
+    "imagen": "https://trivento.com/uploads/wine/1720673538_stratus.png"
+  },
+  {
+    "nombre": "Cono Sur Sauvignon Blanc",
+    "categoria": "Blanco",
+    "varietal": "Sauvignon Blanc",
+    "bodega": "Cono Sur",
+    "precio": 17000,
+    "ids": { "lavid": "d67b4d00-9ee0-4fd0-a3a9-fbdf33d8fb75", "aroma": "48f5badb-578d-46c1-829d-1e60623e0e91" },
+    "descripcion": "Cono Sur Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, de la bodega chilena Cono Sur, distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Eolo Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 122300,
+    "ids": { "lavid": "47b42b10-365c-4866-bc90-203f8ea27658", "aroma": "86a4fbd1-2db1-451e-bc11-324b8484383a" },
+    "descripcion": "Trivento Eolo Malbec es el vino ícono de Bodega Trivento, elaborado con uvas Malbec de un viñedo centenario plantado en 1912 en Luján de Cuyo, Mendoza, a 983 metros de altura junto al río Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Casillero Del Diablo Red Blend",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Casillero del Diablo",
+    "precio": 7450,
+    "ids": { "aroma": "7cc59697-a477-4377-afd9-49303ed93df4", "lavid": "100de523-37bd-4824-9ad2-fe066069ce2d" },
+    "descripcion": "Casillero del Diablo Red Blend es un vino tinto de corte, de la reconocida marca chilena Casillero del Diablo (Concha y Toro), distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Established Petit Verdot",
+    "categoria": "Tinto",
+    "varietal": "Petit Verdot",
+    "bodega": "Trivento",
+    "precio": 26700,
+    "ids": { "aroma": "b57122bf-9b5b-407b-8b6d-2fba457ed351", "lavid": "14929c01-0ea7-48f6-a4c1-05beec2fef73" },
+    "descripcion": "Trivento Established Petit Verdot es un vino tinto elaborado con uvas Petit Verdot de Mendoza, de la línea Established de Bodega Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Casillero Del Diablo Rose Malbec Trivento",
+    "categoria": "Rosado",
+    "varietal": "Malbec",
+    "bodega": "Casillero del Diablo",
+    "precio": 8900,
+    "ids": { "aroma": "94db8efc-90c1-4b77-83b3-6c1dd8c951f8", "lavid": "e551205f-23fa-4810-b507-9b54b981eb3c" },
+    "descripcion": "Casillero del Diablo Rosé Malbec es un vino rosado elaborado con uvas Malbec, de la reconocida marca chilena Casillero del Diablo (Concha y Toro), distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Casillero Del Diablo Malbec Trivento",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Casillero del Diablo",
+    "precio": 8900,
+    "ids": { "aroma": "a2625fd2-e6be-4b9f-a794-eeac63f8850f", "lavid": "c80bacd6-9d41-4ed7-8857-bacf26402858" },
+    "descripcion": "Casillero del Diablo Malbec es un vino tinto elaborado con uvas Malbec, de la reconocida marca chilena Casillero del Diablo (Concha y Toro), distribuido en Argentina por Trivento.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Finjamos Demencia Dulce",
+    "categoria": "Tinto",
+    "varietal": "Blend",
+    "bodega": "Trivento",
+    "precio": 4900,
+    "ids": { "aroma": "9922870f-3d12-468c-83a0-c70d283b7326", "lavid": "7f4253c5-38a8-4e84-a610-868b6c10c909" },
+    "descripcion": "Trivento Finjamos Demencia Dulce es un vino tinto dulce de edición especial de Bodega Trivento, Mendoza.",
+    "imagen": null
+  },
+  {
+    "nombre": "Trivento Reserva Malbec",
+    "categoria": "Tinto",
+    "varietal": "Malbec",
+    "bodega": "Trivento",
+    "precio": 8900,
+    "ids": { "aroma": "0136389d-2927-493e-9264-68b675786f84", "lavid": "2dfeb3f7-ddfe-45f9-a1e3-2f7a28fcf61e" },
+    "descripcion": "Trivento Reserve Malbec es un vino tinto elaborado con uvas Malbec de Mendoza, de la línea Reserve de Bodega Trivento.",
+    "imagen": "https://trivento.com/uploads/wine/1773029750_reserve-malbec-corchonov2.png"
+  },
+  {
+    "nombre": "Tirvento Golden Reserve Cs",
+    "categoria": "Tinto",
+    "varietal": "Cabernet Sauvignon",
+    "bodega": "Trivento",
+    "precio": 18500,
+    "ids": { "lavid": "a01352d6-0fae-4852-86e0-5edc2f376743", "aroma": "cd73c8c0-d593-43a7-8756-7ea3f1e4c1c1" },
+    "descripcion": "Trivento Golden Reserve Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon de Mendoza, de la línea Golden Reserve de Bodega Trivento.",
+    "imagen": "https://trivento.com/uploads/wine/1713931291_cabernetsauvignon.png"
+  }
+]

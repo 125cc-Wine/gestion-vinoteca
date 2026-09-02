@@ -1,0 +1,177 @@
+{
+  "Solou Malbec Rosé": {
+    "status": "sospechoso-revisar",
+    "candidato": "Zolo Zero Malbec Rosé (woo id 12146, $15750)",
+    "motivo": "Nombre \"Solou\" muy similar a \"Zolo\" (bodega real), mismo precio exacto y mismo descriptor Malbec Rosé. Probable mismo vino con nombre mal cargado."
+  },
+  "La Fuerza Vermouth Primavera": {
+    "status": "sospechoso-revisar",
+    "candidato": "La Fuerza Vermouth Rosado Primavera en Los Andes (woo id 11117, $17990)",
+    "motivo": "Coincide el nombre de línea \"Primavera\" y precio similar ($22000 vs $17990, ~18% diff). Posible mismo vermouth con nombre acortado/distinto."
+  },
+  "La Fuerza Vermouth Rosado": {
+    "status": "sospechoso-revisar",
+    "candidato": "La Fuerza Vermouth Rosado Primavera en Los Andes (woo id 11117, $17990)",
+    "motivo": "Mismo candidato que \"La Fuerza Vermouth Primavera\" (ver esa entrada). Puede que uno de los dos (o ambos) sea el mismo producto ya publicado; requiere decisión humana sobre cual mantener."
+  },
+  "Buenos Hnos. Torrontés": {
+    "status": "sospechoso-revisar",
+    "candidato": "Gimenez Riili Buenos Hermanos Torrontés (woo id 3995, $20400)",
+    "motivo": "\"Hnos.\" es abreviatura conocida de \"Hermanos\" (ver memoria del proyecto). Coincide bodega, varietal y línea; precio difiere 25% ($15300 vs $20400), podría ser desactualización de precio."
+  },
+  "Tapiz Retrato por Jean Claude": {
+    "status": "sospechoso-revisar",
+    "candidato": "TAPIZ Las Notas de Jean Claude (woo id 2537, $110000)",
+    "motivo": "Mismo precio exacto ($110000) y ambos hacen referencia al mismo nombre propio \"Jean Claude\" (colaboración/enólogo). Distinta sub-línea (\"Retrato\" vs \"Las Notas\") pero podría ser el mismo vino renombrado."
+  },
+  "Alta Vista Brut Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": "ALTA VISTA BRUT NATURE (woo id 2142, $17600) o ALTA VISTA EXTRA BRUT (woo id 2146, $17600)",
+    "motivo": "Mismo precio exacto ($17600) que dos productos existentes de espumantes Alta Vista. \"Brut Malbec\" podría ser el mismo espumante base Malbec renombrado como \"Brut Nature\" o \"Extra Brut\"."
+  },
+  "La Zulema Malbec Pulenta": {
+    "status": "sospechoso-revisar",
+    "candidato": "Pulenta Single Vineyard Malbec LA ZULEMA 2014 (woo id 11741 publish $0, y id 2490 draft sin precio)",
+    "motivo": "Coincide el nombre del viñedo \"La Zulema\" (Pulenta Single Vineyard). El listado existente en Woo está desactualizado (2014, precio $0) y duplicado (publish+draft). Requiere decision: reactivar/actualizar el listado viejo en vez de crear uno nuevo, y limpiar el duplicado interno de Woo."
+  },
+  "El Peral Rva. Blend Uruco": {
+    "status": "sospechoso-revisar",
+    "candidato": "Finca El Peral Blend - Uruco Wines (woo id 10980, $20000)",
+    "motivo": "Mismo nombre de línea \"El Peral Blend\", precio cercano ($18000 vs $20000, 10% diff). El calificador \"Rva.\" (Reserva) podría ser un dato que no se reflejó en el nombre de Woo, o un tier distinto real."
+  },
+  "Trivento Golden Rva. Blend ": {
+    "status": "sospechoso-revisar",
+    "candidato": "Trivento Blend Cab Franc Malbec (mismo Tanda 2, no Woo)",
+    "motivo": "Posible duplicado INTERNO dentro de la Tanda 2: mismo precio exacto ($18500), misma bodega Trivento, ambos describen un blend Cabernet Franc-Malbec de la línea Golden Reserve. Podrían ser el mismo vino cargado dos veces con nombres distintos en Supabase."
+  },
+  "Trivento Blend Cab Franc Malbec": {
+    "status": "sospechoso-revisar",
+    "candidato": "Trivento Golden Rva. Blend (mismo Tanda 2, no Woo)",
+    "motivo": "Ver \"Trivento Golden Rva. Blend\" - mismo precio exacto y misma composición de blend. Posible duplicado interno."
+  },
+  "Trivento White Malbec Gin": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "Nombre y categoria inconsistentes: varietal=Malbec pero nombre incluye \"Gin\" (no es un vino), categoria=Tinto pero \"White Malbec\" debería ser Blanco/Rosado. Dato de origen posiblemente corrupto/mal armado, requiere verificar en Supabase qué producto es realmente."
+  },
+  "Doña Paula Single Vineyard": {
+    "status": "sospechoso-revisar",
+    "candidato": null,
+    "motivo": "Inconsistencia de datos: varietal=\"Riseling\" (Riesling, uva blanca) pero categoria=Tinto. Bodega ya corregida de \"Gualtallary\" a \"Doña Paula\" en Supabase (Gualtallary es la región/viñedo, no la bodega), pero el varietal/categoria siguen sin poder confirmarse con certeza — no se creó el producto hasta confirmar cuál es el vino real."
+  },
+  "Trivento Reserve Malbec 375cc.": {
+    "status": "creado",
+    "woo_id": 12163,
+    "fecha": "2026-09-01T15:53:07.277Z"
+  },
+  "Trivento Finjamos Demencia": {
+    "status": "creado",
+    "woo_id": 12164,
+    "fecha": "2026-09-01T15:53:09.661Z"
+  },
+  "Casillero Del Diablo Extra Brut Trivento": {
+    "status": "creado",
+    "woo_id": 12165,
+    "fecha": "2026-09-01T15:53:11.439Z"
+  },
+  "Trivento Gaudeo Malbec Tupungato": {
+    "status": "creado",
+    "woo_id": 12166,
+    "fecha": "2026-09-01T15:53:13.209Z"
+  },
+  "Trivento White Malbec": {
+    "status": "creado",
+    "woo_id": 12168,
+    "fecha": "2026-09-01T15:53:16.263Z"
+  },
+  "Trivento Rose Malbec": {
+    "status": "creado",
+    "woo_id": 12170,
+    "fecha": "2026-09-01T15:53:19.146Z"
+  },
+  "Cono Sur Carmenere Trivento": {
+    "status": "creado",
+    "woo_id": 12171,
+    "fecha": "2026-09-01T15:53:20.617Z"
+  },
+  "Cono Sur Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12172,
+    "fecha": "2026-09-01T15:53:22.414Z"
+  },
+  "Trivento Reserve Cab. Sauv.": {
+    "status": "creado",
+    "woo_id": 12174,
+    "fecha": "2026-09-01T15:53:25.573Z"
+  },
+  "Trivento Established Semillón": {
+    "status": "creado",
+    "woo_id": 12175,
+    "fecha": "2026-09-01T15:53:26.981Z"
+  },
+  "Terrunyo Malbec Trivento": {
+    "status": "creado",
+    "woo_id": 12176,
+    "fecha": "2026-09-01T15:53:28.395Z"
+  },
+  "Trivento Gaudeo San Pablo": {
+    "status": "creado",
+    "woo_id": 12177,
+    "fecha": "2026-09-01T15:53:29.788Z"
+  },
+  "Trivento Gaudeo Malbec Altamira": {
+    "status": "creado",
+    "woo_id": 12178,
+    "fecha": "2026-09-01T15:53:31.324Z"
+  },
+  "Trivento Stratus Blend": {
+    "status": "creado",
+    "woo_id": 12180,
+    "fecha": "2026-09-01T15:53:34.915Z"
+  },
+  "Cono Sur Sauvignon Blanc": {
+    "status": "creado",
+    "woo_id": 12181,
+    "fecha": "2026-09-01T15:53:36.292Z"
+  },
+  "Trivento Eolo Malbec": {
+    "status": "creado",
+    "woo_id": 12182,
+    "fecha": "2026-09-01T15:53:37.781Z"
+  },
+  "Casillero Del Diablo Red Blend": {
+    "status": "creado",
+    "woo_id": 12183,
+    "fecha": "2026-09-01T15:53:39.211Z"
+  },
+  "Trivento Established Petit Verdot": {
+    "status": "creado",
+    "woo_id": 12184,
+    "fecha": "2026-09-01T15:53:41.155Z"
+  },
+  "Casillero Del Diablo Rose Malbec Trivento": {
+    "status": "creado",
+    "woo_id": 12185,
+    "fecha": "2026-09-01T15:53:42.717Z"
+  },
+  "Casillero Del Diablo Malbec Trivento": {
+    "status": "creado",
+    "woo_id": 12186,
+    "fecha": "2026-09-01T15:53:44.286Z"
+  },
+  "Trivento Finjamos Demencia Dulce": {
+    "status": "creado",
+    "woo_id": 12187,
+    "fecha": "2026-09-01T15:53:46.019Z"
+  },
+  "Trivento Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12189,
+    "fecha": "2026-09-01T15:53:49.774Z"
+  },
+  "Tirvento Golden Reserve Cs": {
+    "status": "creado",
+    "woo_id": 12191,
+    "fecha": "2026-09-01T15:53:54.070Z"
+  }
+}
