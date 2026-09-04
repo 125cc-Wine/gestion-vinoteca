@@ -1,0 +1,87 @@
+{
+  "Caballero de La Cepa Malbec": {
+    "status": "linkeado",
+    "woo_id": 11683,
+    "reason": "Nombre coincide con \"Finca Flichman Caballero de la Cepa Malbec\" ya publicado, mismo precio exacto ($18000). Bodega venía null en Supabase.",
+    "detalle": [
+      "aroma:56c60754-48c5-4a05-bd46-b856c67b31b4:ok",
+      "lavid:1176d357-e7c6-4508-b74a-e838996b3463:ok"
+    ],
+    "fecha": "2026-09-04T16:33:29.023Z"
+  },
+  "Foster Firmado Malbec 3000 (Estuche x1)": {
+    "status": "sospechoso-revisar",
+    "motivo": "Posible duplicado de \"Enrique Foster Firmado Malbec\" (woo id 3933, $97345) ya publicado. Precio Supabase ($338855) es 3.5x el de ese producto -- no coincide ni como error de redondeo. Podria ser una edicion numerada distinta (Estuche x1, \"3000\" como numero de botella) o un precio mal cargado. Revisar a mano.",
+    "fecha": "2026-09-04T16:33:29.025Z"
+  },
+  "Indomito Blend Kaiken": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio identico ($15600) a \"Indómito Cabernet Franc (Kaiken)\" (woo id 10894, draft). Mismo nombre base \"Indómito\" pero varietal declarado distinto (Blend vs Cabernet Franc). Podria ser el mismo vino mal etiquetado en Woo (Indómito es un blend). Revisar a mano antes de crear/linkear.",
+    "fecha": "2026-09-04T16:33:29.026Z"
+  },
+  "Nietos compañeros Blend G. Rilli": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio identico ($16100) a DOS productos ya publicados: \"Gimenez Riili Nietos Compañeros Blend de Rosados\" (id 4012) y \"...Blend de Tintas\" (id 4009). El nombre en Supabase no especifica color, no se puede determinar cual de los dos es sin dato adicional. Revisar a mano.",
+    "fecha": "2026-09-04T16:33:29.027Z"
+  },
+  "Tucumen Petit Verdot": {
+    "status": "sospechoso-revisar",
+    "motivo": "Mismo precio exacto ($9790) y mismo varietal que \"Tucumen Reserva Petit Verdot\" (tambien en esta tanda). Tucumen es una bodega chica/boutique; dudoso que tenga dos SKUs de Petit Verdot (regular y Reserva) al mismo precio. Podria ser fila duplicada. Revisar a mano.",
+    "fecha": "2026-09-04T16:33:29.028Z"
+  },
+  "Tucumen Reserva Petit Verdot": {
+    "status": "sospechoso-revisar",
+    "motivo": "Ver \"Tucumen Petit Verdot\" -- mismo precio y varietal, posible duplicado interno de Supabase.",
+    "fecha": "2026-09-04T16:33:29.029Z"
+  },
+  "Casa Boher Extra Brut": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio con decimales ($1818.17) muy por debajo de sus hermanos de linea Casa Boher ($15000-17700). Precio roto, no crear hasta corregir.",
+    "fecha": "2026-09-04T16:33:29.030Z"
+  },
+  "Foster Reserva Malbec 1,5 Lts.": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio ($5000) muy por debajo del equivalente en 750ml \"Enrique Foster Reserva Malbec\" ($21300 publicado). Un magnum 1.5L deberia costar ~2x el de 750ml, no menos de un cuarto. Precio roto.",
+    "fecha": "2026-09-04T16:33:29.030Z"
+  },
+  "Ique Malbec Magnun Foster": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio ($1302) muy por debajo del equivalente 750ml \"Enrique Foster Ique Malbec\" ($11000 publicado). Un magnum deberia costar mas, no una fraccion. Precio roto.",
+    "fecha": "2026-09-04T16:33:29.031Z"
+  },
+  "Lillet Rose 750cc": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio con decimales ($1269.29), muy bajo para un aperitivo importado Lillet (mercado ARS ~$15000-20000+). Precio roto.",
+    "fecha": "2026-09-04T16:33:29.031Z"
+  },
+  "Lillet Blanc 750cc": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio con decimales ($1269.29), muy bajo para un aperitivo importado Lillet. Precio roto.",
+    "fecha": "2026-09-04T16:33:29.032Z"
+  },
+  "Be My Hippie Love Tinto": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio con decimales ($2494.62), patron de precio roto/conversion. Categoria tambien inconsistente (Rosado pero nombre dice \"Tinto\").",
+    "fecha": "2026-09-04T16:33:29.033Z"
+  },
+  "Rosell Boher Brut": {
+    "status": "sospechoso-revisar",
+    "motivo": "Precio con decimales ($2892.58), muy bajo para un espumante. Precio roto.",
+    "fecha": "2026-09-04T16:33:29.033Z"
+  },
+  "Bressia Profundo": {
+    "status": "sospechoso-revisar",
+    "motivo": "Bressia Profundo es un corte premium reconocido de Mendoza, normalmente de gama alta (~$15000-30000+). $2500 es muy bajo, probablemente precio roto/incompleto.",
+    "fecha": "2026-09-04T16:33:29.035Z"
+  },
+  "Pyros Special Blend": {
+    "status": "sospechoso-revisar",
+    "motivo": "Pyros es una bodega premium de Uco (su Pinot Noir en esta misma tanda esta a $16300). $4000 para un \"Special Blend\" es sospechosamente bajo. Revisar precio.",
+    "fecha": "2026-09-04T16:33:29.036Z"
+  },
+  "Marchiori & Barraud Dulce Natural": {
+    "status": "sospechoso-revisar",
+    "motivo": "Marchiori & Barraud es una bodega boutique premium (vinos tipicamente $18000-30000+). $1500 para un dulce natural (usualmente formato reducido pero caro por rareza) es sospechosamente bajo. Revisar precio.",
+    "fecha": "2026-09-04T16:33:29.036Z"
+  }
+}
