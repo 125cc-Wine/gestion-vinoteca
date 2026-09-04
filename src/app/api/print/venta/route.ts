@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
         <td style="text-align:center;">${it.cantidad}</td>
         <td style="text-align:right;">
           ${moneda(it.precio_unitario ?? 0)}
-          ${(it.descuento ?? 0) > 0 ? `<div style="font-size:9.5px;color:#A89888;">${moneda((it.precio_unitario ?? 0) * (1 - (it.descuento ?? 0) / 100))} c/u</div>` : ''}
+          ${((it.descuento ?? 0) > 0 || descuento > 0) ? `<div style="font-size:9.5px;color:#A89888;">${moneda((it.precio_unitario ?? 0) * (1 - (it.descuento ?? 0) / 100) * (1 - descuento / 100))} c/u</div>` : ''}
         </td>
         ${(it.descuento ?? 0) > 0 ? `<td style="text-align:center;color:#A07010;">${it.descuento}%</td>` : '<td style="text-align:center;color:#A89888;">—</td>'}
         <td style="text-align:right;">${moneda(it.subtotal ?? 0)}</td>
