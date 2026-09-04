@@ -2532,7 +2532,14 @@ function PrintDoc({ venta, empresa, cliente }: {
               <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.cantidad}</td>
               <td style={{ padding: '5px 8px' }}>{item.nombre}</td>
               <td style={{ padding: '5px 8px', textAlign: 'center' }}>{item.descuento ? `${item.descuento}%` : '—'}</td>
-              <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                {item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                {!!item.descuento && (
+                  <div style={{ fontSize: '9.5px', color: '#888' }}>
+                    ${(item.precio_unitario * (1 - item.descuento / 100)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u
+                  </div>
+                )}
+              </td>
               <td style={{ padding: '5px 8px', textAlign: 'right' }}>{item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
             </tr>
           ))}
@@ -2757,6 +2764,11 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
               <td style={{ padding: '6px 10px', textAlign: 'center', color: MUTED }}>un.</td>
               <td style={{ padding: '6px 10px', textAlign: 'right' }}>
                 {(item.precio_unitario / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                {!!item.descuento && (
+                  <div style={{ fontSize: '9.5px', color: MUTED }}>
+                    ${((item.precio_unitario * (1 - item.descuento / 100)) / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u
+                  </div>
+                )}
               </td>
               {tipo === 1 && <td style={{ padding: '6px 10px', textAlign: 'center', color: item.descuento ? INK : MUTED, fontWeight: item.descuento ? 700 : 400 }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
               <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600 }}>
