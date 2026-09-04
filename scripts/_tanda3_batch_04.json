@@ -1,0 +1,382 @@
+[
+  {
+    "nombre": "Chito Homenaje Raboso Los Mateines",
+    "bodega": null,
+    "varietal": "Raboso",
+    "categoria": "Tinto",
+    "precio": 9800,
+    "stock": 0,
+    "ids": {
+      "aroma": "4dc976ee-b9ea-42f7-836a-4388678294f3",
+      "lavid": "c227dab4-9171-4ebb-af4a-1653fc2a0129"
+    },
+    "extraIds": [],
+    "descripcion": "Chito Homenaje Raboso es un vino tinto de Finca Los Mateines, elaborado con la variedad italiana Raboso.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Raboso",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "45° Rugientes Pinot Noir Otronia",
+    "bodega": "Otronia",
+    "varietal": "Pinot Noir",
+    "categoria": "Tinto",
+    "precio": 44500,
+    "stock": 0,
+    "ids": {
+      "lavid": "d3722714-2355-484c-9131-92823ca4a16f",
+      "aroma": "34124820-c3f9-4b9b-afcf-7f845e3931e6"
+    },
+    "extraIds": [],
+    "descripcion": "45 Rugientes Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, producido por Otronia. Otronia es el proyecto de Familia Zuccardi en Chubut, Patagonia, a la latitud 45° (paralelo de los \"45 Rugientes\"), uno de los viñedos más australes del mundo.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Pinot Noir",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "45° Rugientes Merlot Otronia",
+    "bodega": "Otronia",
+    "varietal": "Merlot",
+    "categoria": "Tinto",
+    "precio": 44500,
+    "stock": 0,
+    "ids": {
+      "lavid": "fbe326eb-ff86-4afd-9195-7f4ea4a1eb70",
+      "aroma": "357b6497-ed77-42a9-86a9-c5903dce0714"
+    },
+    "extraIds": [],
+    "descripcion": "45 Rugientes Merlot es un vino tinto elaborado con uvas Merlot, producido por Otronia. Otronia es el proyecto de Familia Zuccardi en Chubut, Patagonia, a la latitud 45° (paralelo de los \"45 Rugientes\"), uno de los viñedos más australes del mundo.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Merlot",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Ferraro Wines Reserva Malbec",
+    "bodega": "Ferraro",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 7200,
+    "stock": 0,
+    "ids": {
+      "lavid": "cd2633b0-2e25-4c31-8c4c-8d7824850544",
+      "aroma": "cde314bf-a672-4167-874d-aa49abd35285"
+    },
+    "extraIds": [],
+    "descripcion": "Ferraro Wines Reserva Malbec es un vino tinto elaborado con uvas Malbec, producido por Ferraro Wines.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Ferraro Wines Reserva Carmere",
+    "bodega": "Ferraro",
+    "varietal": "Carménère",
+    "categoria": "Tinto",
+    "precio": 10000,
+    "stock": 0,
+    "ids": {
+      "lavid": "85673843-44ee-4e8c-85d0-e16a17683ca3",
+      "aroma": "596be19f-39c6-44a6-9057-9bb78a451af3"
+    },
+    "extraIds": [],
+    "descripcion": "Ferraro Wines Reserva Carménère es un vino tinto elaborado con uvas Carménère, producido por Ferraro Wines.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Carménère",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Malma Pinot Noir Finca La Papay",
+    "bodega": "Malma",
+    "varietal": "Pinot Noir",
+    "categoria": "Tinto",
+    "precio": 20100,
+    "stock": 0,
+    "ids": {
+      "aroma": "86dec125-b240-4a1e-bd41-b7c1ff88c799",
+      "lavid": "9f65ecd6-984b-47c3-8217-c36bf7e1b011"
+    },
+    "extraIds": [],
+    "descripcion": "Malma Pinot Noir Finca La Papay es un vino tinto elaborado con uvas Pinot Noir, producido por Malma. Malma es una bodega patagónica de la región del Río Negro.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Malma Sauvignon Blanc",
+    "bodega": "Malma",
+    "varietal": "Sauvignon Blanc",
+    "categoria": "Blanco",
+    "precio": 17400,
+    "stock": 0,
+    "ids": {
+      "aroma": "1cab1e5c-d929-46cb-aba6-06f2d0e20100",
+      "lavid": "56192691-2b37-428a-980a-4b23af6fea04"
+    },
+    "extraIds": [],
+    "descripcion": "Malma Sauvignon Blanc es un vino blanco elaborado con uvas Sauvignon Blanc, producido por Malma. Malma es una bodega patagónica de la región del Río Negro.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Ferraro Wines Reserva Blend",
+    "bodega": "Ferraro",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 7200,
+    "stock": 0,
+    "ids": {
+      "lavid": "77ff6e58-7aa3-45e2-9a79-e0d77b19dc09",
+      "aroma": "3551e1d2-e724-49b1-ad90-b9c9bc09d91f"
+    },
+    "extraIds": [],
+    "descripcion": "Ferraro Wines Reserva Blend es un vino tinto de corte (blend), producido por Ferraro Wines.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Ferraro Wines Classic Malbec",
+    "bodega": "Ferraro",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 5400,
+    "stock": 0,
+    "ids": {
+      "lavid": "cb7c3479-5918-43fc-8673-06289390f11c",
+      "aroma": "55adb48e-f4e8-49e3-9174-ae735c7b61e1"
+    },
+    "extraIds": [],
+    "descripcion": "Ferraro Wines Classic Malbec es un vino tinto elaborado con uvas Malbec, producido por Ferraro Wines. Línea Classic, de entrada, de Ferraro Wines.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Animal Colours Malbec",
+    "bodega": null,
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 11320,
+    "stock": 0,
+    "ids": {
+      "aroma": "810da5a4-2ed6-4f14-bc28-1006d6c67bc3",
+      "lavid": "1556e6a1-a860-4b58-b9d3-0a71286503cd"
+    },
+    "extraIds": [],
+    "descripcion": "Animal Colours Malbec es un vino tinto elaborado con uvas Malbec.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Huella Pampa Malbec",
+    "bodega": "Huella Pampa",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 7200,
+    "stock": 0,
+    "ids": {
+      "lavid": "9236639e-31c0-44c0-a9b6-b6efb8de8a58",
+      "aroma": "a9eb6690-8813-4040-9ddd-7bbd101e8352"
+    },
+    "extraIds": [],
+    "descripcion": "Huella Pampa Malbec es un vino tinto elaborado con uvas Malbec, producido por Huella Pampa.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Huella Pampa Roble Cabernet Sauvignon",
+    "bodega": "Huella Pampa",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 5500,
+    "stock": 0,
+    "ids": {
+      "lavid": "18e1a42b-6c7b-4d2e-a65b-0daf54ecf5ac",
+      "aroma": "f7827625-3f11-4f0f-8895-0c8b76ba2523"
+    },
+    "extraIds": [],
+    "descripcion": "Huella Pampa Roble Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Huella Pampa. Con paso por roble.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Huella Pampa Roble Malbec",
+    "bodega": "Huella Pampa",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 5500,
+    "stock": 0,
+    "ids": {
+      "lavid": "f179c9bd-5beb-4316-a17c-5f18534ae17f",
+      "aroma": "cfa23949-8b3c-4fc1-a00f-c9b9fb7165ab"
+    },
+    "extraIds": [],
+    "descripcion": "Huella Pampa Roble Malbec es un vino tinto elaborado con uvas Malbec, producido por Huella Pampa. Con paso por roble.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Animal Syrah",
+    "bodega": null,
+    "varietal": "Syrah",
+    "categoria": "Tinto",
+    "precio": 9500,
+    "stock": 0,
+    "ids": {
+      "aroma": "4ab16de8-bb74-47a5-95be-160cbe9caa97",
+      "lavid": "888c2263-124f-401f-b3e1-4e11c2aadcbe"
+    },
+    "extraIds": [],
+    "descripcion": "Animal Syrah es un vino tinto elaborado con uvas Syrah.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Jardin Enchante Rosado",
+    "bodega": null,
+    "varietal": "Merlot",
+    "categoria": "Rosado",
+    "precio": 18000,
+    "stock": 0,
+    "ids": {
+      "aroma": "a4d7891a-2991-4747-a505-77258b64c406",
+      "lavid": "97afad1e-72d3-49de-8649-4de2a2763733"
+    },
+    "extraIds": [],
+    "descripcion": "Jardín Enchanté Rosado es un vino rosado elaborado con uvas Merlot.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Mara de Uco Pinot Noir",
+    "bodega": "Mara",
+    "varietal": "Pinot Noir",
+    "categoria": "Tinto",
+    "precio": 12600,
+    "stock": 0,
+    "ids": {
+      "aroma": "47a8d58a-1658-421d-8070-73e3835051e6",
+      "lavid": "ddbe8c89-4c26-439d-9fb0-e192c46520c0"
+    },
+    "extraIds": [],
+    "descripcion": "Mara de Uco Pinot Noir es un vino tinto elaborado con uvas Pinot Noir, producido por Mara. De viñedos del Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Mara de Uco Petit Verdot",
+    "bodega": "Mara",
+    "varietal": "Petit Verdot",
+    "categoria": "Tinto",
+    "precio": 12600,
+    "stock": 0,
+    "ids": {
+      "lavid": "55272c02-6869-40ca-be39-9225fceeb296",
+      "aroma": "14aaa7ca-4491-4880-872c-b7fe8dc9c2fb"
+    },
+    "extraIds": [],
+    "descripcion": "Mara de Uco Petit Verdot es un vino tinto elaborado con uvas Petit Verdot, producido por Mara. De viñedos del Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Pequeñas Producciones Malbec",
+    "bodega": null,
+    "varietal": null,
+    "categoria": "Tinto",
+    "precio": 9100,
+    "stock": 0,
+    "ids": {
+      "aroma": "92b6a65e-6d5e-44b8-8fa1-8051bd29f706",
+      "lavid": "848e7e8b-78ce-41f9-961f-d54973cbe8c1"
+    },
+    "extraIds": [],
+    "descripcion": "Pequeñas Producciones Malbec es un vino tinto elaborado con uvas Malbec, de una edición de producción limitada.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Pequeñas Producciones Syrah",
+    "bodega": null,
+    "varietal": null,
+    "categoria": "Tinto",
+    "precio": 7500,
+    "stock": 0,
+    "ids": {
+      "lavid": "4bcde715-9ce4-4e71-934a-66e42f4d13ef",
+      "aroma": "6e36465a-9b34-4b6e-8dcc-d229a1412089"
+    },
+    "extraIds": [],
+    "descripcion": "Pequeñas Producciones Syrah es un vino tinto elaborado con uvas Syrah, de una edición de producción limitada.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Fuzion Malbec",
+    "bodega": null,
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 4840,
+    "stock": 0,
+    "ids": {
+      "aroma": "06252a33-b1e0-4329-9472-326ffd82b03e",
+      "lavid": "0d6ad1d5-cfd3-4f9a-8f34-55a1543d8ebc"
+    },
+    "extraIds": [],
+    "descripcion": "Fuzion Malbec es un vino tinto elaborado con uvas Malbec, producido por Fuzion (Familia Zuccardi). Línea de entrada de Familia Zuccardi.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  }
+]

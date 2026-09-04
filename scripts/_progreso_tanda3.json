@@ -83,5 +83,215 @@
     "status": "sospechoso-revisar",
     "motivo": "Marchiori & Barraud es una bodega boutique premium (vinos tipicamente $18000-30000+). $1500 para un dulce natural (usualmente formato reducido pero caro por rareza) es sospechosamente bajo. Revisar precio.",
     "fecha": "2026-09-04T16:33:29.036Z"
+  },
+  "Tapiz Bonarda": {
+    "status": "creado",
+    "woo_id": 12473,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:c453f2c5-0506-418c-8eb9-af36e5090eef:ok",
+      "lavid:f0d097b1-a650-4ba9-ae06-62065061b83e:ok"
+    ],
+    "fecha": "2026-09-04T16:39:02.950Z"
+  },
+  "Altus Reserva Merlot Gualtallary": {
+    "status": "creado",
+    "woo_id": 12474,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7512bdd7-6e2f-4ccb-9cfd-b1c4401494f8:ok",
+      "lavid:7d8db253-fbfc-4365-9cd3-2aac4db54844:ok"
+    ],
+    "fecha": "2026-09-04T16:39:04.625Z"
+  },
+  "Malma Malbec": {
+    "status": "creado",
+    "woo_id": 12475,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:65d356ed-0652-4315-896b-02276adf98a6:ok",
+      "lavid:6d46f1d9-5eaa-4f37-bbca-84c1b9af4b51:ok"
+    ],
+    "fecha": "2026-09-04T16:39:06.259Z"
+  },
+  "Canale Estate Blend": {
+    "status": "creado",
+    "woo_id": 12476,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:8728e074-cd72-4170-9d66-953bfaedfb24:ok",
+      "lavid:da9cf8be-39ed-4f2c-9169-c58d47d61f4f:ok"
+    ],
+    "fecha": "2026-09-04T16:39:07.784Z"
+  },
+  "Clos de Cal 2021": {
+    "status": "creado",
+    "woo_id": 12477,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:0cb74014-e9d1-498e-adf8-d42b9bf3376f:ok",
+      "lavid:a5778aa5-56b6-4277-8ef1-834ae84299c1:ok"
+    ],
+    "fecha": "2026-09-04T16:39:09.520Z"
+  },
+  "Coursair Garnacha": {
+    "status": "creado",
+    "woo_id": 12478,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:e2bb8e3e-3a1d-4d14-9d6f-5fa582cde521:ok",
+      "lavid:d9943ff3-d6cb-4f2e-9728-e0de3c2e8231:ok"
+    ],
+    "fecha": "2026-09-04T16:39:11.020Z"
+  },
+  "Conejo Verde Brut Rose": {
+    "status": "creado",
+    "woo_id": 12479,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:709fca94-da02-48c7-a053-7d4f6d7529f1:ok",
+      "lavid:5f46ef5e-bc05-4c3b-bbda-ebfa7f73839d:ok",
+      "aroma:427fde15-a8ab-46be-8af7-9b00d1fb670e:ok",
+      "lavid:ec078eab-6103-4786-9d1e-20fbe4a01ffd:ok"
+    ],
+    "fecha": "2026-09-04T16:39:13.006Z"
+  },
+  "Cuesta Del Madero Roble Cab. Sauv.": {
+    "status": "creado",
+    "woo_id": 12480,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:125bd03b-9b62-4f25-b6f6-ba0b228ba609:ok",
+      "lavid:3cd2adca-11bf-4f36-b780-21c0d6044d24:ok"
+    ],
+    "fecha": "2026-09-04T16:39:14.831Z"
+  },
+  "Iaccarini Via Blanca Malbec": {
+    "status": "creado",
+    "woo_id": 12481,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:d5ac0554-bf3f-46cc-a9dc-f48f9cb19a9e:ok",
+      "lavid:606c63bf-0954-49bd-ac27-f372328b5682:ok",
+      "aroma:5a63815b-8e02-4b45-a015-ff19d5434b51:ok",
+      "lavid:128133f5-f9c0-47d9-a4c0-c2a773e65c6b:ok"
+    ],
+    "fecha": "2026-09-04T16:39:16.549Z"
+  },
+  "Humbeto Canale estate Malbec": {
+    "status": "creado",
+    "woo_id": 12482,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:78aa5b1d-7253-4606-9c8a-eb772c2c52b2:ok",
+      "lavid:98456175-a608-4777-8e85-4ba5a042cb18:ok",
+      "aroma:8a323cf6-4ab7-4d8f-9d49-8c231667788f:ok",
+      "lavid:55efcc13-1c04-4411-a0a4-2a1d6be5dced:ok"
+    ],
+    "fecha": "2026-09-04T16:39:18.588Z"
+  },
+  "Misterio Malbec": {
+    "status": "creado",
+    "woo_id": 12483,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:91cbebe7-baa8-459b-97d8-40e6e4d44ea7:ok",
+      "lavid:dc011b29-03f9-4a2d-a94f-d12934b086d4:ok"
+    ],
+    "fecha": "2026-09-04T16:39:20.272Z"
+  },
+  "Cinzano Bianco": {
+    "status": "creado",
+    "woo_id": 12484,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f8b18040-feb1-4005-a177-8b0d6d9f5b82:ok",
+      "lavid:c4ea9532-fc6b-44fd-b3a7-f468e23cd91f:ok"
+    ],
+    "fecha": "2026-09-04T16:39:21.844Z"
+  },
+  "Gimenez Riili Grapa": {
+    "status": "creado",
+    "woo_id": 12485,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:b0ae1bd4-88b0-4aca-99b0-0f0c4136e379:ok",
+      "lavid:7bbafec4-c362-490b-ba5b-c8a40a85d2e5:ok"
+    ],
+    "fecha": "2026-09-04T16:39:23.500Z"
+  },
+  "Contra Viento Fuego Blanco": {
+    "status": "creado",
+    "woo_id": 12486,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:97d857f5-da7f-4645-b44e-03b81da96564:ok",
+      "lavid:c0f2e4f3-27e0-4782-87f6-fca8e08fa119:ok"
+    ],
+    "fecha": "2026-09-04T16:39:25.152Z"
+  },
+  "Iaccarini Via Blanca Red Blend": {
+    "status": "creado",
+    "woo_id": 12487,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7e125e0b-a9fc-4de2-80fa-3fedf7b5eb52:ok",
+      "lavid:bdf81745-5c20-4e6c-aef6-b9eaeb937040:ok"
+    ],
+    "fecha": "2026-09-04T16:39:26.754Z"
+  },
+  "Iaccarini Via Blanca Syrah": {
+    "status": "creado",
+    "woo_id": 12488,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f44ed70f-effb-4276-93f9-502c1b080fde:ok",
+      "lavid:ff88f794-5532-425a-9932-d319032a5ae3:ok",
+      "aroma:ce914089-6b6e-4253-bc43-68e66484ea8c:ok",
+      "lavid:844c2953-8af7-45b4-8de4-ff48b0561e51:ok"
+    ],
+    "fecha": "2026-09-04T16:39:28.533Z"
+  },
+  "Iaccarini Via Blanca Bonarda": {
+    "status": "creado",
+    "woo_id": 12489,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1e37a0cb-37b5-4105-bb59-11136a50350a:ok",
+      "lavid:9a8063cd-b0d1-4158-b91f-fb0ea6fb1498:ok",
+      "aroma:24558896-0ad9-41d7-a815-ba3ed3404c7f:ok",
+      "lavid:01633b33-83c3-43d6-a92c-e0796b0b8528:ok"
+    ],
+    "fecha": "2026-09-04T16:39:30.532Z"
+  },
+  "Cinzano 1757 Extra Dry": {
+    "status": "creado",
+    "woo_id": 12490,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:5126c489-edfd-4695-8c53-19ee30e1dca8:ok",
+      "lavid:fe9b6c0f-a91d-48c4-aa1c-bd61fc752e2c:ok"
+    ],
+    "fecha": "2026-09-04T16:39:31.965Z"
+  },
+  "Foster Caja de Madera x6 (Malbec y Bonarda)": {
+    "status": "creado",
+    "woo_id": 12491,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:bdbe5198-6648-44d0-bd52-10b81a86aad5:ok",
+      "lavid:e0ff33e5-0c27-4d71-99b2-f5f3e2368592:ok"
+    ],
+    "fecha": "2026-09-04T16:39:33.784Z"
+  },
+  "Lorca Caja de Madera x6 Inspirado (Blend, Cab.Cab, Cab.Franc)": {
+    "status": "creado",
+    "woo_id": 12492,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:04aaca8b-6a7e-4f9a-aa16-4584114e9a3f:ok",
+      "lavid:15e95447-a498-4b96-8251-ca8330807a5c:ok"
+    ],
+    "fecha": "2026-09-04T16:39:35.252Z"
   }
 }

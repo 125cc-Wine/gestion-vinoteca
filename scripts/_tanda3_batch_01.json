@@ -1,0 +1,407 @@
+[
+  {
+    "nombre": "Tapiz Bonarda",
+    "bodega": "Tapiz",
+    "varietal": "Bonarda",
+    "categoria": "Tinto",
+    "precio": 17200,
+    "stock": 0,
+    "ids": {
+      "aroma": "c453f2c5-0506-418c-8eb9-af36e5090eef",
+      "lavid": "f0d097b1-a650-4ba9-ae06-62065061b83e"
+    },
+    "extraIds": [],
+    "descripcion": "Tapiz Bonarda es un vino tinto elaborado con uvas Bonarda, producido por Bodega Tapiz. Bodega Tapiz elabora sus vinos en Agrelo y el Valle de Uco, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Altus Reserva Merlot Gualtallary",
+    "bodega": "Gualtallary",
+    "varietal": "Merlot",
+    "categoria": "Tinto",
+    "precio": 16000,
+    "stock": 0,
+    "ids": {
+      "aroma": "7512bdd7-6e2f-4ccb-9cfd-b1c4401494f8",
+      "lavid": "7d8db253-fbfc-4365-9cd3-2aac4db54844"
+    },
+    "extraIds": [],
+    "descripcion": "Altus Reserva Merlot es un vino tinto elaborado con uvas Merlot, producido por Gualtallary Wines. Línea Reserva de Altus, de viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Malma Malbec",
+    "bodega": "Malma",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 17400,
+    "stock": 0,
+    "ids": {
+      "aroma": "65d356ed-0652-4315-896b-02276adf98a6",
+      "lavid": "6d46f1d9-5eaa-4f37-bbca-84c1b9af4b51"
+    },
+    "extraIds": [],
+    "descripcion": "Malma Malbec es un vino tinto elaborado con uvas Malbec, producido por Malma. Malma es una bodega patagónica, con viñedos en la región del Río Negro.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Canale Estate Blend",
+    "bodega": "Humberto Canale",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 16600,
+    "stock": 0,
+    "ids": {
+      "aroma": "8728e074-cd72-4170-9d66-953bfaedfb24",
+      "lavid": "da9cf8be-39ed-4f2c-9169-c58d47d61f4f"
+    },
+    "extraIds": [],
+    "descripcion": "Canale Estate Blend es un vino tinto de corte (blend), producido por Humberto Canale. Línea Estate de Bodega Humberto Canale, pionera del Alto Valle de Río Negro, Patagonia.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": "Humberto Canale",
+    "extraTags": []
+  },
+  {
+    "nombre": "Clos de Cal 2021",
+    "bodega": "",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 75000,
+    "stock": 6,
+    "ids": {
+      "lavid": "a5778aa5-56b6-4277-8ef1-834ae84299c1",
+      "aroma": "0cb74014-e9d1-498e-adf8-d42b9bf3376f"
+    },
+    "extraIds": [],
+    "descripcion": "Clos de Cal 2021 es un vino tinto de corte (blend). Corte de guarda de la cosecha 2021.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Coursair Garnacha",
+    "bodega": null,
+    "varietal": "Garnacha",
+    "categoria": "Tinto",
+    "precio": 23000,
+    "stock": 0,
+    "ids": {
+      "aroma": "e2bb8e3e-3a1d-4d14-9d6f-5fa582cde521",
+      "lavid": "d9943ff3-d6cb-4f2e-9728-e0de3c2e8231"
+    },
+    "extraIds": [],
+    "descripcion": "Coursair Garnacha es un vino tinto elaborado con uvas Garnacha.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Garnacha",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Conejo Verde Brut Rose",
+    "bodega": null,
+    "varietal": null,
+    "categoria": "Espumante",
+    "precio": 20000,
+    "stock": 0,
+    "ids": {
+      "aroma": "709fca94-da02-48c7-a053-7d4f6d7529f1",
+      "lavid": "5f46ef5e-bc05-4c3b-bbda-ebfa7f73839d"
+    },
+    "extraIds": [
+      {
+        "lavid": "ec078eab-6103-4786-9d1e-20fbe4a01ffd",
+        "aroma": "427fde15-a8ab-46be-8af7-9b00d1fb670e"
+      }
+    ],
+    "descripcion": "Conejo Verde Brut Rose es un espumante rosado. Forma parte de la línea \"Conejo\" de vinos frescos y de estilo desenfadado.",
+    "imagen": null,
+    "fixSupabaseCategoria": "Espumante",
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cuesta Del Madero Roble Cab. Sauv.",
+    "bodega": "Cuesta Del Madero",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 1950,
+    "stock": 0,
+    "ids": {
+      "aroma": "125bd03b-9b62-4f25-b6f6-ba0b228ba609",
+      "lavid": "3cd2adca-11bf-4f36-b780-21c0d6044d24"
+    },
+    "extraIds": [],
+    "descripcion": "Cuesta del Madero Roble Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Cuesta del Madero. Paso por roble, línea de entrada de la bodega.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Malbec",
+    "bodega": "Iaccarini",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "aroma": "d5ac0554-bf3f-46cc-a9dc-f48f9cb19a9e",
+      "lavid": "606c63bf-0954-49bd-ac27-f372328b5682"
+    },
+    "extraIds": [
+      {
+        "aroma": "5a63815b-8e02-4b45-a015-ff19d5434b51",
+        "lavid": "128133f5-f9c0-47d9-a4c0-c2a773e65c6b"
+      }
+    ],
+    "descripcion": "Iaccarini Via Blanca Malbec es un vino tinto elaborado con uvas Malbec, producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Humbeto Canale estate Malbec",
+    "bodega": "Humberto Canale",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 12000,
+    "stock": 0,
+    "ids": {
+      "aroma": "78aa5b1d-7253-4606-9c8a-eb772c2c52b2",
+      "lavid": "98456175-a608-4777-8e85-4ba5a042cb18"
+    },
+    "extraIds": [
+      {
+        "lavid": "55efcc13-1c04-4411-a0a4-2a1d6be5dced",
+        "aroma": "8a323cf6-4ab7-4d8f-9d49-8c231667788f"
+      }
+    ],
+    "descripcion": "Humberto Canale Estate Malbec es un vino tinto elaborado con uvas Malbec, producido por Humberto Canale. Bodega Humberto Canale, pionera del Alto Valle de Río Negro, Patagonia. Línea Estate.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": "Humberto Canale",
+    "extraTags": []
+  },
+  {
+    "nombre": "Misterio Malbec",
+    "bodega": "Finca Flichman",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 7000,
+    "stock": 0,
+    "ids": {
+      "aroma": "91cbebe7-baa8-459b-97d8-40e6e4d44ea7",
+      "lavid": "dc011b29-03f9-4a2d-a94f-d12934b086d4"
+    },
+    "extraIds": [],
+    "descripcion": "Misterio Malbec es un vino tinto elaborado con uvas Malbec, producido por Finca Flichman. Línea Misterio de Finca Flichman, bodega mendocina fundada en 1910.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cinzano Bianco",
+    "bodega": "Cinzano",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 8400,
+    "stock": 0,
+    "ids": {
+      "aroma": "f8b18040-feb1-4005-a177-8b0d6d9f5b82",
+      "lavid": "c4ea9532-fc6b-44fd-b3a7-f468e23cd91f"
+    },
+    "extraIds": [],
+    "descripcion": "Cinzano Bianco es un vermut blanco dulce de origen italiano (Turín), elaborado con vino aromatizado con hierbas y especias. Ideal solo, con hielo o como base de cócteles.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Gimenez Riili Grapa",
+    "bodega": "Gimenez Riili",
+    "varietal": null,
+    "categoria": "Otro",
+    "precio": 24700,
+    "stock": 0,
+    "ids": {
+      "aroma": "b0ae1bd4-88b0-4aca-99b0-0f0c4136e379",
+      "lavid": "7bbafec4-c362-490b-ba5b-c8a40a85d2e5"
+    },
+    "extraIds": [],
+    "descripcion": "Grapa de Bodega Gimenez Riili, aguardiente destilado de orujo de uva (bagazo), siguiendo la tradición itálica de la grappa.",
+    "imagen": null,
+    "fixSupabaseCategoria": "Otro",
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Contra Viento Fuego Blanco",
+    "bodega": "Fuego Blanco",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 7600,
+    "stock": 0,
+    "ids": {
+      "lavid": "c0f2e4f3-27e0-4782-87f6-fca8e08fa119",
+      "aroma": "97d857f5-da7f-4645-b44e-03b81da96564"
+    },
+    "extraIds": [],
+    "descripcion": "Contra Viento es un vino tinto de corte (blend), producido por Fuego Blanco. Corte de la bodega patagónica Fuego Blanco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Red Blend",
+    "bodega": "Iaccarini",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "aroma": "7e125e0b-a9fc-4de2-80fa-3fedf7b5eb52",
+      "lavid": "bdf81745-5c20-4e6c-aef6-b9eaeb937040"
+    },
+    "extraIds": [],
+    "descripcion": "Iaccarini Via Blanca Red Blend es un vino tinto de corte (blend), producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini, corte de tintas.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Syrah",
+    "bodega": "Iaccarini",
+    "varietal": "Syrah",
+    "categoria": "Tinto",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "aroma": "f44ed70f-effb-4276-93f9-502c1b080fde",
+      "lavid": "ff88f794-5532-425a-9932-d319032a5ae3"
+    },
+    "extraIds": [
+      {
+        "lavid": "844c2953-8af7-45b4-8de4-ff48b0561e51",
+        "aroma": "ce914089-6b6e-4253-bc43-68e66484ea8c"
+      }
+    ],
+    "descripcion": "Iaccarini Via Blanca Syrah es un vino tinto elaborado con uvas Syrah, producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Bonarda",
+    "bodega": "Iaccarini",
+    "varietal": "Bonarda",
+    "categoria": "Tinto",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "lavid": "9a8063cd-b0d1-4158-b91f-fb0ea6fb1498",
+      "aroma": "1e37a0cb-37b5-4105-bb59-11136a50350a"
+    },
+    "extraIds": [
+      {
+        "lavid": "01633b33-83c3-43d6-a92c-e0796b0b8528",
+        "aroma": "24558896-0ad9-41d7-a815-ba3ed3404c7f"
+      }
+    ],
+    "descripcion": "Iaccarini Via Blanca Bonarda es un vino tinto elaborado con uvas Bonarda, producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cinzano 1757 Extra Dry",
+    "bodega": "Cinzano",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 16000,
+    "stock": 0,
+    "ids": {
+      "lavid": "fe9b6c0f-a91d-48c4-aa1c-bd61fc752e2c",
+      "aroma": "5126c489-edfd-4695-8c53-19ee30e1dca8"
+    },
+    "extraIds": [],
+    "descripcion": "Cinzano 1757 Extra Dry es un vermut blanco seco de origen italiano, línea premium de Cinzano (nombre en referencia al año de fundación de la casa, 1757).",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Foster Caja de Madera x6 (Malbec y Bonarda)",
+    "bodega": "Foster",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 605000,
+    "stock": 0,
+    "ids": {
+      "aroma": "bdbe5198-6648-44d0-bd52-10b81a86aad5",
+      "lavid": "e0ff33e5-0c27-4d71-99b2-f5f3e2368592"
+    },
+    "extraIds": [],
+    "descripcion": "Estuche de madera con 6 botellas de la línea premium \"Firmado\" de Enrique Foster (combinación Malbec y Bonarda), bodega de Perdriel, Luján de Cuyo, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Lorca Caja de Madera x6 Inspirado (Blend, Cab.Cab, Cab.Franc)",
+    "bodega": "Lorca",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 605000,
+    "stock": 0,
+    "ids": {
+      "aroma": "04aaca8b-6a7e-4f9a-aa16-4584114e9a3f",
+      "lavid": "15e95447-a498-4b96-8251-ca8330807a5c"
+    },
+    "extraIds": [],
+    "descripcion": "Estuche de madera con 6 botellas de la línea \"Inspirado\" de Bodega Lorca, combinando corte, Cabernet Sauvignon y Cabernet Franc.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  }
+]

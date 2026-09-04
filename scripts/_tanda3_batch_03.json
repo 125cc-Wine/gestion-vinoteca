@@ -1,0 +1,382 @@
+[
+  {
+    "nombre": "Wild Africa Chocolate",
+    "bodega": null,
+    "varietal": "Licores",
+    "categoria": "Otro",
+    "precio": 26500,
+    "stock": 2,
+    "ids": {
+      "lavid": "58ba8ffd-6838-463c-bf78-edab298162b5",
+      "aroma": "0814f894-655d-4002-a37d-25910a4b058a"
+    },
+    "extraIds": [],
+    "descripcion": "Wild Africa Chocolate es un licor cremoso sabor chocolate, estilo crema de licor sudafricana.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Belladona Dry Gin Andina",
+    "bodega": null,
+    "varietal": "Gin",
+    "categoria": "Otro",
+    "precio": 50000,
+    "stock": 1,
+    "ids": {
+      "lavid": "d967e83f-87bf-4004-a214-13fb76eb1bc6",
+      "aroma": "decf969f-69f8-4387-92d6-250381f5f793"
+    },
+    "extraIds": [],
+    "descripcion": "Belladona es un gin artesanal argentino elaborado con botánicos andinos.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Pacheco Pereda Malbec",
+    "bodega": null,
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 2813,
+    "stock": 0,
+    "ids": {
+      "lavid": "cd143990-2a48-4490-876f-a2f42fe8bdc3",
+      "aroma": "0eba042c-7a18-46fd-9326-5ef0580c120f"
+    },
+    "extraIds": [],
+    "descripcion": "Pacheco Pereda Malbec es un vino tinto elaborado con uvas Malbec.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Los Bocheros Cabernet Sauvignon",
+    "bodega": "Los Bocheros",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 12500,
+    "stock": 0,
+    "ids": {
+      "lavid": "c8999fbc-97bc-4672-a3de-47a63da9969b",
+      "aroma": "1b1fcf07-0beb-4fe6-ac73-eaf0bb57eae1"
+    },
+    "extraIds": [],
+    "descripcion": "Los Bocheros Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Los Bocheros.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Conejo Verde Malbec Falasco",
+    "bodega": "Falasco Wines",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 5500,
+    "stock": 0,
+    "ids": {
+      "aroma": "090776a6-8f81-48d9-928e-21e092d09f5a",
+      "lavid": "3e9d45c8-39b6-400b-9c22-7e6d7ff6b863"
+    },
+    "extraIds": [],
+    "descripcion": "Conejo Verde Malbec es un vino tinto elaborado con uvas Malbec, de la línea \"Conejo\" de Falasco Family Wines, bodega mendocina.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": "Falasco Wines",
+    "extraTags": []
+  },
+  {
+    "nombre": "Il Caprone Malbec",
+    "bodega": "Bianchi",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 6400,
+    "stock": 0,
+    "ids": {
+      "aroma": "af15f81a-b550-49d2-b530-2046b225b392",
+      "lavid": "5acecf12-ec91-4504-b4f0-a24c8b375fd9"
+    },
+    "extraIds": [],
+    "descripcion": "Il Caprone Malbec es un vino tinto elaborado con uvas Malbec, producido por Bodegas Bianchi. Línea de entrada de Bodegas Bianchi, San Rafael, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Gsm Trapiche",
+    "bodega": "Trapiche",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 20000,
+    "stock": 0,
+    "ids": {
+      "aroma": "ad6a5061-c80b-4dcf-974e-979161935884",
+      "lavid": "4abccd15-b1e3-4305-8436-e7d76beeea23"
+    },
+    "extraIds": [],
+    "descripcion": "GSM Trapiche es un vino tinto de corte (blend), producido por Trapiche. Corte estilo GSM (Garnacha-Syrah-Mourvèdre) de Bodega Trapiche, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cuesta Del Madero Roble Malbec",
+    "bodega": "Cuesta Del Madero",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 1950,
+    "stock": 0,
+    "ids": {
+      "lavid": "994c10c4-dfa6-4542-b9c6-ba074eb26776",
+      "aroma": "628eabc5-7be1-40ab-8ae8-87478d459057"
+    },
+    "extraIds": [],
+    "descripcion": "Cuesta del Madero Roble Malbec es un vino tinto elaborado con uvas Malbec, producido por Cuesta del Madero. Paso por roble, línea de entrada de la bodega.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Wine Records Lata",
+    "bodega": "Vinos",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 1900,
+    "stock": 0,
+    "ids": {
+      "lavid": "c4bff59a-d03e-4043-a4c0-5ac077aae1bb",
+      "aroma": "f85e54a8-36f7-4db6-ab46-b4b894c90e8f"
+    },
+    "extraIds": [],
+    "descripcion": "Wine Records es un vino tinto en formato lata, práctico y de consumo individual.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Wild Africa Cream",
+    "bodega": null,
+    "varietal": "Licores",
+    "categoria": "Otro",
+    "precio": 26500,
+    "stock": 0,
+    "ids": {
+      "aroma": "7491ac62-2daa-4196-82ae-f0c67f600271",
+      "lavid": "dcb1bf07-db99-4039-8638-533eb53396d4"
+    },
+    "extraIds": [],
+    "descripcion": "Wild Africa Cream es un licor cremoso, estilo crema de licor sudafricana (similar a Amarula).",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Carpano",
+    "bodega": null,
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 9000,
+    "stock": 12,
+    "ids": {
+      "lavid": "b8abcfe2-2c52-4641-8a5f-8d56bc9e4dbe",
+      "aroma": "691b7961-4cb7-404b-afb3-a92c16d906c3"
+    },
+    "extraIds": [],
+    "descripcion": "Carpano Classico es el vermut rojo original de la casa Carpano (Turín, Italia), creadora del vermut moderno en 1786.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Altus Chardonnay Gualtallary Wines",
+    "bodega": "Gualtallary",
+    "varietal": "Chardonnay",
+    "categoria": "Blanco",
+    "precio": 15800,
+    "stock": 0,
+    "ids": {
+      "aroma": "4d5768c1-d613-4ce4-9d36-35fe4939d5a7",
+      "lavid": "e46ea04c-656f-4987-927d-87616ec118ca"
+    },
+    "extraIds": [],
+    "descripcion": "Altus Chardonnay es un vino blanco elaborado con uvas Chardonnay, producido por Gualtallary Wines. De viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Chardonnay",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Anis Shami",
+    "bodega": null,
+    "varietal": "Licores",
+    "categoria": "Otro",
+    "precio": 20000,
+    "stock": 1,
+    "ids": {
+      "aroma": "75d85ef1-5de8-4c83-ac81-235748ec14e4",
+      "lavid": "7d911e1f-e12c-44c3-82cf-9487630d5954"
+    },
+    "extraIds": [],
+    "descripcion": "Anís Shami es un licor de anís, tradicional en la coctelería y sobremesa argentina.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Evan Williams Black",
+    "bodega": "Evan Williams",
+    "varietal": "Whiskies",
+    "categoria": "Otro",
+    "precio": 61040,
+    "stock": 0,
+    "ids": {
+      "lavid": "c0ac07a2-d905-4a9f-8939-22a92c654090",
+      "aroma": "638b7744-501c-4d11-b753-74625ef7da36"
+    },
+    "extraIds": [],
+    "descripcion": "Evan Williams Black Label es un bourbon whiskey de Kentucky, EE.UU., de la destilería Heaven Hill.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Linea 581 Cabernet Sauvignon Staphyle",
+    "bodega": "Staphyle",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 9700,
+    "stock": 0,
+    "ids": {
+      "aroma": "003e214d-c886-4a7a-ad0c-de8d98842d67",
+      "lavid": "85c3a2da-7d02-47ff-be3c-67d24054b823"
+    },
+    "extraIds": [],
+    "descripcion": "Línea 581 Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Staphyle. Línea 581 de Bodega Staphyle.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Linea 581 Torrontes Staphyle",
+    "bodega": "Staphyle",
+    "varietal": "Torrontés",
+    "categoria": "Blanco",
+    "precio": 9700,
+    "stock": 0,
+    "ids": {
+      "lavid": "d654ac3a-4d04-4202-a1c2-ab2bf1276a27",
+      "aroma": "94fc210e-35da-4656-a466-287504624944"
+    },
+    "extraIds": [],
+    "descripcion": "Línea 581 Torrontés es un vino blanco elaborado con uvas Torrontés, producido por Staphyle. Línea 581 de Bodega Staphyle.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Torrontés",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Linea 581 Malbec Staphyle",
+    "bodega": "Staphyle",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 9700,
+    "stock": 0,
+    "ids": {
+      "lavid": "8693fab6-cd99-4643-ad8e-399a278e6cec",
+      "aroma": "4db17da6-3837-44b3-baa0-374e2421fb22"
+    },
+    "extraIds": [],
+    "descripcion": "Línea 581 Malbec es un vino tinto elaborado con uvas Malbec, producido por Staphyle. Línea 581 de Bodega Staphyle.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Argento Reserve Malbec",
+    "bodega": "Argento",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 9600,
+    "stock": 0,
+    "ids": {
+      "aroma": "58797bb9-2287-489c-9da7-1091cc22033f",
+      "lavid": "0498a73d-f63f-4e2d-82f5-47e32def17e4"
+    },
+    "extraIds": [],
+    "descripcion": "Argento Reserve Malbec es un vino tinto elaborado con uvas Malbec, producido por Argento. Bodega Argento, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Antonieta Rose de Pinot Noir",
+    "bodega": "Falasco Wines",
+    "varietal": "Pinot Noir",
+    "categoria": "Rosado",
+    "precio": 25900,
+    "stock": 0,
+    "ids": {
+      "aroma": "fd216612-7a9b-4e18-b7bc-4e1071398f67",
+      "lavid": "6e0de8a9-be6a-410c-ae07-0139d6a729ed"
+    },
+    "extraIds": [],
+    "descripcion": "Antonieta Rosé de Pinot Noir es un vino rosado elaborado con uvas Pinot Noir, producido por Falasco Family Wines. Falasco Family Wines, bodega mendocina.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": "Falasco Wines",
+    "extraTags": []
+  },
+  {
+    "nombre": "Argento Artesano Malbec Orgánico",
+    "bodega": "Argento",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 11000,
+    "stock": 0,
+    "ids": {
+      "aroma": "649cef66-9806-418c-854a-dfd0cbfab120",
+      "lavid": "303ee9ac-894c-442c-b681-405493d39d30"
+    },
+    "extraIds": [],
+    "descripcion": "Argento Artesano Malbec Orgánico es un vino tinto elaborado con uvas Malbec, producido por Argento. Línea Artesano de Argento, elaborado con uvas de cultivo orgánico certificado.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  }
+]

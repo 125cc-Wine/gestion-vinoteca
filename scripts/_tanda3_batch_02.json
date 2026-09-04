@@ -1,0 +1,382 @@
+[
+  {
+    "nombre": "Iaccarini Via Blanca Terroir Selec. C Suavign",
+    "bodega": "Iaccarini",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 15000,
+    "stock": 0,
+    "ids": {
+      "aroma": "dc130254-79d4-46c4-a912-94fdf0bdbd20",
+      "lavid": "a572a87b-827a-467a-ac0d-404da63ef017"
+    },
+    "extraIds": [],
+    "descripcion": "Iaccarini Via Blanca Terroir Selección Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Iaccarini. Línea Terroir Selección de Via Blanca, Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca White Blend",
+    "bodega": "Iaccarini",
+    "varietal": "Blend",
+    "categoria": "Blanco",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "lavid": "b286bcd1-076d-4d20-897c-a9abe4ebd217",
+      "aroma": "a21af57f-3b00-4c88-8edf-17e136bba612"
+    },
+    "extraIds": [],
+    "descripcion": "Iaccarini Via Blanca White Blend es un vino blanco de corte (blend), producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini, corte de blancas.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Terroir Selec. Malbec",
+    "bodega": "Iaccarini",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 15000,
+    "stock": 0,
+    "ids": {
+      "aroma": "4f71f26d-53bc-414d-9f97-c8ae6e8624ff",
+      "lavid": "627d99c4-3653-4111-8b8a-66d9113565c8"
+    },
+    "extraIds": [],
+    "descripcion": "Iaccarini Via Blanca Terroir Selección Malbec es un vino tinto elaborado con uvas Malbec, producido por Iaccarini. Línea Terroir Selección de Via Blanca, Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Terroir Selection Chenin",
+    "bodega": "Iaccarini",
+    "varietal": "Chenin Blanc",
+    "categoria": "Blanco",
+    "precio": 15000,
+    "stock": 0,
+    "ids": {
+      "aroma": "1d5a5516-995c-419a-9a2b-5c7dc11f7bb9",
+      "lavid": "2f1a1e5b-6793-4902-99dc-2ebf518c13e3"
+    },
+    "extraIds": [],
+    "descripcion": "Iaccarini Via Blanca Terroir Selection Chenin es un vino blanco elaborado con uvas Chenin Blanc, producido por Iaccarini. Línea Terroir Selección de Via Blanca, Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": "Blanco",
+    "fixSupabaseVarietal": "Chenin Blanc",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Martini Rosso",
+    "bodega": "Martini",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 10360,
+    "stock": 0,
+    "ids": {
+      "lavid": "5f64043e-0130-4a17-8aaa-75d067c229b3",
+      "aroma": "f9f76334-3423-40cb-9a88-31eb9867bb44"
+    },
+    "extraIds": [],
+    "descripcion": "Martini Rosso es un vermut rojo dulce de origen italiano, uno de los más reconocidos del mundo, elaborado con vino aromatizado con hierbas y especias.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Martini Extra Dry",
+    "bodega": "Martini",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 14462,
+    "stock": 0,
+    "ids": {
+      "aroma": "58959857-b5bb-4a17-bac6-1adf81c54421",
+      "lavid": "030335b3-b803-4d6b-aac4-d1753e3e5f8a"
+    },
+    "extraIds": [],
+    "descripcion": "Martini Extra Dry es un vermut blanco seco de origen italiano, ideal para cócteles clásicos como el martini seco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Altus Merlot Gualtallary",
+    "bodega": "Gualtallary",
+    "varietal": "Merlot",
+    "categoria": "Tinto",
+    "precio": 11000,
+    "stock": 0,
+    "ids": {
+      "lavid": "49f2dbf6-fe2c-49e8-8542-09d6463bd055",
+      "aroma": "8fe8a6cd-05fd-4399-97d0-3a563dd54e24"
+    },
+    "extraIds": [],
+    "descripcion": "Altus Merlot es un vino tinto elaborado con uvas Merlot, producido por Gualtallary Wines. De viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "J&B 750 Cc",
+    "bodega": null,
+    "varietal": "Whiskies",
+    "categoria": "Otro",
+    "precio": 30800,
+    "stock": 0,
+    "ids": {
+      "aroma": "86c2422a-cd6a-4ed2-9f0e-db83edf1c8b6",
+      "lavid": "c22de7f8-a722-44d7-a767-73decbdf9606"
+    },
+    "extraIds": [],
+    "descripcion": "J&B Rare es un whisky escocés blended, de Justerini & Brooks, marca fundada en Londres en 1749.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Grants Litro",
+    "bodega": null,
+    "varietal": "Whiskies",
+    "categoria": "Otro",
+    "precio": 40000,
+    "stock": 0,
+    "ids": {
+      "aroma": "9726faed-eff6-4237-a0fc-b276e40d9467",
+      "lavid": "b20d9341-fa5b-42f9-ad8e-057b7e750b39"
+    },
+    "extraIds": [],
+    "descripcion": "Grant's es un whisky escocés blended de la casa William Grant & Sons, en botella de 1 litro.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Branca Menta 750",
+    "bodega": "Branca",
+    "varietal": "Fernet",
+    "categoria": "Otro",
+    "precio": 14500,
+    "stock": 4,
+    "ids": {
+      "aroma": "e0ceb47d-9ceb-46b7-ac03-dd19e1519ecd",
+      "lavid": "8b020b9d-408e-48d1-b12c-ae7e7390bb09"
+    },
+    "extraIds": [],
+    "descripcion": "Branca Menta es un licor amargo con menta de Fratelli Branca Distillerie (Milán, Italia), variante del clásico Fernet Branca, muy popular en Argentina.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Punt E Mes",
+    "bodega": null,
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 11683,
+    "stock": 12,
+    "ids": {
+      "lavid": "6c0a3800-6591-4c55-bc9c-c69f01a872f4",
+      "aroma": "1fc6b4c3-6696-4451-9419-e1be3d9a8779"
+    },
+    "extraIds": [],
+    "descripcion": "Punt e Mes es un vermut rojo con mayor amargor, de la casa Carpano (Turín, Italia), creadora del vermut moderno en 1786.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Borghetti",
+    "bodega": null,
+    "varietal": "Licores",
+    "categoria": "Otro",
+    "precio": 23310,
+    "stock": 0,
+    "ids": {
+      "aroma": "04774482-6414-4e03-909f-478d78deda5b",
+      "lavid": "bb2f60ab-89ae-471d-afe1-baf2b14757bd"
+    },
+    "extraIds": [],
+    "descripcion": "Caffè Borghetti es un licor de café italiano, elaborado con café espresso, de la casa Borghetti (Módena, Italia).",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cinzano Rosso",
+    "bodega": "Cinzano",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 8500,
+    "stock": 0,
+    "ids": {
+      "lavid": "fe42c734-3abe-4e23-b3c5-40f2dbbd613b",
+      "aroma": "3a4d90f8-0610-4ebd-b797-d616fe8fb88c"
+    },
+    "extraIds": [],
+    "descripcion": "Cinzano Rosso es un vermut rojo dulce de origen italiano (Turín), elaborado con vino aromatizado con hierbas y especias.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Altus Extra Brut Gualtallary",
+    "bodega": "Gualtallary",
+    "varietal": "Extra Brut",
+    "categoria": "Espumante",
+    "precio": 17400,
+    "stock": 0,
+    "ids": {
+      "lavid": "86f1645d-f180-488d-bd79-c2943374e063",
+      "aroma": "4d66369b-fb37-439b-9c72-e218f5687b70"
+    },
+    "extraIds": [],
+    "descripcion": "Altus Extra Brut es un vino espumante, producido por Gualtallary Wines. Espumante de la línea Altus, de viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Altus Grand Vin Gualtallary",
+    "bodega": "Gualtallary",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 29300,
+    "stock": 0,
+    "ids": {
+      "aroma": "c3af0e9f-8a78-4c6f-abfd-fee5261740dd",
+      "lavid": "68c5dc12-3464-44d7-aab6-cb0c5c048956"
+    },
+    "extraIds": [],
+    "descripcion": "Altus Grand Vin es un vino tinto de corte (blend), producido por Gualtallary Wines. Línea tope de gama de Altus, de viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cinzano 1757 Rosso",
+    "bodega": "Cinzano",
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 15000,
+    "stock": 0,
+    "ids": {
+      "lavid": "320f294b-7be9-4c0e-ab9d-7c6a49cf5fce",
+      "aroma": "53921b9e-b1e1-458e-a0c2-9bc31457654e"
+    },
+    "extraIds": [],
+    "descripcion": "Cinzano 1757 Rosso es un vermut rojo dulce de origen italiano, línea premium de Cinzano (nombre en referencia al año de fundación de la casa, 1757).",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Acordeón Malbec",
+    "bodega": "Finca Ferrer",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 9600,
+    "stock": 8,
+    "ids": {
+      "lavid": "d8bfb70f-a8d8-4686-a13a-0a84709aacbb",
+      "aroma": "78ab7ebd-90eb-4bb4-89fb-163bfb701bba"
+    },
+    "extraIds": [],
+    "descripcion": "Acordeón Malbec es un vino tinto elaborado con uvas Malbec, producido por Finca Ferrer. Línea Acordeón de Finca Ferrer.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cara Sucia Sangiovese",
+    "bodega": null,
+    "varietal": "Sangiovese",
+    "categoria": "Tinto",
+    "precio": 19100,
+    "stock": 0,
+    "ids": {
+      "aroma": "b9aa66f5-71a7-4f30-86a3-0d4448fe8eb4",
+      "lavid": "c7844197-4652-4937-ab33-79fff1739ef4"
+    },
+    "extraIds": [],
+    "descripcion": "Cara Sucia Sangiovese es un vino tinto elaborado con uvas Sangiovese.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cara Sucia Nebbiolo",
+    "bodega": null,
+    "varietal": "Nebbiolo",
+    "categoria": "Tinto",
+    "precio": 19100,
+    "stock": 0,
+    "ids": {
+      "aroma": "49ee9825-661c-4972-a396-41ac75cbfc7a",
+      "lavid": "b1b45814-61c8-453d-8556-4fb72b53b801"
+    },
+    "extraIds": [],
+    "descripcion": "Cara Sucia Nebbiolo es un vino tinto elaborado con uvas Nebbiolo.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Nebbiolo",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Acordeón Cabernet Sauvignon",
+    "bodega": "Finca Ferrer",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 9600,
+    "stock": 0,
+    "ids": {
+      "lavid": "b6919a16-59b5-4998-a37b-000dfced02bb",
+      "aroma": "9bfe38a4-9f0f-4ced-8190-7cc5c24d809c"
+    },
+    "extraIds": [],
+    "descripcion": "Acordeón Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Finca Ferrer. Línea Acordeón de Finca Ferrer.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  }
+]

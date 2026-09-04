@@ -1,0 +1,349 @@
+[
+  {
+    "nombre": "Monte Quieto Alegre Blend",
+    "bodega": "Monte Quieto",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 29200,
+    "stock": 0,
+    "ids": {
+      "aroma": "3c203460-a692-499e-81ba-7e7eae44635d",
+      "lavid": "e444ff76-2dc6-4492-8543-20bf4bef45d9"
+    },
+    "extraIds": [],
+    "descripcion": "Monte Quieto Alegre Blend es un vino tinto de corte (blend), producido por Monte Quieto. Línea Alegre de Bodega Monte Quieto.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Latente Cs-Cf",
+    "bodega": "Cuarto Surco",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 10900,
+    "stock": 0,
+    "ids": {
+      "aroma": "7663992a-904e-4fc3-8471-94418d59e4ec",
+      "lavid": "ee75c009-28f7-4e0e-b202-636d224ca991"
+    },
+    "extraIds": [],
+    "descripcion": "Latente Cabernet Sauvignon - Cabernet Franc es un corte tinto de Bodega Cuarto Surco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Latente Cs-Mal",
+    "bodega": "Cuarto Surco",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 10900,
+    "stock": 0,
+    "ids": {
+      "aroma": "fada67f8-bc3e-4c6d-81ac-abf352da4b6a",
+      "lavid": "67e6ccb4-96b3-45bc-be41-cce123928819"
+    },
+    "extraIds": [],
+    "descripcion": "Latente Cabernet Sauvignon - Malbec es un corte tinto de Bodega Cuarto Surco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Tipo Malbec Opend Mind",
+    "bodega": "Vinos",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 8500,
+    "stock": 0,
+    "ids": {
+      "aroma": "1955e3a8-ad78-4af8-95b5-7b86e5b77600",
+      "lavid": "290a3b55-4744-467f-a471-59668a4156c1"
+    },
+    "extraIds": [],
+    "descripcion": "Open Mind Malbec es un vino tinto elaborado con uvas Malbec.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Alta-Yarí Gran Corte",
+    "bodega": "Alta-Yarí",
+    "varietal": "Blend",
+    "categoria": "Tinto",
+    "precio": 41600,
+    "stock": 0,
+    "ids": {
+      "lavid": "54eebbab-bdde-4394-959c-09eb76e3eb41",
+      "aroma": "8474f494-9e61-4427-a199-bb5e925315d2"
+    },
+    "extraIds": [],
+    "descripcion": "Alta-Yarí Gran Corte es un vino tinto de corte (blend), producido por Alta-Yarí. Línea Gran de Bodega Alta-Yarí.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Blend",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Flor de Manzano Dulce 710",
+    "bodega": null,
+    "varietal": "Sidra",
+    "categoria": "Espumante",
+    "precio": 7500,
+    "stock": 0,
+    "ids": {
+      "lavid": "b706091f-718c-4117-a996-0f231e510cf2",
+      "aroma": "56bcdb27-f1c2-47c0-9e9d-2dad120d14af"
+    },
+    "extraIds": [],
+    "descripcion": "Flor de Manzano Dulce es una sidra de manzana de estilo dulce, en botella de 710cc.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Alta-Yarí Gran Torrontes",
+    "bodega": "Alta-Yarí",
+    "varietal": "Torrontés",
+    "categoria": "Blanco",
+    "precio": 41600,
+    "stock": 0,
+    "ids": {
+      "lavid": "150f280f-d3e2-41f7-a474-e64a1361edc8",
+      "aroma": "0ca5d928-3530-4d8c-b182-24cfb93361bd"
+    },
+    "extraIds": [],
+    "descripcion": "Alta-Yarí Gran Torrontés es un vino blanco elaborado con uvas Torrontés, producido por Alta-Yarí. Línea Gran de Bodega Alta-Yarí.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Torrontés",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Alta-Yarí Reserva Malbec",
+    "bodega": "Alta-Yarí",
+    "varietal": "Malbec",
+    "categoria": "Tinto",
+    "precio": 10500,
+    "stock": 0,
+    "ids": {
+      "aroma": "10836ce2-52a1-40bd-bcbc-f693c44243c4",
+      "lavid": "ac2b483a-e98e-4348-a824-f9f7b2d2a50f"
+    },
+    "extraIds": [],
+    "descripcion": "Alta-Yarí Reserva Malbec es un vino tinto elaborado con uvas Malbec, producido por Alta-Yarí. Línea Reserva de Bodega Alta-Yarí.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Malbec",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Alta-Yarí Reserva Cabernet Sauvignon",
+    "bodega": "Alta-Yarí",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 10500,
+    "stock": 0,
+    "ids": {
+      "aroma": "5bc4f526-353f-4197-a142-c01f842ca95c",
+      "lavid": "78f66692-db63-4c9f-8ee1-35b3718ec17e"
+    },
+    "extraIds": [],
+    "descripcion": "Alta-Yarí Reserva Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Alta-Yarí. Línea Reserva de Bodega Alta-Yarí.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Cabernet Sauvignon",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Crios Torrontes Susana Balbo",
+    "bodega": "Susana Balbo",
+    "varietal": "Torrontes",
+    "categoria": "Blanco",
+    "precio": 12490,
+    "stock": 0,
+    "ids": {
+      "aroma": "af159f0f-1baa-4645-b412-95ba1545fd86",
+      "lavid": "8fd7975f-cac5-4a41-a601-50ade6ba0d68"
+    },
+    "extraIds": [],
+    "descripcion": "Crios Torrontés es un vino blanco elaborado con uvas Torrontés, producido por Susana Balbo Wines. Línea Crios de Susana Balbo Wines, Valle de Uco/Agrelo, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Cruzat Ratafia Chardonnay Est",
+    "bodega": "Cruzat",
+    "varietal": "Chardonnay",
+    "categoria": "Espumante",
+    "precio": 45000,
+    "stock": 0,
+    "ids": {
+      "aroma": "4853496a-5875-48e6-aebe-ac722593350d",
+      "lavid": "057eb088-3b0e-462a-b73e-87692d208444"
+    },
+    "extraIds": [],
+    "descripcion": "Cruzat Ratafia Chardonnay es un vino generoso/aperitivo espumoso elaborado con Chardonnay, de Bodega Cruzat, especialista mendocina en espumantes por método tradicional.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": "Chardonnay",
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Iaccarini Via Blanca Cab. Sauvignon",
+    "bodega": "Iaccarini",
+    "varietal": "Cabernet Sauvignon",
+    "categoria": "Tinto",
+    "precio": 11700,
+    "stock": 0,
+    "ids": {
+      "lavid": "9f3f3a61-45e7-4034-8fa3-5c69cfcad8a7",
+      "aroma": "c829b57b-c073-4aa8-abd3-7ce10bd8e1e7"
+    },
+    "extraIds": [
+      {
+        "lavid": "11c96469-a0a1-4806-a105-67cda9b0d84b",
+        "aroma": "c7b0e6c1-497b-4fb9-b287-4486247b8e34"
+      }
+    ],
+    "descripcion": "Iaccarini Via Blanca Cabernet Sauvignon es un vino tinto elaborado con uvas Cabernet Sauvignon, producido por Iaccarini. Línea Via Blanca de Bodega Iaccarini.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Acordeón Chardonnay",
+    "bodega": "Finca Ferrer",
+    "varietal": "Chardonnay",
+    "categoria": "Blanco",
+    "precio": 9600,
+    "stock": 0,
+    "ids": {
+      "lavid": "e0c37643-3c9f-4c9a-9b6a-649a6a16b682",
+      "aroma": "daed1ece-a5a3-403e-955f-3ef002ee9a16"
+    },
+    "extraIds": [],
+    "descripcion": "Acordeón Chardonnay es un vino blanco elaborado con uvas Chardonnay, producido por Finca Ferrer. Línea Acordeón de Finca Ferrer.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Diavolezza Montesina",
+    "bodega": "Vinos",
+    "varietal": "Pisco",
+    "categoria": "Otro",
+    "precio": 50000,
+    "stock": 3,
+    "ids": {
+      "aroma": "add51400-8af5-4813-9ad1-fe8c336fbf84",
+      "lavid": "bbea8611-ecd7-4b69-acbb-2ff64396d6f8"
+    },
+    "extraIds": [],
+    "descripcion": "Diavolezza es un pisco (aguardiente de uva) de Montesina.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Abito Rose",
+    "bodega": "Abito",
+    "varietal": "Merlot",
+    "categoria": "Rosado",
+    "precio": 9000,
+    "stock": 0,
+    "ids": {
+      "aroma": "a03f94d4-4dea-45d4-8c98-d0d2ee0a53a9",
+      "lavid": "3f32a07d-c0ff-4deb-84d8-14bf914988a5"
+    },
+    "extraIds": [],
+    "descripcion": "Abito Rosé es un vino rosado elaborado con uvas Merlot, producido por Abito.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Gualtallary Chardonnay",
+    "bodega": "Gualtallary",
+    "varietal": "Chardonnay",
+    "categoria": "Blanco",
+    "precio": 15800,
+    "stock": 0,
+    "ids": {
+      "aroma": "9c924d1d-5023-46c8-b571-ac508a647c65",
+      "lavid": "d9775991-838b-4aa0-8ff6-5234d3e4f2c0"
+    },
+    "extraIds": [],
+    "descripcion": "Gualtallary Chardonnay es un vino blanco elaborado con uvas Chardonnay, producido por Gualtallary Wines. De viñedos en Gualtallary, Valle de Uco.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Il Caprone Rose",
+    "bodega": "Bianchi",
+    "varietal": "Malbec",
+    "categoria": "Rosado",
+    "precio": 6000,
+    "stock": 0,
+    "ids": {
+      "aroma": "ca5af1f9-5ba2-424d-a796-caca36b47706",
+      "lavid": "7a7d2455-6634-4bcd-b755-3bc886629794"
+    },
+    "extraIds": [],
+    "descripcion": "Il Caprone Rosé es un vino rosado elaborado con uvas Malbec, producido por Bodegas Bianchi. Línea de entrada de Bodegas Bianchi, San Rafael, Mendoza.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  },
+  {
+    "nombre": "Tempestad Vermouth",
+    "bodega": null,
+    "varietal": "Aperitivos",
+    "categoria": "Otro",
+    "precio": 19500,
+    "stock": 0,
+    "ids": {
+      "aroma": "d6da8349-1506-402b-b72a-82ad9ae21475",
+      "lavid": "4b60cc61-4e0b-4fc2-a1f3-d60c39fa48a3"
+    },
+    "extraIds": [],
+    "descripcion": "Tempestad es un vermut argentino, vino aromatizado con hierbas y especias.",
+    "imagen": null,
+    "fixSupabaseCategoria": null,
+    "fixSupabaseVarietal": null,
+    "fixSupabaseBodega": null,
+    "extraTags": []
+  }
+]
