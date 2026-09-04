@@ -1866,6 +1866,11 @@ export default function VentasPage() {
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <input type="number" step="any" min="0" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'right' }} value={item.precio_unitario || ''} onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
+                          {(item.descuento || 0) > 0 && (
+                            <div style={{ fontSize: 10, color: C.red, textAlign: 'right', marginTop: 2, whiteSpace: 'nowrap' }}>
+                              ${(item.precio_unitario * (1 - item.descuento / 100)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} c/u
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '6px 4px' }}>
                           <input type="number" min="0" max="100" className="vinp" style={{ ...INP, fontSize: 12, padding: '4px 6px', textAlign: 'center' }} value={item.descuento || ''} onChange={e => updateItem(idx, 'descuento', parseFloat(e.target.value) || 0)} />
