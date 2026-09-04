@@ -27,21 +27,47 @@ function waLink(telefono: string | null | undefined, texto: string): string | nu
 
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
+  // "ids" (plural, coma-separados): un cobro genérico de cuenta corriente
+  // puede repartirse contra varios comprobantes a la vez (ver /api/cta-cte),
+  // y cada aplicación queda como su propio movimiento en la tabla (para que
+  // cada uno netee contra su cargo correspondiente). El recibo tiene que
+  // sumarlos todos — mostrar solo el primero subfacturaría el pago real.
+  const idsParam = req.nextUrl.searchParams.get('ids')
+  const ids = idsParam ? idsParam.split(',').map(s => s.trim()).filter(Boolean) : (id ? [id] : [])
   const empresaKey = req.nextUrl.searchParams.get('empresa') || 'aroma'
   const medio = req.nextUrl.searchParams.get('medio') || ''
 
-  if (!id) {
+  if (ids.length === 0) {
     return new Response(errorHtml('Falta el parámetro id.'), { status: 400, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
   }
 
-  const { data: mov, error } = await supabase
+  const { data: movs, error } = await supabase
     .from('movimientos_cta_cte')
     .select('*')
-    .eq('id', id)
-    .single()
+    .in('id', ids)
+    .order('created_at', { ascending: true })
 
-  if (error || !mov) {
-    return new Response(errorHtml(`No se encontró el movimiento con id ${esc(id)}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  if (error || !movs || movs.length === 0) {
+    return new Response(errorHtml(`No se encontró el movimiento con id ${esc(ids.join(','))}.`), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  }
+
+  // Combinar todas las filas en un único "mov" para el resto del template:
+  // monto = suma de lo cobrado en total, saldo_nuevo = el de la última fila
+  // (el saldo real del cliente tras aplicar todo), concepto = el texto base
+  // (sin el "(aplicado a ...)" de cada fila individual) + el detalle de a
+  // qué comprobantes se aplicó cada parte, reconstruido desde cada fila.
+  const conceptoBaseRaw = (movs[0].concepto || '').replace(/ \(aplicado a .*?\)$/, '').replace(/ — Sin comprobantes.*$/, '')
+  const detalles = movs
+    .map(m => {
+      const match = (m.concepto || '').match(/\(aplicado a (.*?)\)$/)
+      return match ? `${match[1]}: $${(m.monto ?? 0).toLocaleString('es-AR')}` : null
+    })
+    .filter((s): s is string => !!s)
+  const mov = {
+    ...movs[0],
+    monto: movs.reduce((a, m) => a + (m.monto || 0), 0),
+    saldo_nuevo: movs[movs.length - 1].saldo_nuevo,
+    concepto: detalles.length > 0 ? `${conceptoBaseRaw} — Aplicado a: ${detalles.join(', ')}` : conceptoBaseRaw,
   }
 
   let cliente: { nombre?: string; apellido?: string; razon_social?: string; cuit?: string; telefono?: string } | null = null

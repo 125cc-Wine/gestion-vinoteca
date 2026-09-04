@@ -296,7 +296,7 @@ export default function AgingPage() {
       setDetalleVentas(await cargarVentasPendientes(modalCliente))
       setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
       load(empresa)
-      if (data.id && wRecibo) wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=${encodeURIComponent(medioGlobal)}`
+      if (data.ids?.length && wRecibo) wRecibo.location.href = `/api/print/recibo?ids=${data.ids.join(',')}&empresa=${empresa}&medio=${encodeURIComponent(medioGlobal)}`
       else wRecibo?.close()
     } finally {
       setCobrandoGlobal(false)
@@ -378,9 +378,11 @@ export default function AgingPage() {
       setModalCliente(prev => prev ? { ...prev, saldo_total: Math.max(0, prev.saldo_total - monto) } : prev)
       load(empresa)
       setPagoModal(null)
-      const reciboId = esCargo ? data.id : data.movimiento_cta_cte_id
-      if (reciboId && wRecibo) {
-        wRecibo.location.href = `/api/print/recibo?id=${reciboId}&empresa=${empresa}&medio=${encodeURIComponent(pagoMedioPago)}`
+      const reciboQuery = esCargo
+        ? (data.ids?.length ? `ids=${data.ids.join(',')}` : '')
+        : (data.movimiento_cta_cte_id ? `id=${data.movimiento_cta_cte_id}` : '')
+      if (reciboQuery && wRecibo) {
+        wRecibo.location.href = `/api/print/recibo?${reciboQuery}&empresa=${empresa}&medio=${encodeURIComponent(pagoMedioPago)}`
       } else {
         // El cobro se registró igual, pero si la venta no tiene cliente
         // asignado no hay a quién descontarle saldo en cta. cte., así que no

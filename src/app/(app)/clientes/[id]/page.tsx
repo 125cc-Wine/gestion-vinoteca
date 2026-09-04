@@ -300,8 +300,8 @@ export default function ClienteFichaPage() {
     cargarMovimientos()
     // Recibo de pago — con el medio de pago principal (si se dividió en 2, se
     // muestra el primero; el detalle completo queda igual en el historial).
-    if (data.id && wRecibo) {
-      wRecibo.location.href = `/api/print/recibo?id=${data.id}&empresa=${empresa}&medio=${encodeURIComponent(cobroMedioPago)}`
+    if (data.ids?.length && wRecibo) {
+      wRecibo.location.href = `/api/print/recibo?ids=${data.ids.join(',')}&empresa=${empresa}&medio=${encodeURIComponent(cobroMedioPago)}`
     } else {
       wRecibo?.close()
     }

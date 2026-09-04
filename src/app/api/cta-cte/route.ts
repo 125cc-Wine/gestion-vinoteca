@@ -65,7 +65,15 @@ export async function POST(req: NextRequest) {
   // el concepto a qué comprobantes se aplicó — si no, el recibo del cliente
   // no decía más que "Cobro cuenta corriente" sin ninguna referencia a qué
   // factura/presupuesto correspondía.
-  const detalleAplicado: string[] = []
+  // Un item por cada comprobante puntual al que se le aplicó algo del cobro
+  // — cada uno se inserta como su PROPIO movimiento en cta_cte con
+  // referencia_id = item.id (antes se guardaba todo en un único movimiento
+  // sin referencia, que nunca neteaba contra el cargo original: la fila de
+  // "Cuenta Corriente" del cliente agrupa cargo+cobro por referencia_id, así
+  // que un cobro genérico sin referencia dejaba el cargo mostrándose con el
+  // TOTAL completo sin descontar aunque ya estuviera 94%/99% pagado por
+  // detrás — bug real reportado con Asociasione Regionale Marchigiana).
+  const aplicados: { referencia_id: string; monto: number; label: string; cubreTotal: boolean }[] = []
   let sobrante = 0
 
   if (tipo === 'cobro' && monto > 0) {
@@ -143,39 +151,77 @@ export async function POST(req: NextRequest) {
           referencia_id: item.id,
         }])
 
-        detalleAplicado.push(`${item.label}${cubreTotal ? '' : ' (parcial)'}: $${aplicar.toLocaleString('es-AR')}`)
+        aplicados.push({ referencia_id: item.id, monto: aplicar, label: item.label, cubreTotal })
         restanteSplit = parseFloat((restanteSplit - aplicar).toFixed(2))
       }
       if (restanteSplit > 0) sobrante += restanteSplit
     }
   }
 
-  let conceptoFinal = concepto || (tipo === 'cargo' ? 'Cargo' : 'Cobro cuenta corriente')
-  if (tipo === 'cobro' && detalleAplicado.length > 0) {
-    conceptoFinal += ` — Aplicado a: ${detalleAplicado.join(', ')}`
-  } else if (tipo === 'cobro' && sobrante > 0.01) {
-    conceptoFinal += ' — Sin comprobantes abiertos, quedó como saldo a favor'
-  }
+  const conceptoBase = concepto || (tipo === 'cargo' ? 'Cargo' : 'Cobro cuenta corriente')
 
-  // Registrar movimiento
   // "fecha" (la que elige el usuario en "Cargar deuda" / "Registrar cobro")
   // se recibía pero nunca se guardaba — el movimiento quedaba con
   // created_at = ahora sin importar qué fecha se hubiera puesto, así que
   // una deuda vieja cargada hoy aparecía como "0 días" en Aging/Cta. Cte. en
   // vez de con su antigüedad real.
-  const { data, error } = await supabase
-    .from('movimientos_cta_cte')
-    .insert([{
-      cliente_id, tipo, monto, concepto: conceptoFinal, empresa,
-      saldo_anterior: saldoAnterior,
-      saldo_nuevo: saldoNuevo,
-      referencia_id: referencia_id || null,
-      ...(fecha ? { created_at: fecha + 'T12:00:00' } : {}),
-    }])
-    .select()
-    .single()
+  const createdAtOverride = fecha ? { created_at: fecha + 'T12:00:00' } : {}
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  let rows: { id: string; monto: number; concepto: string; referencia_id: string | null }[] = []
+
+  if (tipo === 'cobro' && (aplicados.length > 0 || sobrante > 0.01)) {
+    // Un movimiento POR CADA comprobante saldado (con su referencia_id, para
+    // que la fila de Cuenta Corriente lo netee contra el cargo original) más,
+    // si sobró algo sin aplicar, un movimiento aparte sin referencia (saldo a
+    // favor genérico). El saldo del cliente se reparte proporcionalmente
+    // entre estos movimientos para que la columna "Saldo" de Cuenta
+    // Corriente, que se arma sumando el neto de cada fila en orden, seguga
+    // dando el saldo real del cliente en todo momento — no solo al final.
+    let saldoRunning = saldoAnterior
+    const inserts: Record<string, unknown>[] = []
+    for (const a of aplicados) {
+      const saldoAntes = saldoRunning
+      saldoRunning = parseFloat((saldoRunning - a.monto).toFixed(2))
+      inserts.push({
+        cliente_id, tipo, monto: a.monto, empresa,
+        concepto: `${conceptoBase} (aplicado a ${a.label}${a.cubreTotal ? '' : ', parcial'})`,
+        saldo_anterior: saldoAntes, saldo_nuevo: saldoRunning,
+        referencia_id: a.referencia_id,
+        ...createdAtOverride,
+      })
+    }
+    if (sobrante > 0.01) {
+      const saldoAntes = saldoRunning
+      saldoRunning = parseFloat((saldoRunning - sobrante).toFixed(2))
+      inserts.push({
+        cliente_id, tipo, monto: sobrante, empresa,
+        concepto: `${conceptoBase} — Sin comprobantes abiertos, quedó como saldo a favor`,
+        saldo_anterior: saldoAntes, saldo_nuevo: saldoRunning,
+        referencia_id: null,
+        ...createdAtOverride,
+      })
+    }
+    const { data, error } = await supabase.from('movimientos_cta_cte').insert(inserts).select()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    rows = data
+  } else {
+    // Cargo, o cobro sin nada que aplicar (no debería pasar ya que sobrante
+    // ya cubre ese caso, pero se deja como red de contención): un solo
+    // movimiento como antes.
+    const { data, error } = await supabase
+      .from('movimientos_cta_cte')
+      .insert([{
+        cliente_id, tipo, monto, concepto: conceptoBase, empresa,
+        saldo_anterior: saldoAnterior,
+        saldo_nuevo: saldoNuevo,
+        referencia_id: referencia_id || null,
+        ...createdAtOverride,
+      }])
+      .select()
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    rows = [data]
+  }
 
   // Actualizar saldo del cliente
   await supabase
@@ -183,7 +229,11 @@ export async function POST(req: NextRequest) {
     .update({ saldo: saldoNuevo })
     .eq('id', cliente_id)
 
-  return NextResponse.json({ ...data, saldo_nuevo: saldoNuevo })
+  // "id" se mantiene por compatibilidad (algún llamador viejo podría seguir
+  // leyéndolo), pero el recibo ahora debe pedirse con "ids" (todas las filas)
+  // para que muestre el monto total cobrado, no solo lo aplicado al primer
+  // comprobante.
+  return NextResponse.json({ ...rows[0], ids: rows.map(r => r.id), saldo_nuevo: saldoNuevo })
 }
 
 const ANULADO_PREFIX = '[ANULADO] '
