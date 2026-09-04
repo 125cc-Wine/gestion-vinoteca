@@ -293,5 +293,405 @@
       "lavid:15e95447-a498-4b96-8251-ca8330807a5c:ok"
     ],
     "fecha": "2026-09-04T16:39:35.252Z"
+  },
+  "Iaccarini Via Blanca Terroir Selec. C Suavign": {
+    "status": "creado",
+    "woo_id": 12493,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:dc130254-79d4-46c4-a912-94fdf0bdbd20:ok",
+      "lavid:a572a87b-827a-467a-ac0d-404da63ef017:ok"
+    ],
+    "fecha": "2026-09-04T16:40:02.878Z"
+  },
+  "Iaccarini Via Blanca White Blend": {
+    "status": "creado",
+    "woo_id": 12494,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:a21af57f-3b00-4c88-8edf-17e136bba612:ok",
+      "lavid:b286bcd1-076d-4d20-897c-a9abe4ebd217:ok"
+    ],
+    "fecha": "2026-09-04T16:40:04.444Z"
+  },
+  "Iaccarini Via Blanca Terroir Selec. Malbec": {
+    "status": "creado",
+    "woo_id": 12495,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:4f71f26d-53bc-414d-9f97-c8ae6e8624ff:ok",
+      "lavid:627d99c4-3653-4111-8b8a-66d9113565c8:ok"
+    ],
+    "fecha": "2026-09-04T16:40:06.064Z"
+  },
+  "Iaccarini Via Blanca Terroir Selection Chenin": {
+    "status": "creado",
+    "woo_id": 12496,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1d5a5516-995c-419a-9a2b-5c7dc11f7bb9:ok",
+      "lavid:2f1a1e5b-6793-4902-99dc-2ebf518c13e3:ok"
+    ],
+    "fecha": "2026-09-04T16:40:07.904Z"
+  },
+  "Martini Rosso": {
+    "status": "creado",
+    "woo_id": 12497,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f9f76334-3423-40cb-9a88-31eb9867bb44:ok",
+      "lavid:5f64043e-0130-4a17-8aaa-75d067c229b3:ok"
+    ],
+    "fecha": "2026-09-04T16:40:09.474Z"
+  },
+  "Martini Extra Dry": {
+    "status": "creado",
+    "woo_id": 12498,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:58959857-b5bb-4a17-bac6-1adf81c54421:ok",
+      "lavid:030335b3-b803-4d6b-aac4-d1753e3e5f8a:ok"
+    ],
+    "fecha": "2026-09-04T16:40:11.067Z"
+  },
+  "Altus Merlot Gualtallary": {
+    "status": "creado",
+    "woo_id": 12499,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:8fe8a6cd-05fd-4399-97d0-3a563dd54e24:ok",
+      "lavid:49f2dbf6-fe2c-49e8-8542-09d6463bd055:ok"
+    ],
+    "fecha": "2026-09-04T16:40:12.598Z"
+  },
+  "J&B 750 Cc": {
+    "status": "creado",
+    "woo_id": 12500,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:86c2422a-cd6a-4ed2-9f0e-db83edf1c8b6:ok",
+      "lavid:c22de7f8-a722-44d7-a767-73decbdf9606:ok"
+    ],
+    "fecha": "2026-09-04T16:40:14.137Z"
+  },
+  "Grants Litro": {
+    "status": "creado",
+    "woo_id": 12501,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:9726faed-eff6-4237-a0fc-b276e40d9467:ok",
+      "lavid:b20d9341-fa5b-42f9-ad8e-057b7e750b39:ok"
+    ],
+    "fecha": "2026-09-04T16:40:15.744Z"
+  },
+  "Branca Menta 750": {
+    "status": "creado",
+    "woo_id": 12502,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:e0ceb47d-9ceb-46b7-ac03-dd19e1519ecd:ok",
+      "lavid:8b020b9d-408e-48d1-b12c-ae7e7390bb09:ok"
+    ],
+    "fecha": "2026-09-04T16:40:17.352Z"
+  },
+  "Punt E Mes": {
+    "status": "creado",
+    "woo_id": 12503,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1fc6b4c3-6696-4451-9419-e1be3d9a8779:ok",
+      "lavid:6c0a3800-6591-4c55-bc9c-c69f01a872f4:ok"
+    ],
+    "fecha": "2026-09-04T16:40:18.899Z"
+  },
+  "Borghetti": {
+    "status": "creado",
+    "woo_id": 12504,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:04774482-6414-4e03-909f-478d78deda5b:ok",
+      "lavid:bb2f60ab-89ae-471d-afe1-baf2b14757bd:ok"
+    ],
+    "fecha": "2026-09-04T16:40:20.630Z"
+  },
+  "Cinzano Rosso": {
+    "status": "creado",
+    "woo_id": 12505,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:3a4d90f8-0610-4ebd-b797-d616fe8fb88c:ok",
+      "lavid:fe42c734-3abe-4e23-b3c5-40f2dbbd613b:ok"
+    ],
+    "fecha": "2026-09-04T16:40:22.852Z"
+  },
+  "Altus Extra Brut Gualtallary": {
+    "status": "creado",
+    "woo_id": 12506,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:4d66369b-fb37-439b-9c72-e218f5687b70:ok",
+      "lavid:86f1645d-f180-488d-bd79-c2943374e063:ok"
+    ],
+    "fecha": "2026-09-04T16:40:24.617Z"
+  },
+  "Altus Grand Vin Gualtallary": {
+    "status": "creado",
+    "woo_id": 12507,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:c3af0e9f-8a78-4c6f-abfd-fee5261740dd:ok",
+      "lavid:68c5dc12-3464-44d7-aab6-cb0c5c048956:ok"
+    ],
+    "fecha": "2026-09-04T16:40:26.466Z"
+  },
+  "Cinzano 1757 Rosso": {
+    "status": "creado",
+    "woo_id": 12508,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:53921b9e-b1e1-458e-a0c2-9bc31457654e:ok",
+      "lavid:320f294b-7be9-4c0e-ab9d-7c6a49cf5fce:ok"
+    ],
+    "fecha": "2026-09-04T16:40:28.061Z"
+  },
+  "Acordeón Malbec": {
+    "status": "creado",
+    "woo_id": 12509,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:78ab7ebd-90eb-4bb4-89fb-163bfb701bba:ok",
+      "lavid:d8bfb70f-a8d8-4686-a13a-0a84709aacbb:ok"
+    ],
+    "fecha": "2026-09-04T16:40:29.910Z"
+  },
+  "Cara Sucia Sangiovese": {
+    "status": "creado",
+    "woo_id": 12510,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:b9aa66f5-71a7-4f30-86a3-0d4448fe8eb4:ok",
+      "lavid:c7844197-4652-4937-ab33-79fff1739ef4:ok"
+    ],
+    "fecha": "2026-09-04T16:40:31.414Z"
+  },
+  "Cara Sucia Nebbiolo": {
+    "status": "creado",
+    "woo_id": 12511,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:49ee9825-661c-4972-a396-41ac75cbfc7a:ok",
+      "lavid:b1b45814-61c8-453d-8556-4fb72b53b801:ok"
+    ],
+    "fecha": "2026-09-04T16:40:33.134Z"
+  },
+  "Acordeón Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12512,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:9bfe38a4-9f0f-4ced-8190-7cc5c24d809c:ok",
+      "lavid:b6919a16-59b5-4998-a37b-000dfced02bb:ok"
+    ],
+    "fecha": "2026-09-04T16:40:34.726Z"
+  },
+  "Wild Africa Chocolate": {
+    "status": "creado",
+    "woo_id": 12513,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:0814f894-655d-4002-a37d-25910a4b058a:ok",
+      "lavid:58ba8ffd-6838-463c-bf78-edab298162b5:ok"
+    ],
+    "fecha": "2026-09-04T16:40:47.960Z"
+  },
+  "Belladona Dry Gin Andina": {
+    "status": "creado",
+    "woo_id": 12514,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:decf969f-69f8-4387-92d6-250381f5f793:ok",
+      "lavid:d967e83f-87bf-4004-a214-13fb76eb1bc6:ok"
+    ],
+    "fecha": "2026-09-04T16:40:49.471Z"
+  },
+  "Pacheco Pereda Malbec": {
+    "status": "creado",
+    "woo_id": 12515,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:0eba042c-7a18-46fd-9326-5ef0580c120f:ok",
+      "lavid:cd143990-2a48-4490-876f-a2f42fe8bdc3:ok"
+    ],
+    "fecha": "2026-09-04T16:40:51.141Z"
+  },
+  "Los Bocheros Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12516,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1b1fcf07-0beb-4fe6-ac73-eaf0bb57eae1:ok",
+      "lavid:c8999fbc-97bc-4672-a3de-47a63da9969b:ok"
+    ],
+    "fecha": "2026-09-04T16:40:52.951Z"
+  },
+  "Conejo Verde Malbec Falasco": {
+    "status": "creado",
+    "woo_id": 12517,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:090776a6-8f81-48d9-928e-21e092d09f5a:ok",
+      "lavid:3e9d45c8-39b6-400b-9c22-7e6d7ff6b863:ok"
+    ],
+    "fecha": "2026-09-04T16:40:54.785Z"
+  },
+  "Il Caprone Malbec": {
+    "status": "creado",
+    "woo_id": 12518,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:af15f81a-b550-49d2-b530-2046b225b392:ok",
+      "lavid:5acecf12-ec91-4504-b4f0-a24c8b375fd9:ok"
+    ],
+    "fecha": "2026-09-04T16:40:56.396Z"
+  },
+  "Gsm Trapiche": {
+    "status": "creado",
+    "woo_id": 12519,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:ad6a5061-c80b-4dcf-974e-979161935884:ok",
+      "lavid:4abccd15-b1e3-4305-8436-e7d76beeea23:ok"
+    ],
+    "fecha": "2026-09-04T16:40:58.167Z"
+  },
+  "Cuesta Del Madero Roble Malbec": {
+    "status": "creado",
+    "woo_id": 12520,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:628eabc5-7be1-40ab-8ae8-87478d459057:ok",
+      "lavid:994c10c4-dfa6-4542-b9c6-ba074eb26776:ok"
+    ],
+    "fecha": "2026-09-04T16:40:59.951Z"
+  },
+  "Wine Records Lata": {
+    "status": "creado",
+    "woo_id": 12521,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f85e54a8-36f7-4db6-ab46-b4b894c90e8f:ok",
+      "lavid:c4bff59a-d03e-4043-a4c0-5ac077aae1bb:ok"
+    ],
+    "fecha": "2026-09-04T16:41:01.570Z"
+  },
+  "Wild Africa Cream": {
+    "status": "creado",
+    "woo_id": 12522,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7491ac62-2daa-4196-82ae-f0c67f600271:ok",
+      "lavid:dcb1bf07-db99-4039-8638-533eb53396d4:ok"
+    ],
+    "fecha": "2026-09-04T16:41:03.071Z"
+  },
+  "Carpano": {
+    "status": "creado",
+    "woo_id": 12523,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:691b7961-4cb7-404b-afb3-a92c16d906c3:ok",
+      "lavid:b8abcfe2-2c52-4641-8a5f-8d56bc9e4dbe:ok"
+    ],
+    "fecha": "2026-09-04T16:41:04.633Z"
+  },
+  "Altus Chardonnay Gualtallary Wines": {
+    "status": "creado",
+    "woo_id": 12524,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:4d5768c1-d613-4ce4-9d36-35fe4939d5a7:ok",
+      "lavid:e46ea04c-656f-4987-927d-87616ec118ca:ok"
+    ],
+    "fecha": "2026-09-04T16:41:06.269Z"
+  },
+  "Anis Shami": {
+    "status": "creado",
+    "woo_id": 12525,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:75d85ef1-5de8-4c83-ac81-235748ec14e4:ok",
+      "lavid:7d911e1f-e12c-44c3-82cf-9487630d5954:ok"
+    ],
+    "fecha": "2026-09-04T16:41:08.019Z"
+  },
+  "Evan Williams Black": {
+    "status": "creado",
+    "woo_id": 12526,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:638b7744-501c-4d11-b753-74625ef7da36:ok",
+      "lavid:c0ac07a2-d905-4a9f-8939-22a92c654090:ok"
+    ],
+    "fecha": "2026-09-04T16:41:09.525Z"
+  },
+  "Linea 581 Cabernet Sauvignon Staphyle": {
+    "status": "creado",
+    "woo_id": 12527,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:003e214d-c886-4a7a-ad0c-de8d98842d67:ok",
+      "lavid:85c3a2da-7d02-47ff-be3c-67d24054b823:ok"
+    ],
+    "fecha": "2026-09-04T16:41:11.151Z"
+  },
+  "Linea 581 Torrontes Staphyle": {
+    "status": "creado",
+    "woo_id": 12528,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:94fc210e-35da-4656-a466-287504624944:ok",
+      "lavid:d654ac3a-4d04-4202-a1c2-ab2bf1276a27:ok"
+    ],
+    "fecha": "2026-09-04T16:41:12.875Z"
+  },
+  "Linea 581 Malbec Staphyle": {
+    "status": "creado",
+    "woo_id": 12529,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:4db17da6-3837-44b3-baa0-374e2421fb22:ok",
+      "lavid:8693fab6-cd99-4643-ad8e-399a278e6cec:ok"
+    ],
+    "fecha": "2026-09-04T16:41:14.503Z"
+  },
+  "Argento Reserve Malbec": {
+    "status": "creado",
+    "woo_id": 12530,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:58797bb9-2287-489c-9da7-1091cc22033f:ok",
+      "lavid:0498a73d-f63f-4e2d-82f5-47e32def17e4:ok"
+    ],
+    "fecha": "2026-09-04T16:41:16.170Z"
+  },
+  "Antonieta Rose de Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12531,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:fd216612-7a9b-4e18-b7bc-4e1071398f67:ok",
+      "lavid:6e0de8a9-be6a-410c-ae07-0139d6a729ed:ok"
+    ],
+    "fecha": "2026-09-04T16:41:17.935Z"
+  },
+  "Argento Artesano Malbec Orgánico": {
+    "status": "creado",
+    "woo_id": 12532,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:649cef66-9806-418c-854a-dfd0cbfab120:ok",
+      "lavid:303ee9ac-894c-442c-b681-405493d39d30:ok"
+    ],
+    "fecha": "2026-09-04T16:41:19.541Z"
   }
 }
