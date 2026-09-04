@@ -100,7 +100,14 @@ interface ChequePendiente {
 }
 interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number; unidad_medida?: string }
 
-function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : u === 'caja4' ? 4 : 1 }
+// Todo el catálogo tiene unidad_medida="botella" (nunca se cargó el tamaño real
+// de caja por producto), así que esto devolvía siempre 1 — el campo "Cajas" de
+// Compras terminaba sumando botellas sueltas en vez de cajas, sin que nadie lo
+// notara (bug real: compra de 5 cajas de Alta Vista quedó cargada como 5
+// botellas). Default a 6 (el formato estándar de vino en Argentina) en vez de
+// 1, y ahora es editable en la fila por si el proveedor entrega en otro
+// formato (espirituosas x12, BIB x1, etc.) — ver columna "Unid./caja".
+function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : u === 'caja4' ? 4 : 6 }
 function upkLabel(upk: number) { return upk > 1 ? `Caja ×${upk}` : 'Botella' }
 
 const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0, cajas: 1, unidades_por_caja: 1 }
@@ -902,7 +909,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto', 'Cajas', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto', 'Cajas', 'Unid./caja', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -936,6 +943,10 @@ export default function ComprasPage() {
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''}
                               onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 55 }} min={1} placeholder="6" value={item.unidades_por_caja || ''}
+                              onChange={e => updateItem(idx, 'unidades_por_caja', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                             <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>
@@ -1230,7 +1241,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto / concepto', 'Cajas', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto / concepto', 'Cajas', 'Unid./caja', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -1256,6 +1267,9 @@ export default function ComprasPage() {
                           </td>
                           <td style={{ padding: '6px 8px' }}>
                             <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''} onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <input type="number" style={{ ...INP, width: 55 }} min={1} placeholder="6" value={item.unidades_por_caja || ''} onChange={e => updateItem(idx, 'unidades_por_caja', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                             <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
                           </td>
                           <td style={{ padding: '6px 8px' }}>
