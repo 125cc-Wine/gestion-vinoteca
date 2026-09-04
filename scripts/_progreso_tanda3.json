@@ -1093,5 +1093,405 @@
       "lavid:f98176b8-6947-47f3-8cdd-1d76a2e77a03:ok"
     ],
     "fecha": "2026-09-04T16:42:41.494Z"
+  },
+  "Vinyes Ocults Blend": {
+    "status": "creado",
+    "woo_id": 12573,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1eb482fe-446c-41c8-bb6a-5b063db91e6a:ok",
+      "lavid:bc704570-8e04-4544-9f0d-0a28fcfd4150:ok"
+    ],
+    "fecha": "2026-09-04T16:42:54.352Z"
+  },
+  "La Celia Reserva Pinot Grigio": {
+    "status": "creado",
+    "woo_id": 12574,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:80833a4c-37ce-41b3-a479-22471a097500:ok",
+      "lavid:ee3a8ffa-a72c-4e4d-882a-3218ffc6721a:ok"
+    ],
+    "fecha": "2026-09-04T16:42:56.118Z"
+  },
+  "Eugenio Bustos Chardonnay": {
+    "status": "creado",
+    "woo_id": 12575,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:e9093153-5f2f-443f-90c6-518cf2123570:ok",
+      "lavid:e09f5fad-dead-4932-b412-1632ae673d79:ok"
+    ],
+    "fecha": "2026-09-04T16:42:57.640Z"
+  },
+  "Virgen Cab. Sauv. Orgánico": {
+    "status": "creado",
+    "woo_id": 12576,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:d396a631-29cd-425b-9cf9-d8c065aed438:ok",
+      "lavid:ab19ff99-e668-4d0a-a7cf-2a5d2fffa1f9:ok"
+    ],
+    "fecha": "2026-09-04T16:42:59.254Z"
+  },
+  "Alambrado Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12577,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:89c4f7c5-56a8-4cd3-bd0d-588d6e2e6706:ok",
+      "lavid:a5d61342-3fad-45a7-bd7a-5b99215c0e3c:ok"
+    ],
+    "fecha": "2026-09-04T16:43:01.093Z"
+  },
+  "Il Caprone Cab. Sauv.": {
+    "status": "creado",
+    "woo_id": 12578,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:c091e035-bd61-4c33-9950-b41fb54dcee9:ok",
+      "lavid:60ad8612-ce8e-4b65-837b-cd8d3c14c31d:ok"
+    ],
+    "fecha": "2026-09-04T16:43:02.580Z"
+  },
+  "Canale Estate Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12579,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:863b01eb-597d-4604-b9ef-d8f21d123106:ok",
+      "lavid:326c1f01-3f4b-40e8-9b30-8c2881a62ce3:ok"
+    ],
+    "fecha": "2026-09-04T16:43:04.390Z"
+  },
+  "Intimo Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12580,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7b4d2b80-02f2-43a8-ba91-8f52ebdd89fb:ok",
+      "lavid:265796f9-8d44-4cba-9f59-7dc21a3f53bc:ok"
+    ],
+    "fecha": "2026-09-04T16:43:06.132Z"
+  },
+  "Bodegas Lopez Montchenot 10 años": {
+    "status": "creado",
+    "woo_id": 12581,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:50fd95de-7112-4278-8eb6-4ec5deb38fe8:ok",
+      "lavid:c8573d94-e915-4cd7-887d-76986adf0994:ok"
+    ],
+    "fecha": "2026-09-04T16:43:07.627Z"
+  },
+  "Bodegas Lopez Montchenot 15 años": {
+    "status": "creado",
+    "woo_id": 12582,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:81404360-9211-4163-8042-51c7ab9f7bc5:ok",
+      "lavid:4df1c4ee-8204-46b4-831b-59919c09c811:ok"
+    ],
+    "fecha": "2026-09-04T16:43:09.324Z"
+  },
+  "Bodegas Lopez Montchenot 5 años": {
+    "status": "creado",
+    "woo_id": 12583,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:9cc7637d-0a6b-4113-b6f4-c7078be196dd:ok",
+      "lavid:fbac780d-4117-40bd-888a-870a3c82b7b8:ok"
+    ],
+    "fecha": "2026-09-04T16:43:10.778Z"
+  },
+  "Bodegas Lopez Malbec": {
+    "status": "creado",
+    "woo_id": 12584,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:219fd856-2e72-4a39-80b6-ed4bb47035fa:ok",
+      "lavid:21e93260-3db6-45bd-88f3-bfaf0939af63:ok"
+    ],
+    "fecha": "2026-09-04T16:43:12.334Z"
+  },
+  "Plan B Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12585,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:3098a215-77f0-461f-89ca-03cf0a1e178a:ok",
+      "lavid:76d709ad-500c-422e-9586-15bb21e4ff8f:ok"
+    ],
+    "fecha": "2026-09-04T16:43:14.275Z"
+  },
+  "Plan B Malbec": {
+    "status": "creado",
+    "woo_id": 12586,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f882ffcc-b0b8-4031-adaa-597cd430aaec:ok",
+      "lavid:0d468d4b-96ce-4ecd-938b-01d04f2cc21c:ok"
+    ],
+    "fecha": "2026-09-04T16:43:15.808Z"
+  },
+  "Plan B Blend": {
+    "status": "creado",
+    "woo_id": 12587,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:764ec688-7c5b-422c-a297-17ed779dab8f:ok",
+      "lavid:b8bcc84e-6aaf-44d2-a46e-680f407a0cff:ok"
+    ],
+    "fecha": "2026-09-04T16:43:17.368Z"
+  },
+  "Tucumen Bib Malbec": {
+    "status": "creado",
+    "woo_id": 12588,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:aaaa08cf-e1bd-40bb-8da9-9dc4ead16615:ok",
+      "lavid:401b20a3-38ca-4c73-ad7d-a7e95c85585d:ok"
+    ],
+    "fecha": "2026-09-04T16:43:18.884Z"
+  },
+  "Tucumen Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12589,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:70206ce2-99eb-41b4-b132-035b20acab5b:ok",
+      "lavid:75a17c78-4543-4503-8b56-15ce948fd38e:ok"
+    ],
+    "fecha": "2026-09-04T16:43:20.527Z"
+  },
+  "Tucumen Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12590,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:e6e74607-0b39-4087-b1a0-5052b80b1b9d:ok",
+      "lavid:34bea6f1-fd95-4d32-8d10-7927460639b2:ok"
+    ],
+    "fecha": "2026-09-04T16:43:22.376Z"
+  },
+  "Tucumen Joven Malbec": {
+    "status": "creado",
+    "woo_id": 12591,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f85e3e05-faae-4e6d-bafe-4a952ee9bf50:ok",
+      "lavid:44d129a9-decc-4afa-ad8a-231cdcc29da6:ok"
+    ],
+    "fecha": "2026-09-04T16:43:23.977Z"
+  },
+  "Tucumen Zinfanel": {
+    "status": "creado",
+    "woo_id": 12592,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:8d5ff281-77cb-43ee-9c15-b7c3f866c918:ok",
+      "lavid:9e179bd3-eee3-472a-aa8c-7d48956cbb7b:ok"
+    ],
+    "fecha": "2026-09-04T16:43:25.509Z"
+  },
+  "Tucumen Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12593,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:5bd6cbea-e996-4a3d-b94e-58173017a144:ok",
+      "lavid:ecad80af-685f-4382-8382-4adc4c897647:ok"
+    ],
+    "fecha": "2026-09-04T16:43:31.627Z"
+  },
+  "Tucumen Ancellota": {
+    "status": "creado",
+    "woo_id": 12594,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:020ad316-1b8a-4d9e-94b7-ff506a3bf70b:ok",
+      "lavid:63c09ef5-9ed2-46b7-bdd8-982c41bfae26:ok"
+    ],
+    "fecha": "2026-09-04T16:43:33.651Z"
+  },
+  "Huentala Black Series Chardonnay": {
+    "status": "creado",
+    "woo_id": 12595,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:9e2f3487-5e42-4902-a0ba-2fc0d11c8f79:ok",
+      "lavid:b9698e99-b486-4c19-a728-eccb9f7b9c3c:ok"
+    ],
+    "fecha": "2026-09-04T16:43:35.508Z"
+  },
+  "Gran Sombrero Cab. Franc Huentala": {
+    "status": "creado",
+    "woo_id": 12596,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:c4298b3c-035a-4047-baf2-3d6cc81ecc34:ok",
+      "lavid:d0617fa8-7e60-4c48-aeb8-f9049aa3adb6:ok"
+    ],
+    "fecha": "2026-09-04T16:43:37.213Z"
+  },
+  "Los Bocheros Malbec Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12597,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:8e304e99-dc32-4601-8e3b-31d0fbe6d152:ok",
+      "lavid:64129016-937c-4073-9894-82ff4843c8c3:ok"
+    ],
+    "fecha": "2026-09-04T16:43:38.992Z"
+  },
+  "Zorro Salvaje Cab. Sauv. Huentala": {
+    "status": "creado",
+    "woo_id": 12598,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7c0877d0-e9a9-4fa6-a209-ec5e470a5fbc:ok",
+      "lavid:859c27c0-3eae-44ab-a23f-a57a1078ce36:ok"
+    ],
+    "fecha": "2026-09-04T16:43:40.922Z"
+  },
+  "Gran Sombrero Chardonnay Huentala": {
+    "status": "creado",
+    "woo_id": 12599,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:a5410ba1-6c1d-4e49-bb96-3d19c645a56e:ok",
+      "lavid:67ce6fa4-a63d-4faa-a608-d40aebf5f305:ok"
+    ],
+    "fecha": "2026-09-04T16:43:42.610Z"
+  },
+  "Vinyes Ocults Extra Brut": {
+    "status": "creado",
+    "woo_id": 12600,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1d10b583-f0b8-458a-ac86-f9144fa379f2:ok",
+      "lavid:fc1d258d-44da-47ca-9787-ae1c67232e90:ok"
+    ],
+    "fecha": "2026-09-04T16:43:44.510Z"
+  },
+  "Costa y Pampa Extra Brut": {
+    "status": "creado",
+    "woo_id": 12601,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:d3d510a2-eff4-4765-af7a-258f0a389252:ok",
+      "lavid:f0f3ac36-cc4e-4b8c-a95c-c9309f6480ba:ok"
+    ],
+    "fecha": "2026-09-04T16:43:46.202Z"
+  },
+  "Bib Piedra Negra Malbec Organic": {
+    "status": "creado",
+    "woo_id": 12602,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:2c3c3b71-261a-46bd-96c6-1b60212b2a21:ok",
+      "lavid:74285f8a-62c8-407c-903b-6d4cfa603aa7:ok"
+    ],
+    "fecha": "2026-09-04T16:43:48.151Z"
+  },
+  "Pyros Single Malbec Block 4": {
+    "status": "creado",
+    "woo_id": 12603,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:440fd960-450c-444c-bdd5-268986a12cc4:ok",
+      "lavid:cee6c640-7e6c-4b15-8c4d-36e47ed0f137:ok"
+    ],
+    "fecha": "2026-09-04T16:43:49.696Z"
+  },
+  "Pyros Pinot Noir": {
+    "status": "creado",
+    "woo_id": 12604,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:620080b3-d60f-4316-a46a-cd762e232143:ok",
+      "lavid:29fdb032-7472-4ef2-9868-cf6bdabc9b36:ok"
+    ],
+    "fecha": "2026-09-04T16:43:51.464Z"
+  },
+  "Casa Boher Agrelo Malbec": {
+    "status": "creado",
+    "woo_id": 12605,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:b129173f-e5b2-4e9f-9329-2c87189d284c:ok",
+      "lavid:cea02fc4-3ec9-4d51-afb9-9b69ca5e8b4f:ok"
+    ],
+    "fecha": "2026-09-04T16:43:53.424Z"
+  },
+  "Casa Boher Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12606,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:f0253c62-a5c9-4382-921f-63b3377c7524:ok",
+      "lavid:4895a4fe-4b9a-46a7-8f9b-58def52b92db:ok"
+    ],
+    "fecha": "2026-09-04T16:43:54.944Z"
+  },
+  "Casa Boher Cabernet Franc": {
+    "status": "creado",
+    "woo_id": 12607,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:71e8dce5-1a62-40be-bb69-e41dd3bb533d:ok",
+      "lavid:c360adc6-53cc-49e5-9f86-ecf9ce7b8fb9:ok"
+    ],
+    "fecha": "2026-09-04T16:43:56.706Z"
+  },
+  "Casa Boher Malbec": {
+    "status": "creado",
+    "woo_id": 12608,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:3f8c0efa-a478-4f60-bb56-203d93e71606:ok",
+      "lavid:cf622c52-5c0a-4037-bd04-0589879142f5:ok"
+    ],
+    "fecha": "2026-09-04T16:43:58.452Z"
+  },
+  "Las Perdices Bib Red Blend": {
+    "status": "creado",
+    "woo_id": 12609,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7adf86d8-036f-4093-a97a-ee7acb83c4a4:ok",
+      "lavid:89475a84-da86-4436-a08c-bf46d8e3ab35:ok"
+    ],
+    "fecha": "2026-09-04T16:44:00.264Z"
+  },
+  "Partridge Dulce Las Perdices": {
+    "status": "creado",
+    "woo_id": 12610,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:dec83cf2-35f3-48e6-93ac-66c65e3ed9e6:ok",
+      "lavid:870a893d-ab6b-40a5-a385-d8d1c11699cd:ok"
+    ],
+    "fecha": "2026-09-04T16:44:02.008Z"
+  },
+  "Buenos Hnos. Dulce Natural G. Riili": {
+    "status": "creado",
+    "woo_id": 12611,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:555b7f92-fbd6-4e37-83b7-70525b9c3212:ok",
+      "lavid:45101eeb-202b-40b2-95d5-d0b8a3e04012:ok"
+    ],
+    "fecha": "2026-09-04T16:44:03.513Z"
+  },
+  "Las Perdices Bib Duo Malbec Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12612,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:562e0a98-be51-4d3d-a8d7-81a1f8e7986c:ok",
+      "lavid:50ecb7cf-db54-4bf3-9f43-2053e262ae96:ok"
+    ],
+    "fecha": "2026-09-04T16:44:05.058Z"
   }
 }
