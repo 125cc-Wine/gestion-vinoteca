@@ -1493,5 +1493,187 @@
       "lavid:50ecb7cf-db54-4bf3-9f43-2053e262ae96:ok"
     ],
     "fecha": "2026-09-04T16:44:05.058Z"
+  },
+  "Monte Quieto Alegre Blend": {
+    "status": "creado",
+    "woo_id": 12613,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:3c203460-a692-499e-81ba-7e7eae44635d:ok",
+      "lavid:e444ff76-2dc6-4492-8543-20bf4bef45d9:ok"
+    ],
+    "fecha": "2026-09-04T17:18:20.618Z"
+  },
+  "Latente Cs-Cf": {
+    "status": "creado",
+    "woo_id": 12614,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:7663992a-904e-4fc3-8471-94418d59e4ec:ok",
+      "lavid:ee75c009-28f7-4e0e-b202-636d224ca991:ok"
+    ],
+    "fecha": "2026-09-04T17:18:22.398Z"
+  },
+  "Latente Cs-Mal": {
+    "status": "creado",
+    "woo_id": 12615,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:fada67f8-bc3e-4c6d-81ac-abf352da4b6a:ok",
+      "lavid:67e6ccb4-96b3-45bc-be41-cce123928819:ok"
+    ],
+    "fecha": "2026-09-04T17:18:24.061Z"
+  },
+  "Tipo Malbec Opend Mind": {
+    "status": "creado",
+    "woo_id": 12616,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:1955e3a8-ad78-4af8-95b5-7b86e5b77600:ok",
+      "lavid:290a3b55-4744-467f-a471-59668a4156c1:ok"
+    ],
+    "fecha": "2026-09-04T17:18:25.680Z"
+  },
+  "Alta-Yarí Gran Corte": {
+    "status": "creado",
+    "woo_id": 12617,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:8474f494-9e61-4427-a199-bb5e925315d2:ok",
+      "lavid:54eebbab-bdde-4394-959c-09eb76e3eb41:ok"
+    ],
+    "fecha": "2026-09-04T17:18:27.305Z"
+  },
+  "Flor de Manzano Dulce 710": {
+    "status": "creado",
+    "woo_id": 12618,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:56bcdb27-f1c2-47c0-9e9d-2dad120d14af:ok",
+      "lavid:b706091f-718c-4117-a996-0f231e510cf2:ok"
+    ],
+    "fecha": "2026-09-04T17:18:28.711Z"
+  },
+  "Alta-Yarí Gran Torrontes": {
+    "status": "creado",
+    "woo_id": 12619,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:0ca5d928-3530-4d8c-b182-24cfb93361bd:ok",
+      "lavid:150f280f-d3e2-41f7-a474-e64a1361edc8:ok"
+    ],
+    "fecha": "2026-09-04T17:18:30.474Z"
+  },
+  "Alta-Yarí Reserva Malbec": {
+    "status": "creado",
+    "woo_id": 12620,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:10836ce2-52a1-40bd-bcbc-f693c44243c4:ok",
+      "lavid:ac2b483a-e98e-4348-a824-f9f7b2d2a50f:ok"
+    ],
+    "fecha": "2026-09-04T17:18:32.078Z"
+  },
+  "Alta-Yarí Reserva Cabernet Sauvignon": {
+    "status": "creado",
+    "woo_id": 12621,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:5bc4f526-353f-4197-a142-c01f842ca95c:ok",
+      "lavid:78f66692-db63-4c9f-8ee1-35b3718ec17e:ok"
+    ],
+    "fecha": "2026-09-04T17:18:33.674Z"
+  },
+  "Crios Torrontes Susana Balbo": {
+    "status": "creado",
+    "woo_id": 12622,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:af159f0f-1baa-4645-b412-95ba1545fd86:ok",
+      "lavid:8fd7975f-cac5-4a41-a601-50ade6ba0d68:ok"
+    ],
+    "fecha": "2026-09-04T17:18:35.126Z"
+  },
+  "Cruzat Ratafia Chardonnay Est": {
+    "status": "creado",
+    "woo_id": 12623,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:4853496a-5875-48e6-aebe-ac722593350d:ok",
+      "lavid:057eb088-3b0e-462a-b73e-87692d208444:ok"
+    ],
+    "fecha": "2026-09-04T17:18:36.990Z"
+  },
+  "Iaccarini Via Blanca Cab. Sauvignon": {
+    "status": "creado",
+    "woo_id": 12624,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:c829b57b-c073-4aa8-abd3-7ce10bd8e1e7:ok",
+      "lavid:9f3f3a61-45e7-4034-8fa3-5c69cfcad8a7:ok",
+      "aroma:c7b0e6c1-497b-4fb9-b287-4486247b8e34:ok",
+      "lavid:11c96469-a0a1-4806-a105-67cda9b0d84b:ok"
+    ],
+    "fecha": "2026-09-04T17:18:39.069Z"
+  },
+  "Acordeón Chardonnay": {
+    "status": "creado",
+    "woo_id": 12625,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:daed1ece-a5a3-403e-955f-3ef002ee9a16:ok",
+      "lavid:e0c37643-3c9f-4c9a-9b6a-649a6a16b682:ok"
+    ],
+    "fecha": "2026-09-04T17:18:40.513Z"
+  },
+  "Diavolezza Montesina": {
+    "status": "creado",
+    "woo_id": 12626,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:add51400-8af5-4813-9ad1-fe8c336fbf84:ok",
+      "lavid:bbea8611-ecd7-4b69-acbb-2ff64396d6f8:ok"
+    ],
+    "fecha": "2026-09-04T17:18:41.979Z"
+  },
+  "Abito Rose": {
+    "status": "creado",
+    "woo_id": 12627,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:a03f94d4-4dea-45d4-8c98-d0d2ee0a53a9:ok",
+      "lavid:3f32a07d-c0ff-4deb-84d8-14bf914988a5:ok"
+    ],
+    "fecha": "2026-09-04T17:18:43.439Z"
+  },
+  "Gualtallary Chardonnay": {
+    "status": "creado",
+    "woo_id": 12628,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:9c924d1d-5023-46c8-b571-ac508a647c65:ok",
+      "lavid:d9775991-838b-4aa0-8ff6-5234d3e4f2c0:ok"
+    ],
+    "fecha": "2026-09-04T17:18:45.009Z"
+  },
+  "Il Caprone Rose": {
+    "status": "creado",
+    "woo_id": 12629,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:ca5af1f9-5ba2-424d-a796-caca36b47706:ok",
+      "lavid:7a7d2455-6634-4bcd-b755-3bc886629794:ok"
+    ],
+    "fecha": "2026-09-04T17:18:46.632Z"
+  },
+  "Tempestad Vermouth": {
+    "status": "creado",
+    "woo_id": 12630,
+    "tiene_imagen": false,
+    "linked": [
+      "aroma:d6da8349-1506-402b-b72a-82ad9ae21475:ok",
+      "lavid:4b60cc61-4e0b-4fc2-a1f3-d60c39fa48a3:ok"
+    ],
+    "fecha": "2026-09-04T17:18:48.174Z"
   }
 }
