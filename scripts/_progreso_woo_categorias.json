@@ -1,0 +1,466 @@
+{
+  "cat_12626": {
+    "name": "Diavolezza Montesina",
+    "status": "skipped",
+    "note": "Es un Pisco (aguardiente de uva), no un vino - confirmado por descripción. No tocar en este lote; considerar moverlo a Espirituosas (id 87) aparte."
+  },
+  "cat_12141": {
+    "name": "La Mascota Unánime",
+    "status": "ok",
+    "categories": [
+      "Blend de tintas",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12139": {
+    "name": "Riglos Gran Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Cabernet Franc",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12134": {
+    "name": "Marantiqua Malbec",
+    "status": "ok",
+    "categories": [
+      "Malbec",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12133": {
+    "name": "Tercos  Sangiovese",
+    "status": "ok",
+    "categories": [
+      "Sangiovese",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12124": {
+    "name": "Huella Pampa Extra Brut Rose",
+    "status": "ok",
+    "categories": [
+      "Espumosos"
+    ]
+  },
+  "cat_12117": {
+    "name": "Marantiqua Pinot Noir",
+    "status": "ok",
+    "categories": [
+      "Pinot Noir",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12113": {
+    "name": "Ricardo Santos Bonarda",
+    "status": "ok",
+    "categories": [
+      "Bonarda",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12112": {
+    "name": "Tercos Bonarda",
+    "status": "ok",
+    "categories": [
+      "Bonarda",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12111": {
+    "name": "Tercos Malbec",
+    "status": "ok",
+    "categories": [
+      "Malbec",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_12109": {
+    "name": "Ricardos Santos Semillón",
+    "status": "ok",
+    "categories": [
+      "Vino Blancos",
+      "Semillon"
+    ]
+  },
+  "cat_12107": {
+    "name": "Ricardo Santos Malbec",
+    "status": "ok",
+    "categories": [
+      "Malbec",
+      "Vinos Tintos"
+    ]
+  },
+  "cat_11929": {
+    "name": "Cuvelier Los Andes La Petite Cuvée Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11928": {
+    "name": "Cuvelier Los Andes La Petite Cuvée Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11927": {
+    "name": "Tinkunaco Petit Verdot",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Petit Verdot"
+    ]
+  },
+  "cat_11926": {
+    "name": "Tinkunaco Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11925": {
+    "name": "Trivento Maximum Red Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11924": {
+    "name": "Cuarto Surco Pleno Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11923": {
+    "name": "Cuarto Surco Pleno Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11922": {
+    "name": "Cuarto Surco Pleno Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11921": {
+    "name": "Sur de los Andes Reserva Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11920": {
+    "name": "Antigal UNO Red Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11919": {
+    "name": "Absurdo Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11918": {
+    "name": "Pasión 4 Petit Verdot Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11898": {
+    "name": "Tapiz Sparkling Torrontés",
+    "status": "ok",
+    "categories": [
+      "Espumosos"
+    ]
+  },
+  "cat_11896": {
+    "name": "Tapiz Sparkling Malbec",
+    "status": "ok",
+    "categories": [
+      "Espumosos",
+      "Malbec"
+    ]
+  },
+  "cat_11895": {
+    "name": "Tapiz Reserve Cabernet Merlot",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11894": {
+    "name": "Tapiz Reserve Cabernet Sauvignon",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Sauvignon"
+    ]
+  },
+  "cat_11893": {
+    "name": "Tapiz Reserve Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11891": {
+    "name": "Despeinado Blend de Tintas",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11890": {
+    "name": "Corral de Palos Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11889": {
+    "name": "Corral de Palos Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11888": {
+    "name": "Corral de Palos Viognier",
+    "status": "ok",
+    "categories": [
+      "Vino Blancos",
+      "Viognier"
+    ]
+  },
+  "cat_11886": {
+    "name": "Mahakala Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11885": {
+    "name": "Mahakala Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11884": {
+    "name": "Kamala Malbec Terroir Selection Chacayes",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11883": {
+    "name": "Kamala Cabernet Franc Rosado",
+    "status": "ok",
+    "categories": [
+      "Rosados",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11880": {
+    "name": "Antigal Puro Uno Extra Brut",
+    "status": "ok",
+    "categories": [
+      "Espumosos"
+    ]
+  },
+  "cat_11879": {
+    "name": "Antigal Aduentus Classic Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11878": {
+    "name": "Antigal Aduentus Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11877": {
+    "name": "Antigal Aduentus Blend Mediterraneo",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11876": {
+    "name": "Antigal UNO Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11875": {
+    "name": "Antigal UNO Rosé",
+    "status": "ok",
+    "categories": [
+      "Rosados"
+    ]
+  },
+  "cat_11874": {
+    "name": "Antigal UNO Pinot Grigio",
+    "status": "ok",
+    "categories": [
+      "Vino Blancos",
+      "Pinot Grigio"
+    ]
+  },
+  "cat_11873": {
+    "name": "Antigal AQUI Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11850": {
+    "name": "Finca Flichman Dedicado Gran Malbec",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11775": {
+    "name": "Artesano Cabernet Franc",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Franc"
+    ]
+  },
+  "cat_11774": {
+    "name": "La Igriega Blend",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11773": {
+    "name": "Finca La Anita Magna Finca Cabernet Sauvignon",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Sauvignon"
+    ]
+  },
+  "cat_11750": {
+    "name": "Sin Fin Guarda de Familia",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos"
+    ]
+  },
+  "cat_11748": {
+    "name": "Piedra Negra Alta Colección Rosado Pinot Gris",
+    "status": "ok",
+    "categories": [
+      "Rosados"
+    ]
+  },
+  "cat_11746": {
+    "name": "Pulenta Gran Pinot Noir XV 2016",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Pinot Noir"
+    ]
+  },
+  "cat_11745": {
+    "name": "Pulenta Gran Merlot XVI 2013",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Merlot"
+    ]
+  },
+  "cat_11744": {
+    "name": "Pulenta Gran Corte VII 2015",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Blend de tintas"
+    ]
+  },
+  "cat_11743": {
+    "name": "Pulenta Gran Cabernet Sauvignon IV 2014",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Cabernet Sauvignon"
+    ]
+  },
+  "cat_11741": {
+    "name": "Pulenta Single Vineyard Malbec LA ZULEMA 2014",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11740": {
+    "name": "Pulenta Single Vineyard Malbec GUALTALLARY 2014",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_11739": {
+    "name": "Pulenta Single Vineyard Malbec DON ANTONIO 2014",
+    "status": "ok",
+    "categories": [
+      "Vinos Tintos",
+      "Malbec"
+    ]
+  },
+  "cat_2250": {
+    "name": "Lorca Fantasía El Mirador Moscatel",
+    "status": "ok",
+    "categories": [
+      "Bodegas",
+      "Lorca",
+      "Rosados"
+    ]
+  }
+}

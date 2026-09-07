@@ -18,7 +18,7 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Espirituosas"
     ],
     "stock_status": "instock",
     "stock_quantity": 3,
@@ -768,7 +768,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Cabernet Franc",
       "Vinos Tintos"
     ],
@@ -798,7 +797,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Malbec",
       "Vinos Tintos"
     ],
@@ -828,7 +826,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Sangiovese",
       "Vinos Tintos"
     ],
@@ -877,7 +874,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Espumosos"
     ],
     "stock_status": "instock",
@@ -906,7 +902,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Pinot Noir",
       "Vinos Tintos"
     ],
@@ -966,7 +961,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Bonarda",
       "Vinos Tintos"
     ],
@@ -996,7 +990,6 @@
       }
     ],
     "categories": [
-      "Artículos varios",
       "Bonarda",
       "Vinos Tintos"
     ],
@@ -1396,7 +1389,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Blend de tintas",
+      "Vinos Tintos"
     ],
     "stock_status": "instock",
     "stock_quantity": 11,
@@ -1424,7 +1418,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Malbec",
+      "Vinos Tintos"
     ],
     "stock_status": "instock",
     "stock_quantity": 12,
@@ -1452,7 +1447,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Blend de tintas",
+      "Vinos Tintos"
     ],
     "stock_status": "instock",
     "stock_quantity": 14,
@@ -1480,7 +1476,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Espumosos",
+      "Malbec"
     ],
     "stock_status": "instock",
     "stock_quantity": 12,
@@ -1512,7 +1509,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Cabernet Franc",
+      "Vinos Tintos"
     ],
     "stock_status": "instock",
     "stock_quantity": 12,
@@ -1540,7 +1538,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Blend de tintas",
+      "Vinos Tintos"
     ],
     "stock_status": "instock",
     "stock_quantity": 5,
@@ -15714,7 +15713,7 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Espumosos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -15772,7 +15771,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Cabernet Franc",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -15800,7 +15800,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Malbec",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -15828,7 +15829,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Cabernet Franc",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -15924,7 +15926,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Blend de tintas",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -15976,7 +15979,7 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16004,7 +16007,7 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Rosados"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16032,7 +16035,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Pinot Noir",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16060,7 +16064,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Merlot",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16088,7 +16093,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Blend de tintas",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16116,7 +16122,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Cabernet Sauvignon",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16148,7 +16155,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Malbec",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16180,7 +16188,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Malbec",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
@@ -16212,7 +16221,8 @@
       }
     ],
     "categories": [
-      "Artículos varios"
+      "Malbec",
+      "Vinos Tintos"
     ],
     "stock_status": "outofstock",
     "stock_quantity": 0,
