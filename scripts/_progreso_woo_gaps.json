@@ -1052,5 +1052,72 @@
     "name": "Pasión 4 Petit Verdot Cabernet Franc",
     "status": "ok",
     "src": "https://d2j6dbq0eux0bg.cloudfront.net/images/26484059/4706168891.webp"
+  },
+  "tags_12159": {
+    "name": "Lopez Jerez Blend",
+    "status": "ok",
+    "tags": [
+      "Blend",
+      "Tinto"
+    ]
+  },
+  "tags_12128": {
+    "name": "Idealista Vodka",
+    "status": "skipped-no-proposal"
+  },
+  "tags_2163": {
+    "name": "VIVE MALBEC",
+    "status": "ok",
+    "tags": [
+      "Malbec",
+      "Tinto"
+    ]
+  },
+  "tags_12634": {
+    "name": "Zorzal Eggo Blanc 2020",
+    "status": "ok",
+    "tags": [
+      "Blanco"
+    ]
+  },
+  "tags_12633": {
+    "name": "Zorzal Eggo 2018",
+    "status": "ok",
+    "tags": [
+      "Tinto"
+    ]
+  },
+  "tags_11890": {
+    "name": "Corral de Palos Cabernet Franc",
+    "status": "ok",
+    "tags": [
+      "Cabernet Franc",
+      "Tinto"
+    ]
+  },
+  "tags_11025": {
+    "name": "Marchiori & Barraud Corte",
+    "status": "ok",
+    "tags": [
+      "Blend",
+      "Tinto"
+    ]
+  },
+  "tags_2165": {
+    "name": "VIVE CABERNET SAUVIGNON",
+    "status": "ok",
+    "tags": [
+      "Cabernet Sauvignon",
+      "Tinto"
+    ]
+  },
+  "tags_2230": {
+    "name": "Durigutti Reserva Petit Verdot",
+    "status": "ok",
+    "tags": [
+      "Petit Verdot",
+      "Tinto",
+      "Reserva"
+    ]
   }
 }
