@@ -1,0 +1,609 @@
+[
+  {
+    "id": 12384,
+    "name": "Sur de Los Andes Chardonnay",
+    "pTokens": [
+      "sur",
+      "andes",
+      "chardonnay"
+    ],
+    "media": {
+      "id": 12042,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/sur_de_los_andes_chardonnay-07d514ec88317ccbe917528742017203-1024-1024.webp",
+      "filename": "sur_de_los_andes_chardonnay-07d514ec88317ccbe917528742017203-1024-1024-webp",
+      "tokens": [
+        "sur",
+        "andes",
+        "chardonnay",
+        "07d514ec88317ccbe917528742017203",
+        "webp"
+      ],
+      "score": 1
+    }
+  },
+  {
+    "id": 12080,
+    "name": "Kamala Ts Cabernet Franc Dharma",
+    "pTokens": [
+      "kamala",
+      "cabernet",
+      "franc",
+      "dharma"
+    ],
+    "media": {
+      "id": 12032,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/kamala-cabernet-franc-rose-e82595716ff3f1f55617399192125798-1024-1024.webp",
+      "filename": "kamala-cabernet-franc-rose-e82595716ff3f1f55617399192125798-1024-1024-webp",
+      "tokens": [
+        "kamala",
+        "cabernet",
+        "franc",
+        "rose",
+        "e82595716ff3f1f55617399192125798",
+        "webp"
+      ],
+      "score": 0.75
+    }
+  },
+  {
+    "id": 12362,
+    "name": "Fin Del Mundo Reserva Merlot",
+    "pTokens": [
+      "fin",
+      "mundo",
+      "reserva",
+      "merlot"
+    ],
+    "media": {
+      "id": 12020,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/reserva_del_fin_del_mundo_malbec_1.jpg",
+      "filename": "reserva_del_fin_del_mundo_malbec_1-jpg",
+      "tokens": [
+        "reserva",
+        "fin",
+        "mundo",
+        "malbec",
+        "jpg"
+      ],
+      "score": 0.75
+    }
+  },
+  {
+    "id": 12194,
+    "name": "Lorca El Mirador Criolla Blanca",
+    "pTokens": [
+      "lorca",
+      "mirador",
+      "criolla",
+      "blanca"
+    ],
+    "media": {
+      "id": 12038,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural.jpg",
+      "filename": "vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural-jpg",
+      "tokens": [
+        "vinos",
+        "foster",
+        "lorca",
+        "fantasia",
+        "mirador",
+        "criolla",
+        "dulce",
+        "natural",
+        "jpg"
+      ],
+      "score": 0.75
+    }
+  },
+  {
+    "id": 12113,
+    "name": "Ricardo Santos Bonarda",
+    "pTokens": [
+      "ricardo",
+      "santos",
+      "bonarda"
+    ],
+    "media": {
+      "id": 12106,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/00956-ricardo-santos-malbec-bf6ddc71b3e91e63a617268617103547-1024-1024.webp",
+      "filename": "00956-ricardo-santos-malbec-bf6ddc71b3e91e63a617268617103547-1024-1024-webp",
+      "tokens": [
+        "ricardo",
+        "santos",
+        "malbec",
+        "bf6ddc71b3e91e63a617268617103547",
+        "webp"
+      ],
+      "score": 0.6666666666666666
+    }
+  },
+  {
+    "id": 12578,
+    "name": "Il Caprone Cab. Sauv.",
+    "pTokens": [
+      "caprone",
+      "cab",
+      "sauv"
+    ],
+    "media": {
+      "id": 12173,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/1773029817_reserve-cab-sauv-corchonov2.png",
+      "filename": "1773029817_reserve-cab-sauv-corchonov2-png",
+      "tokens": [
+        "reserve",
+        "cab",
+        "sauv",
+        "corchonov2",
+        "png"
+      ],
+      "score": 0.6666666666666666
+    }
+  },
+  {
+    "id": 12446,
+    "name": "Talisker Single Malt",
+    "pTokens": [
+      "talisker",
+      "single",
+      "malt"
+    ],
+    "media": {
+      "id": 12157,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/tomatin-legacy-single-malt.jpg",
+      "filename": "tomatin-legacy-single-malt-jpg",
+      "tokens": [
+        "tomatin",
+        "legacy",
+        "single",
+        "malt",
+        "jpg"
+      ],
+      "score": 0.6666666666666666
+    }
+  },
+  {
+    "id": 12417,
+    "name": "Corral de Palos Syrah",
+    "pTokens": [
+      "corral",
+      "palos",
+      "syrah"
+    ],
+    "media": {
+      "id": 11970,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/corral-de-palos-rose-33b1461a7de3f236d517267937649195-480-0.webp",
+      "filename": "corral-de-palos-rose-33b1461a7de3f236d517267937649195-480-0-webp",
+      "tokens": [
+        "corral",
+        "palos",
+        "rose",
+        "33b1461a7de3f236d517267937649195",
+        "webp"
+      ],
+      "score": 0.6666666666666666
+    }
+  },
+  {
+    "id": 12379,
+    "name": "Tapiz Reserva Chardonnay",
+    "pTokens": [
+      "tapiz",
+      "reserva",
+      "chardonnay"
+    ],
+    "media": {
+      "id": 11977,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/tapiz-reserva-cab-sauv-10241-79a7c42489c4886de116155869524716-640-0.webp",
+      "filename": "tapiz-reserva-cab-sauv-10241-79a7c42489c4886de116155869524716-640-0-webp",
+      "tokens": [
+        "tapiz",
+        "reserva",
+        "cab",
+        "sauv",
+        "79a7c42489c4886de116155869524716",
+        "webp"
+      ],
+      "score": 0.6666666666666666
+    }
+  },
+  {
+    "id": 12430,
+    "name": "Marittimo Vermouth",
+    "pTokens": [
+      "marittimo",
+      "vermouth"
+    ],
+    "media": {
+      "id": 12067,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/Gonzalez-Byass-Vermouth-Rojo-La-Copa-Spirit-Flatiron-Wines-Spirits-New-York_b81760cc.jpg",
+      "filename": "gonzalez-byass-vermouth-rojo-la-copa-spirit-flatiron-wines-spirits-new-york_b81760cc-jpg",
+      "tokens": [
+        "gonzalez",
+        "byass",
+        "vermouth",
+        "rojo",
+        "copa",
+        "spirit",
+        "flatiron",
+        "wines",
+        "spirits",
+        "new",
+        "york",
+        "b81760cc",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12116,
+    "name": "Marchiori Cuartel 2 Cabernet Franc",
+    "pTokens": [
+      "marchiori",
+      "cuartel",
+      "cabernet",
+      "franc"
+    ],
+    "media": {
+      "id": 12114,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/marchiori-barraud-cuartel-2-syrah-rosado-x1-57709ce3856d5c60eb17574396945448-1024-1024.webp",
+      "filename": "marchiori-barraud-cuartel-2-syrah-rosado-x1-57709ce3856d5c60eb17574396945448-1024-1024-webp",
+      "tokens": [
+        "marchiori",
+        "barraud",
+        "cuartel",
+        "syrah",
+        "rosado",
+        "57709ce3856d5c60eb17574396945448",
+        "webp"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12064,
+    "name": "De Barrio Vermouth",
+    "pTokens": [
+      "barrio",
+      "vermouth"
+    ],
+    "media": {
+      "id": 12067,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/Gonzalez-Byass-Vermouth-Rojo-La-Copa-Spirit-Flatiron-Wines-Spirits-New-York_b81760cc.jpg",
+      "filename": "gonzalez-byass-vermouth-rojo-la-copa-spirit-flatiron-wines-spirits-new-york_b81760cc-jpg",
+      "tokens": [
+        "gonzalez",
+        "byass",
+        "vermouth",
+        "rojo",
+        "copa",
+        "spirit",
+        "flatiron",
+        "wines",
+        "spirits",
+        "new",
+        "york",
+        "b81760cc",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12630,
+    "name": "Tempestad Vermouth",
+    "pTokens": [
+      "tempestad",
+      "vermouth"
+    ],
+    "media": {
+      "id": 12067,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/Gonzalez-Byass-Vermouth-Rojo-La-Copa-Spirit-Flatiron-Wines-Spirits-New-York_b81760cc.jpg",
+      "filename": "gonzalez-byass-vermouth-rojo-la-copa-spirit-flatiron-wines-spirits-new-york_b81760cc-jpg",
+      "tokens": [
+        "gonzalez",
+        "byass",
+        "vermouth",
+        "rojo",
+        "copa",
+        "spirit",
+        "flatiron",
+        "wines",
+        "spirits",
+        "new",
+        "york",
+        "b81760cc",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12576,
+    "name": "Virgen Cab. Sauv. Orgánico",
+    "pTokens": [
+      "virgen",
+      "cab",
+      "sauv",
+      "organico"
+    ],
+    "media": {
+      "id": 12173,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/1773029817_reserve-cab-sauv-corchonov2.png",
+      "filename": "1773029817_reserve-cab-sauv-corchonov2-png",
+      "tokens": [
+        "reserve",
+        "cab",
+        "sauv",
+        "corchonov2",
+        "png"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12563,
+    "name": "La Fuerza Rojo 10 Lt",
+    "pTokens": [
+      "fuerza",
+      "rojo"
+    ],
+    "media": {
+      "id": 12067,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/Gonzalez-Byass-Vermouth-Rojo-La-Copa-Spirit-Flatiron-Wines-Spirits-New-York_b81760cc.jpg",
+      "filename": "gonzalez-byass-vermouth-rojo-la-copa-spirit-flatiron-wines-spirits-new-york_b81760cc-jpg",
+      "tokens": [
+        "gonzalez",
+        "byass",
+        "vermouth",
+        "rojo",
+        "copa",
+        "spirit",
+        "flatiron",
+        "wines",
+        "spirits",
+        "new",
+        "york",
+        "b81760cc",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12473,
+    "name": "Tapiz Bonarda",
+    "pTokens": [
+      "tapiz",
+      "bonarda"
+    ],
+    "media": {
+      "id": 11977,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/tapiz-reserva-cab-sauv-10241-79a7c42489c4886de116155869524716-640-0.webp",
+      "filename": "tapiz-reserva-cab-sauv-10241-79a7c42489c4886de116155869524716-640-0-webp",
+      "tokens": [
+        "tapiz",
+        "reserva",
+        "cab",
+        "sauv",
+        "79a7c42489c4886de116155869524716",
+        "webp"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12468,
+    "name": "Lorca Inspirado",
+    "pTokens": [
+      "lorca",
+      "inspirado"
+    ],
+    "media": {
+      "id": 12038,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural.jpg",
+      "filename": "vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural-jpg",
+      "tokens": [
+        "vinos",
+        "foster",
+        "lorca",
+        "fantasia",
+        "mirador",
+        "criolla",
+        "dulce",
+        "natural",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12444,
+    "name": "Lunfa Rojo",
+    "pTokens": [
+      "lunfa",
+      "rojo"
+    ],
+    "media": {
+      "id": 12067,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/Gonzalez-Byass-Vermouth-Rojo-La-Copa-Spirit-Flatiron-Wines-Spirits-New-York_b81760cc.jpg",
+      "filename": "gonzalez-byass-vermouth-rojo-la-copa-spirit-flatiron-wines-spirits-new-york_b81760cc-jpg",
+      "tokens": [
+        "gonzalez",
+        "byass",
+        "vermouth",
+        "rojo",
+        "copa",
+        "spirit",
+        "flatiron",
+        "wines",
+        "spirits",
+        "new",
+        "york",
+        "b81760cc",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12386,
+    "name": "Tinkunako Torrontés",
+    "pTokens": [
+      "tinkunako",
+      "torrontes"
+    ],
+    "media": {
+      "id": 12030,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/tinkunako-petit-verdot.jpg",
+      "filename": "tinkunako-petit-verdot-jpg",
+      "tokens": [
+        "tinkunako",
+        "petit",
+        "verdot",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12373,
+    "name": "Lois Espumante Dulce Foster",
+    "pTokens": [
+      "lois",
+      "espumante",
+      "dulce",
+      "foster"
+    ],
+    "media": {
+      "id": 12038,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural.jpg",
+      "filename": "vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural-jpg",
+      "tokens": [
+        "vinos",
+        "foster",
+        "lorca",
+        "fantasia",
+        "mirador",
+        "criolla",
+        "dulce",
+        "natural",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12328,
+    "name": "Cruzat Naranjo",
+    "pTokens": [
+      "cruzat",
+      "naranjo"
+    ],
+    "media": {
+      "id": 12089,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/CS-NARANJO.png",
+      "filename": "cs-naranjo-png",
+      "tokens": [
+        "naranjo",
+        "png"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12202,
+    "name": "Lorca El Mirador Ancellotta-Malbec",
+    "pTokens": [
+      "lorca",
+      "mirador",
+      "ancellotta",
+      "malbec"
+    ],
+    "media": {
+      "id": 12038,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural.jpg",
+      "filename": "vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural-jpg",
+      "tokens": [
+        "vinos",
+        "foster",
+        "lorca",
+        "fantasia",
+        "mirador",
+        "criolla",
+        "dulce",
+        "natural",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 12193,
+    "name": "Lorca El Mirador Pedro Ximénez",
+    "pTokens": [
+      "lorca",
+      "mirador",
+      "pedro",
+      "ximenez"
+    ],
+    "media": {
+      "id": 12038,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural.jpg",
+      "filename": "vinos-foster-lorca_fantasia-el-mirador-criolla-dulce-natural-jpg",
+      "tokens": [
+        "vinos",
+        "foster",
+        "lorca",
+        "fantasia",
+        "mirador",
+        "criolla",
+        "dulce",
+        "natural",
+        "jpg"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 11890,
+    "name": "Corral de Palos Cabernet Franc",
+    "pTokens": [
+      "corral",
+      "palos",
+      "cabernet",
+      "franc"
+    ],
+    "media": {
+      "id": 11970,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/08/corral-de-palos-rose-33b1461a7de3f236d517267937649195-480-0.webp",
+      "filename": "corral-de-palos-rose-33b1461a7de3f236d517267937649195-480-0-webp",
+      "tokens": [
+        "corral",
+        "palos",
+        "rose",
+        "33b1461a7de3f236d517267937649195",
+        "webp"
+      ],
+      "score": 0.5
+    }
+  },
+  {
+    "id": 3090,
+    "name": "Cruzat Millésime",
+    "pTokens": [
+      "cruzat",
+      "millesime"
+    ],
+    "media": {
+      "id": 12125,
+      "url": "https://www.aromadevid.com.ar/wp-content/uploads/2026/09/millesime.png",
+      "filename": "millesime-png",
+      "tokens": [
+        "millesime",
+        "png"
+      ],
+      "score": 0.5
+    }
+  }
+]
