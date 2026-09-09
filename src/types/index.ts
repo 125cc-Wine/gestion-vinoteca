@@ -91,6 +91,10 @@ export interface Venta {
   monto_pagado?: number
   notas?: string
   condicion_venta?: string
+  // Fecha del comprobante. Al crearse coincide con created_at, pero al
+  // facturar un presupuesto/remito viejo se pisa con la fecha real de
+  // emisión (la que efectivamente se le manda a AFIP) — ver /api/afip/factura.
+  fecha?: string
   // AFIP
   facturado?: boolean
   cae?: string

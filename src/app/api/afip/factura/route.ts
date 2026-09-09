@@ -38,9 +38,16 @@ export async function POST(req: NextRequest) {
     if (ventaId) {
       const letra = cbteTipo === 1 ? 'A' : cbteTipo === 6 ? 'B' : 'C'
       const nroStr = `F${letra}-${String(result.ptoVta).padStart(5, '0')}-${String(result.nroFactura).padStart(8, '0')}`
+      // result.cbteFch es la fecha (YYYYMMDD) que realmente se le mandó a AFIP.
+      // Si la venta viene de un presupuesto/remito viejo, venta.fecha todavía
+      // tiene la fecha en que se armó ese presupuesto — hay que pisarla con la
+      // fecha real de emisión, o el comprobante impreso y el QR AFIP quedan
+      // con una fecha que no coincide con lo que AFIP tiene registrado.
+      const fechaFactura = `${result.cbteFch.slice(0, 4)}-${result.cbteFch.slice(4, 6)}-${result.cbteFch.slice(6, 8)}`
 
       await supabase.from('ventas').update({
         facturado:   true,
+        fecha:       fechaFactura,
         cae:         result.cae,
         cae_vto:     result.caeVto,
         nro_factura: result.nroFactura,

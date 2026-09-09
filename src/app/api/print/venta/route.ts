@@ -134,8 +134,10 @@ export async function GET(req: NextRequest) {
     items = []
   }
 
+  // 'T12:00:00' evita que una fecha-only ('YYYY-MM-DD', parseada como UTC
+  // medianoche) se corra un día para atrás si el runtime no está en UTC.
   const fecha = venta.fecha
-    ? new Date(venta.fecha).toLocaleDateString('es-AR')
+    ? new Date(venta.fecha + 'T12:00:00').toLocaleDateString('es-AR')
     : venta.created_at
       ? new Date(venta.created_at).toLocaleDateString('es-AR')
       : ''

@@ -889,9 +889,16 @@ export default function VentasPage() {
       setFactModal(false)
       const letra = factTipo === 1 ? 'A' : factTipo === 6 ? 'B' : 'C'
       const nroCbteAfip = `F${letra}-${String(data.ptoVta).padStart(5, '0')}-${String(data.nroFactura).padStart(8, '0')}`
+      // data.cbteFch (YYYYMMDD) es la fecha real que se le mandó a AFIP — si
+      // esta venta viene de un presupuesto/remito de días atrás, factVenta.fecha
+      // todavía tiene esa fecha vieja y hay que pisarla acá también.
+      const fechaFactura = data.cbteFch
+        ? `${data.cbteFch.slice(0, 4)}-${data.cbteFch.slice(4, 6)}-${data.cbteFch.slice(6, 8)}`
+        : factVenta.fecha
       setFacturaParaImprimir({
         ...factVenta,
         facturado: true,
+        fecha: fechaFactura,
         cae: data.cae,
         cae_vto: data.caeVto,
         nro_factura: data.nroFactura,
@@ -2665,7 +2672,10 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
   const letra   = tipo === 1 ? 'A' : 'B'
   const ptoVta  = venta.nro_cbte_afip?.split('-')[1] || '00001'
   const nroCbte = venta.nro_cbte_afip?.split('-')[2] || '00000001'
-  const fecha   = new Date(venta.created_at || Date.now()).toLocaleDateString('es-AR')
+  // venta.fecha es la fecha real de emisión ante AFIP (puede ser muy
+  // posterior a created_at si esto viene de facturar un presupuesto/remito
+  // viejo) — created_at queda solo como último fallback.
+  const fecha   = new Date((venta.fecha ? venta.fecha + 'T12:00:00' : venta.created_at) || Date.now()).toLocaleDateString('es-AR')
 
   // Si es preview sin CAE real, mostrar placeholder
   const cae    = venta.cae    || '75XXXXXXXXXXXXXX'

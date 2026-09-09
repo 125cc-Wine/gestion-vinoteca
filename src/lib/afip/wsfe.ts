@@ -99,6 +99,9 @@ export interface FacturaResult {
   nroFactura: number
   ptoVta: number
   cbteTipo: number
+  cbteFch: string  // fecha real que se le mandó a AFIP (YYYYMMDD) — la venta
+                    // puede haber sido presupuestada días antes, y el
+                    // comprobante debe imprimirse con la fecha de emisión.
 }
 
 export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> {
@@ -177,5 +180,5 @@ export async function solicitarCAE(input: FacturaInput): Promise<FacturaResult> 
 
   if (!cae) throw new Error(errMsg || 'WSFE no devolvió CAE. Respuesta: ' + xml.slice(0, 600))
 
-  return { cae, caeVto, nroFactura: nroSig, ptoVta: pta, cbteTipo }
+  return { cae, caeVto, nroFactura: nroSig, ptoVta: pta, cbteTipo, cbteFch: hoy }
 }
