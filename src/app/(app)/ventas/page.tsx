@@ -909,7 +909,13 @@ export default function VentasPage() {
       })
       setTimeout(() => imprimirFactura(w), 400)
       await cargarTodo(empresa)
-      showToast(`Factura emitida — CAE ${data.cae}`)
+      if (data.warning) {
+        // El CAE salió bien pero el guardado en la venta falló — no es un
+        // toast que se pierde: hay que dejar esto anotado en algún lado.
+        window.alert(`⚠️ ${data.warning}`)
+      } else {
+        showToast(`Factura emitida — CAE ${data.cae}`)
+      }
     } catch {
       setFactError('Error de conexión con AFIP')
       w?.close()

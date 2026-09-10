@@ -38,16 +38,17 @@ export async function POST(req: NextRequest) {
     if (ventaId) {
       const letra = cbteTipo === 1 ? 'A' : cbteTipo === 6 ? 'B' : 'C'
       const nroStr = `F${letra}-${String(result.ptoVta).padStart(5, '0')}-${String(result.nroFactura).padStart(8, '0')}`
-      // result.cbteFch es la fecha (YYYYMMDD) que realmente se le mandó a AFIP.
-      // Si la venta viene de un presupuesto/remito viejo, venta.fecha todavía
-      // tiene la fecha en que se armó ese presupuesto — hay que pisarla con la
-      // fecha real de emisión, o el comprobante impreso y el QR AFIP quedan
-      // con una fecha que no coincide con lo que AFIP tiene registrado.
-      const fechaFactura = `${result.cbteFch.slice(0, 4)}-${result.cbteFch.slice(4, 6)}-${result.cbteFch.slice(6, 8)}`
 
-      await supabase.from('ventas').update({
+      // OJO: la tabla `ventas` NO tiene columna `fecha` — un update que la
+      // incluya falla completo (42703, "column does not exist") y ninguno de
+      // los demás campos (facturado, cae, nro_cbte_afip...) se guarda. Esto
+      // pasó en producción: la factura salía bien en AFIP y se imprimía, pero
+      // el sistema seguía mostrando "Facturar" porque el update nunca pegaba.
+      // Si en el futuro hace falta persistir la fecha real de emisión (ver
+      // comentario histórico sobre presupuestos/remitos viejos), agregar la
+      // columna a la tabla antes de reintroducir este campo.
+      const { error: updateError } = await supabase.from('ventas').update({
         facturado:   true,
-        fecha:       fechaFactura,
         cae:         result.cae,
         cae_vto:     result.caeVto,
         nro_factura: result.nroFactura,
@@ -56,6 +57,18 @@ export async function POST(req: NextRequest) {
         doc_tipo:    docTipo || 99,
         doc_nro:     docNro  || '0',
       }).eq('id', ventaId)
+
+      if (updateError) {
+        // El CAE ya se obtuvo de AFIP (irreversible) — no podemos fallar la
+        // respuesta sin más, pero sí hay que dejar rastro fuerte del error:
+        // si esto no se corrige a mano, la venta queda facturada en AFIP y
+        // "no facturada" en el sistema, como pasó acá.
+        console.error('[AFIP] CAE obtenido pero falló el guardado en la venta', ventaId, updateError)
+        return NextResponse.json({
+          ...result,
+          warning: `Factura emitida en AFIP (CAE ${result.cae}) pero no se pudo guardar en el sistema: ${updateError.message}. Anotá el CAE y avisá para corregirlo a mano.`,
+        })
+      }
     }
 
     return NextResponse.json(result)
