@@ -421,6 +421,17 @@ export default function VentasPage() {
   const [factLoading, setFactLoading] = useState(false)
   const [factError, setFactError] = useState('')
 
+  // ── Nota de crédito AFIP (anula/ajusta una factura ya emitida)
+  const [ncModal, setNcModal] = useState(false)
+  const [ncVenta, setNcVenta] = useState<Venta | null>(null)
+  const [ncMonto, setNcMonto] = useState('')
+  const [ncMotivo, setNcMotivo] = useState('')
+  const [ncLoading, setNcLoading] = useState(false)
+  const [ncError, setNcError] = useState('')
+  // Texto "Ajusta a Factura X" que necesita el print de la NC — no vive en
+  // Venta porque una factura normal nunca lo tiene.
+  const [comprobanteAsociadoImprimir, setComprobanteAsociadoImprimir] = useState('')
+
   // Mes que muestran los totales del header (Total general / Cobrado) —
   // arranca en el mes corriente, cambiable con el selector.
   const [kpiMes, setKpiMes] = useState(() => new Date().toISOString().slice(0, 7))
@@ -895,6 +906,7 @@ export default function VentasPage() {
       const fechaFactura = data.cbteFch
         ? `${data.cbteFch.slice(0, 4)}-${data.cbteFch.slice(4, 6)}-${data.cbteFch.slice(6, 8)}`
         : factVenta.fecha
+      setComprobanteAsociadoImprimir('')
       setFacturaParaImprimir({
         ...factVenta,
         facturado: true,
@@ -921,6 +933,53 @@ export default function VentasPage() {
       w?.close()
     } finally {
       setFactLoading(false)
+    }
+  }
+
+  function abrirNotaCredito(v: Venta) {
+    setNcVenta(v); setNcMonto(String(v.total)); setNcMotivo(''); setNcError(''); setNcModal(true)
+  }
+
+  async function emitirNotaCredito() {
+    if (!ncVenta) return
+    const monto = parseFloat(ncMonto)
+    if (!(monto > 0)) { setNcError('Ingresá un importe mayor a 0'); return }
+    if (monto > ncVenta.total + 0.01) { setNcError('No puede superar el total de la factura'); return }
+    const esTotal = Math.abs(monto - ncVenta.total) < 0.01
+    const totalConfirm = monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })
+    const confirmado = window.confirm(
+      `¿Confirmás emitir una Nota de Crédito ${esTotal ? '(total)' : '(parcial)'} por ${totalConfirm}\n` +
+      `anulando/ajustando la factura ${ncVenta.nro_cbte_afip}?\n\n` +
+      `Cliente: ${ncVenta.cliente_nombre}\n\n` +
+      `Una vez emitida con CAE no se puede deshacer.`
+    )
+    if (!confirmado) return
+    const w = window.open('', '_blank', 'width=850,height=1100')
+    setNcLoading(true); setNcError('')
+    try {
+      const res = await fetch('/api/afip/nota-credito', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ventaId: ncVenta.id, empresa, monto, motivo: ncMotivo || undefined }),
+      })
+      const data = await res.json()
+      if (data.error) { setNcError(data.error); w?.close(); return }
+      setNcModal(false)
+      setComprobanteAsociadoImprimir(data.comprobanteAsociado || ncVenta.nro_cbte_afip || '')
+      setFacturaParaImprimir(data.nc || {
+        ...ncVenta, id: undefined, total: monto, facturado: true,
+        cae: data.cae, cae_vto: data.caeVto, nro_factura: data.nroFactura,
+        cbte_tipo: data.cbteTipo, nro_cbte_afip: data.nroCbteAfip,
+      })
+      setTimeout(() => imprimirFactura(w), 400)
+      await cargarTodo(empresa)
+      if (data.warning) window.alert(`⚠️ ${data.warning}`)
+      else showToast(`Nota de crédito emitida — CAE ${data.cae}`)
+    } catch {
+      setNcError('Error de conexión con AFIP')
+      w?.close()
+    } finally {
+      setNcLoading(false)
     }
   }
 
@@ -1088,6 +1147,7 @@ export default function VentasPage() {
   function abrirEImprimirFactura(v: Venta) {
     const w = window.open('', '_blank', 'width=850,height=1100')
     setFacturaParaImprimir(v)
+    setComprobanteAsociadoImprimir('')
     setTimeout(() => imprimirFactura(w), 400)
   }
 
@@ -1407,6 +1467,8 @@ export default function VentasPage() {
                               ? <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} title="Imprimir factura AFIP" onClick={() => abrirEImprimirFactura(v)}>Factura ✓</button>
                               : <button className="vbtn" style={btn('accent', { padding: '4px 8px', fontSize: 11 })} onClick={() => abrirFacturar(v)}>Facturar</button>
                             }
+                            {v.facturado && v.nro_cbte_afip && [1, 6, 11].includes(v.cbte_tipo || 0) &&
+                              <button className="vbtn" style={btn('default', { padding: '4px 8px', fontSize: 11, color: C.blue })} title="Emitir Nota de Crédito AFIP" onClick={() => abrirNotaCredito(v)}>NC</button>}
                             <button className="vbtn" style={btn('danger', { padding: '4px 8px', fontSize: 11 })} onClick={() => eliminarVenta(v.id!)}>Eliminar</button>
                           </div>
                         </td>
@@ -2259,6 +2321,72 @@ export default function VentasPage() {
         </div>
       )}
 
+      {/* ── Modal Nota de Crédito AFIP ──────────────────────────────────────── */}
+      {ncModal && ncVenta && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { !ncLoading && setNcModal(false) })}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, width: '100%', maxWidth: 440 }}>
+            <h2 style={{ color: C.text, fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>Emitir Nota de Crédito AFIP</h2>
+            <p style={{ color: C.muted, fontSize: 13, margin: '0 0 18px' }}>
+              Anula/ajusta {ncVenta.nro_cbte_afip} · {ncVenta.cliente_nombre}
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>
+                IMPORTE A ACREDITAR (factura: ${ncVenta.total.toLocaleString('es-AR')})
+              </div>
+              <input style={INP} type="number" value={ncMonto} onChange={e => setNcMonto(e.target.value)} />
+              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                <button style={{ ...btn('default', { padding: '4px 10px', fontSize: 11 }) }} onClick={() => setNcMonto(String(ncVenta.total))}>Total</button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>MOTIVO (opcional, queda anotado)</div>
+              <input style={INP} value={ncMotivo} onChange={e => setNcMotivo(e.target.value)} placeholder="Ej: factura duplicada, devolución de mercadería..." />
+            </div>
+
+            {/* Resumen montos */}
+            {(() => {
+              const monto = parseFloat(ncMonto) || 0
+              return (
+                <div style={{ background: C.surface, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: C.dim, marginBottom: 4 }}>
+                    <span>Neto gravado (21%):</span>
+                    <span>${(monto / 1.21).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: C.dim, marginBottom: 4 }}>
+                    <span>IVA 21%:</span>
+                    <span>${(monto - monto / 1.21).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: C.text, fontWeight: 700, borderTop: `1px solid ${C.border}`, paddingTop: 4 }}>
+                    <span>Total NC:</span>
+                    <span>${monto.toLocaleString('es-AR')}</span>
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div style={{ background: `${C.blue}14`, border: `1px solid ${C.blue}44`, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 11.5, color: C.blue }}>
+              Esto no ajusta caja ni cuenta corriente automáticamente — si corresponde devolver dinero o descontar saldo, hacelo aparte.
+            </div>
+
+            {ncError && (
+              <div style={{ background: `${C.red}18`, border: `1px solid ${C.red}55`, borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: C.red }}>
+                {ncError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button style={btn('default')} onClick={() => setNcModal(false)} disabled={ncLoading}>Cancelar</button>
+              <button style={btn('accent', { opacity: ncLoading ? 0.6 : 1 })} onClick={emitirNotaCredito} disabled={ncLoading}>
+                {ncLoading ? 'Emitiendo...' : 'Emitir Nota de Crédito'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Modal preview Factura A/B ───────────────────────────────────────── */}
       {previewFactura && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 70, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}
@@ -2274,7 +2402,7 @@ export default function VentasPage() {
               </button>
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
-              <PrintFactura venta={previewFactura.venta} tipo={previewFactura.tipo} empresa={emp} clienteCuit={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.saldo} />
+              <PrintFactura venta={previewFactura.venta} cbteTipo={previewFactura.tipo} empresa={emp} clienteCuit={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === previewFactura.venta.cliente_id)?.saldo} />
             </div>
           </div>
         </div>
@@ -2399,7 +2527,7 @@ export default function VentasPage() {
       </div>
 
       <div id="print-area-factura" style={{ display: 'none' }}>
-        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} tipo={facturaParaImprimir.cbte_tipo === 1 ? 1 : 6} empresa={emp} clienteCuit={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.saldo} />}
+        {facturaParaImprimir && <PrintFactura venta={facturaParaImprimir} cbteTipo={facturaParaImprimir.cbte_tipo || 6} comprobanteAsociado={comprobanteAsociadoImprimir || undefined} empresa={emp} clienteCuit={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.cuit} clienteSaldo={clientes.find(c => c.id === facturaParaImprimir.cliente_id)?.saldo} />}
       </div>
 
       {/* ══ ALERTA SALIR SIN GUARDAR ══ */}
@@ -2667,15 +2795,28 @@ function PrintDoc({ venta, empresa, cliente }: {
 }
 
 // ─── PrintFactura — formato oficial AFIP Factura A / B ────────────────────────
-function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
+// Fact.A/B/C y sus Notas de Crédito equivalentes — mismo diseño de comprobante,
+// solo cambia el rótulo, la letra y el código AFIP impresos en la caja central.
+const COMPROBANTE_INFO: Record<number, { letra: string; label: string; cod: string }> = {
+  1:  { letra: 'A', label: 'FACTURA', cod: '001' },
+  6:  { letra: 'B', label: 'FACTURA', cod: '006' },
+  11: { letra: 'C', label: 'FACTURA', cod: '011' },
+  3:  { letra: 'A', label: 'NOTA DE CRÉDITO', cod: '003' },
+  8:  { letra: 'B', label: 'NOTA DE CRÉDITO', cod: '008' },
+  13: { letra: 'C', label: 'NOTA DE CRÉDITO', cod: '013' },
+}
+
+function PrintFactura({ venta, cbteTipo, comprobanteAsociado, empresa, clienteCuit, clienteSaldo }: {
   venta: Venta
-  tipo: 1 | 6
+  cbteTipo: number
+  comprobanteAsociado?: string
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string; inicioActividades?: string }
   clienteCuit?: string
   clienteSaldo?: number
 }) {
   const items   = venta.items as (VentaItem & { descuento?: number })[]
-  const letra   = tipo === 1 ? 'A' : 'B'
+  const info    = COMPROBANTE_INFO[cbteTipo] || COMPROBANTE_INFO[1]
+  const { letra, label: docLabel, cod } = info
   const ptoVta  = venta.nro_cbte_afip?.split('-')[1] || '00001'
   const nroCbte = venta.nro_cbte_afip?.split('-')[2] || '00000001'
   // venta.fecha es la fecha real de emisión ante AFIP (puede ser muy
@@ -2723,8 +2864,8 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
               <div style={{ border: `2px solid ${MAROON}`, borderRadius: 4, background: '#fff', display: 'inline-block', width: 52, height: 52, lineHeight: '52px', fontSize: '30px', fontWeight: 700, textAlign: 'center', color: MAROON, marginBottom: 6 }}>
                 {letra}
               </div>
-              <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em', color: MAROON }}>FACTURA</div>
-              <div style={{ fontSize: '8px', color: MUTED, marginTop: 2 }}>COD. 00{tipo}</div>
+              <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em', color: MAROON }}>{docLabel}</div>
+              <div style={{ fontSize: '8px', color: MUTED, marginTop: 2 }}>COD. {cod}</div>
             </td>
 
             {/* Col derecha — número y fechas */}
@@ -2733,6 +2874,9 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
                 <span style={LABEL}>N° de Comprobante</span><br />
                 <strong style={{ fontSize: '15px', letterSpacing: '0.02em' }}>{ptoVta} - {nroCbte}</strong>
               </div>
+              {comprobanteAsociado && (
+                <div style={{ marginBottom: 3 }}><strong>Comprobante que ajusta:</strong> {comprobanteAsociado}</div>
+              )}
               <div style={{ marginBottom: 3 }}><strong>Fecha de emisión:</strong> {fecha}</div>
               <div style={{ marginBottom: 3 }}><strong>C.U.I.T.:</strong> {empresa.cuit}</div>
               <div style={{ marginBottom: 3 }}><strong>Ingresos Brutos:</strong> {empresa.cuit}</div>
@@ -2749,12 +2893,12 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
             <td style={{ ...TD, padding: '10px 16px', width: '60%', borderRight: `1px solid ${LINE}` }}>
               <div style={LABEL}>Apellido y Nombre / Razón Social</div>
               <div style={{ fontSize: '13px', fontWeight: 700, marginTop: 2, marginBottom: 6 }}>{venta.cliente_nombre}</div>
-              <div>Condición frente al IVA: <strong>{tipo === 1 ? 'Responsable Inscripto' : 'Consumidor Final'}</strong></div>
+              <div>Condición frente al IVA: <strong>{letra === 'A' ? 'Responsable Inscripto' : 'Consumidor Final'}</strong></div>
               {venta.notas && <div style={{ marginTop: 4, color: MUTED }}>Notas: {venta.notas}</div>}
             </td>
             <td style={{ ...TD, padding: '10px 16px', width: '40%' }}>
               <div><strong>Condición de venta:</strong> {(venta as unknown as Record<string,unknown>).condicion_venta as string || 'Contado'}</div>
-              {tipo === 1 && <div style={{ marginTop: 6 }}><strong>C.U.I.T.:</strong> {cuitCompradorFmt || '___________________________'}</div>}
+              {letra === 'A' && <div style={{ marginTop: 6 }}><strong>C.U.I.T.:</strong> {cuitCompradorFmt || '___________________________'}</div>}
             </td>
           </tr>
         </tbody>
@@ -2768,7 +2912,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
             <th style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600 }}>Descripción</th>
             <th style={{ padding: '7px 10px', textAlign: 'center', width: 50, fontWeight: 600 }}>U.Med.</th>
             <th style={{ padding: '7px 10px', textAlign: 'right', width: 110, fontWeight: 600 }}>Precio Unit.</th>
-            {tipo === 1 && <th style={{ padding: '7px 10px', textAlign: 'center', width: 60, fontWeight: 600 }}>% Bonif.</th>}
+            {letra === 'A' && <th style={{ padding: '7px 10px', textAlign: 'center', width: 60, fontWeight: 600 }}>% Bonif.</th>}
             <th style={{ padding: '7px 10px', textAlign: 'right', width: 110, fontWeight: 600 }}>Subtotal</th>
           </tr>
         </thead>
@@ -2786,7 +2930,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
                   </div>
                 )}
               </td>
-              {tipo === 1 && <td style={{ padding: '6px 10px', textAlign: 'center', color: item.descuento ? INK : MUTED, fontWeight: item.descuento ? 700 : 400 }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
+              {letra === 'A' && <td style={{ padding: '6px 10px', textAlign: 'center', color: item.descuento ? INK : MUTED, fontWeight: item.descuento ? 700 : 400 }}>{item.descuento ? `${item.descuento}%` : '—'}</td>}
               <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600 }}>
                 {(item.subtotal / 1.21).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </td>
@@ -2795,7 +2939,7 @@ function PrintFactura({ venta, tipo, empresa, clienteCuit, clienteSaldo }: {
           {/* filas vacías para dar espacio */}
           {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
             <tr key={`e${i}`} style={{ borderBottom: `1px solid #eee`, background: (items.length + i) % 2 === 1 ? '#f7f7f7' : '#fff' }}>
-              <td colSpan={tipo === 1 ? 6 : 5} style={{ padding: '6px 10px' }}>&nbsp;</td>
+              <td colSpan={letra === 'A' ? 6 : 5} style={{ padding: '6px 10px' }}>&nbsp;</td>
             </tr>
           ))}
         </tbody>
