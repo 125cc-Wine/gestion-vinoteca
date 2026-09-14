@@ -63,6 +63,10 @@ export interface Proveedor {
   notas?: string
   activo: boolean
   created_at?: string
+  // Responsable inscripto que factura con IVA 21% discriminado — al elegirlo
+  // en Compras, tilda solo el selector de IVA del formulario (ver
+  // sql/2026-09-proveedores-factura-iva.sql).
+  factura_iva?: boolean
 }
 
 export interface VentaItem {

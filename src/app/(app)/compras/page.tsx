@@ -95,7 +95,7 @@ interface Compra {
   monto_iva?: number | null
   monto_perc_iva?: number | null
 }
-interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string }
+interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string; factura_iva?: boolean }
 interface ChequePendiente {
   id: string; empresa: string; nro_cheque: string | null; banco: string | null
   monto: number; fecha_pago: string; beneficiario: string; compra_id: string | null
@@ -291,6 +291,17 @@ export default function ComprasPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  // Al elegir un proveedor que factura con IVA discriminado (marcado en su
+  // ficha, ver /proveedores), tilda solo el selector — así no depende de
+  // acordarse de tildarlo a mano en cada compra (que fue justo lo que pasó
+  // con varias compras de septiembre: se cargaron sin tildarlo y se perdió
+  // el crédito fiscal de esos meses). Sigue siendo editable por si esta
+  // compra puntual es una excepción.
+  function seleccionarProveedor(p: Proveedor) {
+    setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false)
+    if (p.factura_iva) setIncluyeIva(true)
+  }
 
   function abrirNuevo() {
     setProveedorId(''); setProveedorNombre(''); setItems([{ ...ITEM_EMPTY }])
@@ -897,7 +908,7 @@ export default function ComprasPage() {
                     <div style={{ position: 'fixed', top: provPos.top, left: provPos.left, width: provPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: provPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                       {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
                         <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}
-                          onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                          onMouseDown={() => seleccionarProveedor(p)}>
                           <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
                           {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: T.muted }}> — {p.razon_social}</span>}
                         </div>
@@ -1238,7 +1249,7 @@ export default function ComprasPage() {
                   <div style={{ position: 'fixed', top: provPos.top, left: provPos.left, width: provPos.width, background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, zIndex: 9999, maxHeight: provPos.maxH, overflowY: 'auto', boxShadow: '0 8px 24px rgba(26,18,16,0.14)' }}>
                     {proveedores.filter(p => !proveedorNombre || normalize(p.nombre).includes(normalize(proveedorNombre)) || normalize(p.razon_social || '').includes(normalize(proveedorNombre))).slice(0, 8).map(p => (
                       <div key={p.id} className="drop-item" style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, borderBottom: `1px solid ${T.border}` }}
-                        onMouseDown={() => { setProveedorNombre(p.nombre); setProveedorId(p.id); setProvSugsOpen(false) }}>
+                        onMouseDown={() => seleccionarProveedor(p)}>
                         <span style={{ fontWeight: 500, color: T.text }}>{p.nombre}</span>
                         {p.razon_social && p.razon_social !== p.nombre && <span style={{ color: T.muted }}> — {p.razon_social}</span>}
                       </div>

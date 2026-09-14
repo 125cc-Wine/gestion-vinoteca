@@ -15,11 +15,20 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('proveedores')
     .insert([body])
     .select()
     .single()
+
+  // Si todavía no se corrió sql/2026-09-proveedores-factura-iva.sql, la
+  // columna no existe — reintentar sin ella para no bloquear el alta de
+  // proveedores por eso.
+  if (error?.message?.includes('factura_iva')) {
+    const { factura_iva: _fi, ...bodySinIva } = body
+    void _fi
+    ;({ data, error } = await supabase.from('proveedores').insert([bodySinIva]).select().single())
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
@@ -29,12 +38,18 @@ export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('proveedores')
     .update(rest)
     .eq('id', id)
     .select()
     .single()
+
+  if (error?.message?.includes('factura_iva')) {
+    const { factura_iva: _fi, ...restSinIva } = rest
+    void _fi
+    ;({ data, error } = await supabase.from('proveedores').update(restSinIva).eq('id', id).select().single())
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

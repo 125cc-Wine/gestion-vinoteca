@@ -1,0 +1,11 @@
+-- Marca si un proveedor factura con IVA discriminado (responsable inscripto,
+-- 21%) — para que al elegirlo en Compras se tilde solo el selector de IVA
+-- del formulario, en vez de tener que acordarse de marcarlo a mano en cada
+-- compra (que fue justo lo que pasó: se cargaron compras sin marcarlo,
+-- perdiendo el crédito fiscal de esos meses — ver
+-- sql/2026-09-compras-iva.sql).
+--
+-- DEFAULT false: un proveedor nuevo arranca sin marcar hasta que se sepa
+-- cómo factura (más seguro que asumir que sí discrimina IVA y contar un
+-- crédito fiscal que en realidad no existe).
+ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS factura_iva BOOLEAN DEFAULT false;

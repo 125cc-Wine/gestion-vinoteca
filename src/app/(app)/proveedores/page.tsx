@@ -45,6 +45,7 @@ function Label({ children }: { children: React.ReactNode }) {
 const EMPTY: Omit<Proveedor, 'id' | 'created_at'> = {
   empresa: 'aroma', nombre: '', razon_social: '', cuit: '',
   email: '', telefono: '', direccion: '', contacto: '', saldo: 0, notas: '', activo: true,
+  factura_iva: false,
 }
 
 interface Compra {
@@ -104,7 +105,7 @@ export default function ProveedoresPage() {
   function abrirNuevo() { setForm({ ...EMPTY, empresa: empresa as 'aroma' | 'lavid' }); setEditId(null); setModal(true) }
 
   function abrirEditar(p: Proveedor) {
-    setForm({ empresa: p.empresa, nombre: p.nombre, razon_social: p.razon_social || '', cuit: p.cuit || '', email: p.email || '', telefono: p.telefono || '', direccion: p.direccion || '', contacto: p.contacto || '', saldo: p.saldo, notas: p.notas || '', activo: p.activo })
+    setForm({ empresa: p.empresa, nombre: p.nombre, razon_social: p.razon_social || '', cuit: p.cuit || '', email: p.email || '', telefono: p.telefono || '', direccion: p.direccion || '', contacto: p.contacto || '', saldo: p.saldo, notas: p.notas || '', activo: p.activo, factura_iva: p.factura_iva || false })
     setEditId(p.id!); setModal(true)
   }
 
@@ -316,6 +317,17 @@ export default function ProveedoresPage() {
               <div><Label>Teléfono</Label><input className="pinp" style={INP} value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} /></div>
               <div><Label>Email</Label><input className="pinp" style={INP} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Dirección</Label><input className="pinp" style={INP} value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} /></div>
+              <div style={{ gridColumn: '1/-1' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px' }}>
+                  <input type="checkbox" checked={!!form.factura_iva} onChange={e => setForm(f => ({ ...f, factura_iva: e.target.checked }))}
+                    style={{ width: 16, height: 16, accentColor: T.wine, cursor: 'pointer', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: T.text }}>Factura con IVA discriminado (responsable inscripto)</span>
+                </label>
+                <p style={{ fontSize: 11, color: T.dim, margin: '5px 2px 0' }}>
+                  Si lo tildás, al cargarle una compra en Compras se marca solo el 21% de IVA — así no se pierde el
+                  crédito fiscal por olvidarse de tildarlo a mano cada vez.
+                </p>
+              </div>
               <div style={{ gridColumn: '1/-1' }}><Label>Saldo (negativo = deuda)</Label><input className="pinp" type="number" style={INP} placeholder="0" value={form.saldo || ''} onChange={e => setForm(f => ({ ...f, saldo: parseFloat(e.target.value) || 0 }))} /></div>
               <div style={{ gridColumn: '1/-1' }}><Label>Notas</Label><textarea className="pinp" style={{ ...INP, height: 72, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} /></div>
             </div>
