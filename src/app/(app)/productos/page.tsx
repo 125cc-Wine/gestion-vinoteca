@@ -178,6 +178,19 @@ export default function ProductosPage() {
   const [syncResumen, setSyncResumen] = useState<null | {
     total_vinculados: number; cambios: number; sin_cambios: number; sin_encontrar_en_web: number
   }>(null)
+  // Progreso visible del sync real (POST /api/woo/sync), que ahora se hace
+  // en tandas de a 100 productos en vez de una sola llamada que actualizaba
+  // todo el catálogo de punta a punta sin devolver nada hasta el final —
+  // con 1000+ productos eso tardaba minutos y cualquier corte de conexión
+  // de por medio (timeout del hosting, wifi, etc.) dejaba sin ningún rastro
+  // de cuánto se había alcanzado a sincronizar.
+  interface SyncFallo { id: string; nombre: string; error: string }
+  const [syncProgress, setSyncProgress] = useState<null | {
+    done: number; total: number; ok: number; errors: number; fallos: SyncFallo[]
+    estado: 'corriendo' | 'completo' | 'cortado'
+    mensajeCorte?: string
+    resumeOffset?: number
+  }>(null)
   const [vinculando, setVinculando] = useState(false)
   // Preview de la vinculación por nombre (productos ya cargados sin woo_product_id).
   // Guarda el resumen + la lista de pares propuestos y los conflictos, para
@@ -1051,7 +1064,7 @@ export default function ProductosPage() {
   async function previewSyncWoo(mode: 'stock' | 'precio' | 'ambos') {
     setSyncConfirm(mode)
     setSyncDiffLoading(true)
-    setSyncCambios([]); setSyncResumen(null)
+    setSyncCambios([]); setSyncResumen(null); setSyncProgress(null)
     try {
       const res = await fetch(`/api/woo/sync/diff?mode=${mode}`)
       const d = await res.json()
@@ -1062,18 +1075,66 @@ export default function ProductosPage() {
     setSyncDiffLoading(false)
   }
 
-  async function syncWoo(mode: 'stock' | 'precio' | 'ambos') {
-    setSyncConfirm(null)
+  // Corre el sync en tandas de a 100 productos (tope del endpoint /batch de
+  // WooCommerce), llamando a /api/woo/sync una vez por tanda y actualizando
+  // syncProgress después de cada una — así el modal muestra avance real
+  // (X de 1136) en vez de quedar congelado hasta que termine todo. Si una
+  // tanda falla (red, WooCommerce caído un momento), se corta ahí mismo sin
+  // perder el progreso ya confirmado, y arranca() permite reintentar desde
+  // ese mismo offset en vez de repetir desde cero.
+  async function syncWoo(mode: 'stock' | 'precio' | 'ambos', desdeOffset = 0) {
     setSyncing(true)
-    const res = await fetch('/api/woo/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode }),
-    })
-    const d = await res.json()
-    setSyncing(false)
-    if (!res.ok || d.error) { toast_('Error de sync: ' + (d.error ?? `HTTP ${res.status}`)); return }
-    toast_(`Sync ${mode}: ${d.ok} ok${d.errors ? `, ${d.errors} errores` : ''}`)
+    setSyncProgress(prev => ({
+      done: desdeOffset,
+      total: prev?.total ?? syncResumen?.total_vinculados ?? 0,
+      ok: desdeOffset > 0 ? (prev?.ok ?? 0) : 0,
+      errors: desdeOffset > 0 ? (prev?.errors ?? 0) : 0,
+      fallos: desdeOffset > 0 ? (prev?.fallos ?? []) : [],
+      estado: 'corriendo',
+    }))
+
+    let offset = desdeOffset
+    let acumOk = desdeOffset > 0 ? (syncProgress?.ok ?? 0) : 0
+    let acumErrors = desdeOffset > 0 ? (syncProgress?.errors ?? 0) : 0
+    let acumFallos: SyncFallo[] = desdeOffset > 0 ? (syncProgress?.fallos ?? []) : []
+
+    try {
+      while (true) {
+        const res = await fetch('/api/woo/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode, offset, limit: 100 }),
+        })
+        const d = await res.json()
+        if (!res.ok || d.error) {
+          setSyncProgress({
+            done: offset, total: d.total ?? 0, ok: acumOk, errors: acumErrors, fallos: acumFallos,
+            estado: 'cortado',
+            mensajeCorte: d.error ?? `HTTP ${res.status}`,
+            resumeOffset: offset,
+          })
+          setSyncing(false)
+          return
+        }
+
+        acumOk += d.ok
+        acumErrors += d.errors
+        acumFallos = [...acumFallos, ...(d.failedProducts ?? [])]
+        offset = d.nextOffset
+
+        setSyncProgress({
+          done: offset, total: d.total, ok: acumOk, errors: acumErrors, fallos: acumFallos,
+          estado: d.done ? 'completo' : 'corriendo',
+        })
+
+        if (d.done) break
+      }
+      toast_(`Sync ${mode} completo: ${acumOk} ok${acumErrors ? `, ${acumErrors} errores` : ''}`)
+    } catch {
+      setSyncProgress(prev => prev ? { ...prev, estado: 'cortado', mensajeCorte: 'Se cortó la conexión', resumeOffset: offset } : prev)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   async function openWooImport() {
@@ -2070,13 +2131,13 @@ export default function ProductosPage() {
       {/* ── Modal confirmación sync WooCommerce ── */}
       {syncConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setSyncConfirm(null) })}>
+          onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { if (!syncing) { setSyncConfirm(null); setSyncProgress(null) } })}>
           <div style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(26,18,16,0.18)' }}>
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}` }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: T.text }}>
-                {syncConfirm === 'stock' ? '📦' : syncConfirm === 'precio' ? '💰' : '🔄'} Confirmar sync — {syncConfirm === 'stock' ? 'Stock' : syncConfirm === 'precio' ? 'Precio' : 'Stock + Precio'}
+                {syncConfirm === 'stock' ? '📦' : syncConfirm === 'precio' ? '💰' : '🔄'} {syncProgress ? 'Sincronizando' : 'Confirmar sync'} — {syncConfirm === 'stock' ? 'Stock' : syncConfirm === 'precio' ? 'Precio' : 'Stock + Precio'}
               </h2>
-              {syncResumen && (
+              {!syncProgress && syncResumen && (
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
                   <span style={{ color: T.wine, fontWeight: 600 }}>{syncResumen.cambios} van a cambiar</span>
                   {' '}· {syncResumen.sin_cambios} sin cambios
@@ -2085,7 +2146,58 @@ export default function ProductosPage() {
               )}
             </div>
 
-            {syncDiffLoading ? (
+            {syncProgress ? (
+              <div style={{ padding: 24, flex: 1, overflowY: 'auto' }}>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.muted, marginBottom: 6 }}>
+                    <span>{syncProgress.done} de {syncProgress.total} productos</span>
+                    <span>{syncProgress.total > 0 ? Math.round((syncProgress.done / syncProgress.total) * 100) : 0}%</span>
+                  </div>
+                  <div style={{ height: 10, background: T.bg, borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${syncProgress.total > 0 ? Math.min(100, (syncProgress.done / syncProgress.total) * 100) : 0}%`,
+                      background: syncProgress.estado === 'cortado' ? T.red : syncProgress.estado === 'completo' ? T.green : T.wine,
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 16, fontSize: 13, marginBottom: 14 }}>
+                  <span style={{ color: T.green, fontWeight: 600 }}>✓ {syncProgress.ok} actualizados</span>
+                  {syncProgress.errors > 0 && <span style={{ color: T.red, fontWeight: 600 }}>✗ {syncProgress.errors} con error</span>}
+                </div>
+
+                {syncProgress.estado === 'corriendo' && (
+                  <div style={{ fontSize: 13, color: T.muted }}>Sincronizando con WooCommerce, no cierres esta ventana…</div>
+                )}
+                {syncProgress.estado === 'completo' && (
+                  <div style={{ fontSize: 13, color: T.green, fontWeight: 600 }}>✅ Sincronización completa.</div>
+                )}
+                {syncProgress.estado === 'cortado' && (
+                  <div style={{ fontSize: 13, color: T.red }}>
+                    ⚠️ Se cortó en el producto {syncProgress.done} de {syncProgress.total}: {syncProgress.mensajeCorte}.
+                    <br />Lo ya confirmado arriba quedó guardado en WooCommerce — podés reintentar desde acá sin repetir lo hecho.
+                  </div>
+                )}
+
+                {syncProgress.fallos.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                      Productos con error ({syncProgress.fallos.length})
+                    </div>
+                    <div style={{ maxHeight: 160, overflowY: 'auto', border: `1px solid ${T.border}`, borderRadius: 8 }}>
+                      {syncProgress.fallos.map((f, i) => (
+                        <div key={f.id + i} style={{ padding: '6px 10px', fontSize: 12, borderBottom: i < syncProgress.fallos.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                          <span style={{ color: T.text, fontWeight: 600 }}>{f.nombre}</span>
+                          <span style={{ color: T.dim }}> — {f.error}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : syncDiffLoading ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>Calculando cambios…</div>
             ) : syncCambios.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
@@ -2129,14 +2241,38 @@ export default function ProductosPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px', borderTop: `1px solid ${T.border}` }}>
               <span style={{ fontSize: 12, color: T.dim }}>Solo afecta productos con WooCommerce ID. No modifica nada en Supabase.</span>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setSyncConfirm(null)}
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  Cancelar
-                </button>
-                <button onClick={() => syncWoo(syncConfirm)} disabled={syncDiffLoading || syncCambios.length === 0}
-                  style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (syncDiffLoading || syncCambios.length === 0) ? 0.5 : 1 }}>
-                  {syncCambios.length > 0 ? `Confirmar sync (${syncCambios.length})` : 'Confirmar sync'}
-                </button>
+                {syncProgress ? (
+                  syncProgress.estado === 'corriendo' ? (
+                    <span style={{ fontSize: 12, color: T.dim, fontStyle: 'italic' }}>No cierres esta ventana…</span>
+                  ) : syncProgress.estado === 'cortado' ? (
+                    <>
+                      <button onClick={() => { setSyncConfirm(null); setSyncProgress(null) }}
+                        style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Cerrar
+                      </button>
+                      <button onClick={() => syncWoo(syncConfirm, syncProgress.resumeOffset ?? 0)}
+                        style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Reintentar desde acá
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => { setSyncConfirm(null); setSyncProgress(null) }}
+                      style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Cerrar
+                    </button>
+                  )
+                ) : (
+                  <>
+                    <button onClick={() => setSyncConfirm(null)}
+                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 18px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Cancelar
+                    </button>
+                    <button onClick={() => syncWoo(syncConfirm)} disabled={syncDiffLoading || syncCambios.length === 0}
+                      style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: (syncDiffLoading || syncCambios.length === 0) ? 0.5 : 1 }}>
+                      {syncCambios.length > 0 ? `Confirmar sync (${syncCambios.length})` : 'Confirmar sync'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

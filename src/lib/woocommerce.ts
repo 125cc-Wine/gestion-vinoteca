@@ -143,3 +143,42 @@ export async function wooUpdateStockAndPrice(
     manage_stock: true,
   })
 }
+
+export interface WooBatchItem {
+  id: number
+  regular_price?: string
+  stock_quantity?: number
+  manage_stock?: boolean
+}
+
+export interface WooBatchResultItem {
+  id: number
+  error?: { code: string; message: string }
+}
+
+// Actualiza varios productos en UN solo pedido a WooCommerce, en vez de un
+// PUT por producto. El endpoint /products/batch de WooCommerce acepta hasta
+// 100 items por llamada (limite propio de WooCommerce, WOOCOMMERCE_MAX_
+// _BATCH_ITEMS) y hace las escrituras del lado del servidor de WordPress,
+// asi que 100 productos salen en UN round-trip HTTP en vez de 100. Esto es
+// lo que hace viable sincronizar catalogos grandes (1000+ productos) sin
+// que la funcion serverless que lo llama se quede sincronizando uno por uno
+// hasta que el hosting corte la conexion a mitad de camino (ver historia:
+// antes de esto, "Sync precios" hacia 1 request por producto y con >1000
+// productos superaba largamente cualquier timeout de funcion serverless,
+// sin ningun aviso de hasta donde habia llegado).
+export async function wooUpdateProductsBatch(items: WooBatchItem[]): Promise<WooBatchResultItem[]> {
+  if (items.length === 0) return []
+  const url = wooUrl('products/batch')
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ update: items }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`WooCommerce batch error: ${res.status} - ${err}`)
+  }
+  const data = await res.json()
+  return data.update ?? []
+}
