@@ -2,15 +2,28 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-// GET /api/inflacion — serie completa, ordenada por mes (para el gráfico de
+// GET /api/inflacion — serie completa, ordenada por mes (para el panel de
 // parámetros de /financiero y para alimentar el cálculo de erosión).
+// Paginada por las dudas — Supabase corta en 1000 filas por default, y
+// aunque /api/inflacion/sync ya recorta la fuente a los últimos años, sin
+// esto un crecimiento futuro de la tabla podría cortar los meses más
+// recientes en silencio (justo los que más importan).
 export async function GET() {
-  const { data, error } = await supabase
-    .from('indices_inflacion')
-    .select('*')
-    .order('mes', { ascending: true })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const PAGE = 1000
+  const data: { mes: string; valor_mensual: number; fuente: string }[] = []
+  let from = 0
+  while (true) {
+    const { data: page, error } = await supabase
+      .from('indices_inflacion')
+      .select('*')
+      .order('mes', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!page || page.length === 0) break
+    data.push(...page)
+    if (page.length < PAGE) break
+    from += PAGE
+  }
   return NextResponse.json(data)
 }
 

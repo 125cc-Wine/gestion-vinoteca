@@ -189,8 +189,11 @@ export async function GET(req: NextRequest) {
       if (!ch.fecha_emision || !ch.fecha_pago) continue
       if (desde && ch.fecha_emision < desde) continue
       if (hasta && ch.fecha_emision > hasta) continue
-      const fEmision = new Date(ch.fecha_emision)
-      const fPago = new Date(ch.fecha_pago)
+      // +T12:00:00 para que el parseo caiga a mediodía local, no medianoche
+      // UTC — evita que una fecha DATE (sin hora) se corra un día en un
+      // server con huso horario negativo (mismo truco que ya usa Reportes).
+      const fEmision = new Date(ch.fecha_emision + 'T12:00:00')
+      const fPago = new Date(ch.fecha_pago + 'T12:00:00')
       const fFin = fPago < hoy ? fPago : hoy
       const dias = Math.max(0, Math.round((fFin.getTime() - fEmision.getTime()) / 86400000))
       const c = costoOportunidad(ch.monto, fEmision, fFin, acumulado, hoy)

@@ -26,12 +26,27 @@ export async function POST() {
     return NextResponse.json({ error: 'La fuente no devolvió datos' }, { status: 502 })
   }
 
-  const rows = filas.map(f => ({
+  // La fuente trae la serie completa de INDEC desde 1943 (~1000 meses) — muy
+  // por detrás de cualquier venta real de este sistema. Nos quedamos solo
+  // con los últimos años (con margen de sobra para ventas viejas o
+  // backdateadas): además de no guardar basura, evita que la tabla crezca
+  // lo bastante como para chocar con el límite de 1000 filas por default de
+  // Supabase en cualquier lectura que no pagine explícitamente.
+  const corteAnio = new Date().getFullYear() - 6
+  const filasRecientes = filas.filter(f => f.fecha.slice(0, 4) >= String(corteAnio))
+
+  const rows = filasRecientes.map(f => ({
     mes: f.fecha.slice(0, 7) + '-01',
     valor_mensual: f.valor,
     fuente: 'indec' as const,
     updated_at: new Date().toISOString(),
   }))
+
+  // Poda cualquier mes viejo que haya quedado de una sincronización previa a
+  // este recorte (o cargado a mano por error) — mantiene la tabla acotada
+  // sin depender de que el usuario la limpie a mano.
+  const { error: delError } = await supabase.from('indices_inflacion').delete().lt('mes', `${corteAnio}-01-01`)
+  if (delError) return NextResponse.json({ error: delError.message }, { status: 500 })
 
   const { error } = await supabase.from('indices_inflacion').upsert(rows, { onConflict: 'mes' })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

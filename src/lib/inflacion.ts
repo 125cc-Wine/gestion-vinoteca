@@ -27,9 +27,16 @@ export interface IndiceAcumulado {
   ultimoMes: string | null // 'YYYY-MM' del último dato real cargado (para avisar en la UI)
 }
 
+// Ojo: NO usar `new Date(fechaIso)` acá — con un string 'YYYY-MM-DD' (sin
+// hora) el motor lo interpreta como medianoche UTC, y en un server corriendo
+// en una zona horaria negativa (ej. Argentina, UTC-3) eso cae en el DÍA
+// ANTERIOR al leerlo con los getters locales (getFullYear/getMonth) — un mes
+// entero se corría un mes para atrás en local. Parseamos año/mes a mano y
+// construimos la fecha directo en horario local para no depender de en qué
+// huso horario corre el proceso.
 function primerDiaMes(fechaIso: string): Date {
-  const d = new Date(fechaIso.length <= 7 ? fechaIso + '-01' : fechaIso)
-  return new Date(d.getFullYear(), d.getMonth(), 1)
+  const [y, m] = fechaIso.slice(0, 7).split('-').map(Number)
+  return new Date(y, m - 1, 1)
 }
 
 function mesSiguiente(d: Date): Date {
