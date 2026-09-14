@@ -20,10 +20,11 @@ async function fetchAll<T>(table: string, cols: string, build?: (q: any) => any)
 }
 
 interface VentaRow {
-  id: string; empresa: string; tipo: string; total: number; monto_pagado: number | null
+  id: string; empresa: string; tipo: string; numero: string | null; total: number; monto_pagado: number | null
   created_at: string; cliente_id: string | null; cliente_nombre: string
   items: { nombre: string; cantidad: number; subtotal: number; producto_id?: string }[]
   estado_pago: string | null; estado: string
+  facturado: boolean | null; nro_cbte_afip: string | null
 }
 interface MovCtaCte { empresa: string; tipo: 'cargo' | 'cobro'; monto: number; referencia_id: string | null; created_at: string }
 interface Cheque { id: string; empresa: string; monto: number; fecha_emision: string; fecha_pago: string; banco: string | null; cliente_id: string | null; estado: string }
@@ -57,8 +58,12 @@ export async function GET(req: NextRequest) {
   try {
     const [indicesRaw, ventas, movs, cheques, productos] = await Promise.all([
       fetchAll<IndiceInflacionRow>('indices_inflacion', 'mes, valor_mensual'),
-      fetchAll<VentaRow>('ventas', 'id, empresa, tipo, total, monto_pagado, created_at, cliente_id, cliente_nombre, items, estado_pago, estado', q => {
-        let qq = q.neq('estado', 'cancelado').in('tipo', ['presupuesto', 'remito', 'factura'])
+      // Incluye 'devolucion' (notas de crédito) además de presupuesto/remito/
+      // factura: el margen y la erosión de cta. cte. las siguen excluyendo
+      // (igual que Reportes), pero el IVA débito fiscal las necesita — una
+      // NC facturada resta del débito del período en que se emitió.
+      fetchAll<VentaRow>('ventas', 'id, empresa, tipo, numero, total, monto_pagado, created_at, cliente_id, cliente_nombre, items, estado_pago, estado, facturado, nro_cbte_afip', q => {
+        let qq = q.neq('estado', 'cancelado').in('tipo', ['presupuesto', 'remito', 'factura', 'devolucion'])
         if (!ambas) qq = qq.eq('empresa', empresa)
         if (desde) qq = qq.gte('created_at', desde)
         if (hasta) qq = qq.lte('created_at', hasta + 'T23:59:59')
@@ -115,7 +120,17 @@ export async function GET(req: NextRequest) {
     const porProducto = new Map<string, { nombre: string; margenNominal: number; costoOportunidad: number }>()
     const porCategoria = new Map<string, { categoria: string; margenNominal: number; costoOportunidad: number }>()
 
+    const detalleCreditos: {
+      id: string; numero: string | null; cliente_nombre: string; fecha_venta: string
+      total: number; totalPagado: number; restante: number
+      cobros: { monto: number; fecha: string; dias: number }[]
+      costoOportunidad: number
+    }[] = []
+
     for (const v of ventas) {
+      // Las notas de crédito (devolucion) no son ventas — se procesan aparte
+      // más abajo, solo para IVA (igual que Reportes las excluye del margen).
+      if (v.tipo === 'devolucion') continue
       const fechaVenta = new Date(v.created_at)
       const esCredito = ventasACredito.has(v.id)
 
@@ -145,6 +160,7 @@ export async function GET(req: NextRequest) {
       let costoVenta = 0
       if (esCredito) {
         const cobrosFechados = (cobrosPorVenta.get(v.id) || []).slice().sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+        const cobrosDetalle: { monto: number; fecha: string; dias: number }[] = []
         let cobradoConFecha = 0
         for (const c of cobrosFechados) {
           const montoAplicable = Math.min(c.monto, Math.max(0, totalPagado - cobradoConFecha))
@@ -154,12 +170,20 @@ export async function GET(req: NextRequest) {
           sumaDiasPonderada += dias * montoAplicable
           sumaMontoCobrado += montoAplicable
           cobradoConFecha += montoAplicable
+          cobrosDetalle.push({ monto: montoAplicable, fecha: c.fecha.toISOString(), dias })
         }
         const restante = Math.max(0, parseFloat((v.total - totalPagado).toFixed(2)))
         if (restante > 0.01) {
           costoVenta += costoOportunidad(restante, fechaVenta, hoy, acumulado, hoy)
           montoExpuestoActual += restante
         }
+        // Detalle transacción por transacción — para poder verificar a ojo
+        // cada venta a crédito (fecha de venta, cuándo/cuánto se cobró, qué
+        // sigue pendiente) en vez de confiar ciegamente en los agregados.
+        detalleCreditos.push({
+          id: v.id, numero: v.numero, cliente_nombre: v.cliente_nombre, fecha_venta: v.created_at,
+          total: v.total, totalPagado, restante, cobros: cobrosDetalle, costoOportunidad: costoVenta,
+        })
       }
       costoOportunidadCtaCte += costoVenta
 
@@ -227,6 +251,63 @@ export async function GET(req: NextRequest) {
     const costoOportunidadTotal = costoOportunidadCtaCte + costoOportunidadCheques
     const gananciaReal = margenNominal - costoOportunidadTotal
 
+    // IVA débito fiscal: toda venta con facturado=true tiene un CAE real de
+    // AFIP, y a esa altura ya se le calculó el 21% (ver /api/afip/factura,
+    // misma fórmula acá: neto = total/1.21). Una nota de crédito (tipo
+    // 'devolucion' facturada) resta, no suma — es lo que ese mismo cálculo
+    // hace al pedir el CAE de la NC. OJO: la fecha usada es created_at, no
+    // la fecha real de emisión ante AFIP — la tabla `ventas` no tiene una
+    // columna de fecha de comprobante separada (ver comentario en
+    // /api/afip/factura/route.ts), así que un presupuesto viejo facturado
+    // más tarde queda fechado acá con el día que se CARGÓ en el sistema, no
+    // el día que efectivamente se facturó. Para la mayoría de los casos
+    // (factura poco después de la venta) no cambia el mes; para presupuestos
+    // viejos facturados mucho después, sí puede correr el período.
+    const ALICUOTA_IVA = 0.21
+    const detalleFacturas: { id: string; numero: string | null; nro_cbte_afip: string | null; tipo: string; fecha: string; cliente_nombre: string; total: number; neto: number; iva: number }[] = []
+    let ivaDebitoFiscal = 0
+    for (const v of ventas) {
+      if (!v.facturado) continue
+      const neto = parseFloat((v.total / (1 + ALICUOTA_IVA)).toFixed(2))
+      const iva = parseFloat((v.total - neto).toFixed(2))
+      const signo = v.tipo === 'devolucion' ? -1 : 1
+      ivaDebitoFiscal += signo * iva
+      detalleFacturas.push({ id: v.id, numero: v.numero, nro_cbte_afip: v.nro_cbte_afip, tipo: v.tipo, fecha: v.created_at, cliente_nombre: v.cliente_nombre, total: signo * v.total, neto: signo * neto, iva: signo * iva })
+    }
+    detalleFacturas.sort((a, b) => b.fecha.localeCompare(a.fecha))
+
+    // Crédito fiscal: NO se puede calcular solo con los datos de Compras (no
+    // queda registrado si una compra discriminó IVA ni cuánto — ver
+    // sql/2026-09-iva-credito-manual.sql). Se carga a mano por mes y empresa
+    // desde la pestaña IVA; acá solo se suma lo que ya esté cargado para los
+    // meses del rango pedido, y se avisa qué meses faltan.
+    const mesesEnRango: string[] = []
+    if (desde && hasta) {
+      const cursor = new Date(Number(desde.slice(0, 4)), Number(desde.slice(5, 7)) - 1, 1)
+      const fin = new Date(Number(hasta.slice(0, 4)), Number(hasta.slice(5, 7)) - 1, 1)
+      while (cursor <= fin) {
+        mesesEnRango.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`)
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+    }
+    // Si la tabla todavía no existe (falta correr la migración), que no se
+    // caiga toda la pestaña Financiero por eso — se degrada mostrando el
+    // crédito fiscal en $0 y todos los meses como "sin cargar".
+    let creditoRows: { empresa: string; mes: string; monto: number }[] = []
+    try {
+      creditoRows = await fetchAll<{ empresa: string; mes: string; monto: number }>(
+        'iva_credito_manual', 'empresa, mes, monto', q => q.in('empresa', empresas)
+      )
+    } catch { /* tabla no creada todavía — ver sql/2026-09-iva-credito-manual.sql */ }
+    const creditoPorMes = new Map<string, number>() // 'YYYY-MM' -> suma de empresas en alcance
+    for (const r of creditoRows) {
+      const mes = r.mes.slice(0, 7)
+      creditoPorMes.set(mes, (creditoPorMes.get(mes) || 0) + (r.monto || 0))
+    }
+    const ivaCreditoFiscal = mesesEnRango.reduce((a, m) => a + (creditoPorMes.get(m) || 0), 0)
+    const mesesSinCredito = mesesEnRango.filter(m => !creditoPorMes.has(m))
+    const ivaNeto = ivaDebitoFiscal - ivaCreditoFiscal
+
     return NextResponse.json({
       parametros: {
         ultimoMesInflacion: acumulado.ultimoMes,
@@ -248,6 +329,15 @@ export async function GET(req: NextRequest) {
       porProducto: Array.from(porProducto.values()).sort((a, b) => b.costoOportunidad - a.costoOportunidad),
       porCategoria: Array.from(porCategoria.values()).sort((a, b) => b.costoOportunidad - a.costoOportunidad),
       cheques: chequesDetalle.sort((a, b) => b.costoOportunidad - a.costoOportunidad),
+      detalleCreditos: detalleCreditos.sort((a, b) => b.fecha_venta.localeCompare(a.fecha_venta)),
+      iva: {
+        debitoFiscal: ivaDebitoFiscal,
+        creditoFiscal: ivaCreditoFiscal,
+        neto: ivaNeto,
+        mesesEnRango,
+        mesesSinCredito,
+        detalleFacturas,
+      },
     })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 500 })

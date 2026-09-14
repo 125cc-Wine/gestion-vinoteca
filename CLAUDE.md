@@ -42,6 +42,21 @@ todas las páginas de `src/app/(app)/*` para filtrar datos y cambiar tema/logo
 - Alcance v1: la erosión de cta. cte. cubre ventas del período con un cargo de cta. cte.
   asociado, no la "deuda cargada a mano" (sin una venta ni fecha de origen limpia detrás)
   — para el saldo completo de esa deuda, Aging/Cobranzas sigue siendo la fuente de verdad.
+- Cuánto está pendiente de cobro de una venta se decide por `estado_pago` ('pagado' manda
+  por encima de `monto_pagado`, que en ventas viejas editadas a mano puede haber quedado
+  desactualizado) — mismo criterio que ya usa el KPI de Reportes. Los movimientos de
+  cta. cte. con `referencia_id` se usan solo para fechar CUÁNDO se cobró cada tramo (no
+  para decidir cuánto), porque hay cobros viejos hechos desde Aging antes de que esa
+  pantalla guardara la referencia — quedaron sin ella y no son rastreables por fecha.
+- Pestaña **Detalle: venta → cobro** — timeline transacción por transacción (fecha de
+  venta, cobros con fecha, pendiente) de cada venta a crédito, para poder auditar a ojo
+  cualquier caso puntual en vez de confiar solo en los agregados.
+- Pestaña **IVA** — débito fiscal calculado solo con datos del sistema (toda venta
+  `facturado=true` tiene su CAE de AFIP y ya se le calculó 21% al pedirlo, ver
+  `/api/afip/factura`; una nota de crédito resta). El crédito fiscal (compras) NO se puede
+  calcular así — Compras no registra si una factura discriminaba IVA ni cuánto — así que se
+  carga a mano por mes/empresa (`iva_credito_manual`, crear con
+  `sql/2026-09-iva-credito-manual.sql`) con el número que da el contador/AFIP.
 
 ## Health Stack
 

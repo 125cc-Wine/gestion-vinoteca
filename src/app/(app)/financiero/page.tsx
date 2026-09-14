@@ -45,6 +45,15 @@ interface PorCliente { nombre: string; margenNominal: number; costoOportunidad: 
 interface PorProducto { nombre: string; margenNominal: number; costoOportunidad: number }
 interface PorCategoria { categoria: string; margenNominal: number; costoOportunidad: number }
 interface ChequeErosion { id: string; banco: string | null; monto: number; fecha_emision: string; fecha_pago: string; dias: number; costoOportunidad: number; vencido: boolean }
+interface CobroDetalle { monto: number; fecha: string; dias: number }
+interface CreditoDetalle {
+  id: string; numero: string | null; cliente_nombre: string; fecha_venta: string
+  total: number; totalPagado: number; restante: number; cobros: CobroDetalle[]; costoOportunidad: number
+}
+interface FacturaDetalle {
+  id: string; numero: string | null; nro_cbte_afip: string | null; tipo: string; fecha: string
+  cliente_nombre: string; total: number; neto: number; iva: number
+}
 
 interface Datos {
   parametros: { ultimoMesInflacion: string | null; mesesCargados: number }
@@ -57,9 +66,15 @@ interface Datos {
   porProducto: PorProducto[]
   porCategoria: PorCategoria[]
   cheques: ChequeErosion[]
+  detalleCreditos: CreditoDetalle[]
+  iva: {
+    debitoFiscal: number; creditoFiscal: number; neto: number
+    mesesEnRango: string[]; mesesSinCredito: string[]
+    detalleFacturas: FacturaDetalle[]
+  }
 }
 
-type Tab = 'cliente' | 'producto' | 'categoria' | 'cheques'
+type Tab = 'cliente' | 'producto' | 'categoria' | 'cheques' | 'detalle' | 'iva'
 
 function HBar({ pct, color }: { pct: number; color: string }) {
   return (
@@ -95,6 +110,10 @@ export default function FinancieroPage() {
   const [manualValor, setManualValor] = useState('')
   const [guardandoManual, setGuardandoManual] = useState(false)
   const [showParametros, setShowParametros] = useState(false)
+
+  const [filtroDetalle, setFiltroDetalle] = useState('')
+  const [creditoInputs, setCreditoInputs] = useState<Record<string, string>>({})
+  const [guardandoCredito, setGuardandoCredito] = useState<string | null>(null)
 
   useEffect(() => {
     const e = localStorage.getItem('empresa') || 'aroma'
@@ -147,6 +166,20 @@ export default function FinancieroPage() {
     }
   }
 
+  async function guardarCredito(mes: string) {
+    const raw = creditoInputs[mes]
+    const v = parseFloat((raw || '').replace(',', '.'))
+    if (Number.isNaN(v) || empresa === 'ambas') return
+    setGuardandoCredito(mes)
+    try {
+      await fetch('/api/iva-credito', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa, mes, monto: v }) })
+      setCreditoInputs(prev => { const next = { ...prev }; delete next[mes]; return next })
+      await cargar(empresa, desde, hasta)
+    } finally {
+      setGuardandoCredito(null)
+    }
+  }
+
   const ultimosMeses = [...serie].sort((a, b) => b.mes.localeCompare(a.mes)).slice(0, 6)
   const tieneMesActual = serie.some(s => s.mes.slice(0, 7) === mesActualIso())
 
@@ -155,6 +188,8 @@ export default function FinancieroPage() {
     { id: 'producto',  label: 'Por producto' },
     { id: 'categoria', label: 'Por categoría' },
     { id: 'cheques',   label: 'Cheques en cartera' },
+    { id: 'detalle',   label: 'Detalle: venta → cobro' },
+    { id: 'iva',       label: 'IVA' },
   ]
 
   return (
@@ -465,6 +500,168 @@ export default function FinancieroPage() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {tab === 'detalle' && (() => {
+                const filtro = filtroDetalle.trim().toLowerCase()
+                const filas = datos.detalleCreditos.filter(c =>
+                  !filtro || c.cliente_nombre.toLowerCase().includes(filtro) || (c.numero || '').toLowerCase().includes(filtro)
+                )
+                return (
+                  <div>
+                    <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Detalle: fecha de venta → fecha de cobro</h2>
+                    <p style={{ margin: '0 0 16px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 680 }}>
+                      Cada venta a cuenta corriente del período, con la fecha en que se vendió y, al lado, cuándo (y
+                      cuánto) se cobró realmente — o si sigue pendiente. Es la base de todos los números de arriba: sirve
+                      para chequear a ojo cualquier caso puntual, en vez de confiar ciegamente en los totales. &quot;Sin fecha
+                      rastreable&quot; son cobros aplicados por una vía vieja del sistema que no guardó a qué venta correspondían
+                      exactamente — no se les puede calcular una demora real, así que no suman costo de oportunidad.
+                    </p>
+                    <input
+                      value={filtroDetalle} onChange={e => setFiltroDetalle(e.target.value)}
+                      placeholder="Filtrar por cliente o número de comprobante..."
+                      style={{ ...INP, width: '100%', maxWidth: 360, marginBottom: 16 }}
+                    />
+                    {filas.length === 0 ? (
+                      <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin ventas a crédito que coincidan</p>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: T.bg }}>
+                              {['Comprobante', 'Cliente', 'Fecha venta', 'Total', 'Cobros', 'Pendiente', 'Costo oportunidad'].map(h => (
+                                <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Comprobante' || h === 'Cliente' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filas.slice(0, 300).map(c => {
+                              const cobradoConFecha = c.cobros.reduce((a, x) => a + x.monto, 0)
+                              const sinFecha = c.totalPagado - c.restante - cobradoConFecha
+                              return (
+                                <tr key={c.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, verticalAlign: 'top' }}>
+                                  <td style={{ padding: '9px 12px', color: T.text, whiteSpace: 'nowrap' }}>{c.numero || '—'}</td>
+                                  <td style={{ padding: '9px 12px', color: T.text, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.cliente_nombre}</td>
+                                  <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>{new Date(c.fecha_venta).toLocaleDateString('es-AR')}</td>
+                                  <td style={{ padding: '9px 12px', textAlign: 'right', color: T.text }}>{fmt(c.total)}</td>
+                                  <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted }}>
+                                    {c.cobros.length === 0 && sinFecha <= 0.5 ? '—' : (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+                                        {c.cobros.map((cb, i) => (
+                                          <span key={i}>{fmt(cb.monto)} <span style={{ color: T.dim }}>({new Date(cb.fecha).toLocaleDateString('es-AR')}, {cb.dias}d)</span></span>
+                                        ))}
+                                        {sinFecha > 0.5 && <span style={{ color: T.dim, fontStyle: 'italic' }}>{fmt(sinFecha)} (sin fecha rastreable)</span>}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '9px 12px', textAlign: 'right', color: c.restante > 0.5 ? T.amber : T.green, fontWeight: c.restante > 0.5 ? 700 : 400 }}>
+                                    {c.restante > 0.5 ? fmt(c.restante) : 'Cobrado'}
+                                  </td>
+                                  <td style={{ padding: '9px 12px', textAlign: 'right', color: T.red, fontWeight: 700 }}>{c.costoOportunidad > 0.5 ? `−${fmt(c.costoOportunidad)}` : '—'}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                        {filas.length > 300 && (
+                          <p style={{ fontSize: 12, color: T.dim, marginTop: 10 }}>Mostrando las primeras 300 de {filas.length} — filtrá por cliente o comprobante para acotar.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {tab === 'iva' && (
+                <div>
+                  <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>IVA — débito, crédito y neto</h2>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 680 }}>
+                    <strong>Débito fiscal</strong> es el IVA de todo lo que facturaste (toda venta con un CAE real de AFIP,
+                    al 21%; una nota de crédito resta). <strong>Crédito fiscal</strong> es el IVA de lo que compraste — hoy
+                    no se puede calcular solo, porque el módulo de Compras no registra si cada factura discriminaba IVA
+                    ni cuánto (un proveedor monotributista, por ejemplo, no genera crédito). Por eso se carga a mano, mes
+                    a mes, con el número que te da tu contador o el propio AFIP. <strong>Neto</strong> = débito − crédito:
+                    positivo es lo que hay que pagarle a AFIP; negativo es saldo a favor.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 14, marginBottom: 20 }}>
+                    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Débito fiscal</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{fmt(datos.iva.debitoFiscal)}</div>
+                    </div>
+                    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Crédito fiscal (cargado)</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{fmt(datos.iva.creditoFiscal)}</div>
+                    </div>
+                    <div style={{ background: T.surface, border: `1px solid ${datos.iva.neto >= 0 ? T.redBd : T.greenBd}`, borderRadius: 12, padding: '14px 18px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{datos.iva.neto >= 0 ? 'A pagar a AFIP' : 'Saldo a favor'}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: datos.iva.neto >= 0 ? T.red : T.green }}>{fmt(Math.abs(datos.iva.neto))}</div>
+                    </div>
+                  </div>
+
+                  {datos.iva.mesesSinCredito.length > 0 && (
+                    <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+                      <p style={{ fontSize: 12, color: T.text, margin: '0 0 10px', fontWeight: 700 }}>
+                        Falta cargar el crédito fiscal de {datos.iva.mesesSinCredito.length === 1 ? 'este mes' : 'estos meses'} — el neto de arriba no los incluye:
+                      </p>
+                      {empresa === 'ambas' ? (
+                        <p style={{ fontSize: 12, color: T.muted, margin: 0 }}>Elegí Aroma de Vid o La Vid Consultora arriba para cargarlo — es un dato propio de cada CUIT.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {datos.iva.mesesSinCredito.map(mes => (
+                            <div key={mes} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span style={{ fontSize: 12, color: T.muted, width: 130 }}>{labelMes(mes)}</span>
+                              <input
+                                value={creditoInputs[mes] ?? ''} onChange={e => setCreditoInputs(prev => ({ ...prev, [mes]: e.target.value }))}
+                                placeholder="Monto de crédito fiscal" style={{ ...INP, width: 180 }}
+                              />
+                              <button onClick={() => guardarCredito(mes)} disabled={guardandoCredito === mes || !creditoInputs[mes]}
+                                style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                {guardandoCredito === mes ? 'Guardando...' : 'Guardar'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <h3 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Facturas y notas de crédito del período</h3>
+                  <p style={{ margin: '0 0 14px', fontSize: 11, color: T.dim, lineHeight: 1.5 }}>
+                    La fecha es cuándo se cargó el comprobante en el sistema, no necesariamente el día exacto en que se
+                    facturó ante AFIP — un presupuesto viejo facturado mucho después puede quedar fechado acá antes de
+                    lo real (ver nota en el código de /api/financiero).
+                  </p>
+                  {datos.iva.detalleFacturas.length === 0 ? (
+                    <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin comprobantes facturados en el período</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: T.bg }}>
+                            {['Comprobante AFIP', 'Cliente', 'Fecha', 'Neto', 'IVA', 'Total'].map(h => (
+                              <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Comprobante AFIP' || h === 'Cliente' ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {datos.iva.detalleFacturas.slice(0, 300).map(f => (
+                            <tr key={f.id} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                              <td style={{ padding: '9px 12px', color: T.text, whiteSpace: 'nowrap' }}>{f.nro_cbte_afip || f.numero || '—'}</td>
+                              <td style={{ padding: '9px 12px', color: T.text, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.cliente_nombre}</td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>{new Date(f.fecha).toLocaleDateString('es-AR')}</td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted }}>{fmt(f.neto)}</td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted }}>{fmt(f.iva)}</td>
+                              <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: f.tipo === 'devolucion' ? T.red : T.text }}>{fmt(f.total)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {datos.iva.detalleFacturas.length > 300 && (
+                        <p style={{ fontSize: 12, color: T.dim, marginTop: 10 }}>Mostrando las primeras 300 de {datos.iva.detalleFacturas.length}.</p>
+                      )}
                     </div>
                   )}
                 </div>
