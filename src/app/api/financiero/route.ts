@@ -120,18 +120,42 @@ export async function GET(req: NextRequest) {
       const esCredito = ventasACredito.has(v.id)
 
       // Costo de oportunidad total de ESTA venta (0 si fue de contado).
+      //
+      // Cuánto está REALMENTE pendiente sale de venta.monto_pagado (el mismo
+      // campo que usa Reportes), no de sumar los movimientos de cta. cte. con
+      // referencia_id = esta venta: hay cobros viejos ("Cobro cuenta
+      // corriente (Aging)", previos a que esa pantalla empezara a etiquetar
+      // cada aplicación con su referencia_id) que sí saldaron la venta pero
+      // quedaron grabados como un movimiento genérico sin referencia — si acá
+      // solo mirábamos los movimientos CON referencia, esas ventas ya
+      // cobradas seguían apareciendo como "pendiente" (caso real: Diego
+      // Alvarez Irune, PRES-000021, pagada y marcada como $511.516
+      // pendientes). Los movimientos con referencia sí se usan para las
+      // FECHAS de cobro (necesarias para medir la demora); lo cobrado por
+      // esa vía vieja sin fecha rastreable no le suma costo de oportunidad —
+      // preferimos no imputarle una fecha inventada a no tener certeza.
+      // Además: cuando estado_pago ya es 'pagado', se confía en eso por
+      // encima de monto_pagado — hay ventas editadas a mano (cambiar el
+      // estado a "pagado" desde la edición, no desde el botón "Cobrar") que
+      // quedaron con monto_pagado=0 pese a estar saldadas (caso real: Victor
+      // Duarte, PRES-000098, ajustada por edición con su cobro de cta. cte.
+      // registrado y todo, pero monto_pagado nunca se tocó). Mismo criterio
+      // que ya usa el KPI "pendiente de cobro" de Reportes.
+      const totalPagado = v.estado_pago === 'pagado' ? v.total : (v.monto_pagado || 0)
       let costoVenta = 0
       if (esCredito) {
-        const cobros = (cobrosPorVenta.get(v.id) || []).slice().sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
-        let cobradoAcum = 0
-        for (const c of cobros) {
-          cobradoAcum += c.monto
-          costoVenta += costoOportunidad(c.monto, fechaVenta, c.fecha, acumulado, hoy)
+        const cobrosFechados = (cobrosPorVenta.get(v.id) || []).slice().sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+        let cobradoConFecha = 0
+        for (const c of cobrosFechados) {
+          const montoAplicable = Math.min(c.monto, Math.max(0, totalPagado - cobradoConFecha))
+          if (montoAplicable <= 0.01) continue
+          costoVenta += costoOportunidad(montoAplicable, fechaVenta, c.fecha, acumulado, hoy)
           const dias = Math.max(0, Math.round((c.fecha.getTime() - fechaVenta.getTime()) / 86400000))
-          sumaDiasPonderada += dias * c.monto
-          sumaMontoCobrado += c.monto
+          sumaDiasPonderada += dias * montoAplicable
+          sumaMontoCobrado += montoAplicable
+          cobradoConFecha += montoAplicable
         }
-        const restante = Math.max(0, parseFloat((v.total - cobradoAcum).toFixed(2)))
+        const restante = Math.max(0, parseFloat((v.total - totalPagado).toFixed(2)))
         if (restante > 0.01) {
           costoVenta += costoOportunidad(restante, fechaVenta, hoy, acumulado, hoy)
           montoExpuestoActual += restante
@@ -144,8 +168,7 @@ export async function GET(req: NextRequest) {
       const cli = porCliente.get(clienteKey)!
       cli.costoOportunidad += costoVenta
       if (esCredito) {
-        const restante = Math.max(0, v.total - (cobrosPorVenta.get(v.id) || []).reduce((a, c) => a + c.monto, 0))
-        cli.montoExpuesto += restante
+        cli.montoExpuesto += Math.max(0, v.total - totalPagado)
       }
 
       // Margen nominal + reparto del costo de oportunidad de la venta a cada
