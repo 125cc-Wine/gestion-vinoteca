@@ -25,6 +25,24 @@ todas las páginas de `src/app/(app)/*` para filtrar datos y cambiar tema/logo
   verificado para ambas). Punto de venta: Aroma=7, La Vid=5 (de los dos habilitados en AFIP
   para La Vid — 4 y 5 — la gestora confirmó que el 5 es el que usa este sistema).
 
+## Financiero (ganancia real / costo de oportunidad)
+
+- `/financiero` (`src/app/(app)/financiero/page.tsx`) + `src/app/api/financiero/route.ts` —
+  "ganancia real" = margen nominal (venta - costo actual, igual que Reportes) menos el
+  **costo de oportunidad** de la plata que queda inmovilizada mientras se cobra: ventas a
+  crédito (cta. cte.) que tardan, y cheques recibidos en cartera hasta su fecha de pago.
+- Ese costo se mide con la **inflación mensual (INDEC)** acumulada entre la venta y el
+  cobro efectivo (o hoy, si sigue pendiente) — la lógica del índice vive en
+  `src/lib/inflacion.ts`.
+- La serie de inflación se sincroniza desde `api.argentinadatos.com` (pública, gratis, sin
+  key) vía `POST /api/inflacion/sync`, y se guarda en la tabla `indices_inflacion` (crear
+  con `sql/2026-09-indices-inflacion.sql`, una sola vez, en Supabase > SQL Editor). El mes
+  en curso (que INDEC aún no publicó) se puede cargar a mano (`PUT /api/inflacion`,
+  fuente='manual') — al sincronizar de nuevo, el valor real de INDEC lo reemplaza.
+- Alcance v1: la erosión de cta. cte. cubre ventas del período con un cargo de cta. cte.
+  asociado, no la "deuda cargada a mano" (sin una venta ni fecha de origen limpia detrás)
+  — para el saldo completo de esa deuda, Aging/Cobranzas sigue siendo la fuente de verdad.
+
 ## Health Stack
 
 - typecheck: tsc --noEmit

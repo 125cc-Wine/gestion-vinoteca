@@ -148,6 +148,13 @@ export interface MovimientoCaja {
   created_at?: string
 }
 
+export interface IndiceInflacion {
+  mes: string // 'YYYY-MM-01'
+  valor_mensual: number // % mensual, ej 1.7
+  fuente: 'indec' | 'manual'
+  updated_at?: string
+}
+
 export interface MovimientoCtaCte {
   id?: string
   empresa: Empresa
