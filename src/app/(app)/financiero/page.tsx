@@ -69,7 +69,7 @@ interface Datos {
   detalleCreditos: CreditoDetalle[]
   iva: {
     debitoFiscal: number; creditoFiscal: number; neto: number
-    mesesEnRango: string[]; mesesSinCredito: string[]
+    mesesEnRango: string[]; mesesSinCredito: string[]; mesesAutomaticos: string[]; mesesIncompletos: string[]
     detalleFacturas: FacturaDetalle[]
   }
 }
@@ -580,11 +580,12 @@ export default function FinancieroPage() {
                   <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>IVA — débito, crédito y neto</h2>
                   <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 680 }}>
                     <strong>Débito fiscal</strong> es el IVA de todo lo que facturaste (toda venta con un CAE real de AFIP,
-                    al 21%; una nota de crédito resta). <strong>Crédito fiscal</strong> es el IVA de lo que compraste — hoy
-                    no se puede calcular solo, porque el módulo de Compras no registra si cada factura discriminaba IVA
-                    ni cuánto (un proveedor monotributista, por ejemplo, no genera crédito). Por eso se carga a mano, mes
-                    a mes, con el número que te da tu contador o el propio AFIP. <strong>Neto</strong> = débito − crédito:
-                    positivo es lo que hay que pagarle a AFIP; negativo es saldo a favor.
+                    al 21%; una nota de crédito resta). <strong>Crédito fiscal</strong> es el IVA de lo que compraste: desde
+                    que el formulario de Compras (&quot;Cargar deuda&quot; / &quot;Nueva factura&quot;) guarda el IVA que marcás con el
+                    selector, se calcula solo para esos meses. Los meses de antes de ese cambio (o compras cargadas por
+                    otra vía que todavía no tiene el selector) no tienen ese dato, así que se cargan a mano con el número
+                    que te da tu contador o el propio AFIP. <strong>Neto</strong> = débito − crédito: positivo es lo que
+                    hay que pagarle a AFIP; negativo es saldo a favor.
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 14, marginBottom: 20 }}>
                     <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
@@ -592,14 +593,27 @@ export default function FinancieroPage() {
                       <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{fmt(datos.iva.debitoFiscal)}</div>
                     </div>
                     <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Crédito fiscal (cargado)</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Crédito fiscal</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{fmt(datos.iva.creditoFiscal)}</div>
+                      {datos.iva.mesesAutomaticos.length > 0 && (
+                        <div style={{ fontSize: 10, color: T.green, marginTop: 4 }}>{datos.iva.mesesAutomaticos.length === 1 ? '1 mes calculado' : `${datos.iva.mesesAutomaticos.length} meses calculados`} solo con Compras</div>
+                      )}
                     </div>
                     <div style={{ background: T.surface, border: `1px solid ${datos.iva.neto >= 0 ? T.redBd : T.greenBd}`, borderRadius: 12, padding: '14px 18px' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{datos.iva.neto >= 0 ? 'A pagar a AFIP' : 'Saldo a favor'}</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: datos.iva.neto >= 0 ? T.red : T.green }}>{fmt(Math.abs(datos.iva.neto))}</div>
                     </div>
                   </div>
+
+                  {datos.iva.mesesIncompletos.length > 0 && (
+                    <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+                      <p style={{ fontSize: 12, color: T.text, margin: 0 }}>
+                        <strong>{datos.iva.mesesIncompletos.map(labelMes).join(', ')}</strong>: hay compras con el IVA
+                        cargado y compras sin ese dato en el mismo mes — el crédito automático de {datos.iva.mesesIncompletos.length === 1 ? 'ese mes' : 'esos meses'} puede
+                        estar incompleto (le falta lo de las compras sin dato).
+                      </p>
+                    </div>
+                  )}
 
                   {datos.iva.mesesSinCredito.length > 0 && (
                     <div style={{ background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>

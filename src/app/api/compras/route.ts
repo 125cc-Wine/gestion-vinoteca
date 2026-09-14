@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { empresa, proveedor_id, proveedor_nombre, items, notas, fecha_esperada,
     deuda_directa, concepto, nro_factura, fecha_factura, condicion_pago,
-    fecha_vencimiento, estado_pago, monto_pagado, total_manual } = body
+    fecha_vencimiento, estado_pago, monto_pagado, total_manual,
+    monto_iva, monto_perc_iva } = body
 
   if (!empresa || !proveedor_nombre) {
     return NextResponse.json({ error: 'faltan campos' }, { status: 400 })
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       .eq('empresa', empresa).like('numero', 'DEU-%')
     const numero = `DEU-${String((count || 0) + 1).padStart(5, '0')}`
     const deudaTotal = total_manual > 0 ? total_manual : (items ?? []).reduce((a: number, i: { subtotal: number }) => a + (i.subtotal || 0), 0)
-    const { data, error } = await supabase.from('compras').insert([{
+    const insertBase = {
       empresa, numero, proveedor_id: proveedor_id || null, proveedor_nombre,
       items: items ?? [], total: deudaTotal, notas: notas || '',
       fecha_esperada: null, estado: 'recibido',
@@ -42,7 +43,19 @@ export async function POST(req: NextRequest) {
       fecha_vencimiento: fecha_vencimiento || null,
       estado_pago: estado_pago || 'pendiente',
       monto_pagado: monto_pagado || null,
+    }
+    // undefined -> no viene del formulario nuevo (llamador viejo) => NULL
+    // ("no se sabe"), distinto de 0 ("se cargó y no tenía IVA") — ver
+    // sql/2026-09-compras-iva.sql.
+    let { data, error } = await supabase.from('compras').insert([{
+      ...insertBase, monto_iva: monto_iva ?? null, monto_perc_iva: monto_perc_iva ?? null,
     }]).select().single()
+    // Si todavía no se corrió esa migración, las columnas no existen — reintentar
+    // sin ellas para no romper "Cargar deuda" mientras tanto (el IVA de esta
+    // compra puntual se pierde, pero no la carga entera).
+    if (error?.message?.includes('monto_iva') || error?.message?.includes('monto_perc_iva')) {
+      ;({ data, error } = await supabase.from('compras').insert([insertBase]).select().single())
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     // Actualizar stock igual que al recibir una OC
     for (const item of (items ?? []) as { producto_id?: string; nombre: string; cantidad: number }[]) {
@@ -104,8 +117,19 @@ export async function PUT(req: NextRequest) {
     previoMontoPagado = prev?.monto_pagado || 0
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('compras').update({ estado, items: itemsRecibidos, ...rest, ...(medio_pago ? { medio_pago } : {}) }).eq('id', id).select().single()
+
+  // Igual que en POST: si todavía no se corrió sql/2026-09-compras-iva.sql,
+  // monto_iva/monto_perc_iva (si vienen en `rest`, ej. al editar desde el
+  // formulario de deuda/factura) rompen el update entero — reintentar sin
+  // esos dos campos para no bloquear ediciones normales mientras tanto.
+  if (error?.message?.includes('monto_iva') || error?.message?.includes('monto_perc_iva')) {
+    const { monto_iva: _mi, monto_perc_iva: _mpi, ...restSinIva } = rest
+    void _mi; void _mpi
+    ;({ data, error } = await supabase
+      .from('compras').update({ estado, items: itemsRecibidos, ...restSinIva, ...(medio_pago ? { medio_pago } : {}) }).eq('id', id).select().single())
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

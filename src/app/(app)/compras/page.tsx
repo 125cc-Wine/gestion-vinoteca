@@ -92,6 +92,8 @@ interface Compra {
   fecha_pago?: string | null
   notas_pago?: string | null
   medio_pago?: string | null
+  monto_iva?: number | null
+  monto_perc_iva?: number | null
 }
 interface Proveedor { id: string; nombre: string; razon_social?: string; telefono?: string }
 interface ChequePendiente {
@@ -335,6 +337,13 @@ export default function ComprasPage() {
       estado_pago: esContado ? 'pagado' : 'pendiente',
       monto_pagado: esContado ? totalFinal : null,
       total: totalFinal,
+      // Se guardan por separado (antes se calculaban solo para armar el
+      // total y se tiraban) — es lo que permite que Financiero calcule el
+      // crédito fiscal de IVA solo, sin tener que cargarlo a mano. 0 si el
+      // selector estaba destildado (a diferencia de no mandar el campo, que
+      // dejaría la compra sin este dato — ver sql/2026-09-compras-iva.sql).
+      monto_iva: montoIva,
+      monto_perc_iva: montoPercIva,
     }
     let res: Response
     if (editandoId) {
@@ -376,6 +385,13 @@ export default function ComprasPage() {
     setFFechaFactura(c.fecha_factura || hoy())
     setFCondicion(c.condicion_pago || 'contado')
     setFVencimiento(c.fecha_vencimiento || '')
+    // Si no se restauran acá, guardar sin tocar nada volvía a calcular el
+    // IVA con los checkboxes en su default (destildado) y pisaba el
+    // monto_iva ya cargado con 0 — una edición cualquiera (ej. corregir el
+    // nombre del proveedor) terminaba borrando el dato de IVA sin querer.
+    setIncluyeIva((c.monto_iva ?? 0) > 0)
+    setIncluyePercIva((c.monto_perc_iva ?? 0) > 0)
+    setPctIIBB(0)
     setEditandoId(c.id)
     setDetalle(null)
     setDeudaModal(true)

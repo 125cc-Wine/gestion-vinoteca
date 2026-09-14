@@ -29,6 +29,11 @@ interface VentaRow {
 interface MovCtaCte { empresa: string; tipo: 'cargo' | 'cobro'; monto: number; referencia_id: string | null; created_at: string }
 interface Cheque { id: string; empresa: string; monto: number; fecha_emision: string; fecha_pago: string; banco: string | null; cliente_id: string | null; estado: string }
 interface Producto { id: string; nombre: string; bodega: string | null; categoria: string | null; precio_costo: number | null }
+interface Compra {
+  id: string; empresa: string; numero: string; total: number
+  fecha_factura: string | null; created_at: string
+  monto_iva: number | null; monto_perc_iva: number | null
+}
 
 // GET /api/financiero?empresa=aroma|lavid|ambas&desde=...&hasta=...
 //
@@ -77,6 +82,20 @@ export async function GET(req: NextRequest) {
       ),
       fetchAll<Producto>('productos', 'id, nombre, bodega, categoria, precio_costo'),
     ])
+
+    // Aparte del Promise.all: si todavía no se corrió la migración que
+    // agrega monto_iva/monto_perc_iva a compras (sql/2026-09-compras-iva.sql),
+    // que no se caiga TODA la pestaña Financiero por eso — se degrada a
+    // crédito fiscal automático $0 (todo queda a cargo del manual).
+    // Sin filtro de fecha en la query: se filtra en JS por fecha_factura (o
+    // created_at si esa no está cargada) para no repetir la lógica de "qué
+    // fecha uso" dos veces con distinto criterio.
+    let compras: Compra[] = []
+    try {
+      compras = await fetchAll<Compra>('compras', 'id, empresa, numero, total, fecha_factura, created_at, monto_iva, monto_perc_iva', q =>
+        q.in('empresa', empresas)
+      )
+    } catch { /* columnas no creadas todavía — ver sql/2026-09-compras-iva.sql */ }
 
     const acumulado = construirIndice(indicesRaw)
     const hoy = new Date()
@@ -276,11 +295,6 @@ export async function GET(req: NextRequest) {
     }
     detalleFacturas.sort((a, b) => b.fecha.localeCompare(a.fecha))
 
-    // Crédito fiscal: NO se puede calcular solo con los datos de Compras (no
-    // queda registrado si una compra discriminó IVA ni cuánto — ver
-    // sql/2026-09-iva-credito-manual.sql). Se carga a mano por mes y empresa
-    // desde la pestaña IVA; acá solo se suma lo que ya esté cargado para los
-    // meses del rango pedido, y se avisa qué meses faltan.
     const mesesEnRango: string[] = []
     if (desde && hasta) {
       const cursor = new Date(Number(desde.slice(0, 4)), Number(desde.slice(5, 7)) - 1, 1)
@@ -290,22 +304,70 @@ export async function GET(req: NextRequest) {
         cursor.setMonth(cursor.getMonth() + 1)
       }
     }
-    // Si la tabla todavía no existe (falta correr la migración), que no se
-    // caiga toda la pestaña Financiero por eso — se degrada mostrando el
-    // crédito fiscal en $0 y todos los meses como "sin cargar".
+
+    // Crédito fiscal AUTOMÁTICO: desde que el formulario de Compras guarda
+    // monto_iva/monto_perc_iva por separado (ver sql/2026-09-compras-iva.sql
+    // y el comentario en /api/compras), se puede sumar directo — sin
+    // depender de que alguien lo cargue a mano. monto_iva === null significa
+    // "esta compra no tiene el dato" (cargada antes del cambio, o por el
+    // flujo de OC que todavía no tiene el selector de IVA) — un mes se
+    // marca "automático" apenas tiene AL MENOS UNA compra con el dato, y se
+    // avisa si ese mismo mes también tiene compras sin dato (créditoAuto de
+    // ese mes puede estar incompleto).
+    const creditoAutoPorMes = new Map<string, number>()
+    const mesesConDatoIncompleto = new Set<string>()
+    for (const c of compras) {
+      const fecha = c.fecha_factura || c.created_at
+      const mes = fecha.slice(0, 7)
+      if (desde && fecha < desde) continue
+      if (hasta && fecha > hasta + 'T23:59:59') continue
+      if (c.monto_iva == null) continue
+      const monto = (c.monto_iva || 0) + (c.monto_perc_iva || 0)
+      creditoAutoPorMes.set(mes, (creditoAutoPorMes.get(mes) || 0) + monto)
+    }
+    // Segunda pasada para detectar incompletos sin depender del orden de
+    // iteración (una compra sin dato puede aparecer antes o después que la
+    // que activó el mes como "automático").
+    for (const c of compras) {
+      const fecha = c.fecha_factura || c.created_at
+      const mes = fecha.slice(0, 7)
+      if (desde && fecha < desde) continue
+      if (hasta && fecha > hasta + 'T23:59:59') continue
+      if (c.monto_iva == null && creditoAutoPorMes.has(mes)) mesesConDatoIncompleto.add(mes)
+    }
+
+    // Crédito fiscal MANUAL (respaldo para meses sin ninguna compra con el
+    // dato — típicamente todo lo anterior a este cambio). Se carga por mes y
+    // empresa desde la pestaña IVA — ver sql/2026-09-iva-credito-manual.sql.
+    // Si la tabla todavía no existe (falta correr la migración), no se cae
+    // toda la pestaña Financiero por eso.
     let creditoRows: { empresa: string; mes: string; monto: number }[] = []
     try {
       creditoRows = await fetchAll<{ empresa: string; mes: string; monto: number }>(
         'iva_credito_manual', 'empresa, mes, monto', q => q.in('empresa', empresas)
       )
     } catch { /* tabla no creada todavía — ver sql/2026-09-iva-credito-manual.sql */ }
-    const creditoPorMes = new Map<string, number>() // 'YYYY-MM' -> suma de empresas en alcance
+    const creditoManualPorMes = new Map<string, number>()
     for (const r of creditoRows) {
       const mes = r.mes.slice(0, 7)
-      creditoPorMes.set(mes, (creditoPorMes.get(mes) || 0) + (r.monto || 0))
+      creditoManualPorMes.set(mes, (creditoManualPorMes.get(mes) || 0) + (r.monto || 0))
     }
-    const ivaCreditoFiscal = mesesEnRango.reduce((a, m) => a + (creditoPorMes.get(m) || 0), 0)
-    const mesesSinCredito = mesesEnRango.filter(m => !creditoPorMes.has(m))
+
+    // Por mes: automático si hay al menos una compra con el dato ese mes;
+    // si no, se necesita carga manual (y cuenta solo si ya se cargó).
+    let ivaCreditoFiscal = 0
+    const mesesSinCredito: string[] = []
+    const mesesAutomaticos: string[] = []
+    for (const mes of mesesEnRango) {
+      if (creditoAutoPorMes.has(mes)) {
+        ivaCreditoFiscal += creditoAutoPorMes.get(mes)!
+        mesesAutomaticos.push(mes)
+      } else if (creditoManualPorMes.has(mes)) {
+        ivaCreditoFiscal += creditoManualPorMes.get(mes)!
+      } else {
+        mesesSinCredito.push(mes)
+      }
+    }
     const ivaNeto = ivaDebitoFiscal - ivaCreditoFiscal
 
     return NextResponse.json({
@@ -336,6 +398,8 @@ export async function GET(req: NextRequest) {
         neto: ivaNeto,
         mesesEnRango,
         mesesSinCredito,
+        mesesAutomaticos,
+        mesesIncompletos: Array.from(mesesConDatoIncompleto).filter(m => mesesEnRango.includes(m)),
         detalleFacturas,
       },
     })
