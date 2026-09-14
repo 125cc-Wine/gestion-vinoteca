@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, type WooBatchItem } from '@/lib/woocommerce'
+import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetStockPorId, type WooBatchItem } from '@/lib/woocommerce'
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
@@ -44,7 +44,17 @@ export async function GET() {
 // llamada, límite propio de WooCommerce) en vez de un PUT por producto:
 // con 1136 productos eso son ~12 llamadas a WooCommerce en vez de 1136.
 //
-// body: { mode: 'stock' | 'precio' | 'ambos', offset?: number, limit?: number }
+// body: { mode: 'stock' | 'precio' | 'ambos', offset?: number, limit?: number,
+//         protegerStockWeb?: boolean }
+//
+// protegerStockWeb (default true): mientras el stock se siga cargando a
+// mano en los dos lados (gestión-vinoteca2 Y directo en WooCommerce), un
+// sync de stock normal pisaría cualquier número puesto a mano en la web con
+// el de Supabase. Con esto activo, un producto que YA tiene stock > 0 en la
+// web se salta (no se toca su stock) — solo se completa el stock de los
+// que en la web están en 0. Es una medida transitoria hasta que se decida
+// cargar el stock desde un solo lado; se puede desactivar mandando
+// protegerStockWeb:false para forzar el pisado normal.
 const WOO_BATCH_MAX = 100 // tope de WooCommerce para /products/batch
 
 export async function POST(req: NextRequest) {
@@ -56,6 +66,8 @@ export async function POST(req: NextRequest) {
   const mode: 'stock' | 'precio' | 'ambos' = body.mode ?? 'ambos'
   const offset: number = Number.isFinite(body.offset) ? Math.max(0, body.offset) : 0
   const limit: number = Math.min(WOO_BATCH_MAX, Number.isFinite(body.limit) ? Math.max(1, body.limit) : WOO_BATCH_MAX)
+  const protegerStockWeb: boolean = body.protegerStockWeb !== false
+  const tocaStock = mode === 'stock' || mode === 'ambos'
 
   const base = () => supabase
     .from('productos')
@@ -69,39 +81,76 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const total = count ?? 0
-  const results = { ok: 0, errors: 0 }
+  const results = { ok: 0, errors: 0, protegidos: 0 }
   const failedProducts: { id: string; nombre: string; error: string }[] = []
+  const protegidosDetalle: { id: string; nombre: string; stockWeb: number }[] = []
 
   if (productos && productos.length > 0) {
     const porWooId = new Map(productos.map(p => [p.woo_product_id as number, p]))
-    const items: WooBatchItem[] = productos.map(prod => {
-      const item: WooBatchItem = { id: prod.woo_product_id as number }
-      if (mode === 'precio' || mode === 'ambos') item.regular_price = String(prod.precio_venta ?? 0)
-      if (mode === 'stock' || mode === 'ambos') { item.stock_quantity = prod.stock ?? 0; item.manage_stock = true }
-      return item
-    })
 
-    try {
-      const resultado = await wooUpdateProductsBatch(items)
-      for (const r of resultado) {
-        if (r.error) {
-          results.errors++
-          const prod = porWooId.get(r.id)
-          failedProducts.push({ id: prod?.id ?? String(r.id), nombre: prod?.nombre ?? `Woo #${r.id}`, error: r.error.message })
+    // Si hay que tocar stock y la protección está activa, primero hay que
+    // saber qué stock tiene AHORA MISMO cada producto en la web (un solo
+    // pedido para toda la tanda, no uno por producto).
+    let stockWebPorId = new Map<number, number>()
+    if (tocaStock && protegerStockWeb) {
+      try {
+        stockWebPorId = await wooGetStockPorId(productos.map(p => p.woo_product_id as number))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Error desconocido'
+        return NextResponse.json({ error: `No se pudo leer el stock actual de la web: ${msg}`, offset, total }, { status: 502 })
+      }
+    }
+
+    const items: WooBatchItem[] = []
+    for (const prod of productos) {
+      const wooId = prod.woo_product_id as number
+      const item: WooBatchItem = { id: wooId }
+      let algoParaActualizar = false
+
+      if (mode === 'precio' || mode === 'ambos') {
+        item.regular_price = String(prod.precio_venta ?? 0)
+        algoParaActualizar = true
+      }
+
+      if (tocaStock) {
+        const stockActualWeb = stockWebPorId.get(wooId) ?? 0
+        const protegido = protegerStockWeb && stockActualWeb > 0
+        if (protegido) {
+          results.protegidos++
+          protegidosDetalle.push({ id: prod.id, nombre: prod.nombre, stockWeb: stockActualWeb })
         } else {
-          results.ok++
+          item.stock_quantity = prod.stock ?? 0
+          item.manage_stock = true
+          algoParaActualizar = true
         }
       }
-      // Por si WooCommerce devolviera menos items de los pedidos (no debería,
-      // pero mejor no perder silenciosamente productos sin contabilizar).
-      const sinRespuesta = items.length - resultado.length
-      if (sinRespuesta > 0) results.errors += sinRespuesta
-    } catch (e) {
-      // Todo el lote falló (ej. WooCommerce caído momentáneamente): se
-      // reporta como error de la tanda completa, sin cortar el conteo total
-      // — el cliente puede reintentar desde este mismo offset.
-      const msg = e instanceof Error ? e.message : 'Error desconocido'
-      return NextResponse.json({ error: msg, offset, total }, { status: 502 })
+
+      if (algoParaActualizar) items.push(item)
+    }
+
+    if (items.length > 0) {
+      try {
+        const resultado = await wooUpdateProductsBatch(items)
+        for (const r of resultado) {
+          if (r.error) {
+            results.errors++
+            const prod = porWooId.get(r.id)
+            failedProducts.push({ id: prod?.id ?? String(r.id), nombre: prod?.nombre ?? `Woo #${r.id}`, error: r.error.message })
+          } else {
+            results.ok++
+          }
+        }
+        // Por si WooCommerce devolviera menos items de los pedidos (no debería,
+        // pero mejor no perder silenciosamente productos sin contabilizar).
+        const sinRespuesta = items.length - resultado.length
+        if (sinRespuesta > 0) results.errors += sinRespuesta
+      } catch (e) {
+        // Todo el lote falló (ej. WooCommerce caído momentáneamente): se
+        // reporta como error de la tanda completa, sin cortar el conteo total
+        // — el cliente puede reintentar desde este mismo offset.
+        const msg = e instanceof Error ? e.message : 'Error desconocido'
+        return NextResponse.json({ error: msg, offset, total }, { status: 502 })
+      }
     }
   }
 
@@ -111,6 +160,8 @@ export async function POST(req: NextRequest) {
     processed,
     ok: results.ok,
     errors: results.errors,
+    protegidos: results.protegidos,
+    protegidosDetalle,
     failedProducts,
     offset,
     nextOffset,

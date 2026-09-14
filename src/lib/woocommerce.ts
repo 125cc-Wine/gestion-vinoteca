@@ -144,6 +144,26 @@ export async function wooUpdateStockAndPrice(
   })
 }
 
+// Trae el stock ACTUAL en WooCommerce de una tanda de productos (hasta 100
+// ids), en un solo pedido (usa el filtro "include" del listado de
+// productos, no consulta uno por uno). Se usa antes de un sync de stock
+// para no pisar productos que ya tienen stock cargado a mano en la web —
+// ver "protegerStockWeb" en /api/woo/sync.
+export async function wooGetStockPorId(ids: number[]): Promise<Map<number, number>> {
+  const mapa = new Map<number, number>()
+  if (ids.length === 0) return mapa
+  const url = wooUrl('products', {
+    include: ids.join(','),
+    per_page: ids.length,
+    _fields: 'id,stock_quantity',
+  })
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) throw new Error(`WooCommerce error: ${res.status}`)
+  const data: { id: number; stock_quantity: number | null }[] = await res.json()
+  for (const d of data) mapa.set(d.id, d.stock_quantity ?? 0)
+  return mapa
+}
+
 export interface WooBatchItem {
   id: number
   regular_price?: string

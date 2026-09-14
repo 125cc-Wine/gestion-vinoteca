@@ -173,11 +173,20 @@ export default function ProductosPage() {
     nombre: string
     stockActual?: number; stockNuevo?: number
     precioActual?: number; precioNuevo?: number
+    protegido?: boolean
   }
   const [syncCambios, setSyncCambios] = useState<SyncCambio[]>([])
   const [syncResumen, setSyncResumen] = useState<null | {
     total_vinculados: number; cambios: number; sin_cambios: number; sin_encontrar_en_web: number
+    protegidos_por_stock_web?: number
   }>(null)
+  // Mientras el stock se siga cargando a mano en los dos lados (gestión y
+  // directo en WooCommerce), un sync de stock normal pisaría cualquier
+  // número puesto a mano en la web con el de Supabase. Con esto activo
+  // (default), un producto que YA tiene stock > 0 en la web se salta — solo
+  // se completa el stock de los que en la web están en 0. Desactivable para
+  // el día que se decida cargar todo desde un solo lado.
+  const [protegerStockWeb, setProtegerStockWeb] = useState(true)
   // Progreso visible del sync real (POST /api/woo/sync), que ahora se hace
   // en tandas de a 100 productos en vez de una sola llamada que actualizaba
   // todo el catálogo de punta a punta sin devolver nada hasta el final —
@@ -186,7 +195,7 @@ export default function ProductosPage() {
   // de cuánto se había alcanzado a sincronizar.
   interface SyncFallo { id: string; nombre: string; error: string }
   const [syncProgress, setSyncProgress] = useState<null | {
-    done: number; total: number; ok: number; errors: number; fallos: SyncFallo[]
+    done: number; total: number; ok: number; errors: number; protegidos: number; fallos: SyncFallo[]
     estado: 'corriendo' | 'completo' | 'cortado'
     mensajeCorte?: string
     resumeOffset?: number
@@ -1066,7 +1075,7 @@ export default function ProductosPage() {
     setSyncDiffLoading(true)
     setSyncCambios([]); setSyncResumen(null); setSyncProgress(null)
     try {
-      const res = await fetch(`/api/woo/sync/diff?mode=${mode}`)
+      const res = await fetch(`/api/woo/sync/diff?mode=${mode}&protegerStockWeb=${protegerStockWeb}`)
       const d = await res.json()
       if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setSyncConfirm(null); setSyncDiffLoading(false); return }
       setSyncCambios(d.cambios ?? [])
@@ -1089,6 +1098,7 @@ export default function ProductosPage() {
       total: prev?.total ?? syncResumen?.total_vinculados ?? 0,
       ok: desdeOffset > 0 ? (prev?.ok ?? 0) : 0,
       errors: desdeOffset > 0 ? (prev?.errors ?? 0) : 0,
+      protegidos: desdeOffset > 0 ? (prev?.protegidos ?? 0) : 0,
       fallos: desdeOffset > 0 ? (prev?.fallos ?? []) : [],
       estado: 'corriendo',
     }))
@@ -1096,6 +1106,7 @@ export default function ProductosPage() {
     let offset = desdeOffset
     let acumOk = desdeOffset > 0 ? (syncProgress?.ok ?? 0) : 0
     let acumErrors = desdeOffset > 0 ? (syncProgress?.errors ?? 0) : 0
+    let acumProtegidos = desdeOffset > 0 ? (syncProgress?.protegidos ?? 0) : 0
     let acumFallos: SyncFallo[] = desdeOffset > 0 ? (syncProgress?.fallos ?? []) : []
 
     try {
@@ -1103,12 +1114,12 @@ export default function ProductosPage() {
         const res = await fetch('/api/woo/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode, offset, limit: 100 }),
+          body: JSON.stringify({ mode, offset, limit: 100, protegerStockWeb }),
         })
         const d = await res.json()
         if (!res.ok || d.error) {
           setSyncProgress({
-            done: offset, total: d.total ?? 0, ok: acumOk, errors: acumErrors, fallos: acumFallos,
+            done: offset, total: d.total ?? 0, ok: acumOk, errors: acumErrors, protegidos: acumProtegidos, fallos: acumFallos,
             estado: 'cortado',
             mensajeCorte: d.error ?? `HTTP ${res.status}`,
             resumeOffset: offset,
@@ -1119,17 +1130,18 @@ export default function ProductosPage() {
 
         acumOk += d.ok
         acumErrors += d.errors
+        acumProtegidos += d.protegidos ?? 0
         acumFallos = [...acumFallos, ...(d.failedProducts ?? [])]
         offset = d.nextOffset
 
         setSyncProgress({
-          done: offset, total: d.total, ok: acumOk, errors: acumErrors, fallos: acumFallos,
+          done: offset, total: d.total, ok: acumOk, errors: acumErrors, protegidos: acumProtegidos, fallos: acumFallos,
           estado: d.done ? 'completo' : 'corriendo',
         })
 
         if (d.done) break
       }
-      toast_(`Sync ${mode} completo: ${acumOk} ok${acumErrors ? `, ${acumErrors} errores` : ''}`)
+      toast_(`Sync ${mode} completo: ${acumOk} ok${acumProtegidos ? `, ${acumProtegidos} protegidos` : ''}${acumErrors ? `, ${acumErrors} errores` : ''}`)
     } catch {
       setSyncProgress(prev => prev ? { ...prev, estado: 'cortado', mensajeCorte: 'Se cortó la conexión', resumeOffset: offset } : prev)
     } finally {
@@ -2141,8 +2153,20 @@ export default function ProductosPage() {
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: T.muted }}>
                   <span style={{ color: T.wine, fontWeight: 600 }}>{syncResumen.cambios} van a cambiar</span>
                   {' '}· {syncResumen.sin_cambios} sin cambios
+                  {!!syncResumen.protegidos_por_stock_web && <> · <span style={{ color: T.amber, fontWeight: 600 }}>{syncResumen.protegidos_por_stock_web} protegidos (ya tienen stock en la web)</span></>}
                   {syncResumen.sin_encontrar_en_web > 0 && <> · <span style={{ color: T.dim }}>{syncResumen.sin_encontrar_en_web} no encontrados en la web</span></>}
                 </p>
+              )}
+              {!syncProgress && (syncConfirm === 'stock' || syncConfirm === 'ambos') && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12, color: T.muted, cursor: syncDiffLoading ? 'default' : 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={protegerStockWeb}
+                    disabled={syncDiffLoading}
+                    onChange={e => { setProtegerStockWeb(e.target.checked); previewSyncWoo(syncConfirm) }}
+                  />
+                  No tocar productos que ya tienen stock cargado en la web (recomendado mientras se cargue en los 2 lados)
+                </label>
               )}
             </div>
 
@@ -2163,8 +2187,9 @@ export default function ProductosPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 16, fontSize: 13, marginBottom: 14 }}>
+                <div style={{ display: 'flex', gap: 16, fontSize: 13, marginBottom: 14, flexWrap: 'wrap' }}>
                   <span style={{ color: T.green, fontWeight: 600 }}>✓ {syncProgress.ok} actualizados</span>
+                  {syncProgress.protegidos > 0 && <span style={{ color: T.amber, fontWeight: 600 }}>🛡️ {syncProgress.protegidos} protegidos</span>}
                   {syncProgress.errors > 0 && <span style={{ color: T.red, fontWeight: 600 }}>✗ {syncProgress.errors} con error</span>}
                 </div>
 
@@ -2220,7 +2245,14 @@ export default function ProductosPage() {
                   <tbody>
                     {syncCambios.map((c, i) => (
                       <tr key={i} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
-                        <td style={{ padding: '8px 12px 8px 24px', color: T.text }}>{c.nombre}</td>
+                        <td style={{ padding: '8px 12px 8px 24px', color: T.text }}>
+                          {c.nombre}
+                          {c.protegido && (
+                            <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: T.amber, background: T.amberBg, border: `1px solid ${T.amberBd}`, borderRadius: 5, padding: '1px 5px' }}>
+                              stock protegido
+                            </span>
+                          )}
+                        </td>
                         {(syncConfirm === 'stock' || syncConfirm === 'ambos') && (
                           <td style={{ padding: '8px 12px', textAlign: 'right', color: T.muted, whiteSpace: 'nowrap' }}>
                             {c.stockActual !== undefined ? <>{c.stockActual} → <strong style={{ color: T.text }}>{c.stockNuevo}</strong></> : '—'}
