@@ -190,6 +190,17 @@ export default function FinancieroPage() {
 
       <div style={{ padding: '24px 28px' }}>
 
+        {/* Explicación general */}
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: T.text, margin: 0, lineHeight: 1.6 }}>
+            Esta página compara lo que ganaste <strong>en los papeles</strong> con lo que en la práctica te queda en el
+            bolsillo. Cuando vendés a cuenta corriente, o cobrás con un cheque a fecha, esa plata no la tenés disponible
+            de entrada — pasan días o meses hasta que la cobrás de verdad. En el medio, los precios suben (inflación), así
+            que esos mismos pesos, cuando por fin entran, valen menos de lo que valían el día de la venta. Acá abajo
+            separamos cuánto de tu margen &quot;de factura&quot; se pierde por esa demora, y cuánto te queda realmente.
+          </p>
+        </div>
+
         {/* Parámetros de inflación */}
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, marginBottom: 20, overflow: 'hidden' }}>
           <button
@@ -261,37 +272,49 @@ export default function FinancieroPage() {
         ) : !datos ? null : (
           <>
             {/* KPIs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 14, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px,1fr))', gap: 14, marginBottom: 14 }}>
               <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Margen nominal</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: T.text }}>{fmt(datos.kpis.margenNominal)}</div>
-                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>venta − costo actual, sin ajustar</div>
+                <p style={{ fontSize: 11, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+                  Precio de venta menos el costo actual del producto — la ganancia &quot;de factura&quot;, igual que en Reportes.
+                  Todavía no tiene en cuenta si esa plata ya la cobraste o si la seguís esperando.
+                </p>
               </div>
               <div style={{ background: T.surface, border: `1px solid ${T.redBd}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Costo de oportunidad</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: T.red }}>−{fmt(datos.kpis.costoOportunidadTotal)}</div>
-                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>
-                  cta. cte. {fmt(datos.kpis.costoOportunidadCtaCte)} + cheques {fmt(datos.kpis.costoOportunidadCheques)}
-                </div>
+                <p style={{ fontSize: 11, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+                  Lo que se te licúa por la demora en cobrar: <strong>{fmt(datos.kpis.costoOportunidadCtaCte)}</strong> de
+                  ventas a cuenta corriente que tardaron en pagarse, más <strong>{fmt(datos.kpis.costoOportunidadCheques)}</strong> de
+                  cheques que quedaron en cartera hasta poder depositarse.
+                </p>
               </div>
               <div style={{ background: T.surface, border: `1px solid ${T.greenBd}`, borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Ganancia real</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: T.green }}>{fmt(datos.kpis.gananciaReal)}</div>
-                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>
-                  {datos.kpis.pctErosion.toFixed(1)}% del margen se lo come la demora en cobrar
-                </div>
+                <p style={{ fontSize: 11, color: T.muted, marginTop: 8, lineHeight: 1.5 }}>
+                  Margen nominal menos el costo de oportunidad: lo que realmente te queda, en pesos con el poder de compra
+                  de hoy. Un <strong>{datos.kpis.pctErosion.toFixed(1)}%</strong> de tu margen &quot;de papel&quot; se lo comió la demora en cobrar.
+                </p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 14, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px,1fr))', gap: 14, marginBottom: 24 }}>
               <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Expuesto hoy en cta. cte.</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.amber }}>{fmt(datos.kpis.montoExpuestoActual)}</div>
-                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>de ventas del período, aún sin cobrar</div>
+                <p style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+                  De las ventas del período elegido, cuánta plata sigue sin cobrarse hoy. No es el saldo total de cuenta
+                  corriente de tus clientes (para eso está Cobranzas) — es solo lo que corresponde a este rango de fechas.
+                </p>
               </div>
               <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 18px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Días promedio de cobro</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>{datos.kpis.diasPromedioCobro.toFixed(0)} días</div>
-                <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>ponderado por monto, ventas ya cobradas</div>
+                <p style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+                  En promedio (pesando más las ventas con más plata en juego), cuántos días pasan entre que vendés algo a
+                  cuenta corriente y el día en que efectivamente te lo pagan. Solo cuenta lo que ya se cobró en el período.
+                </p>
               </div>
             </div>
 
@@ -310,7 +333,12 @@ export default function FinancieroPage() {
               {tab === 'cliente' && (
                 <div>
                   <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Clientes que más erosionan el margen</h2>
-                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted }}>Ordenado por cuánto costo de oportunidad genera cada uno al tardar en pagar.</p>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 640 }}>
+                    No es un ranking de quién más te compra, sino de quién más plata te hace perder por tardar en pagar
+                    (o por tener mucha plata parada hace mucho tiempo). &quot;pend.&quot; es lo que ese cliente todavía te debe hoy
+                    de este período; el número en rojo es cuánto ya se licuó por la demora, ya sea de lo que pagó tarde o
+                    de lo que sigue debiendo.
+                  </p>
                   {datos.porCliente.length === 0 ? (
                     <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin ventas a crédito con erosión relevante en el período</p>
                   ) : (
@@ -341,7 +369,12 @@ export default function FinancieroPage() {
               {tab === 'producto' && (
                 <div>
                   <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ganancia real por producto</h2>
-                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted }}>Margen nominal alto no siempre significa ganancia real alta si se vende mayormente a plazo.</p>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 640 }}>
+                    El &quot;margen nominal&quot; es el mismo de siempre. La columna &quot;costo oportunidad&quot; reparte, a prorrata de lo
+                    que vendió cada producto, la erosión de las ventas a cuenta corriente en las que participó. Dos
+                    productos con el mismo margen de papel pueden dejarte una ganancia real muy distinta si uno se vende
+                    de contado y el otro casi siempre a cuenta corriente.
+                  </p>
                   {datos.porProducto.length === 0 ? (
                     <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin datos</p>
                   ) : (
@@ -372,7 +405,12 @@ export default function FinancieroPage() {
 
               {tab === 'categoria' && (
                 <div>
-                  <h2 style={{ margin: '0 0 20px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ganancia real por categoría</h2>
+                  <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ganancia real por categoría</h2>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 640 }}>
+                    Lo mismo que &quot;Por producto&quot; pero agrupado por Tinto / Blanco / Rosado / Espumante / Otro — sirve para
+                    ver de un vistazo si alguna categoría entera se apoya mucho en ventas a crédito y por eso rinde menos
+                    en la práctica de lo que muestra su margen nominal.
+                  </p>
                   {datos.porCategoria.length === 0 ? (
                     <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin datos</p>
                   ) : (
@@ -397,7 +435,11 @@ export default function FinancieroPage() {
               {tab === 'cheques' && (
                 <div>
                   <h2 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cheques recibidos en cartera</h2>
-                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted }}>Erosión adicional entre que se recibe el cheque y la fecha en que se puede depositar.</p>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: T.muted, lineHeight: 1.6, maxWidth: 640 }}>
+                    Cuando un cliente te paga con un cheque a fecha, esa deuda se cancela en su cuenta corriente ese mismo
+                    día — pero vos todavía no podés usar esa plata hasta el día en que el cheque se puede depositar. Esta
+                    tabla mide esa demora extra: cuántos días quedan &quot;presos&quot; en el cheque, y cuánto se licúa mientras tanto.
+                  </p>
                   {datos.cheques.length === 0 ? (
                     <p style={{ color: T.dim, textAlign: 'center', padding: 40, fontSize: 13 }}>Sin cheques recibidos en el período</p>
                   ) : (
