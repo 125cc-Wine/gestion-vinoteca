@@ -66,7 +66,11 @@ export async function POST(req: NextRequest) {
   const fechaCobro = fecha || new Date().toISOString().split('T')[0]
   const esParcial = montoCobro < restante - 0.01
   const nuevoMontoPagado = parseFloat((montoPagadoActual + montoCobro).toFixed(2))
-  const conceptoCobro = concepto || `Cobro${esParcial ? ' parcial' : ''} ${labelComprobante(venta)}`
+  // "(aplicado a X)" — mismo formato que ya usa el cobro genérico de
+  // /api/cta-cte — para que el recibo (que ya sabe parsear ese patrón) le
+  // arme su propia fila "Aplicado a" en vez de dejar la referencia perdida
+  // adentro de la frase de "En concepto de".
+  const conceptoCobro = concepto || `Cobro cuenta corriente (aplicado a ${labelComprobante(venta)}${esParcial ? ', parcial' : ''})`
 
   // 1. Actualizar monto_pagado y, si ya cubre el total, marcar pagada
   const { data: ventaActualizada, error: ue } = await supabase

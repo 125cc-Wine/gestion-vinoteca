@@ -409,7 +409,10 @@ export default function ClientesPage() {
   function abrirPagoVenta(v: Venta) {
     setPagoVenta(v)
     setPagoMonto(parseFloat((v.total - (v.monto_pagado ?? 0)).toFixed(2)))
-    setPagoConcepto(`Cobro ${labelComprobante(v)}`)
+    // "(aplicado a X)" — mismo formato que ya usa el cobro genérico de
+    // Cobranzas, para que el recibo arme su propia fila "Aplicado a" en vez
+    // de dejar la referencia perdida adentro de "En concepto de".
+    setPagoConcepto(`Cobro cuenta corriente (aplicado a ${labelComprobante(v)})`)
     setPagoFecha(new Date().toISOString().split('T')[0])
     setPagoMedioPago('Efectivo')
     setPagoSplit(false)
