@@ -401,8 +401,13 @@ export default function VentasPage() {
   const [items, setItems] = useState<ItemForm[]>([{ ...ITEM_EMPTY }])
   const [descuentoGlobal, setDescuentoGlobal] = useState(0)
   const [notas, setNotas] = useState('')
-  const [condVenta, setCondVenta] = useState('Contado')
-  const [estadoPago, setEstadoPago] = useState('pagado')
+  // Arrancan vacíos a propósito (no "Contado"/"pagado" por default): una
+  // venta nueva obliga a elegir método y estado de pago antes de guardar —
+  // antes, si nadie tocaba estos combos, quedaba silenciosamente cargada
+  // como "pagado, Contado" aunque en realidad fuera a cuenta corriente o se
+  // hubiera cobrado con otro medio.
+  const [condVenta, setCondVenta] = useState('')
+  const [estadoPago, setEstadoPago] = useState('')
   const [aplicarMayorista, setAplicarMayorista] = useState(false)
   const [listaPrecios, setListaPrecios] = useState<'minorista' | 'mayorista' | 'distribuidor'>('minorista')
   const [pctMayorista, setPctMayorista] = useState(35)
@@ -732,6 +737,10 @@ export default function VentasPage() {
   async function guardar(imprimir = true) {
     if (saving) return // evita doble click / doble comprobante mientras espera la respuesta
     if (items.every(i => !i.nombre)) { showToast('Agregá al menos un producto'); return }
+    // Sin default de "pagado"/"Contado": si nadie elige, no se guarda — ver
+    // comentario en la declaración de estos dos estados más arriba.
+    if (!estadoPago) { showToast('Elegí el estado de pago'); return }
+    if (!condVenta) { showToast('Elegí la condición de venta'); return }
     // Una venta en Cta. Cte. sin cliente asignado queda "huérfana": no hay a
     // quién descontarle el saldo, así que después /api/ventas/cobrar no puede
     // generar el movimiento de cta. cte. y el cobro no emite recibo (se
@@ -996,8 +1005,8 @@ export default function VentasPage() {
     }))
     setItems(vi)
     setDescuentoGlobal(v.descuento); setNotas(v.notas || '')
-    setCondVenta((v as unknown as Record<string, string>).condicion_venta || 'Contado')
-    setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
+    setCondVenta((v as unknown as Record<string, string>).condicion_venta || '')
+    setEstadoPago(v.estado_pago || ''); setModal(true)
   }
 
   function duplicarVenta(v: Venta) {
@@ -1013,8 +1022,10 @@ export default function VentasPage() {
       precio_unitario: i.precio_unitario, descuento: i.descuento || 0, subtotal: i.subtotal,
     }))
     setItems(vi); setDescuentoGlobal(v.descuento); setNotas(v.notas || '')
-    setCondVenta((v as unknown as Record<string, string>).condicion_venta || 'Contado')
-    setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
+    // Al duplicar (es una venta NUEVA, no la misma) no se copia el método ni
+    // el estado de pago del original — se vuelve a pedir, para no repetir
+    // sin querer "pagado" en una venta que puede cobrarse distinto.
+    setCondVenta(''); setEstadoPago(''); setModal(true)
   }
 
   function abrirSelectorDevolucion() {
@@ -1064,15 +1075,15 @@ export default function VentasPage() {
       precio_unitario: i.precio_unitario, descuento: 0, subtotal: i.subtotal,
     }))
     setItems(vi); setDescuentoGlobal(0); setNotas(`Devolución de ${v.numero}`)
-    setCondVenta('Contado'); setEstadoPago(v.estado_pago || 'pagado'); setModal(true)
+    setCondVenta(''); setEstadoPago(''); setModal(true)
   }
 
   function abrirNuevo(t: 'presupuesto' | 'remito' | 'devolucion') {
     setEditVentaId(null); setTipo(t); setVentaEmpresa(empresa)
     setClienteId(''); setClienteNombre('Consumidor Final'); setClienteData(null); setClienteTipo('')
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }])
-    setDescuentoGlobal(0); setNotas(''); setCondVenta('Contado')
-    setEstadoPago(empresa === 'lavid' && t === 'presupuesto' ? 'cuenta_corriente' : 'pagado')
+    setDescuentoGlobal(0); setNotas(''); setCondVenta('')
+    setEstadoPago('')
     setAplicarMayorista(false)
     setListaPrecios('minorista'); setPctMayorista(35)
     setPctDistrib(15)
@@ -1843,16 +1854,18 @@ export default function VentasPage() {
                 </select>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Condición de venta</div>
-                <select className="vinp" style={INP} value={condVenta} onChange={e => setCondVenta(e.target.value)}>
+                <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Condición de venta {!condVenta && <span style={{ color: C.red }}>*</span>}</div>
+                <select className="vinp" style={{ ...INP, ...(condVenta ? {} : { borderColor: C.red }) }} value={condVenta} onChange={e => setCondVenta(e.target.value)}>
+                  <option value="" disabled>Elegí una condición...</option>
                   {CONDICIONES_VENTA.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Estado de pago</div>
-              <select className="vinp" style={{ ...INP, maxWidth: 220 }} value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
+              <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Estado de pago {!estadoPago && <span style={{ color: C.red }}>*</span>}</div>
+              <select className="vinp" style={{ ...INP, maxWidth: 220, ...(estadoPago ? {} : { borderColor: C.red }) }} value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
+                <option value="" disabled>Elegí el estado...</option>
                 <option value="pagado">Pagado</option>
                 <option value="pendiente">Pendiente</option>
                 <option value="cuenta_corriente">Cuenta corriente</option>
