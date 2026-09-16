@@ -37,6 +37,10 @@ export async function GET(req: NextRequest) {
   try { items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : (pedido.items ?? []) } catch { items = [] }
 
   const fecha = pedido.created_at ? new Date(pedido.created_at).toLocaleDateString('es-AR') : ''
+  // YYYY-MM-DD para el nombre de archivo al guardar como PDF (el navegador
+  // usa el <title>).
+  const fechaArchivoObj = pedido.created_at ? new Date(pedido.created_at) : null
+  const fechaArchivo = fechaArchivoObj ? `${fechaArchivoObj.getFullYear()}-${String(fechaArchivoObj.getMonth() + 1).padStart(2, '0')}-${String(fechaArchivoObj.getDate()).padStart(2, '0')}` : ''
   const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR') : null
 
   const totalBot = items.reduce((s, it) => s + (it.cantidad ?? 0), 0)
@@ -68,7 +72,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pedido ${esc(pedido.numero ?? '')}</title>
+  <title>Pedido ${esc(pedido.numero ?? '')}${fechaArchivo ? ' - ' + fechaArchivo : ''} - ${esc(pedido.cliente_nombre) || 'Consumidor Final'}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }

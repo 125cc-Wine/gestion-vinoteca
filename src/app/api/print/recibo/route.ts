@@ -82,13 +82,22 @@ export async function GET(req: NextRequest) {
 
   const empresa = EMPRESAS_DATA[empresaKey] ?? EMPRESAS_DATA['aroma']
   const clienteNombre = cliente?.razon_social || `${cliente?.nombre ?? ''} ${cliente?.apellido ?? ''}`.trim() || 'Cliente'
-  const fecha = new Date(mov.created_at).toLocaleDateString('es-AR')
+  const fechaObj = new Date(mov.created_at)
+  const fecha = fechaObj.toLocaleDateString('es-AR')
+  // YYYY-MM-DD (con getters locales, no toISOString — que es UTC y puede
+  // correr la fecha un día en un huso horario negativo como Argentina).
+  const fechaArchivo = `${fechaObj.getFullYear()}-${String(fechaObj.getMonth() + 1).padStart(2, '0')}-${String(fechaObj.getDate()).padStart(2, '0')}`
   const moneda = (n: number) => '$' + (n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   // El concepto puede traer el detalle de a qué comprobantes se aplicó el
   // cobro (ver /api/cta-cte), separado con " — Aplicado a: " — se muestra
   // en una fila aparte para que no quede todo amontonado en una sola línea.
   const [conceptoBase, aplicadoA] = (mov.concepto || '').split(' — Aplicado a: ')
+  // Nombre de archivo cuando se guarda como PDF (el navegador usa el
+  // <title>): antes era solo "Recibo — Cliente", indistinguible de otro
+  // recibo del mismo cliente — ahora suma la fecha y a qué comprobante
+  // corresponde.
+  const tituloArchivo = `Recibo ${fechaArchivo} - ${clienteNombre}${aplicadoA ? ' - ' + aplicadoA : conceptoBase ? ' - ' + conceptoBase : ''}`
 
   const textoWa = `Hola ${clienteNombre}, te confirmamos la recepción de tu pago de ${moneda(mov.monto)} el ${fecha} en ${empresa.nombre}.${conceptoBase ? ` Concepto: ${conceptoBase}.` : ''}${aplicadoA ? ` Aplicado a: ${aplicadoA}.` : ''} ¡Gracias!`
   const wa = waLink(cliente?.telefono, textoWa)
@@ -98,7 +107,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Recibo — ${esc(clienteNombre)}</title>
+  <title>${esc(tituloArchivo)}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }

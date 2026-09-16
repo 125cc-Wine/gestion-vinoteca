@@ -136,11 +136,16 @@ export async function GET(req: NextRequest) {
 
   // 'T12:00:00' evita que una fecha-only ('YYYY-MM-DD', parseada como UTC
   // medianoche) se corra un día para atrás si el runtime no está en UTC.
-  const fecha = venta.fecha
-    ? new Date(venta.fecha + 'T12:00:00').toLocaleDateString('es-AR')
+  const fechaObj = venta.fecha
+    ? new Date(venta.fecha + 'T12:00:00')
     : venta.created_at
-      ? new Date(venta.created_at).toLocaleDateString('es-AR')
-      : ''
+      ? new Date(venta.created_at)
+      : null
+  const fecha = fechaObj ? fechaObj.toLocaleDateString('es-AR') : ''
+  // YYYY-MM-DD para el nombre de archivo al guardar como PDF (el navegador
+  // usa el <title>) — con getters locales, no toISOString (UTC, puede
+  // correr la fecha un día en huso horario negativo).
+  const fechaArchivo = fechaObj ? `${fechaObj.getFullYear()}-${String(fechaObj.getMonth() + 1).padStart(2, '0')}-${String(fechaObj.getDate()).padStart(2, '0')}` : ''
 
   const subtotal: number = venta.subtotal ?? 0
   const descuento: number = venta.descuento ?? 0
@@ -195,7 +200,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${tipoLabel} ${esc(venta.numero ?? '')}</title>
+  <title>${tipoLabel} ${esc(venta.numero ?? '')}${fechaArchivo ? ' - ' + fechaArchivo : ''} - ${esc(venta.cliente_nombre) || 'Consumidor Final'}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 

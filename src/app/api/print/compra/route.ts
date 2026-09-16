@@ -60,6 +60,10 @@ export async function GET(req: NextRequest) {
   const moneda = (n: number) => '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const fecha = compra.created_at ? new Date(compra.created_at).toLocaleDateString('es-AR') : ''
+  // YYYY-MM-DD para el nombre de archivo al guardar como PDF (el navegador
+  // usa el <title>).
+  const fechaArchivoObj = compra.created_at ? new Date(compra.created_at) : null
+  const fechaArchivo = fechaArchivoObj ? `${fechaArchivoObj.getFullYear()}-${String(fechaArchivoObj.getMonth() + 1).padStart(2, '0')}-${String(fechaArchivoObj.getDate()).padStart(2, '0')}` : ''
   const fechaEsperada = compra.fecha_esperada ? new Date(compra.fecha_esperada + 'T12:00:00').toLocaleDateString('es-AR') : null
   const fechaFactura = compra.fecha_factura ? new Date(compra.fecha_factura + 'T12:00:00').toLocaleDateString('es-AR') : null
   const fechaVencimiento = compra.fecha_vencimiento ? new Date(compra.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR') : null
@@ -93,7 +97,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${tipoLabel} ${esc(compra.numero ?? '')}</title>
+  <title>${tipoLabel} ${esc(compra.numero ?? '')}${fechaArchivo ? ' - ' + fechaArchivo : ''} - ${esc(compra.proveedor_nombre ?? '')}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }

@@ -46,6 +46,10 @@ export async function GET(req: NextRequest) {
   const moneda = (n: number) => '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const fecha = cons.created_at ? new Date(cons.created_at).toLocaleDateString('es-AR') : ''
+  // YYYY-MM-DD para el nombre de archivo al guardar como PDF (el navegador
+  // usa el <title>).
+  const fechaArchivoObj = cons.created_at ? new Date(cons.created_at) : null
+  const fechaArchivo = fechaArchivoObj ? `${fechaArchivoObj.getFullYear()}-${String(fechaArchivoObj.getMonth() + 1).padStart(2, '0')}-${String(fechaArchivoObj.getDate()).padStart(2, '0')}` : ''
   const fechaSalida = cons.fecha_salida ? new Date(cons.fecha_salida + 'T12:00:00').toLocaleDateString('es-AR') : null
   const fechaRetorno = cons.fecha_retorno_estimada ? new Date(cons.fecha_retorno_estimada + 'T12:00:00').toLocaleDateString('es-AR') : null
 
@@ -75,7 +79,7 @@ export async function GET(req: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Consignación ${esc(cons.numero ?? '')}</title>
+  <title>Consignación ${esc(cons.numero ?? '')}${fechaArchivo ? ' - ' + fechaArchivo : ''} - ${esc(cons.cliente_nombre ?? '')}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @page { size: A4 portrait; margin: 16mm 18mm; }
