@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetEstadoPorId } from '@/lib/woocommerce'
+import { wooGetEstadoPorId, agruparConflictos } from '@/lib/woocommerce'
 
 // GET /api/woo/sync/diff?mode=stock|precio|ambos&protegerStockWeb=true|false
 // Calcula, SIN escribir nada, qué productos vinculados a WooCommerce van a
@@ -41,7 +41,14 @@ export async function GET(req: NextRequest) {
       if (!data || data.length < 1000) break
     }
 
-    const wooPorId = await wooGetEstadoPorId(productos.map(p => p.woo_product_id))
+    const wooPorId = await wooGetEstadoPorId(Array.from(new Set(productos.map(p => p.woo_product_id))))
+    const conflictosPorWooId = agruparConflictos(productos)
+    const conflictos = Array.from(conflictosPorWooId, ([wooId, lista]) => ({
+      woo_product_id: wooId,
+      nombreWeb: wooPorId.get(wooId)?.nombre ?? null,
+      precioWeb: wooPorId.get(wooId)?.precio ?? null,
+      productos: lista.map(p => ({ nombre: p.nombre, precio: p.precio_venta ?? 0 })),
+    }))
 
     const cambios: {
       nombre: string
@@ -54,6 +61,7 @@ export async function GET(req: NextRequest) {
     let protegidosPorStockWeb = 0
 
     for (const p of productos) {
+      if (conflictosPorWooId.has(p.woo_product_id)) continue
       const w = wooPorId.get(p.woo_product_id)
       if (!w) { sinEncontrarEnWeb++; continue }
 
@@ -84,8 +92,10 @@ export async function GET(req: NextRequest) {
         sin_cambios: sinCambios,
         sin_encontrar_en_web: sinEncontrarEnWeb,
         protegidos_por_stock_web: protegidosPorStockWeb,
+        conflictos: conflictos.length,
       },
       cambios,
+      conflictos,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error desconocido'

@@ -176,9 +176,16 @@ export default function ProductosPage() {
     protegido?: boolean
   }
   const [syncCambios, setSyncCambios] = useState<SyncCambio[]>([])
+  // Varios productos vinculados al MISMO producto de la web: el sync los
+  // saltea (se pisarían entre sí) y se listan para corregir el vínculo.
+  interface SyncConflicto {
+    woo_product_id: number; nombreWeb: string | null; precioWeb: number | null
+    productos: { nombre: string; precio: number }[]
+  }
+  const [syncConflictos, setSyncConflictos] = useState<SyncConflicto[]>([])
   const [syncResumen, setSyncResumen] = useState<null | {
     total_vinculados: number; cambios: number; sin_cambios: number; sin_encontrar_en_web: number
-    protegidos_por_stock_web?: number
+    protegidos_por_stock_web?: number; conflictos?: number
   }>(null)
   // Mientras el stock se siga cargando a mano en los dos lados (gestión y
   // directo en WooCommerce), un sync de stock normal pisaría cualquier
@@ -1073,12 +1080,13 @@ export default function ProductosPage() {
   async function previewSyncWoo(mode: 'stock' | 'precio' | 'ambos') {
     setSyncConfirm(mode)
     setSyncDiffLoading(true)
-    setSyncCambios([]); setSyncResumen(null); setSyncProgress(null)
+    setSyncCambios([]); setSyncConflictos([]); setSyncResumen(null); setSyncProgress(null)
     try {
       const res = await fetch(`/api/woo/sync/diff?mode=${mode}&protegerStockWeb=${protegerStockWeb}`)
       const d = await res.json()
       if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); setSyncConfirm(null); setSyncDiffLoading(false); return }
       setSyncCambios(d.cambios ?? [])
+      setSyncConflictos(d.conflictos ?? [])
       setSyncResumen(d.resumen)
     } catch { toast_('Error de red'); setSyncConfirm(null) }
     setSyncDiffLoading(false)
@@ -2155,6 +2163,7 @@ export default function ProductosPage() {
                   {' '}· {syncResumen.sin_cambios} sin cambios
                   {!!syncResumen.protegidos_por_stock_web && <> · <span style={{ color: T.amber, fontWeight: 600 }}>{syncResumen.protegidos_por_stock_web} protegidos (ya tienen stock en la web)</span></>}
                   {syncResumen.sin_encontrar_en_web > 0 && <> · <span style={{ color: T.dim }}>{syncResumen.sin_encontrar_en_web} no encontrados en la web</span></>}
+                  {!!syncResumen.conflictos && <> · <span style={{ color: T.red, fontWeight: 600 }}>{syncResumen.conflictos} en conflicto (no se sincronizan)</span></>}
                 </p>
               )}
               {!syncProgress && (syncConfirm === 'stock' || syncConfirm === 'ambos') && (
@@ -2169,6 +2178,21 @@ export default function ProductosPage() {
                 </label>
               )}
             </div>
+
+            {!syncProgress && !syncDiffLoading && syncConflictos.length > 0 && (
+              <div style={{ padding: '12px 24px', borderBottom: `1px solid ${T.border}`, background: T.amberBg, maxHeight: 220, overflowY: 'auto', flexShrink: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.amber, marginBottom: 6 }}>
+                  ⚠️ Varios productos vinculados al mismo producto de la web — no se sincronizan hasta corregir el vínculo
+                </div>
+                {syncConflictos.map(c => (
+                  <div key={c.woo_product_id} style={{ fontSize: 12, color: T.text, padding: '4px 0' }}>
+                    <strong>Web #{c.woo_product_id}{c.nombreWeb ? ` · ${c.nombreWeb}` : ''}</strong>
+                    {c.precioWeb != null && <span style={{ color: T.muted }}> (${c.precioWeb.toLocaleString('es-AR')})</span>}
+                    <span style={{ color: T.muted }}> ← {c.productos.map(p => `${p.nombre} ($${p.precio.toLocaleString('es-AR')})`).join(' · ')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {syncProgress ? (
               <div style={{ padding: 24, flex: 1, overflowY: 'auto' }}>

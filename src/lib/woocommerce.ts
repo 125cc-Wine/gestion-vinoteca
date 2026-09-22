@@ -144,7 +144,7 @@ export async function wooUpdateStockAndPrice(
   })
 }
 
-export interface WooEstado { stock: number; precio: number }
+export interface WooEstado { stock: number; precio: number; nombre: string }
 
 // Trae precio y stock ACTUALES en la web de los ids pedidos, en tandas de
 // 100 (filtro "include") en paralelo y pidiendo solo esos campos
@@ -164,15 +164,16 @@ export async function wooGetEstadoPorId(ids: number[]): Promise<Map<number, WooE
         include: tanda.join(','),
         per_page: tanda.length,
         status: 'any',
-        _fields: 'id,regular_price,price,stock_quantity',
+        _fields: 'id,name,regular_price,price,stock_quantity',
       })
       const res = await fetch(url, { cache: 'no-store' })
       if (!res.ok) throw new Error(`WooCommerce error: ${res.status}`)
-      const data: { id: number; regular_price: string; price: string; stock_quantity: number | null }[] = await res.json()
+      const data: { id: number; name: string; regular_price: string; price: string; stock_quantity: number | null }[] = await res.json()
       for (const d of data) {
         mapa.set(d.id, {
           stock: d.stock_quantity ?? 0,
           precio: parseFloat(d.regular_price || d.price || '0') || 0,
+          nombre: d.name,
         })
       }
     }))
@@ -217,4 +218,21 @@ export async function wooUpdateProductsBatch(items: WooBatchItem[]): Promise<Woo
   }
   const data = await res.json()
   return data.update ?? []
+}
+
+// Productos de Aroma (activos) que comparten el MISMO producto de la web.
+// El sync no puede decidir cuál manda: cada uno le pone su precio/stock y
+// el siguiente lo pisa, así que la web nunca queda al día y el producto
+// reaparece como pendiente en cada sync (pasó con La Igriega, Tapiz,
+// Flichman Rosé, Buenos Hnos., El Peral/Uruco). Se excluyen del sync y se
+// muestran como conflicto hasta que se corrija el vínculo a mano.
+export function agruparConflictos<T extends { woo_product_id: number | null }>(productos: T[]): Map<number, T[]> {
+  const porWooId = new Map<number, T[]>()
+  for (const p of productos) {
+    if (p.woo_product_id == null) continue
+    const lista = porWooId.get(p.woo_product_id) ?? []
+    lista.push(p)
+    porWooId.set(p.woo_product_id, lista)
+  }
+  return new Map(Array.from(porWooId).filter(([, lista]) => lista.length > 1))
 }

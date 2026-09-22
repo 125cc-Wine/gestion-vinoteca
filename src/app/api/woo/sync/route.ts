@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetEstadoPorId, type WooBatchItem, type WooEstado } from '@/lib/woocommerce'
+import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetEstadoPorId, agruparConflictos, type WooBatchItem, type WooEstado } from '@/lib/woocommerce'
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
@@ -82,6 +82,25 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const total = count ?? 0
+
+  // Los conflictos (varios productos -> mismo producto web) pueden caer en
+  // tandas distintas, así que se calculan sobre TODOS los vinculados, no
+  // solo sobre esta tanda. Solo se lee woo_product_id: es liviano.
+  const vinculados: { woo_product_id: number | null }[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error: e } = await supabase
+      .from('productos')
+      .select('woo_product_id')
+      .eq('empresa', 'aroma')
+      .eq('activo', true)
+      .not('woo_product_id', 'is', null)
+      .order('id')
+      .range(desde, desde + 999)
+    if (e) return NextResponse.json({ error: e.message }, { status: 500 })
+    vinculados.push(...(data ?? []))
+    if (!data || data.length < 1000) break
+  }
+  const enConflicto = agruparConflictos(vinculados)
   const results = { ok: 0, errors: 0, protegidos: 0 }
   const failedProducts: { id: string; nombre: string; error: string }[] = []
   const protegidosDetalle: { id: string; nombre: string; stockWeb: number }[] = []
@@ -105,6 +124,7 @@ export async function POST(req: NextRequest) {
     const items: WooBatchItem[] = []
     for (const prod of productos) {
       const wooId = prod.woo_product_id as number
+      if (enConflicto.has(wooId)) continue
       const web = webPorId.get(wooId)
       const item: WooBatchItem = { id: wooId }
       let algoParaActualizar = false
