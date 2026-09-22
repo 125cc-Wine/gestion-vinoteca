@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts } from '@/lib/woocommerce'
+import { wooGetEstadoPorId } from '@/lib/woocommerce'
 
 // GET /api/woo/sync/diff?mode=stock|precio|ambos&protegerStockWeb=true|false
 // Calcula, SIN escribir nada, qué productos vinculados a WooCommerce van a
@@ -23,18 +24,24 @@ export async function GET(req: NextRequest) {
   const tocaStock = mode === 'stock' || mode === 'ambos'
 
   try {
-    const [woo, { data: productos, error }] = await Promise.all([
-      wooGetAllProducts(),
-      supabase
+    // Supabase corta cada consulta en 1000 filas y hay ~1000 vinculados:
+    // se pagina para no dejar productos afuera de la vista previa.
+    const productos: { id: string; nombre: string; precio_venta: number | null; stock: number | null; woo_product_id: number }[] = []
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await supabase
         .from('productos')
         .select('id, nombre, precio_venta, stock, woo_product_id')
         .eq('empresa', 'aroma')
         .eq('activo', true)
-        .not('woo_product_id', 'is', null),
-    ])
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        .not('woo_product_id', 'is', null)
+        .order('id')
+        .range(desde, desde + 999)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      productos.push(...(data ?? []))
+      if (!data || data.length < 1000) break
+    }
 
-    const wooPorId = new Map(woo.map(w => [w.id, w]))
+    const wooPorId = await wooGetEstadoPorId(productos.map(p => p.woo_product_id))
 
     const cambios: {
       nombre: string
@@ -46,13 +53,13 @@ export async function GET(req: NextRequest) {
     let sinEncontrarEnWeb = 0
     let protegidosPorStockWeb = 0
 
-    for (const p of productos ?? []) {
+    for (const p of productos) {
       const w = wooPorId.get(p.woo_product_id)
       if (!w) { sinEncontrarEnWeb++; continue }
 
-      const stockActual = w.stock_quantity ?? 0
+      const stockActual = w.stock
       const stockNuevo = p.stock ?? 0
-      const precioActual = parseFloat(w.regular_price || w.price || '0') || 0
+      const precioActual = w.precio
       const precioNuevo = p.precio_venta ?? 0
 
       const protegido = tocaStock && protegerStockWeb && stockActual > 0
@@ -72,7 +79,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       resumen: {
-        total_vinculados: productos?.length ?? 0,
+        total_vinculados: productos.length,
         cambios: cambios.length,
         sin_cambios: sinCambios,
         sin_encontrar_en_web: sinEncontrarEnWeb,

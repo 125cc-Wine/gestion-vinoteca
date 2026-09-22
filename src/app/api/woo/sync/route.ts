@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetStockPorId, type WooBatchItem } from '@/lib/woocommerce'
+import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetEstadoPorId, type WooBatchItem, type WooEstado } from '@/lib/woocommerce'
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
@@ -88,37 +89,41 @@ export async function POST(req: NextRequest) {
   if (productos && productos.length > 0) {
     const porWooId = new Map(productos.map(p => [p.woo_product_id as number, p]))
 
-    // Si hay que tocar stock y la protección está activa, primero hay que
-    // saber qué stock tiene AHORA MISMO cada producto en la web (un solo
-    // pedido para toda la tanda, no uno por producto).
-    let stockWebPorId = new Map<number, number>()
-    if (tocaStock && protegerStockWeb) {
-      try {
-        stockWebPorId = await wooGetStockPorId(productos.map(p => p.woo_product_id as number))
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Error desconocido'
-        return NextResponse.json({ error: `No se pudo leer el stock actual de la web: ${msg}`, offset, total }, { status: 502 })
-      }
+    // Estado ACTUAL en la web de la tanda (precio y stock, un pedido de
+    // ~100 ids con solo esos campos). Sirve para dos cosas: no pisar stock
+    // cargado a mano (protegerStockWeb) y mandar a WooCommerce solo los
+    // productos que realmente cambian — antes se reescribian los ~1000
+    // aunque cambiaran 7, y cada escritura en WordPress es lenta.
+    let webPorId = new Map<number, WooEstado>()
+    try {
+      webPorId = await wooGetEstadoPorId(productos.map(p => p.woo_product_id as number))
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido'
+      return NextResponse.json({ error: `No se pudo leer el estado actual de la web: ${msg}`, offset, total }, { status: 502 })
     }
 
     const items: WooBatchItem[] = []
     for (const prod of productos) {
       const wooId = prod.woo_product_id as number
+      const web = webPorId.get(wooId)
       const item: WooBatchItem = { id: wooId }
       let algoParaActualizar = false
 
       if (mode === 'precio' || mode === 'ambos') {
-        item.regular_price = String(prod.precio_venta ?? 0)
-        algoParaActualizar = true
+        const precioNuevo = prod.precio_venta ?? 0
+        if (!web || web.precio !== precioNuevo) {
+          item.regular_price = String(precioNuevo)
+          algoParaActualizar = true
+        }
       }
 
       if (tocaStock) {
-        const stockActualWeb = stockWebPorId.get(wooId) ?? 0
+        const stockActualWeb = web?.stock ?? 0
         const protegido = protegerStockWeb && stockActualWeb > 0
         if (protegido) {
           results.protegidos++
           protegidosDetalle.push({ id: prod.id, nombre: prod.nombre, stockWeb: stockActualWeb })
-        } else {
+        } else if (!web || stockActualWeb !== (prod.stock ?? 0)) {
           item.stock_quantity = prod.stock ?? 0
           item.manage_stock = true
           algoParaActualizar = true

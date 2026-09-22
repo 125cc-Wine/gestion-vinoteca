@@ -144,23 +144,39 @@ export async function wooUpdateStockAndPrice(
   })
 }
 
-// Trae el stock ACTUAL en WooCommerce de una tanda de productos (hasta 100
-// ids), en un solo pedido (usa el filtro "include" del listado de
-// productos, no consulta uno por uno). Se usa antes de un sync de stock
-// para no pisar productos que ya tienen stock cargado a mano en la web —
-// ver "protegerStockWeb" en /api/woo/sync.
-export async function wooGetStockPorId(ids: number[]): Promise<Map<number, number>> {
-  const mapa = new Map<number, number>()
-  if (ids.length === 0) return mapa
-  const url = wooUrl('products', {
-    include: ids.join(','),
-    per_page: ids.length,
-    _fields: 'id,stock_quantity',
-  })
-  const res = await fetch(url, { cache: 'no-store' })
-  if (!res.ok) throw new Error(`WooCommerce error: ${res.status}`)
-  const data: { id: number; stock_quantity: number | null }[] = await res.json()
-  for (const d of data) mapa.set(d.id, d.stock_quantity ?? 0)
+export interface WooEstado { stock: number; precio: number }
+
+// Trae precio y stock ACTUALES en la web de los ids pedidos, en tandas de
+// 100 (filtro "include") en paralelo y pidiendo solo esos campos
+// (_fields). Traer el catalogo completo con wooGetAllProducts tarda >70s
+// con ~1100 productos (cada producto viene con descripcion, imagenes,
+// atributos...) y eso superaba el limite de la funcion en Vercel: el
+// boton "Sync Precio" fallaba en la vista previa. Asi tarda unos segundos.
+// Ids que no vuelven (producto borrado en la web) no aparecen en el mapa.
+export async function wooGetEstadoPorId(ids: number[]): Promise<Map<number, WooEstado>> {
+  const mapa = new Map<number, WooEstado>()
+  const tandas: number[][] = []
+  for (let i = 0; i < ids.length; i += 100) tandas.push(ids.slice(i, i + 100))
+  const CONCURRENCIA = 4
+  for (let i = 0; i < tandas.length; i += CONCURRENCIA) {
+    await Promise.all(tandas.slice(i, i + CONCURRENCIA).map(async tanda => {
+      const url = wooUrl('products', {
+        include: tanda.join(','),
+        per_page: tanda.length,
+        status: 'any',
+        _fields: 'id,regular_price,price,stock_quantity',
+      })
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`WooCommerce error: ${res.status}`)
+      const data: { id: number; regular_price: string; price: string; stock_quantity: number | null }[] = await res.json()
+      for (const d of data) {
+        mapa.set(d.id, {
+          stock: d.stock_quantity ?? 0,
+          precio: parseFloat(d.regular_price || d.price || '0') || 0,
+        })
+      }
+    }))
+  }
   return mapa
 }
 
