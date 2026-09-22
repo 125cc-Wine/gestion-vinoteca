@@ -44,3 +44,7 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Auditoría de vínculos Woo (salida local, se regenera con el script)
+scripts/_cache_auditoria_woo.json
+scripts/_reporte_auditoria_woo.*
