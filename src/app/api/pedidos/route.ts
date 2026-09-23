@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data)
 }
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const body = await req.json()
   const { verificarStock, _dryRun, ...pedido } = body
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ...data, stockStatus })
 }
 
-export async function PUT(req: NextRequest) {
+async function putHandler(req: NextRequest) {
   const body = await req.json()
   const { id, ...rest } = body
 
@@ -116,7 +117,7 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json(data)
 }
 
-export async function DELETE(req: NextRequest) {
+async function deleteHandler(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
 
@@ -128,3 +129,9 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
+
+// Después de responder, manda a la web el stock de los productos que
+// cambiaron (solo esos) — ver src/lib/woo-stock-cola.ts
+export const POST = conSyncStockWeb(postHandler)
+export const PUT = conSyncStockWeb(putHandler)
+export const DELETE = conSyncStockWeb(deleteHandler)

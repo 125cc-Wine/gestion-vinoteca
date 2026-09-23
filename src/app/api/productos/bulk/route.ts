@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'costo_fijo', 'costo_pct_venta', 'stock_fijo', 'eliminar']
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const { ids, accion, valor } = await req.json()
 
   if (!ids?.length || !accion) {
@@ -146,3 +147,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, afectados })
 }
+
+// Después de responder, manda a la web el stock de los productos que
+// cambiaron (solo esos) — ver src/lib/woo-stock-cola.ts
+export const POST = conSyncStockWeb(postHandler)

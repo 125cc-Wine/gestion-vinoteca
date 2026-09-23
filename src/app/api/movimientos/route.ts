@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 interface MovimientoUnificado {
   id: string; fecha: string
@@ -141,7 +142,7 @@ export async function GET(req: NextRequest) {
 }
 
 // Registro manual de ajuste de stock
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const body = await req.json()
   const { empresa, producto_id, producto_nombre, cantidad, motivo } = body
 
@@ -178,3 +179,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, producto: prod.nombre, stock_anterior: prod.stock, stock_nuevo: nuevoStock })
 }
+
+// Después de responder, manda a la web el stock de los productos que
+// cambiaron (solo esos) — ver src/lib/woo-stock-cola.ts
+export const POST = conSyncStockWeb(postHandler)

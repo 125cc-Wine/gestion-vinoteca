@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 // POST /api/productos/stock-masivo
 // body: { empresa, updates: [{ id, stock }] }
@@ -9,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 // contraparte de la otra empresa (mismo nombre), igual que el PUT individual.
 const BATCH = 50
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const empresa: string = body.empresa
   const updates: { id: string; stock: number }[] = Array.isArray(body.updates) ? body.updates : []
@@ -78,3 +79,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ actualizados, sincronizados, errores })
 }
+
+// Después de responder, manda a la web el stock de los productos que
+// cambiaron (solo esos) — ver src/lib/woo-stock-cola.ts
+export const POST = conSyncStockWeb(postHandler)
