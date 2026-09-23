@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooUpdateStockAndPrice } from '@/lib/woocommerce'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 // condicion_venta (ventas) -> medio_pago (caja) — son dos listas separadas
@@ -21,7 +20,7 @@ function medioPagoDesdeCondicion(condicion?: string | null): string | undefined 
 }
 
 // Descuenta stock de cada ítem de la venta, en las dos empresas (depósito
-// compartido) y sincroniza WooCommerce. Se usa tanto al crear un remito
+// compartido). Se usa tanto al crear un remito
 // nuevo como al convertir un presupuesto en remito.
 async function descontarStockItems(items: { producto_id?: string; cantidad: number }[]) {
   for (const item of items) {
@@ -51,17 +50,9 @@ async function descontarStockItems(items: { producto_id?: string; cantidad: numb
       await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
     }
 
-    // Sync WooCommerce con el producto de aroma (sea el principal o la contraparte)
-    if (process.env.WOOCOMMERCE_CONSUMER_KEY) {
-      const aromaProd = prod.empresa === 'aroma' ? prod : contra
-      if (aromaProd?.woo_product_id) {
-        try {
-          await wooUpdateStockAndPrice(aromaProd.woo_product_id, aromaProd.precio_venta, nuevoStock)
-        } catch (e) {
-          console.error('WooCommerce sync error:', e)
-        }
-      }
-    }
+    // El stock a la web NO se manda acá: el trigger anota la diferencia y
+    // se envía por la cola (src/lib/woo-stock-cola.ts). Mandar el stock
+    // absoluto pisaba las ventas online, que no se cargan en el sistema.
   }
 }
 

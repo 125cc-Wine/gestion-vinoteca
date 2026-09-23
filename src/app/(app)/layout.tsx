@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import WebSyncAvisos from '@/components/WebSyncAvisos'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 // El color primario (sidebar, CTA, acentos de nav) depende de la empresa:
@@ -433,6 +434,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main style={{ flex: 1, minWidth: 0, background: T.bg, maxWidth: '100vw', overflowX: 'hidden' }}>
           {children}
         </main>
+        <WebSyncAvisos />
       </div>
 
       {/* ── BOTTOM NAV (mobile) ───────────────────────────────────────────── */}

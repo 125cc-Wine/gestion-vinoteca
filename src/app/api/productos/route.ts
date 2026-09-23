@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooUpdateStockAndPrice } from '@/lib/woocommerce'
+import { wooUpdateProduct } from '@/lib/woocommerce'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 function otraEmpresa(empresa: string) {
@@ -197,16 +197,19 @@ async function putHandler(req: NextRequest) {
     }
   }
 
-  // Solo sincronizar a WooCommerce si cambió precio_venta o stock
+  // Precio a WooCommerce si cambió. El STOCK no se manda acá: va por la
+  // cola de diferencias (src/lib/woo-stock-cola.ts). Antes se mandaba el
+  // stock absoluto del sistema y eso pisaba (borraba) las ventas online, que
+  // no se cargan en el sistema. Se usa el vínculo de la fila de aroma aunque
+  // se edite desde lavid (son gemelos y comparten woo_product_id).
   if (
-    ('precio_venta' in rest || 'stock' in rest) &&
+    'precio_venta' in rest &&
     data.woo_product_id &&
     process.env.WOOCOMMERCE_CONSUMER_KEY &&
-    process.env.WOOCOMMERCE_CONSUMER_KEY !== 'ck_tu_clave_aqui' &&
-    data.empresa === 'aroma'
+    process.env.WOOCOMMERCE_CONSUMER_KEY !== 'ck_tu_clave_aqui'
   ) {
     try {
-      await wooUpdateStockAndPrice(data.woo_product_id, data.precio_venta, data.stock)
+      await wooUpdateProduct(data.woo_product_id, { regular_price: String(data.precio_venta ?? 0) })
     } catch (wooErr) {
       console.error('WooCommerce sync error:', wooErr)
       return NextResponse.json({ ...data, woo_sync: 'error' })
