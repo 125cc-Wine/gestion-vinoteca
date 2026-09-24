@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import type { Proveedor } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { precioPorUnidad } from '@/lib/compras'
 
 const T = {
   bg:      '#F5F1EC',
@@ -50,7 +51,7 @@ const EMPTY: Omit<Proveedor, 'id' | 'created_at'> = {
 
 interface Compra {
   id: string; numero: string; proveedor_nombre: string
-  items: { nombre: string; cantidad: number; precio_unitario: number; subtotal: number }[]
+  items: { nombre: string; cantidad: number; precio_unitario: number; subtotal: number; unidades_por_caja?: number }[]
   total: number; estado: string; fecha_esperada: string | null; created_at: string
 }
 
@@ -283,7 +284,7 @@ export default function ProveedoresPage() {
                             {(c.items || []).map((item, i) => (
                               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: i < c.items.length - 1 ? `1px solid ${T.border}` : 'none' }}>
                                 <span style={{ color: T.text }}>{item.nombre}</span>
-                                <span style={{ color: T.muted }}>{item.cantidad} u. × ${item.precio_unitario?.toLocaleString('es-AR')}</span>
+                                <span style={{ color: T.muted }}>{item.cantidad} u. × ${precioPorUnidad(item).toLocaleString('es-AR')}</span>
                               </div>
                             ))}
                           </div>

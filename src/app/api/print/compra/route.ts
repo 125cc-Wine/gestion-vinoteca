@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { esc } from '@/lib/html'
+import { precioPorUnidad } from '@/lib/compras'
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
   aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
@@ -74,21 +75,14 @@ export async function GET(req: NextRequest) {
   const tipoLabel = esDeuda ? 'Deuda / Factura a pagar' : 'Orden de Compra'
 
   const totalBot = items.reduce((s, it) => s + (it.cantidad ?? 0), 0)
-  const cajasTotal = Math.floor(totalBot / 6)
-  const restoTotal = totalBot % 6
-  const resumenUnidades = totalBot === 0 ? '' : cajasTotal === 0
-    ? `${totalBot} botella${totalBot !== 1 ? 's' : ''}`
-    : restoTotal === 0
-      ? `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6`
-      : `${totalBot} botellas · ${cajasTotal} caja${cajasTotal !== 1 ? 's' : ''} de 6 + ${restoTotal} bot`
+  const resumenUnidades = totalBot === 0 ? '' : `${totalBot} unidad${totalBot !== 1 ? 'es' : ''}`
 
   const itemsRows = items.map((it, i) => `
     <tr>
       <td style="text-align:center;color:#6B5D55;">${i + 1}</td>
       <td>${esc(it.nombre ?? '')}</td>
-      <td style="text-align:center;font-weight:600;">${it.cajas && it.cajas > 1 ? `${it.cajas} caj.` : it.cantidad}</td>
-      <td style="text-align:center;">${it.unidades_por_caja && it.unidades_por_caja > 1 ? it.cantidad : '—'}</td>
-      <td style="text-align:right;">${it.precio_unitario != null ? moneda(it.precio_unitario) : '—'}</td>
+      <td style="text-align:center;font-weight:600;">${it.cantidad}</td>
+      <td style="text-align:right;">${it.precio_unitario != null ? moneda(precioPorUnidad({ precio_unitario: it.precio_unitario, unidades_por_caja: it.unidades_por_caja })) : '—'}</td>
       <td style="text-align:right;font-weight:600;">${it.subtotal != null ? moneda(it.subtotal) : '—'}</td>
     </tr>`).join('')
 
@@ -201,7 +195,6 @@ export async function GET(req: NextRequest) {
       <tr>
         <th style="width:26px;text-align:center;">#</th>
         <th>Descripción</th>
-        <th style="width:70px;text-align:center;">Cajas</th>
         <th style="width:70px;text-align:center;">Unidades</th>
         <th style="width:110px;text-align:right;">Precio unit.</th>
         <th style="width:110px;text-align:right;">Subtotal</th>

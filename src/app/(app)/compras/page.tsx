@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { normalizarItemCompra, precioPorUnidad } from '@/lib/compras'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -102,17 +103,9 @@ interface ChequePendiente {
 }
 interface Producto { id: string; nombre: string; bodega: string; precio_costo?: number; precio_venta?: number; unidad_medida?: string }
 
-// Todo el catálogo tiene unidad_medida="botella" (nunca se cargó el tamaño real
-// de caja por producto), así que esto devolvía siempre 1 — el campo "Cajas" de
-// Compras terminaba sumando botellas sueltas en vez de cajas, sin que nadie lo
-// notara (bug real: compra de 5 cajas de Alta Vista quedó cargada como 5
-// botellas). Default a 6 (el formato estándar de vino en Argentina) en vez de
-// 1, y ahora es editable en la fila por si el proveedor entrega en otro
-// formato (espirituosas x12, BIB x1, etc.) — ver columna "Unid./caja".
-function upkFromUnidad(u?: string) { return u === 'caja12' ? 12 : u === 'caja6' ? 6 : u === 'caja4' ? 4 : 6 }
-function upkLabel(upk: number) { return upk > 1 ? `Caja ×${upk}` : 'Botella' }
-
-const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0, cajas: 1, unidades_por_caja: 1 }
+// Ítems en unidades + precio por unidad (sin cajas) — ver src/lib/compras.ts.
+// cajas/unidades_por_caja quedan en el tipo solo por las compras viejas.
+const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0 }
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
 const NEXT_ESTADO: Record<string, string> = { pendiente: 'enviado', enviado: 'recibido' }
 
@@ -389,7 +382,7 @@ export default function ComprasPage() {
   function editarCompra(c: Compra) {
     setProveedorId(c.proveedor_id || '')
     setProveedorNombre(c.proveedor_nombre)
-    setItems(Array.isArray(c.items) && c.items.length ? c.items : [{ ...ITEM_EMPTY }])
+    setItems(Array.isArray(c.items) && c.items.length ? c.items.map(normalizarItemCompra) : [{ ...ITEM_EMPTY }])
     setNotas(c.notas || '')
     setFTotal(c.total || 0)
     setFNroFactura(c.nro_factura || '')
@@ -410,13 +403,10 @@ export default function ComprasPage() {
 
   function selProducto(idx: number, prod: Producto) {
     const ni = [...items]
-    const upk = upkFromUnidad(prod.unidad_medida)
     const costoBot = prod.precio_costo || Math.round((prod.precio_venta || 0) * 0.5)
-    // precio_unitario = precio POR CAJA (lo que aparece en la factura del proveedor)
-    const precioCaja = upk > 1 ? costoBot * upk : costoBot
-    const cajas = ni[idx].cajas || 1
-    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: precioCaja, unidades_por_caja: upk, cajas, cantidad: cajas * upk }
-    ni[idx].subtotal = Math.round(cajas * precioCaja * 100) / 100
+    const cantidad = ni[idx].cantidad || 1
+    ni[idx] = { ...ni[idx], producto_id: prod.id, nombre: prod.nombre + (prod.bodega ? ' - ' + prod.bodega : ''), precio_unitario: costoBot, cantidad }
+    ni[idx].subtotal = Math.round(cantidad * costoBot * 100) / 100
     if (idx === ni.length - 1) ni.push({ ...ITEM_EMPTY })
     setItems(ni); setProdSugs(null)
   }
@@ -424,11 +414,7 @@ export default function ComprasPage() {
   function updateItem(idx: number, field: keyof ItemCompra, value: string | number) {
     const ni = [...items]
     ;(ni[idx] as unknown as Record<string, string | number>)[field] = value
-    const upk = ni[idx].unidades_por_caja || 1
-    const cajas = ni[idx].cajas || 1
-    ni[idx].cantidad = cajas * upk
-    // precio_unitario = precio POR CAJA
-    ni[idx].subtotal = Math.round(cajas * ni[idx].precio_unitario * 100) / 100
+    ni[idx].subtotal = Math.round((ni[idx].cantidad || 0) * (ni[idx].precio_unitario || 0) * 100) / 100
     setItems(ni)
   }
 
@@ -625,12 +611,8 @@ export default function ComprasPage() {
       ``,
       `*Productos solicitados:*`,
       ...(c.items || []).map(i => {
-        const upk = i.unidades_por_caja || 1
-        const cajas = i.cajas || i.cantidad
-        if (upk > 1) {
-          return `• ${i.nombre} x ${cajas} caja${cajas !== 1 ? 's' : ''} (${cajas * upk} u.)${i.precio_unitario ? ` — $${(i.precio_unitario * upk).toLocaleString('es-AR')} c/caja` : ''}`
-        }
-        return `• ${i.nombre} x ${i.cantidad} u.${i.precio_unitario ? ` — $${i.precio_unitario.toLocaleString('es-AR')} c/u` : ''}`
+        const pu = precioPorUnidad(i)
+        return `• ${i.nombre} x ${i.cantidad} u.${pu ? ` — $${pu.toLocaleString('es-AR')} c/u` : ''}`
       }),
       ``,
       `*Total: $${c.total.toLocaleString('es-AR')}*`,
@@ -936,7 +918,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto', 'Cajas', 'Unid./caja', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto', 'Unidades', 'Precio unitario', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -968,24 +950,13 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''}
-                              onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
+                            <input type="number" style={{ ...INP, width: 75 }} min={1} placeholder="1" value={item.cantidad || ''}
+                              onChange={e => updateItem(idx, 'cantidad', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 55 }} min={1} placeholder="6" value={item.unidades_por_caja || ''}
-                              onChange={e => updateItem(idx, 'unidades_por_caja', e.target.value === '' ? 0 : (+e.target.value || 0))} />
-                            <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>
-                            <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
+                            <input type="number" step="any" style={{ ...INP, width: 105 }} min={0}
                               value={item.precio_unitario || ''}
                               onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
-                            {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
-                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${parseFloat((item.precio_unitario / (item.unidades_por_caja || 1)).toFixed(2)).toLocaleString('es-AR')} /bot</div>
-                            )}
-                          </td>
-                          <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
-                            {item.cantidad} u.
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'center' }}>
@@ -1060,7 +1031,7 @@ export default function ComprasPage() {
                     <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
                       <td style={{ padding: '9px 8px', color: T.text }}>{item.nombre}</td>
                       <td style={{ padding: '9px 8px', color: T.muted }}>{item.cantidad}</td>
-                      <td style={{ padding: '9px 8px', color: T.muted }}>${item.precio_unitario?.toLocaleString('es-AR')}</td>
+                      <td style={{ padding: '9px 8px', color: T.muted }}>${precioPorUnidad(item).toLocaleString('es-AR')}</td>
                       <td style={{ padding: '9px 8px', fontWeight: 600, color: T.text }}>${item.subtotal?.toLocaleString('es-AR')}</td>
                     </tr>
                   ))}
@@ -1268,7 +1239,7 @@ export default function ComprasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                        {['Producto / concepto', 'Cajas', 'Unid./caja', 'Precio / caja', 'Unidades', 'Subtotal', ''].map(h => (
+                        {['Producto / concepto', 'Unidades', 'Precio unitario', 'Subtotal', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                         ))}
                       </tr>
@@ -1293,22 +1264,13 @@ export default function ComprasPage() {
                             )}
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 65 }} min={1} placeholder="1" value={item.cajas || ''} onChange={e => updateItem(idx, 'cajas', e.target.value === '' ? 0 : (+e.target.value || 0))} />
+                            <input type="number" style={{ ...INP, width: 75 }} min={1} placeholder="1" value={item.cantidad || ''}
+                              onChange={e => updateItem(idx, 'cantidad', e.target.value === '' ? 0 : (+e.target.value || 0))} />
                           </td>
                           <td style={{ padding: '6px 8px' }}>
-                            <input type="number" style={{ ...INP, width: 55 }} min={1} placeholder="6" value={item.unidades_por_caja || ''} onChange={e => updateItem(idx, 'unidades_por_caja', e.target.value === '' ? 0 : (+e.target.value || 0))} />
-                            <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{upkLabel(item.unidades_por_caja || 1)}</div>
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>
-                            <input type="number" step="any" style={{ ...INP, width: 95 }} min={0}
+                            <input type="number" step="any" style={{ ...INP, width: 105 }} min={0}
                               value={item.precio_unitario || ''}
                               onChange={e => updateItem(idx, 'precio_unitario', parseFloat(e.target.value) || 0)} />
-                            {(item.unidades_por_caja || 1) > 1 && item.precio_unitario > 0 && (
-                              <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>${parseFloat((item.precio_unitario / (item.unidades_por_caja || 1)).toFixed(2)).toLocaleString('es-AR')} /bot</div>
-                            )}
-                          </td>
-                          <td style={{ padding: '6px 8px', fontSize: 12, color: T.muted, whiteSpace: 'nowrap' }}>
-                            {item.cantidad} u.
                           </td>
                           <td style={{ padding: '6px 8px', fontSize: 13, fontWeight: 600, color: T.muted }}>${item.subtotal.toLocaleString('es-AR')}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'center' }}>
