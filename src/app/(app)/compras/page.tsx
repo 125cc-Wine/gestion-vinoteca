@@ -105,6 +105,19 @@ interface Producto { id: string; nombre: string; bodega: string; precio_costo?: 
 
 // Ítems en unidades + precio por unidad (sin cajas) — ver src/lib/compras.ts.
 // cajas/unidades_por_caja quedan en el tipo solo por las compras viejas.
+// Impuestos de una factura recibida. Con `preciosConIva` la suma de los ítems
+// es el importe CON IVA (factura con precios finales): el neto se desglosa
+// (÷ 1,21) en vez de sumarle otro 21% encima. Percepciones sobre el neto.
+function calcularImpuestos(items: ItemCompra[], o: { iva: boolean; preciosConIva: boolean; percIva: boolean; pctIIBB: number }) {
+  const bruto = items.filter(i => i.nombre).reduce((a, i) => a + (i.subtotal || 0), 0)
+  let neto = bruto, iva = 0
+  if (o.iva && o.preciosConIva) { iva = Math.round(bruto - bruto / 1.21); neto = bruto - iva }
+  else if (o.iva) iva = Math.round(bruto * 0.21)
+  const perc = o.percIva ? Math.round(neto * 0.03) : 0
+  const iibb = o.pctIIBB > 0 ? Math.round(neto * o.pctIIBB / 100 * 100) / 100 : 0
+  return { bruto, neto, iva, perc, iibb, total: neto + iva + perc + iibb }
+}
+
 const ITEM_EMPTY: ItemCompra = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0, subtotal: 0 }
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', enviado: 'Enviado', recibido: 'Recibido', cancelado: 'Cancelado' }
 const NEXT_ESTADO: Record<string, string> = { pendiente: 'enviado', enviado: 'recibido' }
@@ -201,6 +214,7 @@ export default function ComprasPage() {
   const [deudaModo, setDeudaModo] = useState<'factura' | 'deuda'>('factura')
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [incluyeIva, setIncluyeIva] = useState(false)
+  const [preciosConIva, setPreciosConIva] = useState(false)
   const [incluyePercIva, setIncluyePercIva] = useState(false)
   const [pctIIBB, setPctIIBB] = useState<number>(0)
 
@@ -307,7 +321,7 @@ export default function ComprasPage() {
     setFNroFactura(''); setFFechaFactura(hoy())
     setFCondicion('30_dias'); setFVencimiento('')
     setEditandoId(null); setDeudaModo('deuda')
-    setIncluyeIva(false); setIncluyePercIva(false); setPctIIBB(0)
+    setIncluyeIva(false); setPreciosConIva(false); setIncluyePercIva(false); setPctIIBB(0)
     setDeudaModal(true)
   }
 
@@ -317,7 +331,7 @@ export default function ComprasPage() {
     setFNroFactura(''); setFFechaFactura(hoy())
     setFCondicion('contado'); setFVencimiento('')
     setEditandoId(null); setDeudaModo('factura')
-    setIncluyeIva(false); setIncluyePercIva(false); setPctIIBB(0)
+    setIncluyeIva(false); setPreciosConIva(false); setIncluyePercIva(false); setPctIIBB(0)
     setDeudaModal(true)
   }
 
@@ -325,11 +339,8 @@ export default function ComprasPage() {
     if (!proveedorNombre.trim()) { showToast('Ingresá el proveedor'); return }
     const validItems = items.filter(i => i.nombre)
     if (!validItems.length) { showToast('Agregá al menos un ítem'); return }
-    const totalCalculado = validItems.reduce((a, i) => a + (i.subtotal || 0), 0)
-    const montoIva = incluyeIva ? Math.round(totalCalculado * 0.21) : 0
-    const montoPercIva = incluyePercIva ? Math.round(totalCalculado * 0.03) : 0
-    const montoIIBB = pctIIBB > 0 ? Math.round(totalCalculado * pctIIBB / 100 * 100) / 100 : 0
-    const totalConImpuestos = totalCalculado + montoIva + montoPercIva + montoIIBB
+    const { iva: montoIva, perc: montoPercIva, total: totalConImpuestos } =
+      calcularImpuestos(validItems, { iva: incluyeIva, preciosConIva, percIva: incluyePercIva, pctIIBB })
     const totalFinal = fTotal > 0 ? fTotal : totalConImpuestos
     setSaving(true)
     const esContado = fCondicion === 'contado'
@@ -394,6 +405,13 @@ export default function ComprasPage() {
     // monto_iva ya cargado con 0 — una edición cualquiera (ej. corregir el
     // nombre del proveedor) terminaba borrando el dato de IVA sin querer.
     setIncluyeIva((c.monto_iva ?? 0) > 0)
+    // No se guarda si los precios traían IVA: se deduce comparando el IVA
+    // guardado con el 21% "encima" vs. el 21% "incluido" de la suma de ítems.
+    {
+      const bruto = (c.items || []).reduce((a, i) => a + (i.subtotal || 0), 0)
+      const iva = c.monto_iva ?? 0
+      setPreciosConIva(iva > 0 && Math.abs(iva - (bruto - bruto / 1.21)) < Math.abs(iva - bruto * 0.21))
+    }
     setIncluyePercIva((c.monto_perc_iva ?? 0) > 0)
     setPctIIBB(0)
     setEditandoId(c.id)
@@ -419,6 +437,7 @@ export default function ComprasPage() {
   }
 
   const total = items.reduce((a, i) => a + (i.subtotal || 0), 0)
+  const imp = calcularImpuestos(items, { iva: incluyeIva, preciosConIva, percIva: incluyePercIva, pctIIBB })
 
   async function guardar() {
     if (!proveedorNombre.trim()) { showToast('Ingresá el proveedor'); return }
@@ -1325,17 +1344,24 @@ export default function ComprasPage() {
                       <span style={{ fontSize: 13, color: T.text, flex: 1 }}>IVA 21%</span>
                       {incluyeIva && (
                         <span style={{ fontSize: 13, fontWeight: 600, color: T.muted, fontFamily: 'monospace' }}>
-                          + ${Math.round(items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0) * 0.21).toLocaleString('es-AR')}
+                          {preciosConIva ? 'incl. ' : '+ '}${imp.iva.toLocaleString('es-AR')}
                         </span>
                       )}
                     </label>
+                    {incluyeIva && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginLeft: 26, marginTop: -2 }}>
+                        <input type="checkbox" checked={preciosConIva} onChange={e => setPreciosConIva(e.target.checked)}
+                          style={{ width: 14, height: 14, accentColor: T.wine, cursor: 'pointer', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: T.muted, flex: 1 }}>Los precios cargados ya incluyen IVA</span>
+                      </label>
+                    )}
                     <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                       <input type="checkbox" checked={incluyePercIva} onChange={e => setIncluyePercIva(e.target.checked)}
                         style={{ width: 16, height: 16, accentColor: T.wine, cursor: 'pointer', flexShrink: 0 }} />
                       <span style={{ fontSize: 13, color: T.text, flex: 1 }}>Percepción IVA 3%</span>
                       {incluyePercIva && (
                         <span style={{ fontSize: 13, fontWeight: 600, color: T.muted, fontFamily: 'monospace' }}>
-                          + ${Math.round(items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0) * 0.03).toLocaleString('es-AR')}
+                          + ${imp.perc.toLocaleString('es-AR')}
                         </span>
                       )}
                     </label>
@@ -1351,7 +1377,7 @@ export default function ComprasPage() {
                         <span style={{ fontSize: 13, color: T.muted }}>%</span>
                         {pctIIBB > 0 && (
                           <span style={{ fontSize: 13, fontWeight: 600, color: T.muted, fontFamily: 'monospace', minWidth: 80, textAlign: 'right' }}>
-                            + ${Math.round(items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0) * pctIIBB / 100).toLocaleString('es-AR')}
+                            + ${imp.iibb.toLocaleString('es-AR')}
                           </span>
                         )}
                       </div>
@@ -1359,15 +1385,12 @@ export default function ComprasPage() {
                   </div>
                   {/* Resumen totales */}
                   {(incluyeIva || incluyePercIva || pctIIBB > 0) && (() => {
-                    const neto = items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0)
-                    const iva = incluyeIva ? Math.round(neto * 0.21) : 0
-                    const perc = incluyePercIva ? Math.round(neto * 0.03) : 0
-                    const iibb = pctIIBB > 0 ? Math.round(neto * pctIIBB / 100 * 100) / 100 : 0
+                    const { neto, iva, perc, iibb, total: totalImp } = imp
                     return (
                       <div style={{ borderTop: `1px solid ${T.border}`, padding: '10px 14px', background: T.bg }}>
                         {[
                           { label: 'Neto', val: neto },
-                          incluyeIva ? { label: 'IVA 21%', val: iva } : null,
+                          incluyeIva ? { label: preciosConIva ? 'IVA 21% (incluido)' : 'IVA 21%', val: iva } : null,
                           incluyePercIva ? { label: 'Perc. IVA 3%', val: perc } : null,
                           iibb > 0 ? { label: `Perc. IIBB ${pctIIBB}%`, val: iibb } : null,
                         ].filter(Boolean).map(row => (
@@ -1378,7 +1401,7 @@ export default function ComprasPage() {
                         ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: T.text, marginTop: 6, paddingTop: 6, borderTop: `1px solid ${T.border2}` }}>
                           <span>Total con impuestos</span>
-                          <span style={{ color: T.wine, fontFamily: 'monospace' }}>${(neto + iva + perc + iibb).toLocaleString('es-AR')}</span>
+                          <span style={{ color: T.wine, fontFamily: 'monospace' }}>${totalImp.toLocaleString('es-AR')}</span>
                         </div>
                       </div>
                     )
@@ -1404,9 +1427,7 @@ export default function ComprasPage() {
               <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
                 Total: <span style={{ color: T.green }}>
                   {(() => {
-                    const neto = items.filter(i=>i.nombre).reduce((a,i)=>a+(i.subtotal||0),0)
-                    const conImp = neto + (incluyeIva ? Math.round(neto * 0.21) : 0) + (incluyePercIva ? Math.round(neto * 0.03) : 0) + (pctIIBB > 0 ? Math.round(neto * pctIIBB / 100 * 100) / 100 : 0)
-                    return '$' + (fTotal > 0 ? fTotal : conImp).toLocaleString('es-AR')
+                    return '$' + (fTotal > 0 ? fTotal : imp.total).toLocaleString('es-AR')
                   })()}
                 </span>
               </span>
