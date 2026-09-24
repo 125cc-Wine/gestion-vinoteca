@@ -29,9 +29,17 @@ create table if not exists app_config (
 );
 -- Se importan solo pedidos creados desde que se corre este SQL ("desde hoy"):
 -- los viejos ya bajaron el stock de la web hace tiempo.
-insert into app_config (clave, valor) values
-  ('woo_pedidos_desde', to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS')),
-  ('woo_pedidos_ultimo_chequeo', null)
+-- (fecha armada con || 'T' || : las comillas dobles dentro del formato de
+-- to_char se rompían al copiar/pegar el script desde el chat.)
+insert into app_config (clave, valor)
+values (
+  'woo_pedidos_desde',
+  to_char(now() at time zone 'UTC', 'YYYY-MM-DD') || 'T' || to_char(now() at time zone 'UTC', 'HH24:MI:SS')
+)
+on conflict (clave) do nothing;
+
+insert into app_config (clave, valor)
+values ('woo_pedidos_ultimo_chequeo', null)
 on conflict (clave) do nothing;
 
 -- 3. El trigger de la cola de stock web respeta la marca "sin eco" -----------
