@@ -8,6 +8,8 @@ import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
+const WEB_URL = 'https://www.aromadevid.com.ar'
+
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
@@ -234,6 +236,11 @@ export default function ProductosPage() {
 
   // Full edit modal
   const [fullEditId, setFullEditId] = useState<string|null>(null)
+  // "Publicar en la web" desde el editor del producto (ver /api/woo/publicar)
+  const [publicandoWeb, setPublicandoWeb] = useState(false)
+  const [publicarVisible, setPublicarVisible] = useState(false)
+  const [webExistente, setWebExistente] = useState<null | { id: number; nombre: string; estado: string }>(null)
+  const [webAvisos, setWebAvisos] = useState<string[]>([])
   const [fullForm, setFullForm]     = useState<typeof EMPTY_EDIT & {empresa:string}>({ ...EMPTY_EDIT, empresa: 'aroma' })
 
   // Barcode scanner
@@ -732,6 +739,7 @@ export default function ProductosPage() {
       woo_product_id: p.woo_product_id,
       empresa: p.empresa,
     })
+    setWebExistente(null); setWebAvisos([]); setPublicarVisible(false)
     setFullEditId(p.id!)
   }
 
@@ -742,6 +750,33 @@ export default function ProductosPage() {
     const d = await res.json(); setSaving(false)
     if (d.error) { toast_('Error: '+d.error); return }
     setFullEditId(null); cargar(empresa); toast_('Guardado')
+  }
+
+  // Guarda lo editado y crea el producto en la web (o lo vincula a uno que
+  // ya existe con el mismo nombre, si el usuario lo elige tras el aviso).
+  async function publicarEnWeb(vincularA?: number) {
+    if (!fullEditId) return
+    setPublicandoWeb(true); setWebAvisos([])
+    try {
+      const g = await fetch('/api/productos', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id:fullEditId, ...fullForm }) })
+      const gd = await g.json()
+      if (gd.error) { toast_('Error al guardar: ' + gd.error); return }
+      const res = await fetch('/api/woo/publicar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ producto_id: fullEditId, publicar: publicarVisible, ...(vincularA ? { vincularA } : {}) }),
+      })
+      const d = await res.json()
+      if (res.status === 409 && d.existente) { setWebExistente(d.existente); return }
+      if (!res.ok || d.error) { toast_('Error: ' + (d.error ?? `HTTP ${res.status}`)); return }
+      setWebExistente(null)
+      setWebAvisos(d.avisos ?? [])
+      setFullForm(f => ({ ...f, woo_product_id: d.producto.id }))
+      cargar(empresa)
+      toast_(d.accion === 'vinculado'
+        ? `Vinculado al producto web #${d.producto.id}`
+        : `Creado en la web${d.producto.estado === 'draft' ? ' como borrador' : ' y publicado'} (#${d.producto.id})`)
+    } catch { toast_('Error de red') }
+    finally { setPublicandoWeb(false) }
   }
 
   async function abrirListaModal() {
@@ -1932,6 +1967,43 @@ export default function ProductosPage() {
                       placeholder="Dejar vacío si no aplica" />
                   </div>
                 )}
+              </div>
+              {/* Tienda web: publicar / ver / editar en WordPress */}
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: '12px 14px', background: T.bg }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Tienda web (aromadevid.com.ar)</div>
+                {fullForm.woo_product_id ? (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
+                    <span style={{ color: T.green, fontWeight: 600 }}>✓ Vinculado (#{fullForm.woo_product_id})</span>
+                    <a href={`${WEB_URL}/?post_type=product&p=${fullForm.woo_product_id}`} target="_blank" rel="noreferrer" style={{ color: T.wine }}>Ver en la web ↗</a>
+                    <a href={`${WEB_URL}/wp-admin/post.php?post=${fullForm.woo_product_id}&action=edit`} target="_blank" rel="noreferrer" style={{ color: T.wine }}>Foto y descripción en WordPress ↗</a>
+                  </div>
+                ) : webExistente ? (
+                  <div style={{ fontSize: 13, color: T.text }}>
+                    Ya existe en la web <strong>"{webExistente.nombre}"</strong> (#{webExistente.id}{webExistente.estado === 'draft' ? ', borrador' : ''}).
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button onClick={() => publicarEnWeb(webExistente.id)} disabled={publicandoWeb} className="btn-wine"
+                        style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 7, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        {publicandoWeb ? '…' : 'Es el mismo: vincular'}
+                      </button>
+                      <button onClick={() => setWebExistente(null)} className="btn-row"
+                        style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 7, padding: '6px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => publicarEnWeb()} disabled={publicandoWeb} className="btn-wine"
+                      style={{ background: T.wine, color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: publicandoWeb ? 'default' : 'pointer', fontFamily: 'inherit', opacity: publicandoWeb ? 0.6 : 1 }}>
+                      {publicandoWeb ? 'Publicando…' : '🌐 Publicar en la web'}
+                    </button>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.muted, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={publicarVisible} onChange={e => setPublicarVisible(e.target.checked)} style={{ accentColor: T.wine }} />
+                      Visible en la tienda ya (si no, queda como borrador para cargarle la foto)
+                    </label>
+                  </div>
+                )}
+                {webAvisos.map((a, i) => <div key={i} style={{ fontSize: 12, color: T.amber, marginTop: 6 }}>⚠️ {a}</div>)}
               </div>
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, position: 'sticky', bottom: 0, background: T.surface }}>
