@@ -78,7 +78,10 @@ const ESTADO_STYLE: Record<string, React.CSSProperties> = {
   pendiente: { background: T.amberBg, color: T.amber, border: `1px solid rgba(160,112,16,0.25)` },
   entregado: { background: T.greenBg, color: T.green, border: `1px solid rgba(45,122,79,0.25)` },
   cancelado:  { background: T.redBg,   color: T.red,   border: `1px solid rgba(192,48,48,0.25)` },
+  preparando: { background: T.blueBg,  color: T.blue,  border: `1px solid ${T.blueBd}` },
+  armado:     { background: T.greenBg, color: T.green, border: `1px solid rgba(45,122,79,0.25)` },
 }
+const ESTADO_LABEL: Record<string, string> = { preparando: 'en preparación', armado: 'armado (remito)' }
 
 interface Producto { id: string; nombre: string; bodega?: string; stock: number; precio_venta: number; sku?: string }
 interface Cliente { id: string; nombre: string; apellido?: string; razon_social?: string }
@@ -87,6 +90,9 @@ interface StockStatus { [key: string]: { disponible: number; pedido: number; ok:
 interface Pedido {
   id: string; numero: string; cliente_nombre: string; vendedor_nombre?: string
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
+  // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
+  origen?: 'local' | 'web'; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
+  total?: number; venta_id?: string | null; levantado_at?: string | null
 }
 
 const ITEM_EMPTY: PedidoItem = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0 }
@@ -220,6 +226,33 @@ export default function PedidosPage() {
     cargar(empresa); showToast('Pedido cancelado')
   }
 
+  // Pedidos web: levantar (alguien lo toma) y armar (crea el remito de Aroma).
+  const [webAccion, setWebAccion] = useState<string | null>(null)
+  async function accionWeb(p: Pedido, accion: 'levantar' | 'armar') {
+    if (accion === 'armar' && !confirm(`¿Pedido ${p.numero} armado? Se crea el remito de Aroma (sin AFIP). El stock ya se descontó al entrar el pedido.`)) return
+    setWebAccion(p.id)
+    try {
+      const res = await fetch('/api/woo/pedidos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, accion }) })
+      const d = await res.json()
+      if (!res.ok || d.error) { showToast('Error: ' + (d.error ?? res.status)); return }
+      showToast(accion === 'levantar' ? `Pedido ${p.numero} levantado` : `Remito ${d.venta?.numero} creado`)
+      setModalDetalle(null); cargar(empresa)
+      window.dispatchEvent(new Event('pedidos-web-cambio'))
+    } finally { setWebAccion(null) }
+  }
+  const [trayendo, setTrayendo] = useState(false)
+  async function traerWeb() {
+    setTrayendo(true)
+    try {
+      const res = await fetch('/api/woo/pedidos', { method: 'POST' })
+      const d = await res.json()
+      const n = d.importacion?.nuevos?.length ?? 0
+      showToast(d.importacion?.errores?.length ? `Error: ${d.importacion.errores[0]}` : n ? `${n} pedido${n > 1 ? 's' : ''} nuevo${n > 1 ? 's' : ''} de la web` : 'No hay pedidos nuevos en la web')
+      cargar(empresa)
+      window.dispatchEvent(new Event('pedidos-web-cambio'))
+    } catch { showToast('Error de red') } finally { setTrayendo(false) }
+  }
+
   function abrirNuevo() {
     setClienteId(''); setClienteNombre(''); setClienteSearch(''); setClienteOpen(false)
     setVendedorNombre(''); setItems([{ ...ITEM_EMPTY }]); setProdSearches([''])
@@ -228,6 +261,7 @@ export default function PedidosPage() {
   }
 
   const pendientes = pedidos.filter(p => p.estado === 'pendiente')
+  const webPorLevantar = pedidos.filter(p => p.origen === 'web' && p.estado === 'pendiente')
   const entregados = pedidos.filter(p => p.estado === 'entregado')
 
   const clientesFiltrados = (() => {
@@ -255,16 +289,22 @@ export default function PedidosPage() {
           <h1 style={{ fontSize: 20, fontWeight: 700, color: T.text, margin: 0 }}>Pedidos</h1>
           <p style={{ fontSize: 12, color: T.muted, margin: '3px 0 0' }}>Gestión de pedidos de clientes</p>
         </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn-row" onClick={traerWeb} disabled={trayendo} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: trayendo ? 'default' : 'pointer', fontFamily: 'inherit', opacity: trayendo ? 0.6 : 1 }}>
+          {trayendo ? 'Buscando…' : '🛒 Traer pedidos web'}
+        </button>
         <button className="btn-wine" onClick={abrirNuevo} style={{ background: T.wine, color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.12s', fontFamily: 'inherit' }}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Nuevo pedido
         </button>
+        </div>
       </div>
 
       {/* Content */}
       <div style={{ padding: '24px 28px' }}>
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginBottom: 24 }}>
           {[
+            { label: '🛒 Web por levantar', value: webPorLevantar.length, color: webPorLevantar.length ? T.wine : T.dim },
             { label: 'Pedidos pendientes', value: pendientes.length, color: T.amber },
             { label: 'Entregados',         value: entregados.length, color: T.green },
             { label: 'Total pedidos',      value: pedidos.length,    color: T.text  },
@@ -293,7 +333,17 @@ export default function PedidosPage() {
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: T.muted, fontSize: 13 }}>No hay pedidos todavía</td></tr>
               ) : pedidos.map(p => (
                 <tr key={p.id} className="tr" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
-                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.text, fontWeight: 600 }}>{p.numero}</td>
+                  <td style={{ padding: '11px 16px', fontSize: 13, color: T.text, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {p.numero}
+                    {p.origen === 'web' && (
+                      <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: T.wine, background: 'rgba(128,0,0,0.08)', border: '1px solid rgba(128,0,0,0.2)', borderRadius: 5, padding: '1px 5px' }}>🛒 WEB</span>
+                    )}
+                    {p.origen === 'web' && p.pago && (
+                      <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: p.pago === 'pagado' ? T.green : T.amber }}>
+                        {p.pago === 'pagado' ? '✓ Pagado' : '⏳ Esperando pago'}{p.total ? ` · $${Number(p.total).toLocaleString('es-AR')}` : ''}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>{p.cliente_nombre}</td>
                   <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{p.vendedor_nombre || '—'}</td>
                   <td style={{ padding: '11px 16px', fontSize: 13, color: T.muted }}>{(p.items as PedidoItem[]).length} items</td>
@@ -302,16 +352,25 @@ export default function PedidosPage() {
                   </td>
                   <td style={{ padding: '11px 16px' }}>
                     <span style={{ ...(ESTADO_STYLE[p.estado] || { background: T.bg, color: T.dim, border: `1px solid ${T.border}` }), padding: '3px 9px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
-                      {p.estado}
+                      {ESTADO_LABEL[p.estado] ?? p.estado}
                     </span>
                   </td>
                   <td style={{ padding: '11px 16px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.dim, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => setModalDetalle(p)}>Ver</button>
+                      {p.origen === 'web' ? (<>
+                        {p.estado === 'pendiente' && (
+                          <button className="btn-row" disabled={webAccion === p.id} style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.blue, fontWeight: 600, fontFamily: 'inherit' }} onClick={() => accionWeb(p, 'levantar')}>Levantar</button>
+                        )}
+                        {p.estado === 'preparando' && (
+                          <button className="btn-row" disabled={webAccion === p.id} style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, fontWeight: 600, fontFamily: 'inherit' }} onClick={() => accionWeb(p, 'armar')}>Armado → remito</button>
+                        )}
+                      </>) : (<>
                       {p.estado === 'pendiente' && (
                         <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => cambiarEstado(p.id, 'entregado')}>Entregar</button>
                       )}
                       <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.red, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => eliminar(p.id)}>Cancelar</button>
+                      </>)}
                     </div>
                   </td>
                 </tr>
@@ -491,9 +550,14 @@ export default function PedidosPage() {
               <div><span style={{ color: T.dim }}>Cliente:</span> <span style={{ color: T.text }}>{modalDetalle.cliente_nombre}</span></div>
               {modalDetalle.vendedor_nombre && <div><span style={{ color: T.dim }}>Vendedor:</span> <span style={{ color: T.text }}>{modalDetalle.vendedor_nombre}</span></div>}
               {modalDetalle.fecha_entrega && <div><span style={{ color: T.dim }}>Entrega:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
-              {modalDetalle.notas && <div><span style={{ color: T.dim }}>Notas:</span> <span style={{ color: T.text }}>{modalDetalle.notas}</span></div>}
+              {modalDetalle.notas && <div><span style={{ color: T.dim }}>Notas:</span> <span style={{ color: T.text, whiteSpace: 'pre-line' }}>{modalDetalle.notas}</span></div>}
+              {modalDetalle.origen === 'web' && (
+                <div><span style={{ color: T.dim }}>Pago:</span>{' '}
+                  <span style={{ color: modalDetalle.pago === 'pagado' ? T.green : T.amber, fontWeight: 600 }}>{modalDetalle.pago === 'pagado' ? '✓ Pagado' : '⏳ Esperando pago (se actualiza solo al confirmarlo en la web)'}</span>
+                </div>
+              )}
               <div><span style={{ color: T.dim }}>Estado:</span>{' '}
-                <span style={{ ...(ESTADO_STYLE[modalDetalle.estado] || {}), padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>{modalDetalle.estado}</span>
+                <span style={{ ...(ESTADO_STYLE[modalDetalle.estado] || {}), padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>{ESTADO_LABEL[modalDetalle.estado] ?? modalDetalle.estado}</span>
               </div>
             </div>
             <div style={{ padding: '0 24px' }}>
@@ -514,8 +578,19 @@ export default function PedidosPage() {
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModalDetalle(null)}>Cerrar</button>
+            <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: T.dim }}>
+                {modalDetalle.origen === 'web' && modalDetalle.estado !== 'armado' ? 'Para cancelarlo, cancelalo en la web: acá se cancela solo y devuelve el stock.' : ''}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {modalDetalle.origen === 'web' && modalDetalle.estado === 'pendiente' && (
+                  <button className="btn-wine" disabled={webAccion === modalDetalle.id} onClick={() => accionWeb(modalDetalle, 'levantar')} style={{ background: T.blue, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Levantar pedido</button>
+                )}
+                {modalDetalle.origen === 'web' && modalDetalle.estado === 'preparando' && (
+                  <button className="btn-wine" disabled={webAccion === modalDetalle.id} onClick={() => accionWeb(modalDetalle, 'armar')} style={{ background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Armado → crear remito</button>
+                )}
+                <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModalDetalle(null)}>Cerrar</button>
+              </div>
             </div>
           </div>
         </div>

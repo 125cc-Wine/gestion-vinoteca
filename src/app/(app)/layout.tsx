@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import WebSyncAvisos from '@/components/WebSyncAvisos'
+import PedidosWebAviso from '@/components/PedidosWebAviso'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 // El color primario (sidebar, CTA, acentos de nav) depende de la empresa:
@@ -400,6 +401,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </button>
+
+            {/* Pedidos de la tienda web sin levantar (+ popup al entrar uno nuevo) */}
+            <PedidosWebAviso color={T.wine} />
 
             {/* CTA Nueva venta */}
             <button className="top-nueva-venta"
