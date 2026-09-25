@@ -7,6 +7,7 @@ import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { imprimirListaPrecios } from '@/lib/listaPreciosHtml'
 
 const WEB_URL = 'https://www.aromadevid.com.ar'
 
@@ -248,7 +249,7 @@ export default function ProductosPage() {
   const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null)
 
   // Lista de precios modal
-  interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_costo: number; precio_mayorista: number }
+  interface ListaItem { id: string; nombre: string; bodega: string; varietal: string; categoria: string; precio_venta: number; precio_costo: number; precio_mayorista: number; stock: number }
   const [listaModal, setListaModal] = useState(false)
   const [listaItems, setListaItems] = useState<ListaItem[]>([])
   const [listaTitulo, setListaTitulo] = useState<string | null>(null)
@@ -260,6 +261,12 @@ export default function ProductosPage() {
   const [listasGuardadas, setListasGuardadas]   = useState<ListaGuardada[]>([])
   const [listaGuardadaId, setListaGuardadaId]   = useState<string | null>(null)
   const [listaDescuento, setListaDescuento]     = useState(0)
+  // Días de validez de los precios que se imprimen en la lista. Se recuerda
+  // el último valor usado (no es de cada lista guardada).
+  const [listaValidez, setListaValidez]         = useState(15)
+  useEffect(() => {
+    try { const v = parseInt(localStorage.getItem('lista_validez_dias') || ''); if (v > 0) setListaValidez(v) } catch {}
+  }, [])
   const [listaGuardando, setListaGuardando]     = useState(false)
 
   // Actualización masiva de precios
@@ -779,6 +786,14 @@ export default function ProductosPage() {
     finally { setPublicandoWeb(false) }
   }
 
+  function aListaItem(p: Producto): ListaItem {
+    return {
+      id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
+      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
+      precio_mayorista: p.precio_mayorista || 0, stock: p.stock || 0,
+    }
+  }
+
   async function abrirListaModal() {
     setListaItems([]); setListaQuery(''); setListaSugsOpen(false); setListaTitulo(null)
     setListaGuardadaId(null); setListaDescuento(0); setListaModal(true)
@@ -808,11 +823,7 @@ export default function ProductosPage() {
     const items: ListaItem[] = l.producto_ids
       .map(pid => directos.get(pid) ?? (nombresPorId.has(pid) ? porNombre.get(normalize(nombresPorId.get(pid)!)) : undefined))
       .filter((p): p is Producto => !!p)
-      .map(p => ({
-        id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-        categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
-        precio_mayorista: p.precio_mayorista || 0,
-      }))
+      .map(aListaItem)
     const faltantes = l.producto_ids.length - items.length
     setListaItems(items)
     setListaTitulo(l.nombre)
@@ -873,11 +884,7 @@ export default function ProductosPage() {
 
   function listaAgregarProducto(p: Producto) {
     if (listaItems.find(i => i.id === p.id)) return
-    setListaItems(prev => [...prev, {
-      id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
-      precio_mayorista: p.precio_mayorista || 0,
-    }])
+    setListaItems(prev => [...prev, aListaItem(p)])
     setListaQuery(''); setListaSugsOpen(false)
   }
 
@@ -893,11 +900,7 @@ export default function ProductosPage() {
     } else {
       const faltantes: ListaItem[] = deLaBodega
         .filter(p => !listaItems.find(i => i.id === p.id))
-        .map(p => ({
-          id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-          categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
-          precio_mayorista: p.precio_mayorista || 0,
-        }))
+        .map(aListaItem)
       setListaItems(prev => [...prev, ...faltantes].sort((a, b) => (a.bodega || a.varietal).localeCompare(b.bodega || b.varietal) || a.nombre.localeCompare(b.nombre)))
     }
   }
@@ -910,11 +913,7 @@ export default function ProductosPage() {
   function cargarListaDefault(tipo: 'vinos' | 'otros') {
     const base = productos.filter(p => p.activo !== false && p.precio_venta > 0 &&
       (tipo === 'vinos' ? p.categoria !== 'Otro' : p.categoria === 'Otro'))
-    const items: ListaItem[] = base.map(p => ({
-      id: p.id!, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '',
-      categoria: p.categoria || '', precio_venta: p.precio_venta, precio_costo: p.precio_costo || 0,
-      precio_mayorista: p.precio_mayorista || 0,
-    }))
+    const items: ListaItem[] = base.map(aListaItem)
     items.sort((a, b) => (a.bodega || a.varietal).localeCompare(b.bodega || b.varietal) || a.nombre.localeCompare(b.nombre))
     setListaItems(items)
     setListaTitulo(tipo === 'vinos' ? 'Vinos' : 'Vermouth y Destilados')
@@ -923,72 +922,13 @@ export default function ProductosPage() {
   }
 
   function imprimirLista() {
-    const esAroma = empresa === 'aroma'
-    const empNombre = esAroma ? 'Aroma de Vid' : 'La Vid Consultora'
-    const accent = esAroma ? '#800000' : '#2B5EA0'
-    const accentBg = esAroma ? 'rgba(128,0,0,0.06)' : 'rgba(43,94,160,0.06)'
-    const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-    const logo = esAroma ? '/logos/aroma.jpg' : '/logos/lavid.png'
-
-    // Agrupar por Bodega (vinos) o por Varietal (usado como sub-rubro en
-    // aperitivos/licores/destilados, ej. "Whiskies", "Gin", "Fernet") — así
-    // sale ordenada igual que las planillas que se armaban a mano.
-    const grupos = new Map<string, ListaItem[]>()
-    for (const it of listaItems) {
-      const key = it.bodega || it.varietal || 'Otros'
-      if (!grupos.has(key)) grupos.set(key, [])
-      grupos.get(key)!.push(it)
-    }
-    const gruposOrdenados = Array.from(grupos.entries()).sort((a, b) => a[0].localeCompare(b[0]))
-
-    const conDescuento = listaDescuento > 0
-    const colspan = conDescuento ? 3 : 2
-
-    const bloques = gruposOrdenados.map(([grupo, items]) => `
-      <tr><td colspan="${colspan}" style="padding:10px 10px 4px;font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid ${accent}">${grupo}</td></tr>
-      ${items.map(p => {
-        const final = conDescuento ? p.precio_venta * (1 - listaDescuento / 100) : p.precio_venta
-        return `
-      <tr style="border-bottom:1px solid #eee">
-        <td style="padding:6px 10px;font-size:12px;font-weight:500">${p.nombre}${p.varietal && p.bodega ? `<span style="color:#999;font-weight:400"> — ${p.varietal}</span>` : ''}</td>
-        <td style="padding:6px 10px;font-size:12px;text-align:right;${conDescuento ? 'color:#999;text-decoration:line-through' : 'font-weight:700'}">$${p.precio_venta.toLocaleString('es-AR')}</td>
-        ${conDescuento ? `<td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:700">$${final.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</td>` : ''}
-      </tr>`}).join('')}`).join('')
-
-    const html = `<html><head><title>Lista de Precios — ${empNombre}${listaTitulo ? ' — ' + listaTitulo : ''}</title>
-      <style>
-        body{font-family:Arial,sans-serif;margin:28px;color:#222}
-        table{width:100%;border-collapse:collapse}
-        @media print{body{margin:14px}}
-        @page{margin:14mm}
-      </style>
-      </head><body>
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid ${accent};padding-bottom:14px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;gap:14px">
-          <img src="${logo}" style="height:44px;width:auto;object-fit:contain" onerror="this.style.display='none'">
-          <div>
-            <div style="font-size:20px;font-weight:700;color:${accent}">${empNombre}</div>
-            <div style="font-size:13px;color:#555;margin-top:2px">Lista de precios${listaTitulo ? ' — ' + listaTitulo : ''}</div>
-          </div>
-        </div>
-        <div style="text-align:right;font-size:11px;color:#777">
-          <div style="text-transform:capitalize">${fecha}</div>
-          <div style="margin-top:2px">${listaItems.length} productos${conDescuento ? ` · ${listaDescuento}% de descuento` : ''}</div>
-        </div>
-      </div>
-      <table>
-        <thead><tr style="border-bottom:2px solid #222;background:${accentBg}">
-          <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Producto</th>
-          <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio de Lista</th>
-          ${conDescuento ? `<th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Precio Final (-${listaDescuento}%)</th>` : ''}
-        </tr></thead>
-        <tbody>${bloques}</tbody>
-      </table>
-      <div style="margin-top:24px;font-size:10px;color:#bbb;text-align:center">Precios en pesos argentinos · Válidos a la fecha de emisión</div>
-      </body></html>`
-    const w = window.open('', '_blank', 'width=900,height=700')
-    if (!w) return
-    w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 500)
+    try { localStorage.setItem('lista_validez_dias', String(listaValidez)) } catch {}
+    const ok = imprimirListaPrecios({
+      empresa: empresa === 'lavid' ? 'lavid' : 'aroma',
+      titulo: listaTitulo, descuento: listaDescuento, validezDias: listaValidez,
+      items: listaItems,
+    })
+    if (!ok) toast_('El navegador bloqueó la ventana — permití ventanas emergentes para este sitio')
   }
 
   async function saveEdit() {
@@ -2645,6 +2585,26 @@ export default function ProductosPage() {
               </div>
             )}
 
+            {/* Validez + aviso de sin stock */}
+            {listaItems.length > 0 && (() => {
+              const sinStock = listaItems.filter(i => !(i.stock > 0)).length
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 14px', flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: 12, color: T.muted, fontWeight: 600, whiteSpace: 'nowrap' }}>Precios válidos por</label>
+                  <input
+                    type="number" min="1" max="365" step="1"
+                    value={listaValidez}
+                    onChange={e => setListaValidez(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+                    style={{ width: 60, padding: '6px 8px', borderRadius: 6, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', textAlign: 'right' }}
+                  />
+                  <span style={{ fontSize: 12, color: T.muted }}>días</span>
+                  <span style={{ fontSize: 11, color: T.dim, marginLeft: 'auto' }}>
+                    {sinStock > 0 ? `${sinStock} sin stock — salen marcados "Consultar disponibilidad"` : 'Todos con stock'}
+                  </span>
+                </div>
+              )
+            })()}
+
             {/* Buscador */}
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <input
@@ -2697,7 +2657,10 @@ export default function ProductosPage() {
                   <tbody>
                     {listaItems.map((item, i) => (
                       <tr key={item.id} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
-                        <td style={{ padding: '10px 14px', color: T.text, fontWeight: 500 }}>{item.nombre}</td>
+                        <td style={{ padding: '10px 14px', color: item.stock > 0 ? T.text : T.dim, fontWeight: 500 }}>
+                          {item.nombre}
+                          {!(item.stock > 0) && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: T.dim, border: `1px solid ${T.border2}`, borderRadius: 10, padding: '1px 7px', whiteSpace: 'nowrap' }}>sin stock</span>}
+                        </td>
                         <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.bodega || '—'}</td>
                         <td style={{ padding: '10px 14px', color: T.muted, fontSize: 12 }}>{item.varietal || '—'}</td>
                         <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: 12 }}>{item.precio_costo ? '$' + item.precio_costo.toLocaleString('es-AR') : '—'}</td>
@@ -2731,7 +2694,7 @@ export default function ProductosPage() {
                 )}
                 <button onClick={imprimirLista} disabled={listaItems.length === 0} className="btn-wine"
                   style={{ background: T.wine, color: '#FFF', border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: listaItems.length === 0 ? 0.4 : 1 }}>
-                  Imprimir lista
+                  Imprimir / PDF
                 </button>
               </div>
             </div>
