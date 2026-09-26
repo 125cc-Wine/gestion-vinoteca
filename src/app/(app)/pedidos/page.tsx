@@ -91,7 +91,7 @@ interface Pedido {
   id: string; numero: string; cliente_nombre: string; vendedor_nombre?: string
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
   // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
-  origen?: 'local' | 'web'; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
+  origen?: 'local' | 'web' | 'portal'; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
   total?: number; venta_id?: string | null; levantado_at?: string | null
 }
 
@@ -338,6 +338,12 @@ export default function PedidosPage() {
                     {p.origen === 'web' && (
                       <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: T.wine, background: 'rgba(128,0,0,0.08)', border: '1px solid rgba(128,0,0,0.2)', borderRadius: 5, padding: '1px 5px' }}>🛒 WEB</span>
                     )}
+                    {p.origen === 'portal' && (
+                      <span title="Lo cargó el cliente desde el portal de pedidos" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#2B5EA0', background: 'rgba(43,94,160,0.08)', border: '1px solid rgba(43,94,160,0.2)', borderRadius: 5, padding: '1px 5px' }}>👤 CLIENTE</span>
+                    )}
+                    {p.origen === 'portal' && p.total ? (
+                      <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: T.muted }}>${Number(p.total).toLocaleString('es-AR')}</div>
+                    ) : null}
                     {p.origen === 'web' && p.pago && (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: p.pago === 'pagado' ? T.green : T.amber }}>
                         {p.pago === 'pagado' ? '✓ Pagado' : '⏳ Esperando pago'}{p.total ? ` · $${Number(p.total).toLocaleString('es-AR')}` : ''}

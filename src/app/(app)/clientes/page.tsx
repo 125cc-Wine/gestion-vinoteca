@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { supabase } from '@/lib/supabase'
 import { labelComprobante } from '@/lib/labelComprobante'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
@@ -116,6 +117,13 @@ export default function ClientesPage() {
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY })
   const [editId, setEditId] = useState<string | null>(null)
+
+  // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
+  interface PortalEstado { lista_precio_id: string | null; activo: boolean; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
+  const [portal, setPortal] = useState<PortalEstado | null>(null)
+  const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string } | null>(null)
+  const [portalOcupado, setPortalOcupado] = useState(false)
+  const [listasPrecio, setListasPrecio] = useState<{ id: string; nombre: string; descuento: number }[]>([])
 
   // Modal cobro manual
   const [cobroModal, setCobroModal] = useState(false)
@@ -285,6 +293,46 @@ export default function ClientesPage() {
       vendedor_id: c.vendedor_id || null,
     })
     setEditId(c.id!); setModal(true)
+    cargarPortal(c.id!)
+  }
+
+  async function cargarPortal(clienteId: string) {
+    setPortal(null); setPortalNuevo(null)
+    const [r, { data: listas }] = await Promise.all([
+      fetch(`/api/clientes/portal?cliente_id=${clienteId}`).then(x => x.json()),
+      supabase.from('listas_precio').select('id,nombre,descuento').order('nombre'),
+    ])
+    setListasPrecio((listas as { id: string; nombre: string; descuento: number }[]) || [])
+    if (!r.error) setPortal(r)
+  }
+
+  async function portalAccion(accion: 'generar' | 'revocar' | 'lista', lista_precio_id?: string) {
+    if (!editId) return
+    if (accion === 'generar' && portal?.activo && !confirm('Se genera un link y PIN nuevos. El link anterior deja de funcionar. ¿Seguir?')) return
+    if (accion === 'revocar' && !confirm('¿Desactivar el acceso de este cliente al portal? Su link deja de funcionar.')) return
+    setPortalOcupado(true)
+    try {
+      const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, lista_precio_id }) })
+      const d = await r.json()
+      if (d.error) { showToast('Error: ' + d.error); return }
+      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
+      if (accion === 'revocar') setPortalNuevo(null)
+      await cargarPortal(editId)
+      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
+      showToast(accion === 'lista' ? 'Lista asignada' : accion === 'generar' ? 'Acceso generado' : 'Acceso desactivado')
+    } finally { setPortalOcupado(false) }
+  }
+
+  function mensajePortal(nuevo: { url: string; pin: string }) {
+    const nombre = form.razon_social || `${form.nombre} ${form.apellido || ''}`.trim()
+    const empNombre = form.empresa === 'lavid' ? 'La Vid Consultora' : 'Aroma de Vid'
+    return `Hola ${nombre}! Te compartimos tu acceso a la lista de precios de ${empNombre}, con disponibilidad actualizada y donde podés hacer tus pedidos:
+
+${nuevo.url}
+
+Tu PIN: ${nuevo.pin}
+
+Guardá este mensaje, el link es personal.`
   }
 
   async function guardar() {
@@ -717,6 +765,67 @@ export default function ClientesPage() {
                 <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>Notas</label>
                 <textarea style={{ ...INP, height: 68, resize: 'none' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} />
               </div>
+
+              {/* ── Portal de pedidos ── */}
+              {editId && (
+                <div style={{ gridColumn: '1/-1', borderTop: `1px solid ${T.border}`, paddingTop: 16, marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Portal de pedidos</span>
+                    {portal && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: portal.activo ? T.green : T.dim }}>
+                        {portal.activo ? (portal.ultimo_acceso ? `Activo · último ingreso ${new Date(portal.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Activo · nunca ingresó') : 'Sin acceso'}
+                      </span>
+                    )}
+                  </div>
+                  {!portal ? (
+                    <div style={{ fontSize: 12, color: T.dim }}>Cargando…</div>
+                  ) : (
+                    <>
+                      <label style={{ fontSize: 12, color: T.muted, display: 'block', marginBottom: 5 }}>Lista de precios que ve el cliente</label>
+                      <select style={INP} value={portal.lista_precio_id || ''} disabled={portalOcupado}
+                        onChange={e => portalAccion('lista', e.target.value)}>
+                        <option value="">— Sin lista asignada —</option>
+                        {listasPrecio.map(l => <option key={l.id} value={l.id}>{l.nombre}{Number(l.descuento) > 0 ? ` (−${Number(l.descuento)}%)` : ''}</option>)}
+                      </select>
+                      {portal.bloqueado_hasta && new Date(portal.bloqueado_hasta) > new Date() && (
+                        <div style={{ fontSize: 12, color: T.red, marginTop: 8 }}>Bloqueado por PIN incorrecto hasta las {new Date(portal.bloqueado_hasta).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}. Generar un acceso nuevo lo desbloquea.</div>
+                      )}
+                      {portalNuevo && (
+                        <div style={{ marginTop: 12, background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 10, padding: 12 }}>
+                          <div style={{ fontSize: 12, color: T.muted, marginBottom: 6 }}>Mandale esto al cliente. <b>El PIN se muestra solo esta vez.</b></div>
+                          <div style={{ fontSize: 12, wordBreak: 'break-all', color: T.text }}>{portalNuevo.url}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.2em', color: T.text, margin: '6px 0 10px' }}>PIN {portalNuevo.pin}</div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <a className="btn-wine" target="_blank" rel="noreferrer"
+                              href={form.telefono ? `https://wa.me/549${form.telefono.replace(/\D/g, '').replace(/^(54)?9?0?/, '')}?text=${encodeURIComponent(mensajePortal(portalNuevo))}` : `https://wa.me/?text=${encodeURIComponent(mensajePortal(portalNuevo))}`}
+                              style={{ background: T.wine, color: '#FFF', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+                              Enviar por WhatsApp
+                            </a>
+                            <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}
+                              onClick={() => navigator.clipboard?.writeText(mensajePortal(portalNuevo)).then(() => showToast('Mensaje copiado'))}>
+                              Copiar mensaje
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button className="btn-row" disabled={portalOcupado || !portal.lista_precio_id} onClick={() => portalAccion('generar')}
+                          title={!portal.lista_precio_id ? 'Primero asigná una lista de precios' : ''}
+                          style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit', opacity: !portal.lista_precio_id ? 0.5 : 1 }}>
+                          {portal.activo ? 'Generar link y PIN nuevos' : 'Dar acceso al portal'}
+                        </button>
+                        {portal.activo && (
+                          <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('revocar')}
+                            style={{ background: T.redBg, border: `1px solid ${T.redBd}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.red, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            Desactivar acceso
+                          </button>
+                        )}
+                        {!portal.lista_precio_id && <span style={{ fontSize: 11, color: T.dim }}>Asigná una lista para poder dar acceso.</span>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ padding: '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button className="btn-row" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModal(false)}>Cancelar</button>
