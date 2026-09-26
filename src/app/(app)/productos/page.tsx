@@ -921,6 +921,16 @@ export default function ProductosPage() {
     setListaDescuento(0)
   }
 
+  // Vista previa de la lista guardada en el portal de clientes (sin cliente,
+  // sin link ni PIN). La ventana se abre en el clic para que no la bloqueen.
+  async function verListaEnPortal() {
+    if (!listaGuardadaId) return
+    const w = window.open('about:blank', '_blank')
+    const d = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'admin', lista_id: listaGuardadaId }) }).then(r => r.json())
+    if (d.error || !d.url) { w?.close(); toast_('Error: ' + (d.error || 'no se pudo abrir el portal')); return }
+    if (w) w.location.href = d.url; else window.location.href = d.url
+  }
+
   function imprimirLista() {
     try { localStorage.setItem('lista_validez_dias', String(listaValidez)) } catch {}
     const ok = imprimirListaPrecios({
@@ -2690,6 +2700,12 @@ export default function ProductosPage() {
                   <button onClick={guardarListaComo} disabled={listaGuardando || listaItems.length === 0} className="btn-row"
                     style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit', opacity: listaItems.length === 0 ? 0.4 : listaGuardando ? 0.6 : 1 }}>
                     {listaGuardando ? 'Guardando...' : '💾 Guardar lista'}
+                  </button>
+                )}
+                {listaGuardadaId && (
+                  <button onClick={verListaEnPortal} title="Ver cómo queda esta lista en el portal de clientes" className="btn-row"
+                    style={{ background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    👁 Ver en el portal
                   </button>
                 )}
                 <button onClick={imprimirLista} disabled={listaItems.length === 0} className="btn-wine"

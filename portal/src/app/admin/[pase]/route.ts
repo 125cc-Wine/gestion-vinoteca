@@ -6,18 +6,18 @@ import { COOKIE, crearSesionAdmin } from '@/lib/session'
 export const dynamic = 'force-dynamic'
 
 // Entrada de administración: gestión (/api/clientes/portal, accion 'admin')
-// genera un pase al azar, guarda solo su hash con vencimiento de 5 minutos y
-// abre esta URL. El pase se consume al usarlo (un solo uso).
+// genera un pase al azar, guarda solo su hash en portal_pases, con vencimiento
+// de 5 minutos, y abre esta URL. El pase se borra al usarlo (un solo uso).
 export async function GET(req: NextRequest, { params }: { params: { pase: string } }) {
   const hash = createHash('sha256').update(params.pase).digest('base64url')
-  const { data } = await db.from('clientes')
-    .update({ portal_admin_pase_hash: null, portal_admin_pase_expira: null })
-    .eq('portal_admin_pase_hash', hash)
-    .gt('portal_admin_pase_expira', new Date().toISOString())
-    .select('id').maybeSingle()
+  const { data } = await db.from('portal_pases')
+    .delete()
+    .eq('hash', hash)
+    .gt('expira', new Date().toISOString())
+    .select('cliente_id, lista_id').maybeSingle()
   if (!data) return NextResponse.redirect(new URL('/?pase=vencido', req.url), 303)
 
-  const s = crearSesionAdmin(data.id)
+  const s = crearSesionAdmin(data)
   const res = NextResponse.redirect(new URL('/', req.url), 303)
   res.cookies.set(COOKIE, s.valor, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: s.maxAge })
   return res

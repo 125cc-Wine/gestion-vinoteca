@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   const cliente = await clienteActual()
   if (!cliente) return NextResponse.json({ error: 'Tu sesión venció. Volvé a entrar con tu link.' }, { status: 401 })
+  if (cliente.preview || !cliente.id) return NextResponse.json({ error: 'Es una vista previa: para cargar un pedido entrá como un cliente.' }, { status: 403 })
   const catalogo = await catalogoDe(cliente)
   if (!catalogo) return NextResponse.json({ error: 'Tu lista de precios no está configurada.' }, { status: 409 })
 

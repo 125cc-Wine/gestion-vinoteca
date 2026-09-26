@@ -14,14 +14,15 @@ export default async function MisPedidos() {
   const cliente = await clienteActual()
   if (!cliente) return <SinSesion titulo="Entrá con tu link" texto="Para ver tus pedidos, abrí el link personal que te mandamos por WhatsApp e ingresá tu PIN." />
 
-  const { data } = await db.from('pedidos')
-    .select('numero, created_at, estado, total, items, fecha_entrega')
-    .eq('cliente_id', cliente.id).order('created_at', { ascending: false }).limit(30)
+  const { data } = cliente.id
+    ? await db.from('pedidos').select('numero, created_at, estado, total, items, fecha_entrega')
+      .eq('cliente_id', cliente.id).order('created_at', { ascending: false }).limit(30)
+    : { data: [] }
   const pedidos = data ?? []
 
   return (
     <div data-empresa={cliente.empresa}>
-      <Header empresa={cliente.empresa} activo="pedidos" admin={cliente.admin} cliente={cliente.nombre} />
+      <Header empresa={cliente.empresa} activo="pedidos" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} />
       <main className="wrap">
         <section className="hero">
           <div className="kicker">{cliente.nombre}</div>

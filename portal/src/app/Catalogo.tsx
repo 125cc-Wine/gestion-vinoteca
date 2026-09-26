@@ -12,8 +12,8 @@ const PLURAL: Record<string, string> = { Espumante: 'Espumantes', Blanco: 'Blanc
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-export default function Catalogo({ clienteId, clienteNombre, lista, descuento, actualizado, items }: {
-  clienteId: string; clienteNombre: string; lista: string; descuento: number; actualizado: string; items: Item[]
+export default function Catalogo({ clienteId, clienteNombre, lista, descuento, actualizado, items, preview = false }: {
+  clienteId: string; clienteNombre: string; lista: string; descuento: number; actualizado: string; items: Item[]; preview?: boolean
 }) {
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
@@ -105,7 +105,7 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
   return (
     <>
       <section className="hero">
-        <div className="kicker">Hola, {clienteNombre}</div>
+        <div className="kicker">{preview ? 'Vista previa' : `Hola, ${clienteNombre}`}</div>
         <h1>{lista}</h1>
         <p>
           {descuento > 0 && <span className="tag">{descuento}% de descuento ya aplicado</span>}{' '}
@@ -226,7 +226,7 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
                 </div>
                 <div className="panel-f">
                   <div className="total"><span>{botellas} {botellas === 1 ? 'botella' : 'botellas'}</span><strong>{pesos(total)}</strong></div>
-                  <button className="btn btn-ac btn-lg" onClick={enviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar pedido'}</button>
+                  <button className="btn btn-ac btn-lg" onClick={enviar} disabled={enviando || preview}>{preview ? 'Vista previa: no se envían pedidos' : enviando ? 'Enviando…' : 'Enviar pedido'}</button>
                   {error && <div className="error">{error}</div>}
                 </div>
               </>

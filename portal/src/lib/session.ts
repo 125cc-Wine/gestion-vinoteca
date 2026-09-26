@@ -27,16 +27,19 @@ export function crearSesion(clienteId: string, token: string) {
   return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_MS / 1000 }
 }
 
-// Sesión de administración: se entra desde gestión ("Ver portal como este
-// cliente") con un pase de un solo uso; no depende del link ni del PIN del
-// cliente y dura poco.
+// Sesión de administración: se entra desde gestión con un pase de un solo
+// uso. Puede ser "como un cliente" (c) o "vista previa de una lista" (l, sin
+// cliente: se ve el catálogo pero no se pueden enviar pedidos). No depende
+// del link ni del PIN del cliente y dura poco.
 const DURACION_ADMIN_MS = 8 * 60 * 60 * 1000
-export function crearSesionAdmin(clienteId: string) {
-  const datos = Buffer.from(JSON.stringify({ c: clienteId, a: 1, e: Date.now() + DURACION_ADMIN_MS })).toString('base64url')
+export function crearSesionAdmin(destino: { cliente_id?: string | null; lista_id?: string | null }) {
+  const datos = Buffer.from(JSON.stringify({ c: destino.cliente_id || undefined, l: destino.lista_id || undefined, a: 1, e: Date.now() + DURACION_ADMIN_MS })).toString('base64url')
   return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_ADMIN_MS / 1000 }
 }
 
-function leerSesion(): { c: string; t?: string; a?: number } | null {
+interface Sesion { c?: string; l?: string; t?: string; a?: number }
+
+function leerSesion(): Sesion | null {
   const v = cookies().get(COOKIE)?.value
   if (!v) return null
   const [datos, firma] = v.split('.')
@@ -45,30 +48,42 @@ function leerSesion(): { c: string; t?: string; a?: number } | null {
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   try {
     const s = JSON.parse(Buffer.from(datos, 'base64url').toString())
-    if (typeof s.c !== 'string' || !(s.e > Date.now())) return null
-    if (s.a !== 1 && typeof s.t !== 'string') return null
-    return s
+    if (!(s.e > Date.now())) return null
+    if (s.a === 1) return (typeof s.c === 'string' || typeof s.l === 'string') ? s : null
+    return typeof s.c === 'string' && typeof s.t === 'string' ? s : null
   } catch { return null }
 }
 
 export interface ClientePortal {
-  id: string
+  id: string | null          // null = vista previa de una lista, sin cliente
   empresa: 'aroma' | 'lavid'
   nombre: string
   lista_precio_id: string | null
   portal_token: string | null
   admin: boolean
+  preview: boolean
 }
 
-// Cliente logueado, o null si no hay sesión válida / el acceso fue revocado.
+// Cliente logueado (o vista previa de admin), o null si no hay sesión
+// válida / el acceso fue revocado.
 export async function clienteActual(): Promise<ClientePortal | null> {
   const s = leerSesion()
   if (!s) return null
+  const admin = s.a === 1
+
+  if (admin && !s.c && s.l) {
+    const { data: lista } = await db.from('listas_precio').select('id, nombre, empresa').eq('id', s.l).maybeSingle()
+    if (!lista) return null
+    return {
+      id: null, empresa: lista.empresa === 'lavid' ? 'lavid' : 'aroma', nombre: lista.nombre,
+      lista_precio_id: lista.id, portal_token: null, admin: true, preview: true,
+    }
+  }
+
   const { data } = await db.from('clientes')
     .select('id, empresa, nombre, apellido, razon_social, lista_precio_id, portal_token, portal_activo, activo')
-    .eq('id', s.c).maybeSingle()
+    .eq('id', s.c!).maybeSingle()
   if (!data) return null
-  const admin = s.a === 1
   if (!admin) {
     if (!data.portal_activo || data.activo === false || !data.portal_token) return null
     if (huellaToken(data.portal_token) !== s.t) return null
@@ -80,5 +95,6 @@ export async function clienteActual(): Promise<ClientePortal | null> {
     lista_precio_id: data.lista_precio_id,
     portal_token: data.portal_token,
     admin,
+    preview: false,
   }
 }
