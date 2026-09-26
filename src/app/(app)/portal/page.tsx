@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import Revision from './Revision'
 
 // Pantalla única para manejar el portal de pedidos de clientes (app aparte,
 // carpeta portal/): verlo como admin, compartirlo con un cliente en un paso,
@@ -289,6 +290,8 @@ export default function PortalPage() {
           </div>
         )}
       </div>
+
+      <Revision aviso={aviso} />
 
       {/* Productos ocultos */}
       <div style={CARD}>
