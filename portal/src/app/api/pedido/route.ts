@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   const fecha = typeof body?.fecha_entrega === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.fecha_entrega) ? body.fecha_entrega : null
   const aConfirmar = items.filter(i => i.a_confirmar).length
   const notas = [
-    `Pedido hecho por el cliente desde el portal · Lista "${catalogo.lista}"${catalogo.descuento ? ` (−${catalogo.descuento}%)` : ''}`,
+    (cliente.admin ? 'Cargado por administración desde el portal' : 'Pedido hecho por el cliente desde el portal') +
+      ` · Lista "${catalogo.lista}"${catalogo.descuento ? ` (−${catalogo.descuento}%)` : ''}`,
     aConfirmar ? `${aConfirmar} producto${aConfirmar > 1 ? 's' : ''} sin stock al pedir (a confirmar)` : '',
     notasCliente ? `Nota del cliente: ${notasCliente}` : '',
   ].filter(Boolean).join('\n')

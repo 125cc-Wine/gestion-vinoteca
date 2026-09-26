@@ -27,7 +27,16 @@ export function crearSesion(clienteId: string, token: string) {
   return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_MS / 1000 }
 }
 
-function leerSesion(): { c: string; t: string } | null {
+// Sesión de administración: se entra desde gestión ("Ver portal como este
+// cliente") con un pase de un solo uso; no depende del link ni del PIN del
+// cliente y dura poco.
+const DURACION_ADMIN_MS = 8 * 60 * 60 * 1000
+export function crearSesionAdmin(clienteId: string) {
+  const datos = Buffer.from(JSON.stringify({ c: clienteId, a: 1, e: Date.now() + DURACION_ADMIN_MS })).toString('base64url')
+  return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_ADMIN_MS / 1000 }
+}
+
+function leerSesion(): { c: string; t?: string; a?: number } | null {
   const v = cookies().get(COOKIE)?.value
   if (!v) return null
   const [datos, firma] = v.split('.')
@@ -36,7 +45,8 @@ function leerSesion(): { c: string; t: string } | null {
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   try {
     const s = JSON.parse(Buffer.from(datos, 'base64url').toString())
-    if (typeof s.c !== 'string' || typeof s.t !== 'string' || !(s.e > Date.now())) return null
+    if (typeof s.c !== 'string' || !(s.e > Date.now())) return null
+    if (s.a !== 1 && typeof s.t !== 'string') return null
     return s
   } catch { return null }
 }
@@ -46,7 +56,8 @@ export interface ClientePortal {
   empresa: 'aroma' | 'lavid'
   nombre: string
   lista_precio_id: string | null
-  portal_token: string
+  portal_token: string | null
+  admin: boolean
 }
 
 // Cliente logueado, o null si no hay sesión válida / el acceso fue revocado.
@@ -56,13 +67,18 @@ export async function clienteActual(): Promise<ClientePortal | null> {
   const { data } = await db.from('clientes')
     .select('id, empresa, nombre, apellido, razon_social, lista_precio_id, portal_token, portal_activo, activo')
     .eq('id', s.c).maybeSingle()
-  if (!data || !data.portal_activo || data.activo === false || !data.portal_token) return null
-  if (huellaToken(data.portal_token) !== s.t) return null
+  if (!data) return null
+  const admin = s.a === 1
+  if (!admin) {
+    if (!data.portal_activo || data.activo === false || !data.portal_token) return null
+    if (huellaToken(data.portal_token) !== s.t) return null
+  }
   return {
     id: data.id,
     empresa: data.empresa === 'lavid' ? 'lavid' : 'aroma',
     nombre: data.razon_social || `${data.nombre} ${data.apellido || ''}`.trim(),
     lista_precio_id: data.lista_precio_id,
     portal_token: data.portal_token,
+    admin,
   }
 }

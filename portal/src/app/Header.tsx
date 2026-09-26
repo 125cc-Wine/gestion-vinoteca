@@ -1,10 +1,15 @@
 import Link from 'next/link'
 import { EMPRESAS, type EmpresaId } from '@/lib/empresas'
 
-export default function Header({ empresa, activo }: { empresa: EmpresaId; activo: 'catalogo' | 'pedidos' }) {
+export default function Header({ empresa, activo, admin, cliente }: { empresa: EmpresaId; activo: 'catalogo' | 'pedidos'; admin?: boolean; cliente?: string }) {
   const emp = EMPRESAS[empresa]
   return (
     <header className="top">
+      {admin && (
+        <div className="admin-bar">
+          Vista de administración · estás viendo el portal como <b>{cliente}</b>. Lo que pidas acá entra como pedido de este cliente.
+        </div>
+      )}
       <div className="top-in">
         <Link href="/" className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -7,8 +7,9 @@ import Catalogo from './Catalogo'
 
 export const dynamic = 'force-dynamic'
 
-export default async function Inicio() {
+export default async function Inicio({ searchParams }: { searchParams: { pase?: string } }) {
   const cliente = await clienteActual()
+  if (!cliente && searchParams.pase === 'vencido') return <SinSesion titulo="Acceso vencido" texto="Ese acceso de administración ya se usó o venció (duran 5 minutos). Generá otro desde Gestión > Clientes > Ver portal como este cliente." />
   if (!cliente) return <SinSesion titulo="Entrá con tu link" texto="Para ver tu lista de precios, abrí el link personal que te mandamos por WhatsApp e ingresá tu PIN." />
 
   const catalogo = await catalogoDe(cliente)
@@ -17,7 +18,7 @@ export default async function Inicio() {
 
   return (
     <div data-empresa={cliente.empresa}>
-      <Header empresa={cliente.empresa} activo="catalogo" />
+      <Header empresa={cliente.empresa} activo="catalogo" admin={cliente.admin} cliente={cliente.nombre} />
       <main className="wrap">
         {!catalogo ? (
           <div className="vacio">

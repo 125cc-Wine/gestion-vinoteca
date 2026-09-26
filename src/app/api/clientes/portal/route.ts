@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes, randomInt, scryptSync } from 'crypto'
+import { createHash, randomBytes, randomInt, scryptSync } from 'crypto'
 import { supabase } from '@/lib/supabase'
 
 // Acceso de un cliente al portal de pedidos (app aparte, carpeta portal/).
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   })
 }
 
-// POST { cliente_id, accion: 'generar' | 'revocar' | 'lista', lista_precio_id? }
+// POST { cliente_id, accion: 'generar' | 'revocar' | 'lista' | 'admin', lista_precio_id? }
 export async function POST(req: NextRequest) {
   const { cliente_id, accion, lista_precio_id } = await req.json()
   if (!cliente_id) return NextResponse.json({ error: 'cliente_id requerido' }, { status: 400 })
@@ -60,6 +60,19 @@ export async function POST(req: NextRequest) {
     }).eq('id', cliente_id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true, url: `${PORTAL_URL}/c/${token}`, pin })
+  }
+
+  if (accion === 'admin') {
+    // Pase de un solo uso (5 min) para que un admin vea el portal como este
+    // cliente sin su link ni PIN. Se guarda solo el hash; el portal lo consume
+    // en /admin/<pase> (portal/src/app/admin/[pase]/route.ts).
+    const pase = randomBytes(24).toString('base64url')
+    const { error } = await supabase.from('clientes').update({
+      portal_admin_pase_hash: createHash('sha256').update(pase).digest('base64url'),
+      portal_admin_pase_expira: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    }).eq('id', cliente_id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true, url: `${PORTAL_URL}/admin/${pase}` })
   }
 
   return NextResponse.json({ error: 'accion inválida' }, { status: 400 })

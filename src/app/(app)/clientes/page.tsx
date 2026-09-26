@@ -323,6 +323,18 @@ export default function ClientesPage() {
     } finally { setPortalOcupado(false) }
   }
 
+  // Abre el portal logueado como este cliente (vista de administración).
+  // La ventana se abre antes del fetch para que el navegador no la bloquee.
+  async function verPortalComoCliente() {
+    if (!editId) return
+    const w = window.open('about:blank', '_blank')
+    const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion: 'admin' }) })
+    const d = await r.json()
+    if (d.error || !d.url) { w?.close(); showToast('Error: ' + (d.error || 'no se pudo abrir el portal')); return }
+    if (w) w.location.href = d.url
+    else window.location.href = d.url
+  }
+
   function mensajePortal(nuevo: { url: string; pin: string }) {
     const nombre = form.razon_social || `${form.nombre} ${form.apellido || ''}`.trim()
     const empNombre = form.empresa === 'lavid' ? 'La Vid Consultora' : 'Aroma de Vid'
@@ -820,6 +832,11 @@ Guardá este mensaje, el link es personal.`
                             Desactivar acceso
                           </button>
                         )}
+                        <button className="btn-row" disabled={portalOcupado} onClick={verPortalComoCliente}
+                          title="Abre el portal logueado como este cliente, sin link ni PIN"
+                          style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          👁 Ver portal como este cliente
+                        </button>
                         {!portal.lista_precio_id && <span style={{ fontSize: 11, color: T.dim }}>Asigná una lista para poder dar acceso.</span>}
                       </div>
                     </>
