@@ -8,12 +8,18 @@ interface Item {
 }
 
 const ORDEN_TIPO = ['Espumante', 'Blanco', 'Rosado', 'Tinto', 'Dulce']
-const PLURAL: Record<string, string> = { Espumante: 'Espumantes', Blanco: 'Blancos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces' }
+const PLURAL: Record<string, string> = { Espumante: 'Espumantes', Blanco: 'Blancos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces', Otro: 'Aperitivos y destilados' }
+
+// Los vinos se agrupan por bodega; el resto (categoría "Otro": vermouths,
+// whiskies, gin, sodas…) por su rubro, que en gestión vive en "varietal".
+const esBebida = (i: { categoria: string }) => i.categoria === 'Otro'
+const grupoDe = (i: { categoria: string; bodega: string; varietal: string }) =>
+  esBebida(i) ? (i.varietal || 'Otras bebidas') : (i.bodega || 'Otras bodegas')
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-export default function Catalogo({ clienteId, clienteNombre, lista, descuento, actualizado, items, preview = false }: {
-  clienteId: string; clienteNombre: string; lista: string; descuento: number; actualizado: string; items: Item[]; preview?: boolean
+export default function Catalogo({ clienteId, clienteNombre, descuento, actualizado, items, preview = false }: {
+  clienteId: string; clienteNombre: string; descuento: number; actualizado: string; items: Item[]; preview?: boolean
 }) {
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
@@ -49,13 +55,18 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
     const orden = (x: string) => { const k = ORDEN_TIPO.indexOf(x); return k === -1 ? ORDEN_TIPO.length : k }
     return t.sort((a, b) => orden(a) - orden(b) || a.localeCompare(b))
   }, [items])
-  const bodegas = useMemo(() => Array.from(new Set(items.map(i => i.bodega || i.varietal).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'es')), [items])
+  const opciones = useMemo(() => {
+    const vinos = new Set<string>(), bebidas = new Set<string>()
+    for (const i of items) (esBebida(i) ? bebidas : vinos).add(grupoDe(i))
+    const ord = (x: Set<string>) => Array.from(x).sort((a, b) => a.localeCompare(b, 'es'))
+    return { vinos: ord(vinos), bebidas: ord(bebidas) }
+  }, [items])
 
   const filtrados = useMemo(() => {
     const t = norm(q.trim())
     return items.filter(i =>
       (!tipo || i.categoria === tipo) &&
-      (!bodega || (i.bodega || i.varietal) === bodega) &&
+      (!bodega || grupoDe(i) === bodega) &&
       (!soloDisp || i.disponible) &&
       (!t || norm(`${i.nombre} ${i.bodega} ${i.varietal}`).includes(t)))
   }, [items, q, tipo, bodega, soloDisp])
@@ -63,11 +74,13 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
   const grupos = useMemo(() => {
     const m = new Map<string, Item[]>()
     for (const i of filtrados) {
-      const k = i.bodega || i.varietal || 'Otros'
+      const k = grupoDe(i)
       if (!m.has(k)) m.set(k, [])
       m.get(k)!.push(i)
     }
-    return Array.from(m.entries())
+    // Primero los vinos (por bodega), después aperitivos y destilados.
+    const bebida = (k: string, its: Item[]) => esBebida(its[0]) ? 1 : 0
+    return Array.from(m.entries()).sort((a, b) => bebida(...a) - bebida(...b) || a[0].localeCompare(b[0], 'es'))
   }, [filtrados])
 
   const lineas = Object.entries(carrito).map(([id, n]) => ({ item: porId.get(id)!, n })).filter(l => l.item)
@@ -106,19 +119,20 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
     <>
       <section className="hero">
         <div className="kicker">{preview ? 'Vista previa' : `Hola, ${clienteNombre}`}</div>
-        <h1>{lista}</h1>
+        <h1>Lista de precios</h1>
         <p>
           {descuento > 0 && <span className="tag">{descuento}% de descuento ya aplicado</span>}{' '}
-          Precios y disponibilidad actualizados al {actualizado}. {items.length} etiquetas.
+          Precios y disponibilidad actualizados al {actualizado}. {items.length} productos.
         </p>
       </section>
 
       <div className="filtros">
         <div className="buscar">
-          <input type="search" placeholder="Buscar vino, bodega o varietal" value={q} onChange={e => setQ(e.target.value)} aria-label="Buscar" />
-          <select value={bodega} onChange={e => setBodega(e.target.value)} aria-label="Bodega">
-            <option value="">Todas las bodegas</option>
-            {bodegas.map(b => <option key={b} value={b}>{b}</option>)}
+          <input type="search" placeholder="Buscar vino, bodega, varietal o bebida" value={q} onChange={e => setQ(e.target.value)} aria-label="Buscar" />
+          <select value={bodega} onChange={e => setBodega(e.target.value)} aria-label="Bodega o rubro">
+            <option value="">Todas las bodegas y bebidas</option>
+            <optgroup label="Bodegas">{opciones.vinos.map(b => <option key={b} value={b}>{b}</option>)}</optgroup>
+            {opciones.bebidas.length > 0 && <optgroup label="Aperitivos y destilados">{opciones.bebidas.map(b => <option key={b} value={b}>{b}</option>)}</optgroup>}
           </select>
         </div>
         <div className="chips">
@@ -186,7 +200,7 @@ export default function Catalogo({ clienteId, clienteNombre, lista, descuento, a
                   <div className="ok-ico">✓</div>
                   <h2>¡Gracias!</h2>
                   <p>Recibimos tu pedido <b>{hecho.numero}</b> por {pesos(hecho.total)}.<br />Te vamos a contactar para confirmar la entrega.</p>
-                  <button className="btn btn-ac btn-lg" onClick={() => setAbierto(false)}>Seguir viendo la lista</button>
+                  <button className="btn btn-ac btn-lg" onClick={() => setAbierto(false)}>Seguir viendo el catálogo</button>
                   <p style={{ marginTop: 16 }}><Link href="/pedidos">Ver mis pedidos</Link></p>
                 </div>
               </div>

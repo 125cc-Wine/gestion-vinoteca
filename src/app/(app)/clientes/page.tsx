@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
-import { supabase } from '@/lib/supabase'
 import { labelComprobante } from '@/lib/labelComprobante'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
@@ -119,11 +118,10 @@ export default function ClientesPage() {
   const [editId, setEditId] = useState<string | null>(null)
 
   // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
-  interface PortalEstado { lista_precio_id: string | null; activo: boolean; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
+  interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
   const [portal, setPortal] = useState<PortalEstado | null>(null)
   const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string } | null>(null)
   const [portalOcupado, setPortalOcupado] = useState(false)
-  const [listasPrecio, setListasPrecio] = useState<{ id: string; nombre: string; descuento: number }[]>([])
 
   // Modal cobro manual
   const [cobroModal, setCobroModal] = useState(false)
@@ -298,28 +296,24 @@ export default function ClientesPage() {
 
   async function cargarPortal(clienteId: string) {
     setPortal(null); setPortalNuevo(null)
-    const [r, { data: listas }] = await Promise.all([
-      fetch(`/api/clientes/portal?cliente_id=${clienteId}`).then(x => x.json()),
-      supabase.from('listas_precio').select('id,nombre,descuento').order('nombre'),
-    ])
-    setListasPrecio((listas as { id: string; nombre: string; descuento: number }[]) || [])
+    const r = await fetch(`/api/clientes/portal?cliente_id=${clienteId}`).then(x => x.json())
     if (!r.error) setPortal(r)
   }
 
-  async function portalAccion(accion: 'generar' | 'revocar' | 'lista', lista_precio_id?: string) {
+  async function portalAccion(accion: 'generar' | 'revocar' | 'descuento', descuento?: string) {
     if (!editId) return
     if (accion === 'generar' && portal?.activo && !confirm('Se genera un link y PIN nuevos. El link anterior deja de funcionar. ¿Seguir?')) return
     if (accion === 'revocar' && !confirm('¿Desactivar el acceso de este cliente al portal? Su link deja de funcionar.')) return
     setPortalOcupado(true)
     try {
-      const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, lista_precio_id }) })
+      const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, descuento }) })
       const d = await r.json()
       if (d.error) { showToast('Error: ' + d.error); return }
       if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
       if (accion === 'revocar') setPortalNuevo(null)
       await cargarPortal(editId)
       if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
-      showToast(accion === 'lista' ? 'Lista asignada' : accion === 'generar' ? 'Acceso generado' : 'Acceso desactivado')
+      showToast(accion === 'descuento' ? 'Descuento guardado' : accion === 'generar' ? 'Acceso generado' : 'Acceso desactivado')
     } finally { setPortalOcupado(false) }
   }
 
@@ -793,12 +787,13 @@ Guardá este mensaje, el link es personal.`
                     <div style={{ fontSize: 12, color: T.dim }}>Cargando…</div>
                   ) : (
                     <>
-                      <label style={{ fontSize: 12, color: T.muted, display: 'block', marginBottom: 5 }}>Lista de precios que ve el cliente</label>
-                      <select style={INP} value={portal.lista_precio_id || ''} disabled={portalOcupado}
-                        onChange={e => portalAccion('lista', e.target.value)}>
-                        <option value="">— Sin lista asignada —</option>
-                        {listasPrecio.map(l => <option key={l.id} value={l.id}>{l.nombre}{Number(l.descuento) > 0 ? ` (−${Number(l.descuento)}%)` : ''}</option>)}
-                      </select>
+                      <label style={{ fontSize: 12, color: T.muted, display: 'block', marginBottom: 5 }}>Descuento en el portal (vacío = general, {portal.descuento_general}%)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input key={String(portal.descuento)} type="number" min={0} max={99} style={{ ...INP, width: 110, textAlign: 'right' }} disabled={portalOcupado}
+                          defaultValue={portal.descuento ?? ''} placeholder={String(portal.descuento_general)}
+                          onBlur={e => { if ((e.target.value.trim() === '' ? null : Number(e.target.value)) !== portal.descuento) portalAccion('descuento', e.target.value.trim()) }} />
+                        <span style={{ color: T.muted, fontSize: 13 }}>%</span>
+                      </div>
                       {portal.bloqueado_hasta && new Date(portal.bloqueado_hasta) > new Date() && (
                         <div style={{ fontSize: 12, color: T.red, marginTop: 8 }}>Bloqueado por PIN incorrecto hasta las {new Date(portal.bloqueado_hasta).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}. Generar un acceso nuevo lo desbloquea.</div>
                       )}
@@ -821,9 +816,8 @@ Guardá este mensaje, el link es personal.`
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <button className="btn-row" disabled={portalOcupado || !portal.lista_precio_id} onClick={() => portalAccion('generar')}
-                          title={!portal.lista_precio_id ? 'Primero asigná una lista de precios' : ''}
-                          style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit', opacity: !portal.lista_precio_id ? 0.5 : 1 }}>
+                        <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('generar')}
+                          style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }}>
                           {portal.activo ? 'Generar link y PIN nuevos' : 'Dar acceso al portal'}
                         </button>
                         {portal.activo && (
@@ -837,7 +831,6 @@ Guardá este mensaje, el link es personal.`
                           style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
                           👁 Ver portal como este cliente
                         </button>
-                        {!portal.lista_precio_id && <span style={{ fontSize: 11, color: T.dim }}>Asigná una lista para poder dar acceso.</span>}
                       </div>
                     </>
                   )}

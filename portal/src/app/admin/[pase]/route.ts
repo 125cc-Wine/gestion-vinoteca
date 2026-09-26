@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { pase: string
     .delete()
     .eq('hash', hash)
     .gt('expira', new Date().toISOString())
-    .select('cliente_id, lista_id').maybeSingle()
+    .select('cliente_id, empresa').maybeSingle()
   if (!data) return NextResponse.redirect(new URL('/?pase=vencido', req.url), 303)
 
   const s = crearSesionAdmin(data)

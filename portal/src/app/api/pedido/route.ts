@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
   if (!cliente) return NextResponse.json({ error: 'Tu sesión venció. Volvé a entrar con tu link.' }, { status: 401 })
   if (cliente.preview || !cliente.id) return NextResponse.json({ error: 'Es una vista previa: para cargar un pedido entrá como un cliente.' }, { status: 403 })
   const catalogo = await catalogoDe(cliente)
-  if (!catalogo) return NextResponse.json({ error: 'Tu lista de precios no está configurada.' }, { status: 409 })
 
   const body = await req.json().catch(() => null)
   const pedidos: { id: string; cantidad: number }[] = Array.isArray(body?.items) ? body.items : []
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
   for (const it of pedidos) {
     const p = porId.get(it?.id)
     const cant = Math.floor(Number(it?.cantidad))
-    if (!p || !(cant >= 1 && cant <= 999)) return NextResponse.json({ error: 'Hay un producto que ya no está en tu lista. Actualizá la página.' }, { status: 400 })
+    if (!p || !(cant >= 1 && cant <= 999)) return NextResponse.json({ error: 'Hay un producto que ya no está disponible en el portal. Actualizá la página.' }, { status: 400 })
     items.push({ producto_id: p.id, nombre: p.nombre, cantidad: cant, precio_unitario: p.precio, a_confirmar: !p.disponible })
   }
   if (items.length === 0 || items.length > 300) return NextResponse.json({ error: 'El pedido está vacío.' }, { status: 400 })
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
   const aConfirmar = items.filter(i => i.a_confirmar).length
   const notas = [
     (cliente.admin ? 'Cargado por administración desde el portal' : 'Pedido hecho por el cliente desde el portal') +
-      ` · Lista "${catalogo.lista}"${catalogo.descuento ? ` (−${catalogo.descuento}%)` : ''}`,
+      (catalogo.descuento ? ` · Descuento ${catalogo.descuento}%` : ''),
     aConfirmar ? `${aConfirmar} producto${aConfirmar > 1 ? 's' : ''} sin stock al pedir (a confirmar)` : '',
     notasCliente ? `Nota del cliente: ${notasCliente}` : '',
   ].filter(Boolean).join('\n')

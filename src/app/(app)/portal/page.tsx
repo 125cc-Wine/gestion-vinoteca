@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 // Pantalla única para manejar el portal de pedidos de clientes (app aparte,
-// carpeta portal/): verlo como admin, compartirlo con un cliente en un paso
-// y ver quién tiene acceso. Toda la lógica de accesos vive en
-// /api/clientes/portal.
+// carpeta portal/): verlo como admin, compartirlo con un cliente en un paso,
+// descuentos (general y por cliente) y qué productos no se muestran. Toda la
+// lógica de accesos vive en /api/clientes/portal.
 
 const T = {
   bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8',
   text: '#1A1210', muted: '#6B5D55', dim: '#A89888',
-  wine: '#800000', wineBg: 'rgba(128,0,0,0.07)',
+  wine: '#800000',
   green: '#2D7A4F', greenBg: 'rgba(45,122,79,0.08)', greenBd: 'rgba(45,122,79,0.22)',
   red: '#C03030', redBg: 'rgba(192,48,48,0.08)', redBd: 'rgba(192,48,48,0.22)',
   wa: '#1F9D55',
@@ -19,10 +19,11 @@ const INP: React.CSSProperties = { width: '100%', padding: '10px 12px', borderRa
 const BTN: React.CSSProperties = { borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${T.border2}`, background: T.surface, color: T.text, whiteSpace: 'nowrap' }
 const CARD: React.CSSProperties = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20 }
 const LABEL: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }
+const POST = (body: object) => fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
 
-interface Lista { id: string; nombre: string; descuento: number; empresa: string }
-interface ClientePortal { id: string; empresa: string; telefono: string | null; nombre: string; lista_precio_id: string | null; activo: boolean; ultimo_acceso: string | null }
-interface ClienteMini { id: string; nombre: string; apellido?: string; razon_social?: string; telefono?: string; empresa: string; lista_precio_id?: string | null }
+interface ClientePortal { id: string; empresa: string; telefono: string | null; nombre: string; descuento: number | null; activo: boolean; ultimo_acceso: string | null }
+interface ClienteMini { id: string; nombre: string; apellido?: string; razon_social?: string; telefono?: string; empresa: string }
+interface ProductoMini { id: string; nombre: string; portal_oculto: boolean }
 
 const nombreDe = (c: ClienteMini) => c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -37,58 +38,80 @@ function mensaje(nombre: string, empresa: string, url: string, pin: string) {
 }
 
 export default function PortalPage() {
-  const [listas, setListas] = useState<Lista[]>([])
+  const [empresa, setEmpresa] = useState('aroma')
   const [conPortal, setConPortal] = useState<ClientePortal[]>([])
   const [todos, setTodos] = useState<ClienteMini[]>([])
+  const [productos, setProductos] = useState<ProductoMini[]>([])
+  const [general, setGeneral] = useState<number>(35)
+  const [generalInput, setGeneralInput] = useState('35')
   const [portalUrl, setPortalUrl] = useState('')
   const [cargando, setCargando] = useState(true)
   const [toast, setToast] = useState('')
 
-  const [listaPreview, setListaPreview] = useState('')
   const [q, setQ] = useState('')
   const [abiertoSug, setAbiertoSug] = useState(false)
   const [elegido, setElegido] = useState<ClienteMini | null>(null)
-  const [listaElegida, setListaElegida] = useState('')
+  const [descNuevo, setDescNuevo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [ultimo, setUltimo] = useState<{ nombre: string; url: string; pin: string; texto: string } | null>(null)
+  const [qProd, setQProd] = useState('')
 
   function aviso(m: string) { setToast(m); setTimeout(() => setToast(''), 3500) }
 
+  async function cargarProductos() {
+    // Una fila por producto (las de Aroma); ocultar se replica al gemelo de La Vid.
+    const out: ProductoMini[] = []
+    for (let desde = 0; ; desde += 1000) {
+      const { data } = await supabase.from('productos').select('id,nombre,portal_oculto')
+        .eq('empresa', 'aroma').eq('activo', true).order('nombre').range(desde, desde + 999)
+      out.push(...((data as ProductoMini[]) || []))
+      if (!data || data.length < 1000) break
+    }
+    setProductos(out)
+  }
+
   async function cargar() {
-    const [{ data: ls }, r, rc] = await Promise.all([
-      supabase.from('listas_precio').select('id,nombre,descuento,empresa').order('nombre'),
+    const [r, rc] = await Promise.all([
       fetch('/api/clientes/portal').then(x => x.json()),
       fetch('/api/clientes').then(x => x.json()),
     ])
-    const l = (ls as Lista[]) || []
-    setListas(l)
-    setListaPreview(p => p || l[0]?.id || '')
-    if (!r.error) { setConPortal(r.clientes); setPortalUrl(r.portal_url) }
+    if (!r.error) {
+      setConPortal(r.clientes); setPortalUrl(r.portal_url)
+      setGeneral(r.descuento_general); setGeneralInput(String(r.descuento_general))
+    }
     setTodos(Array.isArray(rc) ? rc : [])
     setCargando(false)
   }
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    setEmpresa(localStorage.getItem('empresa') || 'aroma')
+    cargar(); cargarProductos()
+  }, [])
 
-  const listaPorId = useMemo(() => new Map(listas.map(l => [l.id, l])), [listas])
   const sugerencias = useMemo(() => {
     const t = norm(q.trim())
     if (t.length < 2) return []
     return todos.filter(c => norm(`${nombreDe(c)} ${c.nombre}`).includes(t)).slice(0, 12)
   }, [q, todos])
+  const ocultos = productos.filter(p => p.portal_oculto)
+  const sugProd = useMemo(() => {
+    const t = norm(qProd.trim())
+    if (t.length < 2) return []
+    return productos.filter(p => !p.portal_oculto && norm(p.nombre).includes(t)).slice(0, 10)
+  }, [qProd, productos])
 
   // La ventana se abre en el clic (antes del fetch) para que el navegador no la bloquee.
-  async function abrirAdmin(destino: { cliente_id?: string; lista_id?: string }) {
+  async function abrirAdmin(destino: { cliente_id?: string; empresa?: string }) {
     const w = window.open('about:blank', '_blank')
-    const d = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'admin', ...destino }) }).then(x => x.json())
+    const d = await POST({ accion: 'admin', ...destino })
     if (d.error || !d.url) { w?.close(); aviso('Error: ' + (d.error || 'no se pudo abrir')); return }
     if (w) w.location.href = d.url; else window.location.href = d.url
   }
 
-  async function compartir(c: { id: string; nombre: string; empresa: string; telefono?: string | null }, lista_precio_id?: string) {
+  async function compartir(c: { id: string; nombre: string; empresa: string; telefono?: string | null }, extra: object = {}) {
     const w = window.open('about:blank', '_blank')
     setOcupado(c.id)
     try {
-      const d = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'compartir', cliente_id: c.id, lista_precio_id }) }).then(x => x.json())
+      const d = await POST({ accion: 'compartir', cliente_id: c.id, ...extra })
       if (d.error) { w?.close(); aviso('Error: ' + d.error); return }
       const texto = mensaje(c.nombre, c.empresa, d.url, d.pin)
       setUltimo({ nombre: c.nombre, url: d.url, pin: d.pin, texto })
@@ -99,28 +122,40 @@ export default function PortalPage() {
   }
 
   async function agregar() {
-    if (!elegido || !listaElegida) return
-    await compartir({ id: elegido.id, nombre: nombreDe(elegido), empresa: elegido.empresa, telefono: elegido.telefono }, listaElegida)
-    setElegido(null); setQ('')
+    if (!elegido) return
+    await compartir({ id: elegido.id, nombre: nombreDe(elegido), empresa: elegido.empresa, telefono: elegido.telefono },
+      descNuevo.trim() ? { descuento: descNuevo } : {})
+    setElegido(null); setQ(''); setDescNuevo('')
   }
 
-  async function cambiarLista(c: ClientePortal, lista: string) {
-    const d = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'lista', cliente_id: c.id, lista_precio_id: lista }) }).then(x => x.json())
+  async function guardarGeneral() {
+    const d = await POST({ accion: 'general', descuento: generalInput })
     if (d.error) { aviso('Error: ' + d.error); return }
-    setConPortal(prev => prev.map(x => x.id === c.id ? { ...x, lista_precio_id: lista || null } : x))
-    aviso('Lista actualizada')
+    setGeneral(Number(generalInput)); aviso('Descuento general actualizado')
+  }
+
+  async function guardarDescuento(c: ClientePortal, valor: string) {
+    const nuevo = valor.trim() === '' ? null : Number(valor)
+    if (nuevo === c.descuento) return
+    const d = await POST({ accion: 'descuento', cliente_id: c.id, descuento: valor.trim() })
+    if (d.error) { aviso('Error: ' + d.error); return }
+    setConPortal(prev => prev.map(x => x.id === c.id ? { ...x, descuento: nuevo } : x))
+    aviso(nuevo == null ? `${c.nombre}: usa el descuento general` : `${c.nombre}: ${nuevo}% de descuento`)
   }
 
   async function quitar(c: ClientePortal) {
     if (!confirm(`¿Quitarle el acceso al portal a ${c.nombre}? Su link deja de funcionar.`)) return
-    const d = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'revocar', cliente_id: c.id }) }).then(x => x.json())
+    const d = await POST({ accion: 'revocar', cliente_id: c.id })
     if (d.error) { aviso('Error: ' + d.error); return }
     aviso('Acceso quitado'); cargar()
   }
 
-  const nombreLista = (id: string | null) => {
-    const l = id ? listaPorId.get(id) : null
-    return l ? `${l.nombre}${Number(l.descuento) > 0 ? ` (−${Number(l.descuento)}%)` : ''}` : '—'
+  async function ocultar(p: ProductoMini, oculto: boolean) {
+    const d = await POST({ accion: 'ocultar', producto_id: p.id, oculto })
+    if (d.error) { aviso('Error: ' + d.error); return }
+    setProductos(prev => prev.map(x => x.id === p.id ? { ...x, portal_oculto: oculto } : x))
+    setQProd('')
+    aviso(oculto ? `"${p.nombre}" ya no se muestra en el portal` : `"${p.nombre}" vuelve a mostrarse`)
   }
 
   return (
@@ -128,31 +163,35 @@ export default function PortalPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Portal de clientes</h1>
-          <div style={{ fontSize: 13, color: T.muted, marginTop: 4 }}>Donde tus clientes ven su lista de precios con stock del día y te hacen pedidos.</div>
+          <div style={{ fontSize: 13, color: T.muted, marginTop: 4 }}>Tus clientes ven todo el catálogo con su descuento y stock del día, y te hacen pedidos.</div>
         </div>
-        {portalUrl && <span style={{ fontSize: 12, color: T.dim }}>{portalUrl.replace('https://', '')}</span>}
+        {portalUrl && <span style={{ fontSize: 12, color: T.dim }}>{portalUrl.replace(/^https?:\/\//, '')}</span>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 16 }}>
-        {/* Ver el portal */}
+        {/* Ver el portal + descuento general */}
         <div style={CARD}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>👁 Ver el portal</div>
-          <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>Abrilo como lo ve un cliente. No hace falta link ni PIN.</div>
-          <label style={LABEL}>Lista</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select style={INP} value={listaPreview} onChange={e => setListaPreview(e.target.value)}>
-              {listas.map(l => <option key={l.id} value={l.id}>{nombreLista(l.id)}</option>)}
-            </select>
-            <button style={{ ...BTN, background: T.wine, color: '#FFF', border: 'none' }} disabled={!listaPreview} onClick={() => abrirAdmin({ lista_id: listaPreview })}>
-              Abrir
-            </button>
+          <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>Abrilo como lo ve un cliente con el descuento general. Sin link ni PIN.</div>
+          <button style={{ ...BTN, background: T.wine, color: '#FFF', border: 'none', width: '100%', padding: '12px 16px', fontSize: 14 }}
+            onClick={() => abrirAdmin({ empresa })}>
+            Abrir portal ({empresa === 'lavid' ? 'La Vid' : 'Aroma'})
+          </button>
+          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 16, paddingTop: 14 }}>
+            <label style={LABEL}>Descuento general</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input style={{ ...INP, width: 90, textAlign: 'right' }} type="number" min={0} max={99} value={generalInput} onChange={e => setGeneralInput(e.target.value)} />
+              <span style={{ color: T.muted, fontSize: 14 }}>%</span>
+              {Number(generalInput) !== general && <button style={BTN} onClick={guardarGeneral}>Guardar</button>}
+            </div>
+            <div style={{ fontSize: 11.5, color: T.dim, marginTop: 6 }}>Se aplica a todos los clientes que no tengan uno propio.</div>
           </div>
         </div>
 
         {/* Compartir */}
         <div style={CARD}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>📲 Compartir con un cliente</div>
-          <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>Elegí cliente y lista: se abre WhatsApp con el link y el PIN listos para mandar.</div>
+          <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>Elegí el cliente y se abre WhatsApp con el link y el PIN listos para mandar.</div>
           <div style={{ position: 'relative', marginBottom: 10 }}>
             <label style={LABEL}>Cliente</label>
             {elegido ? (
@@ -168,7 +207,7 @@ export default function PortalPage() {
             {!elegido && abiertoSug && sugerencias.length > 0 && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 260, overflowY: 'auto', marginTop: 4 }}>
                 {sugerencias.map(c => (
-                  <div key={c.id} onMouseDown={() => { setElegido(c); setListaElegida(c.lista_precio_id || listaElegida || listas[0]?.id || '') }}
+                  <div key={c.id} onMouseDown={() => setElegido(c)}
                     style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
                     {nombreDe(c)} <span style={{ color: T.dim, fontSize: 11 }}>· {c.empresa === 'lavid' ? 'La Vid' : 'Aroma'}{c.telefono ? ' · 📱' : ''}</span>
                   </div>
@@ -176,17 +215,16 @@ export default function PortalPage() {
               </div>
             )}
           </div>
-          <label style={LABEL}>Lista</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select style={INP} value={listaElegida} onChange={e => setListaElegida(e.target.value)}>
-              <option value="">— Elegí una lista —</option>
-              {listas.map(l => <option key={l.id} value={l.id}>{nombreLista(l.id)}</option>)}
-            </select>
-            <button style={{ ...BTN, background: T.wa, color: '#FFF', border: 'none', opacity: elegido && listaElegida ? 1 : 0.5 }}
-              disabled={!elegido || !listaElegida || !!ocupado} onClick={agregar}>
+          <label style={LABEL}>Descuento</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input style={{ ...INP, width: 90, textAlign: 'right' }} type="number" min={0} max={99} placeholder={String(general)} value={descNuevo} onChange={e => setDescNuevo(e.target.value)} />
+            <span style={{ color: T.muted, fontSize: 14 }}>%</span>
+            <button style={{ ...BTN, flex: 1, background: T.wa, color: '#FFF', border: 'none', opacity: elegido ? 1 : 0.5 }}
+              disabled={!elegido || !!ocupado} onClick={agregar}>
               Enviar por WhatsApp
             </button>
           </div>
+          <div style={{ fontSize: 11.5, color: T.dim, marginTop: 6 }}>Vacío = descuento general ({general}%).</div>
         </div>
       </div>
 
@@ -203,7 +241,7 @@ export default function PortalPage() {
       )}
 
       {/* Clientes con portal */}
-      <div style={{ ...CARD, padding: 0, overflow: 'hidden' }}>
+      <div style={{ ...CARD, padding: 0, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>Clientes en el portal</div>
           <span style={{ fontSize: 12, color: T.dim }}>{conPortal.filter(c => c.activo).length} con acceso</span>
@@ -217,7 +255,7 @@ export default function PortalPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-                  {['Cliente', 'Lista', 'Estado', ''].map(h => <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>)}
+                  {['Cliente', 'Descuento', 'Estado', ''].map(h => <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -227,19 +265,18 @@ export default function PortalPage() {
                       {c.nombre}
                       <div style={{ fontSize: 11, color: T.dim }}>{c.empresa === 'lavid' ? 'La Vid' : 'Aroma'}{c.telefono ? '' : ' · sin teléfono'}</div>
                     </td>
-                    <td style={{ padding: '10px 16px', minWidth: 180 }}>
-                      <select style={{ ...INP, padding: '6px 8px', fontSize: 12.5 }} value={c.lista_precio_id || ''} onChange={e => cambiarLista(c, e.target.value)}>
-                        <option value="">— Sin lista —</option>
-                        {listas.map(l => <option key={l.id} value={l.id}>{nombreLista(l.id)}</option>)}
-                      </select>
+                    <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
+                      <input key={`${c.id}-${c.descuento}`} type="number" min={0} max={99} defaultValue={c.descuento ?? ''} placeholder={`${general} (gral.)`}
+                        onBlur={e => guardarDescuento(c, e.target.value)} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        style={{ ...INP, width: 110, padding: '6px 8px', fontSize: 12.5, textAlign: 'right' }} /> <span style={{ color: T.muted }}>%</span>
                     </td>
                     <td style={{ padding: '10px 16px', fontSize: 12, color: c.activo ? T.green : T.dim, whiteSpace: 'nowrap' }}>
                       {c.activo ? (c.ultimo_acceso ? `Entró el ${new Date(c.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Con acceso · no entró aún') : 'Sin acceso'}
                     </td>
                     <td style={{ padding: '10px 16px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                       <button title="Ver el portal como este cliente" style={{ ...BTN, padding: '6px 10px', marginRight: 6 }} onClick={() => abrirAdmin({ cliente_id: c.id })}>👁 Ver</button>
-                      <button title="Mandarle el link con un PIN nuevo por WhatsApp" disabled={!c.lista_precio_id || ocupado === c.id}
-                        style={{ ...BTN, padding: '6px 10px', marginRight: 6, background: T.wa, color: '#FFF', border: 'none', opacity: c.lista_precio_id ? 1 : 0.5 }}
+                      <button title="Mandarle el link con un PIN nuevo por WhatsApp" disabled={ocupado === c.id}
+                        style={{ ...BTN, padding: '6px 10px', marginRight: 6, background: T.wa, color: '#FFF', border: 'none' }}
                         onClick={() => compartir(c)}>📲 Compartir</button>
                       {c.activo && (
                         <button title="Quitar acceso" style={{ ...BTN, padding: '6px 10px', background: T.redBg, borderColor: T.redBd, color: T.red }} onClick={() => quitar(c)}>✕</button>
@@ -249,6 +286,38 @@ export default function PortalPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Productos ocultos */}
+      <div style={CARD}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🚫 Productos que no se muestran</div>
+        <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>
+          El portal muestra todos los vinos, vermouths y bebidas activos con precio. Acá sacás lo que no va (comida, aceites, genéricos…).
+        </div>
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <input style={INP} placeholder="Buscar un producto para ocultarlo…" value={qProd} onChange={e => setQProd(e.target.value)} />
+          {sugProd.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 260, overflowY: 'auto', marginTop: 4 }}>
+              {sugProd.map(p => (
+                <div key={p.id} onMouseDown={() => ocultar(p, true)} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${T.border}`, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{p.nombre}</span><span style={{ color: T.red, fontSize: 12 }}>Ocultar</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {ocultos.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: T.dim }}>No hay productos ocultos.</div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {ocultos.map(p => (
+              <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 999, padding: '4px 6px 4px 12px', fontSize: 12.5 }}>
+                {p.nombre}
+                <button title="Volver a mostrar" onClick={() => ocultar(p, false)} style={{ background: 'none', border: 'none', color: T.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
+              </span>
+            ))}
           </div>
         )}
       </div>
