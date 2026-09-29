@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 interface Item {
   id: string; nombre: string; bodega: string; varietal: string; categoria: string
-  precio_lista: number; precio: number; disponible: boolean
+  precio_lista: number; precio: number; descuento: number; disponible: boolean
 }
 
 const ORDEN_TIPO = ['Espumante', 'Blanco', 'Rosado', 'Tinto', 'Dulce']
@@ -18,8 +18,8 @@ const grupoDe = (i: { categoria: string; bodega: string; varietal: string }) =>
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-export default function Catalogo({ clienteId, clienteNombre, descuento, actualizado, items, preview = false }: {
-  clienteId: string; clienteNombre: string; descuento: number; actualizado: string; items: Item[]; preview?: boolean
+export default function Catalogo({ clienteId, clienteNombre, actualizado, items, preview = false }: {
+  clienteId: string; clienteNombre: string; actualizado: string; items: Item[]; preview?: boolean
 }) {
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
@@ -121,7 +121,7 @@ export default function Catalogo({ clienteId, clienteNombre, descuento, actualiz
         <div className="kicker">{preview ? 'Vista previa' : `Hola, ${clienteNombre}`}</div>
         <h1>Lista de precios</h1>
         <p>
-          {descuento > 0 && <span className="tag">{descuento}% de descuento ya aplicado</span>}{' '}
+          {items.some(i => i.descuento > 0) && <span className="tag">Tu descuento ya está aplicado</span>}{' '}
           Precios y disponibilidad actualizados al {actualizado}. {items.length} productos.
         </p>
       </section>
@@ -165,7 +165,7 @@ export default function Catalogo({ clienteId, clienteNombre, descuento, actualiz
                 </div>
                 <div className="fila-der">
                   <div className="precio">
-                    {descuento > 0 && <s>{pesos(i.precio_lista)}</s>}
+                    {i.descuento > 0 && <s>{pesos(i.precio_lista)} <em>−{i.descuento}%</em></s>}
                     <b>{pesos(i.precio)}</b>
                   </div>
                   {n === 0

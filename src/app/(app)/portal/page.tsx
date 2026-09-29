@@ -1,11 +1,10 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import Revision from './Revision'
 
 // Pantalla única para manejar el portal de pedidos de clientes (app aparte,
 // carpeta portal/): verlo como admin, compartirlo con un cliente en un paso,
-// descuentos (general y por cliente) y qué productos no se muestran. Toda la
+// descuento propio de cada cliente y productos con datos para revisar. Toda la
 // lógica de accesos vive en /api/clientes/portal.
 
 const T = {
@@ -24,7 +23,6 @@ const POST = (body: object) => fetch('/api/clientes/portal', { method: 'POST', h
 
 interface ClientePortal { id: string; empresa: string; telefono: string | null; nombre: string; descuento: number | null; activo: boolean; ultimo_acceso: string | null }
 interface ClienteMini { id: string; nombre: string; apellido?: string; razon_social?: string; telefono?: string; empresa: string }
-interface ProductoMini { id: string; nombre: string; portal_oculto: boolean }
 
 const nombreDe = (c: ClienteMini) => c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -42,9 +40,7 @@ export default function PortalPage() {
   const [empresa, setEmpresa] = useState('aroma')
   const [conPortal, setConPortal] = useState<ClientePortal[]>([])
   const [todos, setTodos] = useState<ClienteMini[]>([])
-  const [productos, setProductos] = useState<ProductoMini[]>([])
   const [general, setGeneral] = useState<number>(35)
-  const [generalInput, setGeneralInput] = useState('35')
   const [portalUrl, setPortalUrl] = useState('')
   const [cargando, setCargando] = useState(true)
   const [toast, setToast] = useState('')
@@ -55,21 +51,8 @@ export default function PortalPage() {
   const [descNuevo, setDescNuevo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [ultimo, setUltimo] = useState<{ nombre: string; url: string; pin: string; texto: string } | null>(null)
-  const [qProd, setQProd] = useState('')
 
   function aviso(m: string) { setToast(m); setTimeout(() => setToast(''), 3500) }
-
-  async function cargarProductos() {
-    // Una fila por producto (las de Aroma); ocultar se replica al gemelo de La Vid.
-    const out: ProductoMini[] = []
-    for (let desde = 0; ; desde += 1000) {
-      const { data } = await supabase.from('productos').select('id,nombre,portal_oculto')
-        .eq('empresa', 'aroma').eq('activo', true).order('nombre').range(desde, desde + 999)
-      out.push(...((data as ProductoMini[]) || []))
-      if (!data || data.length < 1000) break
-    }
-    setProductos(out)
-  }
 
   async function cargar() {
     const [r, rc] = await Promise.all([
@@ -78,14 +61,14 @@ export default function PortalPage() {
     ])
     if (!r.error) {
       setConPortal(r.clientes); setPortalUrl(r.portal_url)
-      setGeneral(r.descuento_general); setGeneralInput(String(r.descuento_general))
+      setGeneral(r.descuento_general)
     }
     setTodos(Array.isArray(rc) ? rc : [])
     setCargando(false)
   }
   useEffect(() => {
     setEmpresa(localStorage.getItem('empresa') || 'aroma')
-    cargar(); cargarProductos()
+    cargar()
   }, [])
 
   const sugerencias = useMemo(() => {
@@ -93,12 +76,6 @@ export default function PortalPage() {
     if (t.length < 2) return []
     return todos.filter(c => norm(`${nombreDe(c)} ${c.nombre}`).includes(t)).slice(0, 12)
   }, [q, todos])
-  const ocultos = productos.filter(p => p.portal_oculto)
-  const sugProd = useMemo(() => {
-    const t = norm(qProd.trim())
-    if (t.length < 2) return []
-    return productos.filter(p => !p.portal_oculto && norm(p.nombre).includes(t)).slice(0, 10)
-  }, [qProd, productos])
 
   // La ventana se abre en el clic (antes del fetch) para que el navegador no la bloquee.
   async function abrirAdmin(destino: { cliente_id?: string; empresa?: string }) {
@@ -129,12 +106,6 @@ export default function PortalPage() {
     setElegido(null); setQ(''); setDescNuevo('')
   }
 
-  async function guardarGeneral() {
-    const d = await POST({ accion: 'general', descuento: generalInput })
-    if (d.error) { aviso('Error: ' + d.error); return }
-    setGeneral(Number(generalInput)); aviso('Descuento general actualizado')
-  }
-
   async function guardarDescuento(c: ClientePortal, valor: string) {
     const nuevo = valor.trim() === '' ? null : Number(valor)
     if (nuevo === c.descuento) return
@@ -149,14 +120,6 @@ export default function PortalPage() {
     const d = await POST({ accion: 'revocar', cliente_id: c.id })
     if (d.error) { aviso('Error: ' + d.error); return }
     aviso('Acceso quitado'); cargar()
-  }
-
-  async function ocultar(p: ProductoMini, oculto: boolean) {
-    const d = await POST({ accion: 'ocultar', producto_id: p.id, oculto })
-    if (d.error) { aviso('Error: ' + d.error); return }
-    setProductos(prev => prev.map(x => x.id === p.id ? { ...x, portal_oculto: oculto } : x))
-    setQProd('')
-    aviso(oculto ? `"${p.nombre}" ya no se muestra en el portal` : `"${p.nombre}" vuelve a mostrarse`)
   }
 
   return (
@@ -178,14 +141,9 @@ export default function PortalPage() {
             onClick={() => abrirAdmin({ empresa })}>
             Abrir portal ({empresa === 'lavid' ? 'La Vid' : 'Aroma'})
           </button>
-          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 16, paddingTop: 14 }}>
-            <label style={LABEL}>Descuento general</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input style={{ ...INP, width: 90, textAlign: 'right' }} type="number" min={0} max={99} value={generalInput} onChange={e => setGeneralInput(e.target.value)} />
-              <span style={{ color: T.muted, fontSize: 14 }}>%</span>
-              {Number(generalInput) !== general && <button style={BTN} onClick={guardarGeneral}>Guardar</button>}
-            </div>
-            <div style={{ fontSize: 11.5, color: T.dim, marginTop: 6 }}>Se aplica a todos los clientes que no tengan uno propio.</div>
+          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 16, paddingTop: 14, fontSize: 12.5, color: T.muted, lineHeight: 1.5 }}>
+            Descuento general: <b style={{ color: T.text }}>{general}%</b>. Los descuentos por rubro, marca o producto y lo que no se muestra se ajustan en{' '}
+            <a href="/lista-clientes" style={{ color: T.wine, fontWeight: 600 }}>Catálogo → Lista para clientes</a>.
           </div>
         </div>
 
@@ -292,38 +250,6 @@ export default function PortalPage() {
       </div>
 
       <Revision aviso={aviso} />
-
-      {/* Productos ocultos */}
-      <div style={CARD}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🚫 Productos que no se muestran</div>
-        <div style={{ fontSize: 12.5, color: T.muted, marginBottom: 14 }}>
-          El portal muestra todos los vinos, vermouths y bebidas activos con precio. Acá sacás lo que no va (comida, aceites, genéricos…).
-        </div>
-        <div style={{ position: 'relative', marginBottom: 14 }}>
-          <input style={INP} placeholder="Buscar un producto para ocultarlo…" value={qProd} onChange={e => setQProd(e.target.value)} />
-          {sugProd.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: '0 8px 24px rgba(26,18,16,0.12)', maxHeight: 260, overflowY: 'auto', marginTop: 4 }}>
-              {sugProd.map(p => (
-                <div key={p.id} onMouseDown={() => ocultar(p, true)} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: `1px solid ${T.border}`, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{p.nombre}</span><span style={{ color: T.red, fontSize: 12 }}>Ocultar</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {ocultos.length === 0 ? (
-          <div style={{ fontSize: 12.5, color: T.dim }}>No hay productos ocultos.</div>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {ocultos.map(p => (
-              <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 999, padding: '4px 6px 4px 12px', fontSize: 12.5 }}>
-                {p.nombre}
-                <button title="Volver a mostrar" onClick={() => ocultar(p, false)} style={{ background: 'none', border: 'none', color: T.dim, cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
 
       <div style={{ fontSize: 12, color: T.dim, marginTop: 14, lineHeight: 1.5 }}>
         "Compartir" le manda su mismo link con un PIN nuevo (el anterior deja de servir). Si alguien más consiguió el link, usá ✕ y volvé a compartir: se genera un link nuevo.

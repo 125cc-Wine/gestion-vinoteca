@@ -172,3 +172,4 @@ a { color: inherit; }
 .admin-bar { background: #1E1A18; color: #F4E9C9; font-size: 12.5px; text-align: center; padding: 7px 16px; line-height: 1.4; }
 .admin-bar b { color: #fff; }
 .dot-Otro { background: #8A6A3A; }
+.precio s em { font-style: normal; color: var(--ac); font-weight: 600; margin-left: 2px; }

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const aConfirmar = items.filter(i => i.a_confirmar).length
   const notas = [
     (cliente.admin ? 'Cargado por administración desde el portal' : 'Pedido hecho por el cliente desde el portal') +
-      (catalogo.descuento ? ` · Descuento ${catalogo.descuento}%` : ''),
+      ' · Precios con el descuento de la lista para clientes',
     aConfirmar ? `${aConfirmar} producto${aConfirmar > 1 ? 's' : ''} sin stock al pedir (a confirmar)` : '',
     notasCliente ? `Nota del cliente: ${notasCliente}` : '',
   ].filter(Boolean).join('\n')

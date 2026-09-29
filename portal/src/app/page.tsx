@@ -22,7 +22,6 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
           clienteId={cliente.id ?? `preview-${cliente.empresa}`}
           clienteNombre={cliente.nombre}
           preview={cliente.preview}
-          descuento={catalogo.descuento}
           actualizado={hoy}
           items={catalogo.items}
         />
