@@ -11,12 +11,15 @@ import { wooGetEstadoPorId, wooUpdateProductsBatch, type WooBatchItem } from '@/
 // procesa esa cola: se suman las diferencias por producto web, se lee el
 // stock ACTUAL en la web solo de esos productos y se le aplica la diferencia.
 //
-// Diferencia y no valor absoluto: las ventas online no se cargan en el
-// sistema, así que pisar la web con el stock del sistema borraría esas
-// ventas y podría sobrevender. Con la diferencia, una compra de 6 suma 6 en
-// la web y una venta de 2 en el local resta 2, respetando lo vendido online.
+// Ventas, compras, pedidos, etc. mandan la DIFERENCIA: una compra de 6 suma
+// 6 en la web y una venta de 2 en el local resta 2.
+//
+// Cuando el stock se FIJA a mano (edición en Productos, Depósito, Inventario,
+// cargas masivas → rpc fijar_stock, sql/2026-09-woo-stock-exacto.sql) la fila
+// viene con absoluto = true y la web queda con ese mismo número: sumar la
+// diferencia arrastraba desfasajes viejos (web 4 + 6 cargados = 10).
 
-interface FilaCola { id: number; producto_id: string; woo_product_id: number; delta: number }
+interface FilaCola { id: number; producto_id: string; woo_product_id: number; delta: number; stock_sistema: number | null; absoluto: boolean }
 
 export async function procesarColaStockWoo(): Promise<{ procesados: number; errores: number }> {
   if (!process.env.WOOCOMMERCE_CONSUMER_KEY) return { procesados: 0, errores: 0 }
@@ -28,7 +31,7 @@ export async function procesarColaStockWoo(): Promise<{ procesados: number; erro
     .from('woo_stock_cola')
     .update({ estado: 'procesando' })
     .eq('estado', 'pendiente')
-    .select('id, producto_id, woo_product_id, delta')
+    .select('id, producto_id, woo_product_id, delta, stock_sistema, absoluto')
   if (error) { console.error('woo_stock_cola:', error.message); return { procesados: 0, errores: 0 } }
   if (!filas || filas.length === 0) return { procesados: 0, errores: 0 }
 
@@ -82,10 +85,14 @@ export async function procesarColaStockWoo(): Promise<{ procesados: number; erro
       errores++
       continue
     }
-    const delta = filasProd.reduce((s, f) => s + f.delta, 0)
-    const nuevo = Math.max(0, estado.stock + delta)
+    // En orden: un stock fijado pisa lo anterior; las diferencias posteriores se le suman.
+    let valor = estado.stock
+    for (const f of [...filasProd].sort((a, b) => a.id - b.id)) {
+      valor = f.absoluto ? (f.stock_sistema ?? valor) : valor + f.delta
+    }
+    const nuevo = Math.max(0, valor)
     antesDespues.set(wooId, [estado.stock, nuevo])
-    if (delta !== 0) items.push({ id: wooId, stock_quantity: nuevo, manage_stock: true })
+    if (nuevo !== estado.stock) items.push({ id: wooId, stock_quantity: nuevo, manage_stock: true })
   }
 
   if (items.length) {

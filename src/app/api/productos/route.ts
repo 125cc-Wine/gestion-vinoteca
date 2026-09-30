@@ -135,14 +135,20 @@ async function putHandler(req: NextRequest) {
     .eq('id', id)
     .single()
 
-  const { data, error } = await supabase
-    .from('productos')
-    .update(rest)
-    .eq('id', id)
-    .select()
-    .single()
+  // El stock va aparte, por fijar_stock: es un número fijado a mano y la web
+  // tiene que quedar con ese mismo número (no sumarle la diferencia).
+  const { stock: stockFijado, ...restSinStock } = rest
+  const { data, error } = Object.keys(restSinStock).length
+    ? await supabase.from('productos').update(restSinStock).eq('id', id).select().single()
+    : await supabase.from('productos').select().eq('id', id).single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (stockFijado !== undefined) {
+    const { error: errStock } = await supabase.rpc('fijar_stock', { p_id: id, p_stock: Number(stockFijado) })
+    if (errStock) return NextResponse.json({ error: errStock.message }, { status: 500 })
+    data.stock = Number(stockFijado)
+  }
 
   if (anterior) {
     await registrarHistorialPrecio(id, data.empresa, data.nombre, anterior, rest)

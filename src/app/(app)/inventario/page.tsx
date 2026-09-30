@@ -140,12 +140,14 @@ export default function InventarioPage() {
         }])
         if (errMov) throw new Error(`Error en ${prod.nombre}: ${errMov.message}`)
 
-        const { error: errProd } = await supabase
-          .from('productos')
-          .update({ stock: contado })
-          .eq('id', prod.id)
+        // Conteo físico: la web queda con el número contado (fijar_stock), no se le suma la diferencia.
+        const { error: errProd } = await supabase.rpc('fijar_stock', { p_id: prod.id, p_stock: contado })
         if (errProd) throw new Error(`Error actualizando ${prod.nombre}: ${errProd.message}`)
       }
+
+      // Mandar ya a la web lo contado (esta pantalla escribe directo en la base,
+      // sin pasar por una API que procese la cola).
+      fetch('/api/woo/stock-cola', { method: 'POST' }).catch(() => {})
 
       setResumen({ subieron, bajaron, sinCambio, total: productosConConteo.length })
       setConteos({})

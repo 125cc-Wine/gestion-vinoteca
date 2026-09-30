@@ -51,7 +51,8 @@ async function postHandler(req: NextRequest) {
     const results = await Promise.all(lote.map(async p => {
       const stock = stockPorId.get(p.id)
       if (stock === undefined) return null
-      const r1 = await supabase.from('productos').update({ stock }).eq('id', p.id)
+      // fijar_stock: la web queda con este mismo número (no se le suma la diferencia).
+      const r1 = await supabase.rpc('fijar_stock', { p_id: p.id, p_stock: stock })
       if (r1.error) return { nombre: p.nombre, error: r1.error.message }
 
       // Antes esta carga (la más habitual para actualizar stock de golpe) no

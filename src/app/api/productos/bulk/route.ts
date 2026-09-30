@@ -105,7 +105,7 @@ async function postHandler(req: NextRequest) {
       const lote = todos.slice(i, i + BATCH)
       const results = await Promise.all(
         lote.map(async p => {
-          const r = await supabase.from('productos').update({ stock: nuevoStock }).eq('id', p.id)
+          const r = await supabase.rpc('fijar_stock', { p_id: p.id, p_stock: nuevoStock })
           if (!r.error && nuevoStock !== p.stock) {
             await supabase.from('movimientos_stock').insert([{
               empresa: p.empresa, producto_id: p.id, nombre: `${p.nombre} — edición masiva`,
