@@ -173,3 +173,47 @@ a { color: inherit; }
 .admin-bar b { color: #fff; }
 .dot-Otro { background: #8A6A3A; }
 .precio s em { font-style: normal; color: var(--ac); font-weight: 600; margin-left: 2px; }
+
+/* ── Inicio: destacados, bodegas y rubros en tarjetas ─────────────── */
+.seccion { margin-top: 26px; }
+.seccion-t { font-family: var(--serif); font-weight: 600; font-size: 26px; margin: 0 0 12px; display: flex; align-items: baseline; gap: 10px; }
+.seccion-t small { font-family: var(--sans); font-size: 12px; color: var(--dim); font-weight: 500; }
+.dest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.dest { display: flex; align-items: center; gap: 16px; text-align: left; padding: 18px 20px; border-radius: 18px; border: 1px solid var(--line);
+  background: linear-gradient(135deg, var(--card) 0%, var(--ac-soft) 100%); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.dest:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(30,26,24,.1); }
+.dest-logo { width: 72px; height: 72px; object-fit: contain; border-radius: 14px; background: #fff; padding: 6px; border: 1px solid var(--line); flex: none; }
+.dest-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dest-txt b { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1; color: var(--ink); }
+.dest-txt small { font-size: 12.5px; color: var(--mute); }
+.flecha { font-size: 20px; color: var(--ac); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.card { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; min-width: 0; }
+.card:hover { border-color: var(--ac); box-shadow: 0 6px 18px rgba(30,26,24,.07); transform: translateY(-1px); }
+.card-off { opacity: .62; }
+.card-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 10px; background: #fff; border: 1px solid var(--line); padding: 3px; flex: none; }
+.card-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.card-txt b { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-txt small { font-size: 12px; color: var(--mute); }
+.card-dots { display: flex; gap: 4px; margin-top: 1px; }
+.card-dots .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.mono { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .02em; flex: none; }
+.mono-g { width: 72px; height: 72px; border-radius: 16px; font-size: 28px; }
+
+/* ── Vista de una bodega / rubro ──────────────────────────────────── */
+.vista-h { padding: 18px 0 6px; }
+.volver { background: none; border: 0; padding: 6px 0; color: var(--ac); font-weight: 600; font-size: 14px; cursor: pointer; }
+.vista-id { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+.vista-id h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 6vw, 40px); margin: 0; line-height: 1.05; }
+.vista-id small { color: var(--mute); font-size: 13px; }
+.grupo-sub .grupo-h h2 { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.grupo-sub .grupo-h { border-bottom-color: var(--line); }
+.estrella { color: #C9A227; margin-right: 6px; }
+
+@media (max-width: 560px) {
+  .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card { flex-direction: column; align-items: flex-start; padding: 12px; }
+  .card-txt b { white-space: normal; }
+  .dest-txt b { font-size: 22px; }
+}

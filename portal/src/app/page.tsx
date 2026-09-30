@@ -24,6 +24,7 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
           preview={cliente.preview}
           actualizado={hoy}
           items={catalogo.items}
+          marcas={catalogo.marcas}
         />
       </main>
     </div>

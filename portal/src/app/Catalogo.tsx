@@ -16,14 +16,25 @@ const esBebida = (i: { categoria: string }) => i.categoria === 'Otro'
 const grupoDe = (i: { categoria: string; bodega: string; varietal: string }) =>
   esBebida(i) ? (i.varietal || 'Otras bebidas') : (i.bodega || 'Otras bodegas')
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
+
+export interface MarcaDestacada { clave: string; logo: string | null; destacada: boolean }
+type Vista = { tipo: 'bodega' | 'rubro' | 'marca'; clave: string } | null
+
+// Monograma para bodegas sin logo: iniciales sobre un tono tomado del nombre.
+const TONOS = ['#7A1022', '#8A5A2B', '#4E6B3A', '#2F5D7C', '#6B4C7A', '#9A6A12', '#5C4033', '#3E6E6A']
+function Mono({ nombre, grande = false }: { nombre: string; grande?: boolean }) {
+  const ini = nombre.replace(/^(bodegas?|finca|ch[aâ]teau[x]?)\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  let h = 0; for (const c of nombre) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return <span className={`mono${grande ? ' mono-g' : ''}`} style={{ background: TONOS[h % TONOS.length] }}>{ini || '·'}</span>
+}
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-export default function Catalogo({ clienteId, clienteNombre, actualizado, items, preview = false }: {
-  clienteId: string; clienteNombre: string; actualizado: string; items: Item[]; preview?: boolean
+export default function Catalogo({ clienteId, clienteNombre, actualizado, items, marcas = [], preview = false }: {
+  clienteId: string; clienteNombre: string; actualizado: string; items: Item[]; marcas?: MarcaDestacada[]; preview?: boolean
 }) {
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
-  const [bodega, setBodega] = useState('')
+  const [vista, setVista] = useState<Vista>(null)
   const [soloDisp, setSoloDisp] = useState(false)
   const [carrito, setCarrito] = useState<Record<string, number>>({})
   const [abierto, setAbierto] = useState(false)
@@ -49,39 +60,63 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
     return () => { document.body.style.overflow = '' }
   }, [abierto])
 
+  function abrirVista(v: Vista) { setVista(v); setQ(''); setTipo(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
   const porId = useMemo(() => new Map(items.map(i => [i.id, i])), [items])
+  const destacada = useMemo(() => new Map(marcas.filter(m => m.destacada).map((m, k) => [m.clave, k])), [marcas])
+  const logoDe = (nombre: string) => marcas.find(m => m.clave === nombre)?.logo ?? null
   const tipos = useMemo(() => {
     const t = Array.from(new Set(items.map(i => i.categoria).filter(Boolean)))
     const orden = (x: string) => { const k = ORDEN_TIPO.indexOf(x); return k === -1 ? ORDEN_TIPO.length : k }
     return t.sort((a, b) => orden(a) - orden(b) || a.localeCompare(b))
   }, [items])
-  const opciones = useMemo(() => {
-    const vinos = new Set<string>(), bebidas = new Set<string>()
-    for (const i of items) (esBebida(i) ? bebidas : vinos).add(grupoDe(i))
-    const ord = (x: Set<string>) => Array.from(x).sort((a, b) => a.localeCompare(b, 'es'))
-    return { vinos: ord(vinos), bebidas: ord(bebidas) }
-  }, [items])
 
+  const base = useMemo(() => items.filter(i => !soloDisp || i.disponible), [items, soloDisp])
+
+  // Tarjetas del inicio: destacadas, bodegas (vinos) y rubros (bebidas).
+  const tarjetas = useMemo(() => {
+    const cuenta = (lista: Item[]) => ({ n: lista.length, disp: lista.filter(i => i.disponible).length, tipos: Array.from(new Set(lista.map(i => i.categoria))) })
+    const agrupar = (f: (i: Item) => string | null) => {
+      const m = new Map<string, Item[]>()
+      for (const i of base) { const k = f(i); if (!k) continue; if (!m.has(k)) m.set(k, []); m.get(k)!.push(i) }
+      return m
+    }
+    const dest = marcas.filter(m => m.destacada).map(m => ({ nombre: m.clave, logo: m.logo, ...cuenta(base.filter(i => i.bodega === m.clave)) })).filter(d => d.n > 0)
+    const bod = Array.from(agrupar(i => esBebida(i) ? null : grupoDe(i)).entries())
+      .map(([nombre, l]) => ({ nombre, ...cuenta(l) }))
+      .sort((a, b) => (a.nombre === 'Otras bodegas' ? 1 : 0) - (b.nombre === 'Otras bodegas' ? 1 : 0) || a.nombre.localeCompare(b.nombre, 'es'))
+    const rub = Array.from(agrupar(i => esBebida(i) ? grupoDe(i) : null).entries())
+      .map(([nombre, l]) => ({ nombre, ...cuenta(l) }))
+      .sort((a, b) => b.n - a.n)
+    return { dest, bod, rub }
+  }, [base, marcas])
+
+  const buscando = !!q.trim() || !!tipo
   const filtrados = useMemo(() => {
     const t = norm(q.trim())
-    return items.filter(i =>
+    return base.filter(i =>
       (!tipo || i.categoria === tipo) &&
-      (!bodega || grupoDe(i) === bodega) &&
-      (!soloDisp || i.disponible) &&
+      (buscando || !vista || (vista.tipo === 'marca' ? i.bodega === vista.clave : grupoDe(i) === vista.clave && (vista.tipo === 'rubro') === esBebida(i))) &&
       (!t || norm(`${i.nombre} ${i.bodega} ${i.varietal}`).includes(t)))
-  }, [items, q, tipo, bodega, soloDisp])
+  }, [base, q, tipo, vista, buscando])
 
+  // En una bodega se separa por tipo de vino; en un rubro o marca, por marca.
+  // En resultados de búsqueda, por bodega / rubro con las destacadas primero.
   const grupos = useMemo(() => {
+    const clave = (i: Item) => !buscando && vista
+      ? (vista.tipo === 'rubro' ? (i.bodega || 'Otras marcas') : esBebida(i) ? (i.varietal || 'Otras bebidas') : (PLURAL[i.categoria] ?? i.categoria))
+      : grupoDe(i)
     const m = new Map<string, Item[]>()
-    for (const i of filtrados) {
-      const k = grupoDe(i)
-      if (!m.has(k)) m.set(k, [])
-      m.get(k)!.push(i)
+    for (const i of filtrados) { const k = clave(i); if (!m.has(k)) m.set(k, []); m.get(k)!.push(i) }
+    const ordTipo = (k: string) => { const x = ORDEN_TIPO.findIndex(t => (PLURAL[t] ?? t) === k); return x === -1 ? 99 : x }
+    const peso = (k: string, its: Item[]) => {
+      if (!buscando && vista && vista.tipo !== 'rubro') return ordTipo(k)
+      const d = its.some(i => destacada.has(i.bodega)) ? 0 : 1
+      return d * 10 + (esBebida(its[0]) ? 1 : 0)
     }
-    // Primero los vinos (por bodega), después aperitivos y destilados.
-    const bebida = (k: string, its: Item[]) => esBebida(its[0]) ? 1 : 0
-    return Array.from(m.entries()).sort((a, b) => bebida(...a) - bebida(...b) || a[0].localeCompare(b[0], 'es'))
-  }, [filtrados])
+    for (const its of Array.from(m.values())) its.sort((a, b) => (destacada.has(a.bodega) ? 0 : 1) - (destacada.has(b.bodega) ? 0 : 1))
+    return Array.from(m.entries()).sort((a, b) => peso(...a) - peso(...b) || a[0].localeCompare(b[0], 'es'))
+  }, [filtrados, buscando, vista, destacada])
 
   const lineas = Object.entries(carrito).map(([id, n]) => ({ item: porId.get(id)!, n })).filter(l => l.item)
   const botellas = lineas.reduce((s, l) => s + l.n, 0)
@@ -129,11 +164,6 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
       <div className="filtros">
         <div className="buscar">
           <input type="search" placeholder="Buscar vino, bodega, varietal o bebida" value={q} onChange={e => setQ(e.target.value)} aria-label="Buscar" />
-          <select value={bodega} onChange={e => setBodega(e.target.value)} aria-label="Bodega o rubro">
-            <option value="">Todas las bodegas y bebidas</option>
-            <optgroup label="Bodegas">{opciones.vinos.map(b => <option key={b} value={b}>{b}</option>)}</optgroup>
-            {opciones.bebidas.length > 0 && <optgroup label="Aperitivos y destilados">{opciones.bebidas.map(b => <option key={b} value={b}>{b}</option>)}</optgroup>}
-          </select>
         </div>
         <div className="chips">
           <button className="chip" aria-pressed={!tipo} onClick={() => setTipo('')}>Todos</button>
@@ -146,37 +176,112 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
         </div>
       </div>
 
-      {grupos.length === 0 && <div className="vacio">No hay productos con esos filtros.</div>}
-      {grupos.map(([g, its]) => (
-        <section className="grupo" key={g}>
-          <div className="grupo-h"><h2>{g}</h2><small>{its.length} {its.length === 1 ? 'etiqueta' : 'etiquetas'}</small></div>
-          {its.map(i => {
-            const n = carrito[i.id] || 0
-            return (
-              <div key={i.id} className={`fila${i.disponible ? '' : ' agotado'}`}>
+      {!buscando && !vista ? (
+        <>
+          {tarjetas.dest.length > 0 && (
+            <section className="seccion">
+              <h2 className="seccion-t">Destacados</h2>
+              <div className="dest-grid">
+                {tarjetas.dest.map(d => (
+                  <button key={d.nombre} className="dest" onClick={() => abrirVista({ tipo: 'marca', clave: d.nombre })}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {d.logo ? <img src={d.logo} alt={d.nombre} className="dest-logo" /> : <Mono nombre={d.nombre} grande />}
+                    <span className="dest-txt">
+                      <b>{d.nombre}</b>
+                      <small>{d.n} {d.n === 1 ? 'producto' : 'productos'} · {d.disp} disponibles</small>
+                    </span>
+                    <span className="flecha">→</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="seccion">
+            <h2 className="seccion-t">Bodegas <small>{tarjetas.bod.length}</small></h2>
+            <div className="cards">
+              {tarjetas.bod.map(b => (
+                <button key={b.nombre} className={`card${b.disp ? '' : ' card-off'}`} onClick={() => abrirVista({ tipo: 'bodega', clave: b.nombre })}>
+                  {logoDe(b.nombre)
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={logoDe(b.nombre)!} alt="" className="card-logo" />
+                    : <Mono nombre={b.nombre} />}
+                  <span className="card-txt">
+                    <b>{b.nombre}</b>
+                    <small>{b.n} {b.n === 1 ? 'etiqueta' : 'etiquetas'}{b.disp ? ` · ${b.disp} disp.` : ' · a confirmar'}</small>
+                    <span className="card-dots">{b.tipos.sort().map(t => <span key={t} className={`dot dot-${t}`} title={PLURAL[t] ?? t} />)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {tarjetas.rub.length > 0 && (
+            <section className="seccion">
+              <h2 className="seccion-t">Aperitivos y destilados</h2>
+              <div className="cards">
+                {tarjetas.rub.map(r => (
+                  <button key={r.nombre} className={`card${r.disp ? '' : ' card-off'}`} onClick={() => abrirVista({ tipo: 'rubro', clave: r.nombre })}>
+                    <Mono nombre={r.nombre} />
+                    <span className="card-txt">
+                      <b>{r.nombre}</b>
+                      <small>{r.n} {r.n === 1 ? 'producto' : 'productos'}{r.disp ? ` · ${r.disp} disp.` : ' · a confirmar'}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      ) : (
+        <>
+          {!buscando && vista && (
+            <div className="vista-h">
+              <button className="volver" onClick={() => abrirVista(null)}>← Todas las bodegas</button>
+              <div className="vista-id">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {logoDe(vista.clave) ? <img src={logoDe(vista.clave)!} alt={vista.clave} className="dest-logo" /> : <Mono nombre={vista.clave} grande />}
                 <div>
-                  <div className="fila-nom">{i.nombre}</div>
-                  <div className="fila-sub">
-                    {(i.categoria || i.varietal) && (
-                      <span>{i.categoria && <span className={`dot dot-${i.categoria}`} />}{[i.varietal, i.categoria].filter((x, k, a) => x && a.indexOf(x) === k).join(' · ')}</span>
-                    )}
-                    <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.disponible ? 'Disponible' : 'A confirmar'}</span>
-                  </div>
-                </div>
-                <div className="fila-der">
-                  <div className="precio">
-                    {i.descuento > 0 && <s>{pesos(i.precio_lista)} <em>−{i.descuento}%</em></s>}
-                    <b>{pesos(i.precio)}</b>
-                  </div>
-                  {n === 0
-                    ? <button className="agregar" onClick={() => poner(i.id, 1)} aria-label={`Agregar ${i.nombre}`}>Agregar</button>
-                    : <Stepper n={n} onChange={v => poner(i.id, v)} nombre={i.nombre} />}
+                  <h2>{vista.clave}</h2>
+                  <small>{filtrados.length} {filtrados.length === 1 ? 'producto' : 'productos'} · {filtrados.filter(i => i.disponible).length} disponibles</small>
                 </div>
               </div>
-            )
-          })}
-        </section>
-      ))}
+            </div>
+          )}
+          {buscando && vista && <button className="volver" style={{ marginTop: 16 }} onClick={() => { setQ(''); setTipo('') }}>← Volver a {vista.clave}</button>}
+          {grupos.length === 0 && <div className="vacio">No hay productos con esos filtros.</div>}
+          {grupos.map(([g, its]) => (
+            <section className={`grupo${!buscando && vista ? ' grupo-sub' : ''}`} key={g}>
+              <div className="grupo-h"><h2>{g}</h2><small>{its.length} {its.length === 1 ? 'etiqueta' : 'etiquetas'}</small></div>
+              {its.map(i => {
+                const n = carrito[i.id] || 0
+                return (
+                  <div key={i.id} className={`fila${i.disponible ? '' : ' agotado'}`}>
+                    <div>
+                      <div className="fila-nom">{destacada.has(i.bodega) && <span className="estrella" title="Destacado">★</span>}{i.nombre}</div>
+                      <div className="fila-sub">
+                        {(i.categoria || i.varietal) && (
+                          <span>{i.categoria && <span className={`dot dot-${i.categoria}`} />}{[i.varietal, i.categoria === 'Otro' ? '' : i.categoria].filter((x, k, a) => x && a.indexOf(x) === k).join(' · ')}</span>
+                        )}
+                        <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.disponible ? 'Disponible' : 'A confirmar'}</span>
+                      </div>
+                    </div>
+                    <div className="fila-der">
+                      <div className="precio">
+                        {i.descuento > 0 && <s>{pesos(i.precio_lista)} <em>−{i.descuento}%</em></s>}
+                        <b>{pesos(i.precio)}</b>
+                      </div>
+                      {n === 0
+                        ? <button className="agregar" onClick={() => poner(i.id, 1)} aria-label={`Agregar ${i.nombre}`}>Agregar</button>
+                        : <Stepper n={n} onChange={v => poner(i.id, v)} nombre={i.nombre} />}
+                    </div>
+                  </div>
+                )
+              })}
+            </section>
+          ))}
+        </>
+      )}
 
       {botellas > 0 && !abierto && (
         <div className="barra">

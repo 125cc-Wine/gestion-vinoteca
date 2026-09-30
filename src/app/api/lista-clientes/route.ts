@@ -28,9 +28,10 @@ export async function GET() {
     productos.push(...(data || []))
     if (!data || data.length < 1000) break
   }
-  const [{ data: reglas, error: e1 }, { data: cfg }] = await Promise.all([
+  const [{ data: reglas, error: e1 }, { data: cfg }, { data: marcas }] = await Promise.all([
     supabase.from('portal_reglas').select('nivel, clave, descuento, oculto'),
     supabase.from('app_config').select('valor').eq('clave', CLAVE_GENERAL).maybeSingle(),
+    supabase.from('portal_marcas').select('clave, destacada, orden, logo').order('orden'),
   ])
   if (e1) return err(e1.message)
   const general = Number(cfg?.valor)
@@ -38,6 +39,7 @@ export async function GET() {
     general: Number.isFinite(general) ? general : 35,
     reglas: (reglas || []).map(r => ({ ...r, descuento: r.descuento == null ? null : Number(r.descuento) })),
     productos,
+    marcas: marcas || [],
   })
 }
 
@@ -46,6 +48,9 @@ export async function GET() {
 //  'regla'   { nivel: 'grupo'|'marca'|'producto', clave, descuento?, oculto? }
 //            sin descuento y sin ocultar = se borra la regla (vuelve a heredar)
 //  'rubro'   { producto_id, varietal } → mueve una bebida a otro rubro (y su gemelo)
+//  'marca'   { clave, destacada?, orden?, logo? } → marca destacada (sale primero en
+//            el portal) y/o su logo (data URL chica, se achica en el navegador).
+//            Sin destacar y sin logo = se borra.
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
@@ -78,6 +83,23 @@ export async function POST(req: NextRequest) {
     const { data: p } = await supabase.from('productos').select('gemelo_id').eq('id', body.producto_id).single()
     const { error } = await supabase.from('productos').update({ varietal })
       .in('id', [body.producto_id, p?.gemelo_id].filter(Boolean))
+    if (error) return err(error.message)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (body.accion === 'marca') {
+    const clave = typeof body.clave === 'string' ? body.clave.trim() : ''
+    if (!clave) return err('Marca inválida', 400)
+    const { data: actual } = await supabase.from('portal_marcas').select('destacada, orden, logo').eq('clave', clave).maybeSingle()
+    const logo = body.logo === undefined ? (actual?.logo ?? null) : body.logo
+    if (logo !== null && (typeof logo !== 'string' || !/^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(logo) || logo.length > 400_000))
+      return err('Logo inválido o muy pesado', 400)
+    const destacada = body.destacada === undefined ? !!actual?.destacada : !!body.destacada
+    const orden = body.orden === undefined ? (actual?.orden ?? 0) : Number(body.orden) || 0
+    const q = !destacada && !logo
+      ? supabase.from('portal_marcas').delete().eq('clave', clave)
+      : supabase.from('portal_marcas').upsert({ clave, destacada, orden, logo, updated_at: new Date().toISOString() }, { onConflict: 'clave' })
+    const { error } = await q
     if (error) return err(error.message)
     return NextResponse.json({ ok: true })
   }

@@ -8,7 +8,7 @@ export default function Header({ empresa, activo, admin, preview, cliente }: { e
       {admin && (
         <div className="admin-bar">
           {preview
-            ? <>Vista previa de administración · lista <b>{cliente}</b>. Así la ve un cliente; desde acá no se envían pedidos.</>
+            ? <>Vista previa de administración, con el descuento general. Así lo ve un cliente; desde acá no se envían pedidos.</>
             : <>Vista de administración · estás viendo el portal como <b>{cliente}</b>. Lo que pidas acá entra como pedido de este cliente.</>}
         </div>
       )}

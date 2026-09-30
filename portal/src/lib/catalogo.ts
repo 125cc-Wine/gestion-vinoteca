@@ -18,6 +18,7 @@ export interface ItemCatalogo {
 
 export interface Catalogo {
   items: ItemCatalogo[]
+  marcas: { clave: string; logo: string | null; destacada: boolean }[]   // con logo o destacadas, en orden
 }
 
 interface FilaProducto {
@@ -41,7 +42,10 @@ export async function catalogoDe(cliente: ClientePortal): Promise<Catalogo> {
     filas.push(...((data ?? []) as FilaProducto[]))
     if (!data || data.length < PAGINA) break
   }
-  const { data: reglas } = await db.from('portal_reglas').select('nivel, clave, descuento, oculto')
+  const [{ data: reglas }, { data: marcas }] = await Promise.all([
+    db.from('portal_reglas').select('nivel, clave, descuento, oculto'),
+    db.from('portal_marcas').select('clave, logo, destacada').or('destacada.eq.true,logo.not.is.null').order('orden'),
+  ])
   const idx = indexarReglas((reglas ?? []) as ReglaPortal[])
 
   const items: ItemCatalogo[] = []
@@ -55,5 +59,5 @@ export async function catalogoDe(cliente: ClientePortal): Promise<Catalogo> {
     })
   }
   items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-  return { items }
+  return { items, marcas: (marcas ?? []) as Catalogo['marcas'] }
 }

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { grupoPrecio, indexarReglas, precioPortal, type ReglaPortal } from '@/lib/precioPortal'
+import Marcas, { type MarcaPortal } from './Marcas'
 
 // Catálogo > Lista para clientes: la lista de precios que ven los clientes en
 // el portal. Descuento general, descuentos por tipo de vino / rubro de bebida,
@@ -55,6 +56,7 @@ function Ojo({ visible, onClick, titulo }: { visible: boolean; onClick: () => vo
 export default function ListaClientesPage() {
   const [productos, setProductos] = useState<Producto[]>([])
   const [reglas, setReglas] = useState<ReglaPortal[]>([])
+  const [marcasPortal, setMarcasPortal] = useState<MarcaPortal[]>([])
   const [general, setGeneral] = useState(35)
   const [cargando, setCargando] = useState(true)
   const [toast, setToast] = useState('')
@@ -70,7 +72,7 @@ export default function ListaClientesPage() {
   async function cargar() {
     const d = await fetch('/api/lista-clientes').then(r => r.json())
     if (d.error) { aviso('Error: ' + d.error); return }
-    setProductos(d.productos); setReglas(d.reglas); setGeneral(d.general); setCargando(false)
+    setProductos(d.productos); setReglas(d.reglas); setGeneral(d.general); setMarcasPortal(d.marcas || []); setCargando(false)
   }
   useEffect(() => { cargar() }, [])
 
@@ -224,6 +226,10 @@ export default function ListaClientesPage() {
             <datalist id="lc-marcas">{marcas.map(m => <option key={m} value={m} />)}</datalist>
           </div>
         </div>
+      </div>
+
+      <div style={CARD}>
+        <Marcas marcas={marcasPortal} todas={marcas} onCambio={setMarcasPortal} aviso={aviso} />
       </div>
 
       {/* Lista */}
