@@ -514,6 +514,7 @@ export default function ProductosPage() {
   const [histVentasProducto, setHistVentasProducto]   = useState<{ id: string; nombre: string } | null>(null)
   const [histVentasData, setHistVentasData]           = useState<VentaHistItem[]>([])
   const [histVentasLoading, setHistVentasLoading]     = useState(false)
+  const [histVentasVista, setHistVentasVista]         = useState<'clientes' | 'ventas'>('clientes')
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -2933,6 +2934,17 @@ export default function ProductosPage() {
         const totalCant = histVentasData.reduce((a, e) => a + e.cantidad, 0)
         const ventasDistintas = new Set(histVentasData.map(e => e.venta_id)).size
         const clientesDistintos = new Set(histVentasData.map(e => e.cliente_id || e.cliente_nombre || '—')).size
+        // Vista "Por cliente": quién lo compra, cuánto y cuándo fue la última vez.
+        const porCliente = Array.from(histVentasData.reduce((m, e) => {
+          const key = e.cliente_id || e.cliente_nombre || '—'
+          const f = m.get(key) ?? { cliente_id: e.cliente_id, nombre: e.cliente_nombre || 'Consumidor Final', unidades: 0, ventas: new Set<string>(), total: 0, ultima: e.created_at }
+          f.unidades += e.cantidad
+          f.ventas.add(e.venta_id)
+          f.total += e.subtotal
+          if (e.created_at > f.ultima) f.ultima = e.created_at
+          return m.set(key, f)
+        }, new Map<string, { cliente_id?: string | null; nombre: string; unidades: number; ventas: Set<string>; total: number; ultima: string }>()).values())
+          .sort((a, b) => b.unidades - a.unidades || b.ultima.localeCompare(a.ultima))
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
             onMouseDown={onOverlayMouseDown} onClick={e => onOverlayClick(e, () => { setHistVentasModal(false) })}>
@@ -2962,6 +2974,12 @@ export default function ProductosPage() {
                   <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12 }}>
                     a <strong style={{ color: T.wine }}>{clientesDistintos}</strong> cliente{clientesDistintos !== 1 ? 's' : ''} distinto{clientesDistintos !== 1 ? 's' : ''}
                   </div>
+                  <div style={{ marginLeft: 'auto', display: 'flex', border: `1px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
+                    {([['clientes', 'Por cliente'], ['ventas', 'Cada venta']] as const).map(([v, l]) => (
+                      <button key={v} onClick={() => setHistVentasVista(v)}
+                        style={{ background: histVentasVista === v ? T.wine : T.surface, color: histVentasVista === v ? '#fff' : T.muted, border: 'none', padding: '7px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: histVentasVista === v ? 600 : 400 }}>{l}</button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -2971,6 +2989,31 @@ export default function ProductosPage() {
                   <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Cargando historial...</div>
                 ) : histVentasData.length === 0 ? (
                   <div style={{ padding: '56px 0', textAlign: 'center', color: T.dim, fontSize: 14 }}>Este producto todavía no se vendió</div>
+                ) : histVentasVista === 'clientes' ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead style={{ position: 'sticky', top: 0, background: T.bg, zIndex: 1 }}>
+                      <tr>
+                        {['Cliente', 'Unidades', 'Veces', 'Total', 'Última compra'].map(h => (
+                          <th key={h} style={{ padding: '10px 14px', textAlign: (h === 'Cliente' || h === 'Última compra') ? 'left' : 'right', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {porCliente.map((c, i) => (
+                        <tr key={(c.cliente_id || c.nombre) + '-' + i} className="tr" style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td style={{ padding: '11px 14px', color: T.text }}>
+                            {c.cliente_id
+                              ? <a href={`/clientes/${c.cliente_id}`} target="_blank" rel="noreferrer" style={{ color: T.wine, textDecoration: 'underline' }}>{c.nombre}</a>
+                              : c.nombre}
+                          </td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>{c.unidades}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted }}>{c.ventas.size}</td>
+                          <td style={{ padding: '11px 14px', textAlign: 'right', color: T.text }}>${Math.round(c.total).toLocaleString('es-AR')}</td>
+                          <td style={{ padding: '11px 14px', color: T.muted, whiteSpace: 'nowrap' }}>{new Date(c.ultima).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 ) : (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead style={{ position: 'sticky', top: 0, background: T.bg, zIndex: 1 }}>
