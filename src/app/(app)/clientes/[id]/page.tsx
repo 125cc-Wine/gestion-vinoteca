@@ -74,6 +74,7 @@ interface Venta {
   created_at: string
   facturado?: boolean
   nro_cbte_afip?: string | null
+  items?: { producto_id?: string; nombre: string; cantidad: number; subtotal?: number; precio_unitario?: number }[]
 }
 
 interface MovCtaCte {
@@ -148,9 +149,10 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('es-AR')
 const fmtMonto = (n: number) => '$' + n.toLocaleString('es-AR')
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
-type Tab = 'compras' | 'ctacte' | 'consignaciones' | 'crm'
+type Tab = 'compras' | 'productos' | 'ctacte' | 'consignaciones' | 'crm'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'compras',       label: 'Compras' },
+  { key: 'productos',     label: 'Productos comprados' },
   { key: 'ctacte',        label: 'Cuenta corriente' },
   { key: 'consignaciones', label: 'Consignaciones' },
   { key: 'crm',           label: 'Actividad CRM' },
@@ -170,6 +172,7 @@ export default function ClienteFichaPage() {
   // Tab data
   const [ventas, setVentas] = useState<Venta[]>([])
   const [ventasLoading, setVentasLoading] = useState(false)
+  const [filtroProd, setFiltroProd] = useState('')
   const [movimientos, setMovimientos] = useState<MovCtaCte[]>([])
   const [movsLoading, setMovsLoading] = useState(false)
   const [consignaciones, setConsignaciones] = useState<Consignacion[]>([])
@@ -428,6 +431,28 @@ export default function ClienteFichaPage() {
 
   // ── Computed ──────────────────────────────────────────────────────────────
   const totalCompras = ventas.reduce((a, v) => a + v.total, 0)
+
+  // Qué compró el cliente: los ítems de sus ventas (sin las canceladas)
+  // agrupados por producto. Usa las mismas ventas de la pestaña Compras.
+  const productosComprados = (() => {
+    const map = new Map<string, { nombre: string; unidades: number; veces: number; total: number; ultima: string }>()
+    for (const v of ventas) {
+      if (v.estado === 'cancelado') continue
+      for (const it of v.items ?? []) {
+        const key = it.producto_id || it.nombre
+        const fila = map.get(key) ?? { nombre: it.nombre, unidades: 0, veces: 0, total: 0, ultima: v.created_at }
+        fila.unidades += Number(it.cantidad) || 0
+        fila.veces += 1
+        fila.total += Number(it.subtotal ?? (it.precio_unitario ?? 0) * (Number(it.cantidad) || 0)) || 0
+        if (v.created_at > fila.ultima) fila.ultima = v.created_at
+        map.set(key, fila)
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.unidades - a.unidades || b.total - a.total)
+  })()
+  const productosFiltrados = filtroProd.trim()
+    ? productosComprados.filter(p => p.nombre.toLowerCase().includes(filtroProd.trim().toLowerCase()))
+    : productosComprados
 
   // Filas de cuenta corriente — el cargo que se genera al facturar en cta.
   // cte. (ver /api/ventas POST) y el cobro que lo salda después (/api/ventas/
@@ -701,6 +726,57 @@ export default function ClienteFichaPage() {
                         : v.estado ? <Badge color={T.dim} bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">{v.estado}</Badge>
                         : <span style={{ color: T.dim }}>—</span>}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* ── Tab: Productos comprados ───────────────────────────────────────── */}
+        {tab === 'productos' && (
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(26,18,16,0.05)' }}>
+            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Qué compró</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {!ventasLoading && productosComprados.length > 0 && (
+                  <span style={{ fontSize: 12, color: T.muted }}>
+                    {productosComprados.length} producto{productosComprados.length !== 1 ? 's' : ''}
+                    {' · '}<strong style={{ color: T.text }}>{productosComprados.reduce((a, p) => a + p.unidades, 0).toLocaleString('es-AR')}</strong> unidades
+                  </span>
+                )}
+                <input
+                  value={filtroProd}
+                  onChange={e => setFiltroProd(e.target.value)}
+                  placeholder="Buscar producto…"
+                  style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, fontFamily: 'inherit', color: T.text, background: T.bg, width: 180 }}
+                />
+              </div>
+            </div>
+            {ventasLoading ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>Cargando...</div>
+            ) : productosFiltrados.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: T.dim, fontSize: 13 }}>
+                {productosComprados.length === 0 ? 'Este cliente todavía no compró productos' : 'Ningún producto coincide con la búsqueda'}
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: T.bg }}>
+                    {['Producto', 'Unidades', 'Veces', 'Total', 'Última compra'].map(h => (
+                      <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: h === 'Producto' || h === 'Última compra' ? 'left' : 'right', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {productosFiltrados.map((p, i) => (
+                    <tr key={`${p.nombre}-${i}`} className="tr-hover" style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.1s' }}>
+                      <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>{p.nombre}</td>
+                      <td style={{ padding: '11px 16px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: T.text }}>{p.unidades.toLocaleString('es-AR')}</td>
+                      <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 12, color: T.muted }}>{p.veces}</td>
+                      <td style={{ padding: '11px 16px', textAlign: 'right', fontSize: 13, color: T.text }}>{fmtMonto(Math.round(p.total))}</td>
+                      <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{fmtDate(p.ultima)}</td>
                     </tr>
                   ))}
                 </tbody>
