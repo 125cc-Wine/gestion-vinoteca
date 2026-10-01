@@ -191,7 +191,6 @@ a { color: inherit; }
 .card { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line);
   background: var(--card); cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; min-width: 0; }
 .card:hover { border-color: var(--ac); box-shadow: 0 6px 18px rgba(30,26,24,.07); transform: translateY(-1px); }
-.card-off { opacity: .62; }
 .card-logo { width: 44px; height: 44px; object-fit: contain; border-radius: 10px; background: #fff; border: 1px solid var(--line); padding: 3px; flex: none; }
 .card-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .card-txt b { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -217,3 +216,16 @@ a { color: inherit; }
   .card-txt b { white-space: normal; }
   .dest-txt b { font-size: 22px; }
 }
+
+/* ── Estado de stock en las tarjetas ──────────────────────────────── */
+.card-pie { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.estado-ok, .estado-pedido { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.estado-ok { background: #E8F3EA; color: #2F6B3C; }
+.estado-ok::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #3B9A52; }
+.estado-pedido { background: #FBF3E2; color: #8A5E0E; }
+.resumen-ok { color: #2F6B3C; font-weight: 600; }
+.pedido { margin-top: 14px; border: 1px dashed #DCCFB9; border-radius: 16px; background: #FCF9F3; }
+.pedido-h { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; background: none; border: 0; cursor: pointer; text-align: left; font-size: 13.5px; color: var(--mute); }
+.pedido-h b { color: #8A5E0E; }
+.pedido-flecha { flex: none; font-weight: 600; color: var(--ac); font-size: 13px; }
+.pedido .cards { padding: 0 12px 14px; }

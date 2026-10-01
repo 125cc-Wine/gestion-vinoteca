@@ -197,40 +197,11 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
             </section>
           )}
 
-          <section className="seccion">
-            <h2 className="seccion-t">Bodegas <small>{tarjetas.bod.length}</small></h2>
-            <div className="cards">
-              {tarjetas.bod.map(b => (
-                <button key={b.nombre} className={`card${b.disp ? '' : ' card-off'}`} onClick={() => abrirVista({ tipo: 'bodega', clave: b.nombre })}>
-                  {logoDe(b.nombre)
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={logoDe(b.nombre)!} alt="" className="card-logo" />
-                    : <Mono nombre={b.nombre} />}
-                  <span className="card-txt">
-                    <b>{b.nombre}</b>
-                    <small>{b.n} {b.n === 1 ? 'etiqueta' : 'etiquetas'}{b.disp ? ` · ${b.disp} disp.` : ' · a confirmar'}</small>
-                    <span className="card-dots">{b.tipos.sort().map(t => <span key={t} className={`dot dot-${t}`} title={PLURAL[t] ?? t} />)}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
+          <SeccionTarjetas titulo="Bodegas" unidad={['etiqueta', 'etiquetas']} lista={tarjetas.bod} logoDe={logoDe}
+            abrir={n => abrirVista({ tipo: 'bodega', clave: n })} />
           {tarjetas.rub.length > 0 && (
-            <section className="seccion">
-              <h2 className="seccion-t">Aperitivos y destilados</h2>
-              <div className="cards">
-                {tarjetas.rub.map(r => (
-                  <button key={r.nombre} className={`card${r.disp ? '' : ' card-off'}`} onClick={() => abrirVista({ tipo: 'rubro', clave: r.nombre })}>
-                    <Mono nombre={r.nombre} />
-                    <span className="card-txt">
-                      <b>{r.nombre}</b>
-                      <small>{r.n} {r.n === 1 ? 'producto' : 'productos'}{r.disp ? ` · ${r.disp} disp.` : ' · a confirmar'}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            <SeccionTarjetas titulo="Aperitivos y destilados" unidad={['producto', 'productos']} lista={tarjetas.rub} logoDe={() => null}
+              abrir={n => abrirVista({ tipo: 'rubro', clave: n })} />
           )}
         </>
       ) : (
@@ -365,5 +336,55 @@ function Stepper({ n, onChange, nombre }: { n: number; onChange: (v: number) => 
         onChange={e => onChange(parseInt(e.target.value.replace(/\D/g, '')) || 0)} onFocus={e => e.target.select()} />
       <button onClick={() => onChange(n + 1)} aria-label={`Sumar uno de ${nombre}`}>+</button>
     </div>
+  )
+}
+
+interface Tarjeta { nombre: string; n: number; disp: number; tipos: string[] }
+
+// Grilla de bodegas o rubros: primero las que tienen stock (con la cantidad
+// en verde) y abajo, plegadas, las que hoy son "a pedido". Los logos siempre a
+// todo color: el estado lo marca la etiqueta, no un gris sobre la tarjeta.
+function SeccionTarjetas({ titulo, unidad, lista, logoDe, abrir }: {
+  titulo: string; unidad: [string, string]; lista: Tarjeta[]
+  logoDe: (n: string) => string | null; abrir: (n: string) => void
+}) {
+  const [verPedido, setVerPedido] = useState(false)
+  const conStock = lista.filter(t => t.disp > 0)
+  const aPedido = lista.filter(t => t.disp === 0)
+  const tarjeta = (t: Tarjeta) => {
+    const logo = logoDe(t.nombre)
+    return (
+      <button key={t.nombre} className="card" onClick={() => abrir(t.nombre)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {logo ? <img src={logo} alt="" className="card-logo" /> : <Mono nombre={t.nombre} />}
+        <span className="card-txt">
+          <b>{t.nombre}</b>
+          <small>{t.n} {t.n === 1 ? unidad[0] : unidad[1]}</small>
+          <span className="card-pie">
+            {t.disp > 0
+              ? <span className="estado-ok">{t.disp} en stock</span>
+              : <span className="estado-pedido">A pedido</span>}
+            {t.tipos.length > 0 && <span className="card-dots">{[...t.tipos].sort().map(x => <span key={x} className={`dot dot-${x}`} title={PLURAL[x] ?? x} />)}</span>}
+          </span>
+        </span>
+      </button>
+    )
+  }
+  return (
+    <section className="seccion">
+      <h2 className="seccion-t">{titulo}
+        <small><span className="resumen-ok">{conStock.length} con stock</span>{aPedido.length > 0 && <> · {aPedido.length} a pedido</>}</small>
+      </h2>
+      {conStock.length > 0 && <div className="cards">{conStock.map(tarjeta)}</div>}
+      {aPedido.length > 0 && (
+        <div className="pedido">
+          <button className="pedido-h" onClick={() => setVerPedido(v => !v)} aria-expanded={verPedido}>
+            <span><b>A pedido</b> · {aPedido.length} {titulo === 'Bodegas' ? 'bodegas' : 'rubros'} sin stock inmediato: te confirmamos si se consigue</span>
+            <span className="pedido-flecha">{verPedido ? 'Ocultar ▴' : 'Ver ▾'}</span>
+          </button>
+          {verPedido && <div className="cards">{aPedido.map(tarjeta)}</div>}
+        </div>
+      )}
+    </section>
   )
 }
