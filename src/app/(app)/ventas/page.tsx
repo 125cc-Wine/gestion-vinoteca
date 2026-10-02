@@ -420,7 +420,8 @@ export default function VentasPage() {
   // ── Facturación AFIP
   const [factModal, setFactModal] = useState(false)
   const [factVenta, setFactVenta] = useState<Venta | null>(null)
-  const [factTipo, setFactTipo] = useState<1 | 6>(6)
+  // 0 = sin elegir (al llegar desde un pedido no se preselecciona A ni B)
+  const [factTipo, setFactTipo] = useState<0 | 1 | 6>(6)
   const [factDocTipo, setFactDocTipo] = useState(99)
   const [factDocNro, setFactDocNro] = useState('')
   const [factLoading, setFactLoading] = useState(false)
@@ -871,24 +872,27 @@ export default function VentasPage() {
     if (!v) return
     facturarPendiente.current = null
     window.history.replaceState(null, '', '/ventas')
-    if (!v.facturado) abrirFacturar(v)
+    if (!v.facturado) abrirFacturar(v, true)
   }, [ventas, clientes]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function abrirFacturar(v: Venta) {
+  // sinElegir: no preselecciona Factura A/B (se usa al venir desde Pedidos,
+  // para que el tipo lo decida siempre una persona).
+  function abrirFacturar(v: Venta, sinElegir = false) {
     const c = clientes.find(cl => cl.id === v.cliente_id)
     const esRI = c?.tipo === 'responsable_inscripto'
     const tieneCuit = !!(c?.cuit && c.cuit.replace(/-/g, '').length === 11)
     const usarFactA = esRI || tieneCuit
     setFactVenta(v)
-    setFactTipo(usarFactA ? 1 : 6)
-    setFactDocTipo(usarFactA ? 80 : 99)
-    setFactDocNro(tieneCuit ? c!.cuit!.replace(/-/g, '') : '')
+    setFactTipo(sinElegir ? 0 : usarFactA ? 1 : 6)
+    setFactDocTipo(sinElegir ? 99 : usarFactA ? 80 : 99)
+    setFactDocNro(!sinElegir && tieneCuit ? c!.cuit!.replace(/-/g, '') : '')
     setFactError('')
     setFactModal(true)
   }
 
   async function emitirFactura() {
     if (!factVenta) return
+    if (factTipo === 0) { setFactError('Elegí el tipo de factura (A o B)'); return }
     if (factTipo === 1 && factDocNro.length !== 11) { setFactError('El CUIT debe tener 11 dígitos'); return }
     if (factTipo === 6 && factDocTipo !== 99 && !factDocNro) { setFactError('Ingresá el número de documento'); return }
     // La emisión con CAE es irreversible (no se puede "deshacer" una factura,
@@ -2265,14 +2269,22 @@ export default function VentasPage() {
 
             {/* Tipo de comprobante */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>TIPO DE COMPROBANTE</div>
+              <div style={{ fontSize: 11, color: factTipo === 0 ? C.red : C.muted, marginBottom: 6 }}>TIPO DE COMPROBANTE{factTipo === 0 ? ' — elegí A o B' : ''}</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {([
                   { val: 1 as const, label: 'Factura A', sub: 'Resp. Inscripto — IVA discriminado' },
                   { val: 6 as const, label: 'Factura B', sub: 'Consumidor Final / Monotributo' },
                 ]).map(opt => (
                   <button key={opt.val}
-                    onClick={() => { setFactTipo(opt.val); if (opt.val === 6) { setFactDocTipo(99); setFactDocNro('') } else setFactDocTipo(80) }}
+                    onClick={() => {
+                      setFactTipo(opt.val)
+                      if (opt.val === 6) { setFactDocTipo(99); setFactDocNro('') }
+                      else {
+                        setFactDocTipo(80)
+                        const cuit = clientes.find(cl => cl.id === factVenta.cliente_id)?.cuit?.replace(/\D/g, '') ?? ''
+                        if (cuit.length === 11 && !factDocNro) setFactDocNro(cuit)
+                      }
+                    }}
                     style={{ flex: 1, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left', border: `1px solid ${factTipo === opt.val ? C.accent : C.border}`, background: factTipo === opt.val ? `${C.accent}22` : 'transparent' }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: factTipo === opt.val ? C.text : C.muted }}>{opt.label}</div>
                     <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>{opt.sub}</div>
@@ -2334,12 +2346,12 @@ export default function VentasPage() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button style={btn('default')} onClick={() => { setPreviewFactura({ venta: factVenta!, tipo: factTipo }); setFactModal(false) }}>
+              <button style={btn('default', { opacity: factTipo === 0 ? 0.5 : 1 })} disabled={factTipo === 0} onClick={() => { if (factTipo === 0) return; setPreviewFactura({ venta: factVenta!, tipo: factTipo }); setFactModal(false) }}>
                 Previsualizar
               </button>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button style={btn('default')} onClick={() => setFactModal(false)} disabled={factLoading}>Cancelar</button>
-                <button style={btn('accent', { opacity: factLoading ? 0.6 : 1 })} onClick={emitirFactura} disabled={factLoading}>
+                <button style={btn('accent', { opacity: factLoading || factTipo === 0 ? 0.6 : 1 })} onClick={emitirFactura} disabled={factLoading || factTipo === 0}>
                   {factLoading ? 'Emitiendo...' : 'Emitir factura'}
                 </button>
               </div>
