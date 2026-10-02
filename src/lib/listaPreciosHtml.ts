@@ -31,7 +31,7 @@ const EMPRESAS = {
   },
   lavid: {
     nombre: 'La Vid Consultora', accent: '#23508C', accentSoft: '#EAF0F7', logo: '/logos/lavid.png',
-    telefono: '(0223) 685-0870', domicilio: 'Roca 2787, Mar del Plata', web: '',
+    telefono: '+54 9 11 3787-6877', domicilio: 'Roca 2787, Mar del Plata', web: '',
   },
 } as const
 
