@@ -37,7 +37,7 @@ export default function DatosForm({ inicial, primeraVez, nombre }: { inicial: Da
         <label>Teléfono o WhatsApp
           <input value={d.telefono} onChange={e => set('telefono', e.target.value)} inputMode="tel" autoComplete="tel" required />
         </label>
-        <label>Email <span className="opc">(opcional)</span>
+        <label><span>Email <span className="opc">(opcional)</span></span>
           <input type="email" value={d.email} onChange={e => set('email', e.target.value)} autoComplete="email" />
         </label>
         <label className="ancho">Dirección de entrega
@@ -68,7 +68,7 @@ export default function DatosForm({ inicial, primeraVez, nombre }: { inicial: Da
         </div>
       </div>
 
-      <label className="ancho">Indicaciones para la entrega <span className="opc">(opcional)</span>
+      <label className="ancho"><span>Indicaciones para la entrega <span className="opc">(opcional)</span></span>
         <textarea rows={2} value={d.notas} onChange={e => set('notas', e.target.value)} placeholder="Ej: entrar por el depósito, preguntar por Juan, no los lunes feriados…" />
       </label>
 
