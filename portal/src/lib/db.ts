@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js'
 // navegador (no es NEXT_PUBLIC_): toda consulta pasa por este servidor, que
 // filtra por el cliente logueado y devuelve solo datos de venta.
 const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_KEY
+// SUPABASE_SECRET_KEY: clave secreta (con RLS activado la anon ya no lee nada).
+const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY
 if (!url || !key) throw new Error('Faltan SUPABASE_URL / SUPABASE_KEY')
 
 export const db = createClient(url, key, {

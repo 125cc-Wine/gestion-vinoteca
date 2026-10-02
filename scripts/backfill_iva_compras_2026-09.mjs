@@ -8,7 +8,7 @@
 import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(
   'https://yjtiopfmokodgwxstijd.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqdGlvcGZtb2tvZGd3eHN0aWpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTI3MDAsImV4cCI6MjA5NjY2ODcwMH0.7e_ACK4YubBiA4VuPLFistMvnWdIItjMG6QIhh40HUw'
+  process.env.SUPABASE_SECRET_KEY
 )
 
 const AFIP_FMT = /^[A-Za-z]?\d{1,5}-\d{5,8}$/

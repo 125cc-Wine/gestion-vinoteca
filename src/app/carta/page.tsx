@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, useMemo, Suspense } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseBrowser'
 
 // ─── Palette ────────────────────────────────────────────────────────────────
 const C = {

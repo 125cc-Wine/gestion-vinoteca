@@ -109,6 +109,12 @@ const NAV_GROUPS = [
       { href: '/inventario', label: 'Inventario', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
     ]
   },
+  {
+    label: 'Configuración',
+    items: [
+      { href: '/usuarios', label: 'Usuarios', icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75' },
+    ]
+  },
 ]
 
 const BOTTOM_NAV = [
@@ -348,6 +354,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
             Cambiar empresa
+          </button>
+          <button className="cambiar"
+            onClick={async () => { await fetch('/api/sesion', { method: 'DELETE' }).catch(() => null); window.location.href = '/login' }}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              background: 'transparent', border: 'none',
+              borderRadius: 7, padding: '7px 10px', cursor: 'pointer',
+              color: S.muted, fontSize: 12, transition: 'background 0.12s', textAlign: 'left',
+            }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>
+            </svg>
+            Cerrar sesión
           </button>
         </div>
       </aside>

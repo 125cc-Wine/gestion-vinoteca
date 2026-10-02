@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseBrowser'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import VarietalSelect from '@/components/VarietalSelect'
 

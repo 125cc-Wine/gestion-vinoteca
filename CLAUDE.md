@@ -76,3 +76,10 @@ Key routing rules:
 - Pipeline completo de revisión (CEO + diseño + ingeniería) → invoke /autoplan
 - Ideas nuevas / brainstorming de producto → invoke /office-hours
 - Ship/deploy → invoke /ship o /land-and-deploy
+
+## Seguridad (login + base cerrada, 2/10/2026)
+
+- **Login propio de gestión:** `src/middleware.ts` exige sesión en todas las pantallas y `/api`. La cookie `gv_s` va firmada con `GESTION_SESSION_SECRET`. Los usuarios están en `usuarios_gestion` (scrypt) y se dan de alta por invitación desde `/usuarios`.
+- **El navegador no tiene ninguna clave de la base.** `@/lib/supabase` es solo para el servidor (`server-only`) y usa `SUPABASE_SECRET_KEY`. Las pantallas cliente usan `@/lib/supabaseBrowser`, que pasa por `/api/db` (con sesión y lista cerrada de métodos y RPCs). Si se agrega un RPC nuevo del lado cliente, sumarlo a `RPCS` en `/api/db`.
+- **RLS activado en todas las tablas, sin políticas:** la clave anon (que estuvo pública) no lee ni escribe nada. Solo funciona la clave secreta, que vive en el servidor (gestión y portal).
+- **Scripts de `scripts/`:** leen `SUPABASE_SECRET_KEY` del entorno; nunca escribir claves en el código, porque el repo es público.
