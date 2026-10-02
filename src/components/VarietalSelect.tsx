@@ -16,7 +16,7 @@ export function cargarVarietales(): Promise<Varietal[]> {
 }
 
 export function useVarietales() {
-  const [lista, setLista] = useState<Varietal[]>([])
+  const [lista, setLista] = useState<Varietal[] | null>(null)   // null = cargando
   useEffect(() => {
     cargarVarietales().then(setLista)
     oyentes.add(setLista)
@@ -51,8 +51,15 @@ export default function VarietalSelect({ categoria, value, onChange, style, plac
   const [texto, setTexto] = useState('')
   const cat = categoria || ''
   const etiqueta = placeholder || (cat === 'Otro' ? 'Rubro' : 'Varietal')
-  const opciones = lista.filter(v => v.categoria === cat).map(v => v.nombre)
-  const fuera = !!value && !opciones.includes(value)
+  const opciones = (lista ?? []).filter(v => v.categoria === cat).map(v => v.nombre)
+  // En los vinos, las uvas de las otras categorías de vino también valen (un
+  // rosado de Syrah): van aparte y, si se eligen, se suman a esta categoría.
+  const otros = cat && cat !== 'Otro'
+    ? Array.from(new Set((lista ?? []).filter(v => v.categoria !== 'Otro' && v.categoria !== 'Espumante' && v.categoria !== cat).map(v => v.nombre)))
+        .filter(n => !opciones.includes(n)).sort((a, b) => a.localeCompare(b, 'es'))
+    : []
+  const fuera = !!value && lista !== null && !opciones.includes(value) && !otros.includes(value)
+  const cargando = lista === null && !!value
 
   async function confirmar() {
     const n = texto.trim()
@@ -74,10 +81,21 @@ export default function VarietalSelect({ categoria, value, onChange, style, plac
   return (
     <select style={style} value={value || ''} disabled={!cat}
       title={fuera ? `"${value}" no está en la lista: elegí uno de la lista` : undefined}
-      onChange={e => { if (e.target.value === NUEVO) setCreando(true); else onChange(e.target.value) }}>
+      onChange={e => {
+        const v = e.target.value
+        if (v === NUEVO) { setCreando(true); return }
+        if (otros.includes(v)) agregar(cat, v)   // queda en la lista de esta categoría
+        onChange(v)
+      }}>
       <option value="">{cat ? `— ${etiqueta} —` : 'Elegí categoría'}</option>
+      {cargando && <option value={value!}>{value}</option>}
       {fuera && <option value={value!}>⚠ {value} (fuera de lista)</option>}
-      {opciones.map(o => <option key={o} value={o}>{o}</option>)}
+      {otros.length > 0
+        ? <>
+            <optgroup label={cat}>{opciones.map(o => <option key={o} value={o}>{o}</option>)}</optgroup>
+            <optgroup label="Otros varietales">{otros.map(o => <option key={o} value={o}>{o}</option>)}</optgroup>
+          </>
+        : opciones.map(o => <option key={o} value={o}>{o}</option>)}
       {cat && <option value={NUEVO}>+ Agregar {etiqueta.toLowerCase()}…</option>}
     </select>
   )
