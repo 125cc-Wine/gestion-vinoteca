@@ -1,4 +1,5 @@
 'use client'
+import AccesoPortal from './AccesoPortal'
 import { useEffect, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
@@ -192,6 +193,7 @@ export default function VendedoresPage() {
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <AccesoPortal vendedorId={v.id} nombre={v.nombre} />
                       <button
                         onClick={() => abrirEditar(v)}
                         style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.muted, borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 500 }}

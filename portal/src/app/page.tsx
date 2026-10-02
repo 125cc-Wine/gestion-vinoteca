@@ -23,7 +23,7 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
 
   return (
     <div data-empresa={cliente.empresa}>
-      <Header empresa={cliente.empresa} activo="catalogo" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} />
+      <Header empresa={cliente.empresa} activo="catalogo" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} vendedor={cliente.vendedor?.nombre} />
       <main className="wrap">
         <Catalogo
           clienteId={cliente.id ?? `preview-${cliente.empresa}`}

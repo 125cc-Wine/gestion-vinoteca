@@ -13,7 +13,7 @@ export default async function MiCuenta() {
   const cliente = await clienteActual()
   if (!cliente || !cliente.id) return <Ingreso />
 
-  const header = <Header empresa={cliente.empresa} activo="cuenta" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} />
+  const header = <Header empresa={cliente.empresa} activo="cuenta" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} vendedor={cliente.vendedor?.nombre} />
 
   // Con solo el CUIT no se muestra la cuenta: hace falta el link personal + PIN.
   if (!cliente.verificado) return (

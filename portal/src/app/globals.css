@@ -312,3 +312,18 @@ a { color: inherit; }
 /* Cartel de versión de prueba */
 .beta-bar { background: #FFF4DC; color: #7A5A12; font-size: 12.5px; text-align: center; padding: 6px 16px; border-bottom: 1px solid #F0DFB4; line-height: 1.4; }
 .beta-bar b { font-weight: 700; }
+
+/* Vendedor de calle */
+.vend-bar { background: #E8F0FA; color: #24456E; font-size: 13px; text-align: center; padding: 7px 16px; border-bottom: 1px solid #CFDDEF; }
+.vend-bar a { color: #24456E; font-weight: 700; }
+.cli { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.cli-info { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cli-acc { display: flex; gap: 6px; flex-wrap: wrap; }
+.cli-acc .btn { height: 38px; padding: 0 12px; font-size: 13px; text-decoration: none; color: var(--ink); }
+.cli-acc .btn-ac { color: #fff; }
+.tag-nuevo { margin-left: 8px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #24456E; background: #E8F0FA; border-radius: 6px; padding: 2px 6px; }
+.venc-tag { font-size: 12px; font-weight: 700; color: var(--ac); }
+.link-btn { align-self: flex-start; background: none; border: 0; padding: 4px 0; color: var(--ac); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.cheque { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+.datos select { min-height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 0 12px; font-size: 16px; font-family: inherit; color: var(--ink); }
+.volver { color: var(--mute); text-decoration: none; font-size: 14px; }

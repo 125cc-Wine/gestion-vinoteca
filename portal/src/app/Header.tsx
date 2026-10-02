@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { EMPRESAS, type EmpresaId } from '@/lib/empresas'
 
-export default function Header({ empresa, activo, admin, preview, cliente }: { empresa: EmpresaId; activo: 'catalogo' | 'pedidos' | 'datos' | 'cuenta'; admin?: boolean; preview?: boolean; cliente?: string }) {
+export default function Header({ empresa, activo, admin, preview, cliente, vendedor }: { empresa: EmpresaId; activo: 'catalogo' | 'pedidos' | 'datos' | 'cuenta'; admin?: boolean; preview?: boolean; cliente?: string; vendedor?: string | null }) {
   const emp = EMPRESAS[empresa]
   return (
     <header className="top">
@@ -12,7 +12,12 @@ export default function Header({ empresa, activo, admin, preview, cliente }: { e
             : <>Vista de administración · estás viendo el portal como <b>{cliente}</b>. Lo que pidas acá entra como pedido de este cliente.</>}
         </div>
       )}
-      {!admin && (
+      {vendedor && (
+        <div className="vend-bar">
+          🚶 {vendedor} · atendiendo a <b>{cliente}</b> · <Link href="/vendedor">Cambiar de cliente</Link>
+        </div>
+      )}
+      {!admin && !vendedor && (
         <div className="beta-bar">
           <b>Versión de prueba</b> · Precios y disponibilidad se confirman al tomar tu pedido. Si ves algo raro, avisanos.
         </div>

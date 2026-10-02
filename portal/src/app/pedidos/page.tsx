@@ -22,7 +22,7 @@ export default async function MisPedidos() {
 
   return (
     <div data-empresa={cliente.empresa}>
-      <Header empresa={cliente.empresa} activo="pedidos" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} />
+      <Header empresa={cliente.empresa} activo="pedidos" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} vendedor={cliente.vendedor?.nombre} />
       <main className="wrap">
         <section className="hero">
           <div className="kicker">{cliente.nombre}</div>

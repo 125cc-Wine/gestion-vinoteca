@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const fecha = typeof body?.fecha_entrega === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.fecha_entrega) ? body.fecha_entrega : null
   const aConfirmar = items.filter(i => i.a_confirmar).length
   const notas = [
-    (cliente.admin ? 'Cargado por administración desde el portal' : 'Pedido hecho por el cliente desde el portal') +
+    (cliente.vendedor ? `Tomado por el vendedor ${cliente.vendedor.nombre} desde el portal` : cliente.admin ? 'Cargado por administración desde el portal' : 'Pedido hecho por el cliente desde el portal') +
       ' · Precios con el descuento de la lista para clientes',
     aConfirmar ? `${aConfirmar} producto${aConfirmar > 1 ? 's' : ''} sin stock al pedir (a confirmar)` : '',
     notasCliente ? `Nota del cliente: ${notasCliente}` : '',
@@ -43,8 +43,9 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await db.from('pedidos').insert([{
     empresa: cliente.empresa, numero, cliente_id: cliente.id, cliente_nombre: cliente.nombre,
-    items, subtotal: total, descuento: 0, total, estado: 'pendiente', origen: 'portal',
+    items, subtotal: total, descuento: 0, total, estado: 'pendiente', origen: cliente.vendedor ? 'vendedor' : 'portal',
     notas, fecha_entrega: fecha,
+    ...(cliente.vendedor ? { vendedor_id: cliente.vendedor.id, vendedor_nombre: cliente.vendedor.nombre } : {}),
   }]).select('numero, total').single()
   if (error) return NextResponse.json({ error: 'No se pudo enviar el pedido. Probá de nuevo en un momento.' }, { status: 500 })
   return NextResponse.json({ ok: true, numero: data.numero, total: data.total })

@@ -25,7 +25,7 @@ export default async function Datos() {
 
   return (
     <div data-empresa={cliente.empresa}>
-      <Header empresa={cliente.empresa} activo="datos" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} />
+      <Header empresa={cliente.empresa} activo="datos" admin={cliente.admin} preview={cliente.preview} cliente={cliente.nombre} vendedor={cliente.vendedor?.nombre} />
       <main className="wrap">
         <DatosForm inicial={inicial} primeraVez={!cliente.datosConfirmados} nombre={cliente.nombre} />
       </main>

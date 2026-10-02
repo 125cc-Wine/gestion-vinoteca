@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import WebSyncAvisos from '@/components/WebSyncAvisos'
 import PedidosWebAviso from '@/components/PedidosWebAviso'
+import CobrosVendedorAviso from '@/components/CobrosVendedorAviso'
 import CotizadorEnvio from '@/components/CotizadorEnvio'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ const NAV_GROUPS = [
       { href: '/movimientos', label: 'Movimientos', icon: 'M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4' },
       { href: '/caja',        label: 'Caja',        icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
       { href: '/aging',       label: 'Cobranzas',   icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 8v1m0 0c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { href: '/cobros-vendedor', label: 'Cobros vendedores', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
       { href: '/reportes',    label: 'Reportes',    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
       { href: '/financiero',  label: 'Financiero',  icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
     ]
@@ -428,6 +430,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <CotizadorEnvio color={T.wine} />
 
             {/* Pedidos de la tienda web sin levantar (+ popup al entrar uno nuevo) */}
+            <CobrosVendedorAviso color={T.wine} />
             <PedidosWebAviso color={T.wine} />
 
             {/* CTA Nueva venta */}

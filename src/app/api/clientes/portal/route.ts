@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { createHash, randomBytes, randomInt, scryptSync } from 'crypto'
+import { createHash, randomBytes } from 'crypto'
+import { PORTAL_URL, hashPin, nuevoPin, nuevoToken } from '@/lib/portalPin'
 import { supabase } from '@/lib/supabase'
 import { grupoPrecio } from '@/lib/precioPortal'
 
@@ -11,15 +12,7 @@ import { grupoPrecio } from '@/lib/precioPortal'
 // - Acceso por link (token largo al azar) + PIN; el PIN se guarda solo como
 //   hash "scrypt$<sal>$<hash>" (portal/src/lib/pin.ts lo verifica).
 
-const PORTAL_URL = (process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal-clientes-vinoteca.vercel.app').replace(/\/$/, '')
 const CLAVE_GENERAL = 'portal_descuento_general'
-
-function hashPin(pin: string) {
-  const sal = randomBytes(16)
-  return `scrypt$${sal.toString('base64')}$${scryptSync(pin, sal, 32).toString('base64')}`
-}
-const nuevoPin = () => String(randomInt(0, 1_000_000)).padStart(6, '0')
-const nuevoToken = () => randomBytes(24).toString('base64url')
 const err = (m: string, status = 500) => NextResponse.json({ error: m }, { status })
 
 // null = "usa el general"; si no, un % entre 0 y 99.

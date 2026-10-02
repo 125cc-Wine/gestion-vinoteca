@@ -92,7 +92,7 @@ interface Pedido {
   id: string; numero: string; cliente_nombre: string; vendedor_nombre?: string
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
   // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
-  origen?: 'local' | 'web' | 'portal'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
+  origen?: 'local' | 'web' | 'portal' | 'vendedor'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
   total?: number; venta_id?: string | null; levantado_at?: string | null
 }
 
@@ -339,6 +339,9 @@ export default function PedidosPage() {
                     {p.origen === 'web' && (
                       <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: T.wine, background: 'rgba(128,0,0,0.08)', border: '1px solid rgba(128,0,0,0.2)', borderRadius: 5, padding: '1px 5px' }}>🛒 WEB</span>
                     )}
+                    {p.origen === 'vendedor' && (
+                      <span title="Lo tomó el vendedor de calle desde el portal" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#24456E', background: 'rgba(36,69,110,0.08)', border: '1px solid rgba(36,69,110,0.2)', borderRadius: 5, padding: '1px 5px' }}>🚶 {(p.vendedor_nombre || 'VENDEDOR').toUpperCase()}</span>
+                    )}
                     {p.origen === 'portal' && (
                       <span title="Lo cargó el cliente desde el portal de pedidos" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#2B5EA0', background: 'rgba(43,94,160,0.08)', border: '1px solid rgba(43,94,160,0.2)', borderRadius: 5, padding: '1px 5px' }}>👤 CLIENTE</span>
                     )}
@@ -558,7 +561,7 @@ export default function PedidosPage() {
               {modalDetalle.vendedor_nombre && <div><span style={{ color: T.dim }}>Vendedor:</span> <span style={{ color: T.text }}>{modalDetalle.vendedor_nombre}</span></div>}
               {modalDetalle.fecha_entrega && <div><span style={{ color: T.dim }}>Entrega:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
               {modalDetalle.notas && <div><span style={{ color: T.dim }}>Notas:</span> <span style={{ color: T.text, whiteSpace: 'pre-line' }}>{modalDetalle.notas}</span></div>}
-              {modalDetalle.origen === 'portal' && (
+              {(modalDetalle.origen === 'portal' || modalDetalle.origen === 'vendedor') && (
                 <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', margin: '4px 0' }}>
                   <DatosEntrega datos={modalDetalle.entrega_portal} color={{ muted: T.dim, text: T.text }} />
                 </div>

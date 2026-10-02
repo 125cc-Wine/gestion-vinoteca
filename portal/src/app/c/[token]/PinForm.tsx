@@ -4,7 +4,8 @@ import { Recordar } from '../../LoginForm'
 
 const LARGO = 6
 
-export default function PinForm({ token }: { token: string }) {
+// vendedor: entra el vendedor de calle (otra API y, al entrar, va a su lista de clientes).
+export default function PinForm({ token, vendedor = false }: { token: string; vendedor?: boolean }) {
   const [digitos, setDigitos] = useState<string[]>(Array(LARGO).fill(''))
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -14,9 +15,9 @@ export default function PinForm({ token }: { token: string }) {
   async function enviar(pin: string) {
     setEnviando(true); setError('')
     try {
-      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, pin, recordar }) })
+      const r = await fetch(vendedor ? '/api/login-vendedor' : '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, pin, recordar }) })
       const d = await r.json().catch(() => ({}))
-      if (r.ok) { window.location.href = '/'; return }
+      if (r.ok) { window.location.href = vendedor ? '/vendedor' : '/'; return }
       setError(d.error || 'No se pudo entrar. Probá de nuevo.')
       cambiar(Array(LARGO).fill(''))
     } catch {
