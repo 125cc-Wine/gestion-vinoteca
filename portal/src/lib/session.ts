@@ -4,7 +4,10 @@ import { cookies } from 'next/headers'
 import { db } from './db'
 
 export const COOKIE = 'portal_s'
-const DURACION_MS = 30 * 24 * 60 * 60 * 1000
+// "Recordarme" (por defecto): un año en este dispositivo. Sin recordar: la
+// cookie se borra al cerrar el navegador y la sesión no pasa de 12 horas.
+const DURACION_MS = 365 * 24 * 60 * 60 * 1000
+const DURACION_CORTA_MS = 12 * 60 * 60 * 1000
 
 function secreto() {
   const s = process.env.PORTAL_SESSION_SECRET
@@ -22,9 +25,10 @@ function firmar(datos: string) {
   return createHmac('sha256', secreto()).update(datos).digest('base64url')
 }
 
-export function crearSesion(clienteId: string, token: string) {
-  const datos = Buffer.from(JSON.stringify({ c: clienteId, t: huellaToken(token), e: Date.now() + DURACION_MS })).toString('base64url')
-  return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_MS / 1000 }
+export function crearSesion(clienteId: string, token: string, recordar = true) {
+  const dur = recordar ? DURACION_MS : DURACION_CORTA_MS
+  const datos = Buffer.from(JSON.stringify({ c: clienteId, t: huellaToken(token), e: Date.now() + dur })).toString('base64url')
+  return { valor: `${datos}.${firmar(datos)}`, maxAge: recordar ? dur / 1000 : undefined }
 }
 
 // Sesión de administración: se entra desde gestión con un pase de un solo

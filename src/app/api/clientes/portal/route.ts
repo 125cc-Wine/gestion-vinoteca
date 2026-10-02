@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (accion === 'generar' || accion === 'compartir') {
-    const { data: actual } = await supabase.from('clientes').select('portal_token, portal_activo').eq('id', cliente_id).single()
+    const { data: actual } = await supabase.from('clientes').select('portal_token, portal_activo, cuit, email, telefono').eq('id', cliente_id).single()
     const token = accion === 'compartir' && actual?.portal_activo && actual.portal_token ? actual.portal_token : nuevoToken()
     const pin = nuevoPin()
     const cambios: Record<string, unknown> = {
@@ -157,7 +157,11 @@ export async function POST(req: NextRequest) {
     }
     const { error } = await supabase.from('clientes').update(cambios).eq('id', cliente_id)
     if (error) return err(error.message)
-    return NextResponse.json({ ok: true, url: `${PORTAL_URL}/c/${token}`, pin })
+    // Con qué puede entrar sin el link (portal → CUIT, email o teléfono + PIN).
+    const cuit = (actual?.cuit || '').replace(/\D/g, '')
+    const usuario = cuit.length === 11 ? `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`
+      : actual?.email?.trim() || ((actual?.telefono || '').replace(/\D/g, '').length >= 8 ? actual!.telefono!.trim() : null)
+    return NextResponse.json({ ok: true, url: `${PORTAL_URL}/c/${token}`, pin, portal: PORTAL_URL, usuario })
   }
 
   return err('accion inválida', 400)

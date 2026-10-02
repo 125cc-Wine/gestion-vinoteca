@@ -229,3 +229,15 @@ a { color: inherit; }
 .pedido-h b { color: #8A5E0E; }
 .pedido-flecha { flex: none; font-weight: 600; color: var(--ac); font-size: 13px; }
 .pedido .cards { padding: 0 12px 14px; }
+
+/* Ingreso sin link */
+.login { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.login label { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--mute); }
+.login input:not([type=checkbox]) { height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 0 14px; font-size: 16px; color: var(--ink, inherit); outline: none; font-family: inherit; }
+.login input:not([type=checkbox]):focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--ac-soft); background: var(--card); }
+.recordar { display: flex !important; flex-direction: row !important; align-items: center; justify-content: center; gap: 8px; font-size: 13px !important; font-weight: 500 !important; color: var(--mute); margin: 2px 0 14px; cursor: pointer; }
+.login .recordar { justify-content: flex-start; }
+.recordar input { width: 18px; height: 18px; accent-color: var(--ac); }
+.acceso-logos { display: flex; justify-content: center; align-items: center; gap: 14px; }
+.acceso-logos img { height: 44px !important; }
+.ayuda { margin-top: 16px; font-size: 12.5px; color: var(--dim); line-height: 1.5; }

@@ -2,6 +2,7 @@ import { clienteActual } from '@/lib/session'
 import { catalogoDe } from '@/lib/catalogo'
 import Header from './Header'
 import SinSesion from './SinSesion'
+import Ingreso from './Ingreso'
 import Catalogo from './Catalogo'
 
 export const dynamic = 'force-dynamic'
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export default async function Inicio({ searchParams }: { searchParams: { pase?: string } }) {
   const cliente = await clienteActual()
   if (!cliente && searchParams.pase === 'vencido') return <SinSesion titulo="Acceso vencido" texto="Ese acceso de administración ya se usó o venció (duran 5 minutos). Generá otro desde Gestión > Clientes > Ver portal como este cliente." />
-  if (!cliente) return <SinSesion titulo="Entrá con tu link" texto="Para ver tu lista de precios, abrí el link personal que te mandamos por WhatsApp e ingresá tu PIN." />
+  if (!cliente) return <Ingreso />
 
   const catalogo = await catalogoDe(cliente)
   const hoy = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })

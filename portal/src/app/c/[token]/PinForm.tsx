@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState } from 'react'
+import { Recordar } from '../../LoginForm'
 
 const LARGO = 6
 
@@ -7,12 +8,13 @@ export default function PinForm({ token }: { token: string }) {
   const [digitos, setDigitos] = useState<string[]>(Array(LARGO).fill(''))
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [recordar, setRecordar] = useState(true)
   const refs = useRef<(HTMLInputElement | null)[]>([])
 
   async function enviar(pin: string) {
     setEnviando(true); setError('')
     try {
-      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, pin }) })
+      const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, pin, recordar }) })
       const d = await r.json().catch(() => ({}))
       if (r.ok) { window.location.href = '/'; return }
       setError(d.error || 'No se pudo entrar. Probá de nuevo.')
@@ -53,6 +55,7 @@ export default function PinForm({ token }: { token: string }) {
             onKeyDown={e => { if (e.key === 'Backspace' && !actual.current[i] && i > 0) refs.current[i - 1]?.focus() }} />
         ))}
       </div>
+      <Recordar valor={recordar} onChange={setRecordar} />
       <button className="btn btn-ac btn-lg" disabled={enviando || !digitos.every(Boolean)}>{enviando ? 'Entrando…' : 'Entrar'}</button>
       {error && <div className="error">{error}</div>}
     </form>

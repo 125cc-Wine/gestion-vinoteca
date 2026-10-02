@@ -1,4 +1,5 @@
 'use client'
+import { textoAcceso } from '@/lib/portalMensaje'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
@@ -120,7 +121,7 @@ export default function ClientesPage() {
   // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
   interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
   const [portal, setPortal] = useState<PortalEstado | null>(null)
-  const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string } | null>(null)
+  const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string; portal?: string; usuario?: string | null } | null>(null)
   const [portalOcupado, setPortalOcupado] = useState(false)
 
   // Modal cobro manual
@@ -309,10 +310,10 @@ export default function ClientesPage() {
       const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, descuento }) })
       const d = await r.json()
       if (d.error) { showToast('Error: ' + d.error); return }
-      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
+      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin, portal: d.portal, usuario: d.usuario })
       if (accion === 'revocar') setPortalNuevo(null)
       await cargarPortal(editId)
-      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin })
+      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin, portal: d.portal, usuario: d.usuario })
       showToast(accion === 'descuento' ? 'Descuento guardado' : accion === 'generar' ? 'Acceso generado' : 'Acceso desactivado')
     } finally { setPortalOcupado(false) }
   }
@@ -329,16 +330,8 @@ export default function ClientesPage() {
     else window.location.href = d.url
   }
 
-  function mensajePortal(nuevo: { url: string; pin: string }) {
-    const nombre = form.razon_social || `${form.nombre} ${form.apellido || ''}`.trim()
-    const empNombre = form.empresa === 'lavid' ? 'La Vid Consultora' : 'Aroma de Vid'
-    return `Hola ${nombre}! Te compartimos tu acceso a la lista de precios de ${empNombre}, con disponibilidad actualizada y donde podés hacer tus pedidos:
-
-${nuevo.url}
-
-Tu PIN: ${nuevo.pin}
-
-Guardá este mensaje, el link es personal.`
+  function mensajePortal(nuevo: { url: string; pin: string; portal?: string; usuario?: string | null }) {
+    return textoAcceso(form.razon_social || `${form.nombre} ${form.apellido || ''}`.trim(), form.empresa || 'aroma', nuevo)
   }
 
   async function guardar() {

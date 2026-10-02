@@ -1,4 +1,5 @@
 'use client'
+import { textoAcceso } from '@/lib/portalMensaje'
 import { useEffect, useMemo, useState } from 'react'
 import Revision from './Revision'
 
@@ -30,10 +31,6 @@ const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
 function linkWhatsApp(telefono: string | null | undefined, texto: string) {
   const tel = (telefono || '').replace(/\D/g, '').replace(/^(54)?9?0?/, '')
   return tel.length >= 8 ? `https://wa.me/549${tel}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`
-}
-function mensaje(nombre: string, empresa: string, url: string, pin: string) {
-  const emp = empresa === 'lavid' ? 'La Vid Consultora' : 'Aroma de Vid'
-  return `Hola ${nombre}! Te compartimos tu acceso a la lista de precios de ${emp}, con disponibilidad actualizada y donde podés hacer tus pedidos:\n\n${url}\n\nTu PIN: ${pin}\n\nGuardá este mensaje, el link es personal.`
 }
 
 export default function PortalPage() {
@@ -91,7 +88,7 @@ export default function PortalPage() {
     try {
       const d = await POST({ accion: 'compartir', cliente_id: c.id, ...extra })
       if (d.error) { w?.close(); aviso('Error: ' + d.error); return }
-      const texto = mensaje(c.nombre, c.empresa, d.url, d.pin)
+      const texto = textoAcceso(c.nombre, c.empresa, d)
       setUltimo({ nombre: c.nombre, url: d.url, pin: d.pin, texto })
       const wa = linkWhatsApp(c.telefono, texto)
       if (w) w.location.href = wa; else window.open(wa, '_blank')
