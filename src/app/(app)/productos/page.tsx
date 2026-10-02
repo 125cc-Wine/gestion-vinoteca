@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { imprimirListaPrecios } from '@/lib/listaPreciosHtml'
+import VarietalSelect from '@/components/VarietalSelect'
 
 const WEB_URL = 'https://www.aromadevid.com.ar'
 
@@ -1539,7 +1540,12 @@ export default function ProductosPage() {
                   <div style={{ fontSize: 11, color: T.muted, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     {a.key === 'aumento_precio' ? 'Aumentar precio (%)' : a.key === 'precio_fijo' ? 'Precio de venta fijo ($)' : a.key === 'costo_fijo' ? 'Precio de costo fijo ($)' : a.key === 'costo_pct_venta' ? 'Costo = X% del precio de venta' : `Asignar ${a.label}`}
                   </div>
-                  {a.kind === 'select' ? (
+                  {a.key === 'varietal' ? (() => {
+                    const cats = Array.from(new Set(productos.filter(p => seleccionados.has(p.id!)).map(p => p.categoria)))
+                    return cats.length === 1
+                      ? <VarietalSelect style={INP_SM} categoria={cats[0]} value={bulkVal} onChange={setBulkVal} />
+                      : <div style={{ fontSize: 12, color: T.muted, maxWidth: 220 }}>Seleccioná productos de una sola categoría (hay {cats.length}) para asignarles varietal.</div>
+                  })() : a.kind === 'select' ? (
                     <>
                       <input autoFocus list="bulk-bodegas-list" style={INP_SM} placeholder="Elegir o escribir bodega…"
                         value={bulkVal} onChange={e => setBulkVal(e.target.value)}
@@ -1628,10 +1634,8 @@ export default function ProductosPage() {
                         value={editForm.bodega} onChange={e => setEditForm(f => ({ ...f, bodega: e.target.value }))}
                         placeholder="Bodega"
                         onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
-                      <input style={INP_SM}
-                        value={editForm.varietal} onChange={e => setEditForm(f => ({ ...f, varietal: e.target.value }))}
-                        placeholder="Varietal"
-                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }} />
+                      <VarietalSelect style={INP_SM} categoria={editForm.categoria}
+                        value={editForm.varietal} onChange={v => setEditForm(f => ({ ...f, varietal: v }))} />
                       <input type="number" step="any" style={INP_SM}
                         value={editForm.precio_venta || ''} onChange={e => { const pv = parseFloat(e.target.value) || 0; setEditForm(f => ({ ...f, precio_venta: pv, precio_costo: f.precio_costo || Math.round(pv * 0.5) })) }}
                         placeholder="$ venta"
@@ -1853,7 +1857,7 @@ export default function ProductosPage() {
                 <input autoFocus style={INP} value={fullForm.nombre} onChange={e => setFullForm(f => ({ ...f, nombre: e.target.value }))} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                {([['bodega', 'Bodega', 'edit-bod'], ['varietal', 'Varietal', ''], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
+                {([['bodega', 'Bodega', 'edit-bod'], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
                   <div key={k}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
                     <input style={INP} list={dl || undefined}
@@ -1880,6 +1884,11 @@ export default function ProductosPage() {
                 <select style={INP} value={fullForm.categoria} onChange={e => setFullForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
                   {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{fullForm.categoria === 'Otro' ? 'Rubro' : 'Varietal'}</label>
+                <VarietalSelect style={INP} categoria={fullForm.categoria}
+                  value={fullForm.varietal} onChange={v => setFullForm(f => ({ ...f, varietal: v }))} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (
@@ -1971,7 +1980,7 @@ export default function ProductosPage() {
                 <input autoFocus style={INP} value={newForm.nombre} onChange={e => setNewForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Gran Reserva Malbec" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                {([['bodega', 'Bodega', 'new-bod'], ['varietal', 'Varietal', ''], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
+                {([['bodega', 'Bodega', 'new-bod'], ['region', 'Región', ''], ['sku', 'SKU', '']] as [string, string, string][]).map(([k, l, dl]) => (
                   <div key={k}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{l}</label>
                     <input style={INP} list={dl || undefined}
@@ -1986,6 +1995,11 @@ export default function ProductosPage() {
                 <select style={INP} value={newForm.categoria} onChange={e => setNewForm(f => ({ ...f, categoria: e.target.value as Producto['categoria'] }))}>
                   {CATS.map(c => <option key={c}>{c}</option>)}
                 </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 5 }}>{newForm.categoria === 'Otro' ? 'Rubro' : 'Varietal'}</label>
+                <VarietalSelect style={INP} categoria={newForm.categoria}
+                  value={newForm.varietal} onChange={v => setNewForm(f => ({ ...f, varietal: v }))} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {([['precio_venta', 'Precio venta ($)'], ['precio_costo', 'Precio costo ($)'], ['precio_mayorista', 'Precio mayorista ($)'], ['stock', 'Stock'], ['stock_minimo', 'Stock mínimo']] as [string, string][]).map(([k, l]) => (

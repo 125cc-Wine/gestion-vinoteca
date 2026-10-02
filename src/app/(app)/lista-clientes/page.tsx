@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { grupoPrecio, indexarReglas, precioPortal, type ReglaPortal } from '@/lib/precioPortal'
 import Marcas, { type MarcaPortal } from './Marcas'
+import VarietalSelect from '@/components/VarietalSelect'
 
 // Catálogo > Lista para clientes: la lista de precios que ven los clientes en
 // el portal. Descuento general, descuentos por tipo de vino / rubro de bebida,
@@ -131,7 +132,6 @@ export default function ListaClientesPage() {
     const ordVino = (g: string) => { const i = ORDEN_VINO.indexOf(g); return i === -1 ? 99 : i }
     return Array.from(m.values()).sort((a, b) => Number(a.bebida) - Number(b.bebida) || (a.bebida ? b.n - a.n : ordVino(a.nombre) - ordVino(b.nombre)))
   }, [productos])
-  const rubros = grupos.filter(g => g.bebida).map(g => g.nombre)
   const marcas = useMemo(() => Array.from(new Set(productos.map(p => p.bodega).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, 'es')), [productos])
   const reglasMarca = reglas.filter(r => r.nivel === 'marca').sort((a, b) => a.clave.localeCompare(b.clave, 'es'))
 
@@ -244,7 +244,6 @@ export default function ListaClientesPage() {
           <label style={{ fontSize: 12.5, color: T.muted, display: 'flex', gap: 5, alignItems: 'center' }}><input type="checkbox" checked={verOcultos} onChange={e => setVerOcultos(e.target.checked)} /> Ver ocultos</label>
           <span style={{ fontSize: 12, color: T.dim }}>{filas.length} productos</span>
         </div>
-        <datalist id="lc-rubros">{rubros.map(r => <option key={r} value={r} />)}</datalist>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -264,9 +263,8 @@ export default function ListaClientesPage() {
                     </td>
                     <td style={TD}>
                       {p.categoria === 'Otro'
-                        ? <input key={p.varietal || ''} list="lc-rubros" defaultValue={p.varietal || ''} placeholder="rubro"
-                            onBlur={e => cambiarRubro(p, e.target.value)} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                            style={{ ...INP, width: 150, fontSize: 12.5 }} title="Rubro: cambiarlo mueve la bebida de grupo" />
+                        ? <span title="Rubro: cambiarlo mueve la bebida de grupo"><VarietalSelect categoria="Otro" value={p.varietal} onChange={v => cambiarRubro(p, v)}
+                            style={{ ...INP, width: 160, fontSize: 12.5 }} /></span>
                         : <span style={{ fontSize: 12.5, color: T.muted }}>{p.categoria || '—'}</span>}
                     </td>
                     <td style={{ ...TD, color: (p.stock ?? 0) > 0 ? T.green : T.dim, fontSize: 12.5 }}>{p.stock ?? 0}</td>

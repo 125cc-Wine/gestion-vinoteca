@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import VarietalSelect from '@/components/VarietalSelect'
 
 // Productos con datos dudosos que dejó la auditoría de catálogo para que los
 // decida una persona (ver /api/productos/revision). Cada uno: qué pasa, la
@@ -33,7 +34,6 @@ interface Pendiente {
 export default function Revision({ aviso }: { aviso: (m: string) => void }) {
   const [pend, setPend] = useState<Pendiente[] | null>(null)
   const [bodegas, setBodegas] = useState<string[]>([])
-  const [varietales, setVarietales] = useState<string[]>([])
   const [edit, setEdit] = useState<Record<string, { categoria: string; bodega: string; varietal: string }>>({})
   const [verTodos, setVerTodos] = useState(false)
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -41,7 +41,7 @@ export default function Revision({ aviso }: { aviso: (m: string) => void }) {
   useEffect(() => {
     fetch('/api/productos/revision').then(r => r.json()).then(d => {
       if (d.error) { aviso('Error: ' + d.error); return }
-      setPend(d.pendientes); setBodegas(d.bodegas); setVarietales(d.varietales)
+      setPend(d.pendientes); setBodegas(d.bodegas)
       // Arranca con lo que tiene hoy, completando con la sugerencia donde falta.
       setEdit(Object.fromEntries((d.pendientes as Pendiente[]).map(p => [p.id, {
         categoria: p.propuesta.categoria || p.categoria || '',
@@ -80,7 +80,6 @@ export default function Revision({ aviso }: { aviso: (m: string) => void }) {
         Datos que no se pudieron completar solos. El portal agrupa los vinos por bodega y el resto por rubro (el campo varietal), así que conviene dejarlos bien. Los cambios se aplican en Aroma y La Vid.
       </div>
       <datalist id="rev-bodegas">{bodegas.map(b => <option key={b} value={b} />)}</datalist>
-      <datalist id="rev-varietales">{varietales.map(v => <option key={v} value={v} />)}</datalist>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {visibles.map(p => {
@@ -108,7 +107,7 @@ export default function Revision({ aviso }: { aviso: (m: string) => void }) {
                   <input style={INP} list="rev-bodegas" value={e.bodega} onChange={ev => set(p.id, 'bodega', ev.target.value)} placeholder={p.bodega || ''} />
                 </label>
                 <label style={{ fontSize: 11, color: T.dim }}>{esOtro ? 'Rubro (Whiskies, Gin, Aperitivos…)' : 'Varietal'}
-                  <input style={INP} list="rev-varietales" value={e.varietal} onChange={ev => set(p.id, 'varietal', ev.target.value)} placeholder={p.varietal || ''} />
+                  <VarietalSelect style={INP} categoria={e.categoria || p.categoria} value={e.varietal || p.varietal} onChange={v => set(p.id, 'varietal', v)} />
                 </label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button style={{ ...BTN, background: T.wine, color: '#FFF', border: 'none' }} disabled={ocupado === p.id} onClick={() => resolver(p, 'guardar')}>Guardar</button>

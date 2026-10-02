@@ -5,6 +5,7 @@ import BarcodeNotFoundModal from '@/components/BarcodeNotFoundModal'
 import { useBarcodeInput } from '@/hooks/useBarcodeInput'
 import { supabase } from '@/lib/supabase'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import VarietalSelect from '@/components/VarietalSelect'
 
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -567,7 +568,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
   const [guardando, setGuardando] = useState(false)
   const [ultimo, setUltimo] = useState<string | null>(null)
   // Creación rápida de producto
-  const [nuevoVino, setNuevoVino] = useState<{ nombre: string; bodega: string; varietal: string } | null>(null)
+  const [nuevoVino, setNuevoVino] = useState<{ nombre: string; bodega: string; categoria: string; varietal: string } | null>(null)
   const [creando, setCreando] = useState(false)
   const [errorCrear, setErrorCrear] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -600,6 +601,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
           empresa,
           nombre: nuevoVino.nombre.trim(),
           bodega: nuevoVino.bodega.trim() || null,
+          categoria: nuevoVino.categoria,
           varietal: nuevoVino.varietal.trim() || null,
           activo: true,
           stock: 0,
@@ -678,11 +680,17 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
                         placeholder="Ej: Zuccardi" />
                     </div>
                     <div>
-                      <label style={LBL_A}>Varietal</label>
-                      <input style={INP_A} value={nuevoVino.varietal}
-                        onChange={e => setNuevoVino(v => v && ({ ...v, varietal: e.target.value }))}
-                        placeholder="Ej: Malbec" />
+                      <label style={LBL_A}>Categoría</label>
+                      <select style={INP_A} value={nuevoVino.categoria}
+                        onChange={e => setNuevoVino(v => v && ({ ...v, categoria: e.target.value, varietal: '' }))}>
+                        {['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro'].map(c => <option key={c}>{c}</option>)}
+                      </select>
                     </div>
+                  </div>
+                  <div>
+                    <label style={LBL_A}>{nuevoVino.categoria === 'Otro' ? 'Rubro' : 'Varietal'}</label>
+                    <VarietalSelect style={INP_A} categoria={nuevoVino.categoria} value={nuevoVino.varietal}
+                      onChange={val => setNuevoVino(v => v && ({ ...v, varietal: val }))} />
                   </div>
                   {errorCrear && (
                     <div style={{ background: T.redBg, border: `1px solid rgba(192,48,48,0.22)`, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: T.red, fontWeight: 600 }}>
@@ -718,7 +726,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
                       </button>
                     ))}
                     {/* Opción crear nuevo — siempre visible cuando hay texto */}
-                    <button onClick={() => setNuevoVino({ nombre: search, bodega: '', varietal: '' })}
+                    <button onClick={() => setNuevoVino({ nombre: search, bodega: '', categoria: 'Tinto', varietal: '' })}
                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', border: 'none', background: T.bg, cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ width: 20, height: 20, borderRadius: 6, background: T.wine, color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0 }}>+</span>
                       <div>
