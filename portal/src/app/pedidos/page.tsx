@@ -1,7 +1,7 @@
 import { clienteActual } from '@/lib/session'
 import { db } from '@/lib/db'
 import Header from '../Header'
-import SinSesion from '../SinSesion'
+import Ingreso from '../Ingreso'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ interface Linea { nombre: string; cantidad: number; precio_unitario: number }
 
 export default async function MisPedidos() {
   const cliente = await clienteActual()
-  if (!cliente) return <SinSesion titulo="Entrá con tu link" texto="Para ver tus pedidos, abrí el link personal que te mandamos por WhatsApp e ingresá tu PIN." />
+  if (!cliente) return <Ingreso />
 
   const { data } = cliente.id
     ? await db.from('pedidos').select('numero, created_at, estado, total, items, fecha_entrega')

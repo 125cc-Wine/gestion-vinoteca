@@ -1,5 +1,6 @@
-import SinSesion from '../SinSesion'
+import Ingreso from '../Ingreso'
 
+// Después de cerrar sesión se muestra directamente el ingreso.
 export default function Salir() {
-  return <SinSesion titulo="Sesión cerrada" texto="Para volver a entrar, abrí el link personal que te mandamos por WhatsApp." />
+  return <Ingreso />
 }
