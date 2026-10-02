@@ -7,6 +7,7 @@ import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import WebSyncAvisos from '@/components/WebSyncAvisos'
 import PedidosWebAviso from '@/components/PedidosWebAviso'
 import CobrosVendedorAviso from '@/components/CobrosVendedorAviso'
+import PedidosPortalAviso from '@/components/PedidosPortalAviso'
 import CotizadorEnvio from '@/components/CotizadorEnvio'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -461,6 +462,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
+        <PedidosPortalAviso color={T.wine} />
 
         {/* Content */}
         <main style={{ flex: 1, minWidth: 0, background: T.bg, maxWidth: '100vw', overflowX: 'hidden' }}>

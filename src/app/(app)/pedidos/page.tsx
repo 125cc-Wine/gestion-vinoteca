@@ -1,7 +1,7 @@
 'use client'
 import ProcesarPedido, { type VentaDePedido } from './ProcesarPedido'
 import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
 function normalize(s: string) {
@@ -141,7 +141,20 @@ export default function PedidosPage() {
     setClientes(await cRes.json().catch(() => []))
     setVendedores(await vRes.json().catch(() => []))
     setLoading(false)
+    window.dispatchEvent(new Event('pedidos-portal-cambio'))
   }
+
+  // Desde el aviso de pedidos del portal se llega con ?ver=<id>: se abre ese pedido.
+  const verPendiente = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ver') : null)
+  useEffect(() => {
+    const id = verPendiente.current
+    if (!id || !Array.isArray(pedidos) || !pedidos.length) return
+    const p = pedidos.find(x => x.id === id)
+    if (!p) return
+    verPendiente.current = null
+    window.history.replaceState(null, '', '/pedidos')
+    setModalDetalle(p)
+  }, [pedidos])
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
