@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic'
 // cliente antes del PIN (el link puede haberse reenviado).
 export default async function Acceso({ params }: { params: { token: string } }) {
   const actual = await clienteActual()
-  if (actual && actual.portal_token === params.token) redirect('/')
+  // Si ya entró con este link y PIN, pasa directo. Si entró solo con el CUIT,
+  // se le pide el PIN para habilitar "Mi cuenta".
+  if (actual && actual.portal_token === params.token && actual.verificado) redirect('/')
 
   const { data } = await db.from('clientes').select('empresa, portal_activo')
     .eq('portal_token', params.token).maybeSingle()

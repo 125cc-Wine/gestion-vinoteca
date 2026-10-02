@@ -29,8 +29,14 @@ function Mono({ nombre, grande = false }: { nombre: string; grande?: boolean }) 
 }
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-export default function Catalogo({ clienteId, clienteNombre, actualizado, items, marcas = [], preview = false }: {
+export interface Recomendaciones {
+  bodegas: { clave: string; botellas: number }[]
+  productos: { id: string; botellas: number; veces: number; ultima: string }[]
+}
+
+export default function Catalogo({ clienteId, clienteNombre, actualizado, items, marcas = [], preview = false, recomendaciones }: {
   clienteId: string; clienteNombre: string; actualizado: string; items: Item[]; marcas?: MarcaDestacada[]; preview?: boolean
+  recomendaciones?: Recomendaciones
 }) {
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
@@ -91,6 +97,14 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
     return { dest, bod, rub }
   }, [base, marcas])
 
+  // "Para vos": bodegas más pedidas y productos para volver a pedir.
+  const paraVos = useMemo(() => ({
+    bodegas: (recomendaciones?.bodegas ?? []).map(b => ({ ...b, disp: base.filter(i => i.bodega === b.clave && i.disponible).length }))
+      .filter(b => base.some(i => i.bodega === b.clave)),
+    productos: (recomendaciones?.productos ?? []).map(p => ({ ...p, item: porId.get(p.id)! }))
+      .filter(p => p.item && (!soloDisp || p.item.disponible)).slice(0, 8),
+  }), [recomendaciones, base, porId, soloDisp])
+
   const buscando = !!q.trim() || !!tipo
   const filtrados = useMemo(() => {
     const t = norm(q.trim())
@@ -148,6 +162,34 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
     } finally { setEnviando(false) }
   }
 
+  // Una fila de producto (nota opcional debajo: p. ej. cuándo lo pidió).
+  function fila(i: Item, nota?: string) {
+    const n = carrito[i.id] || 0
+    return (
+      <div key={i.id} className={`fila${i.disponible ? '' : ' agotado'}`}>
+        <div>
+          <div className="fila-nom">{destacada.has(i.bodega) && <span className="estrella" title="Destacado">★</span>}{i.nombre}</div>
+          <div className="fila-sub">
+            {(i.categoria || i.varietal) && (
+              <span>{i.categoria && <span className={`dot dot-${i.categoria}`} />}{[i.varietal, i.categoria === 'Otro' ? '' : i.categoria].filter((x, k, a) => x && a.indexOf(x) === k).join(' · ')}</span>
+            )}
+            <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.disponible ? 'Disponible' : 'A confirmar'}</span>
+            {nota && <span className="nota-rec">{nota}</span>}
+          </div>
+        </div>
+        <div className="fila-der">
+          <div className="precio">
+            {i.descuento > 0 && <s>{pesos(i.precio_lista)} <em>−{i.descuento}%</em></s>}
+            <b>{pesos(i.precio)}</b>
+          </div>
+          {n === 0
+            ? <button className="agregar" onClick={() => poner(i.id, 1)} aria-label={`Agregar ${i.nombre}`}>Agregar</button>
+            : <Stepper n={n} onChange={v => poner(i.id, v)} nombre={i.nombre} />}
+        </div>
+      </div>
+    )
+  }
+
   const manana = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
 
   return (
@@ -178,6 +220,31 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
 
       {!buscando && !vista ? (
         <>
+          {paraVos.bodegas.length > 0 && (
+            <section className="seccion para-vos">
+              <h2 className="seccion-t">Tus bodegas</h2>
+              <p className="seccion-sub">Las que más nos pediste</p>
+              <div className="dest-grid">
+                {paraVos.bodegas.map(b => (
+                  <button key={b.clave} className="dest" onClick={() => abrirVista({ tipo: 'marca', clave: b.clave })}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {logoDe(b.clave) ? <img src={logoDe(b.clave)!} alt={b.clave} className="dest-logo" /> : <Mono nombre={b.clave} grande />}
+                    <span className="dest-txt">
+                      <b>{b.clave}</b>
+                      <small>{b.botellas} {b.botellas === 1 ? 'botella pedida' : 'botellas pedidas'} · {b.disp} disponibles</small>
+                    </span>
+                    <span className="flecha">→</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          {paraVos.productos.length > 0 && (
+            <section className="grupo para-vos">
+              <div className="grupo-h"><h2>Volver a pedir</h2><small>lo que ya nos compraste</small></div>
+              {paraVos.productos.map(({ item, veces, ultima }) => fila(item, `${veces === 1 ? 'Lo pediste 1 vez' : `Lo pediste ${veces} veces`} · último ${new Date(ultima).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}`))}
+            </section>
+          )}
           {tarjetas.dest.length > 0 && (
             <section className="seccion">
               <h2 className="seccion-t">Destacados</h2>
@@ -224,31 +291,7 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
           {grupos.map(([g, its]) => (
             <section className={`grupo${!buscando && vista ? ' grupo-sub' : ''}`} key={g}>
               <div className="grupo-h"><h2>{g}</h2><small>{its.length} {its.length === 1 ? 'etiqueta' : 'etiquetas'}</small></div>
-              {its.map(i => {
-                const n = carrito[i.id] || 0
-                return (
-                  <div key={i.id} className={`fila${i.disponible ? '' : ' agotado'}`}>
-                    <div>
-                      <div className="fila-nom">{destacada.has(i.bodega) && <span className="estrella" title="Destacado">★</span>}{i.nombre}</div>
-                      <div className="fila-sub">
-                        {(i.categoria || i.varietal) && (
-                          <span>{i.categoria && <span className={`dot dot-${i.categoria}`} />}{[i.varietal, i.categoria === 'Otro' ? '' : i.categoria].filter((x, k, a) => x && a.indexOf(x) === k).join(' · ')}</span>
-                        )}
-                        <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.disponible ? 'Disponible' : 'A confirmar'}</span>
-                      </div>
-                    </div>
-                    <div className="fila-der">
-                      <div className="precio">
-                        {i.descuento > 0 && <s>{pesos(i.precio_lista)} <em>−{i.descuento}%</em></s>}
-                        <b>{pesos(i.precio)}</b>
-                      </div>
-                      {n === 0
-                        ? <button className="agregar" onClick={() => poner(i.id, 1)} aria-label={`Agregar ${i.nombre}`}>Agregar</button>
-                        : <Stepper n={n} onChange={v => poner(i.id, v)} nombre={i.nombre} />}
-                    </div>
-                  </div>
-                )
-              })}
+              {its.map(i => fila(i))}
             </section>
           ))}
         </>

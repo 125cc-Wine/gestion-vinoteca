@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { clienteActual } from '@/lib/session'
 import { catalogoDe } from '@/lib/catalogo'
+import { recomendacionesDe } from '@/lib/recomendaciones'
 import Header from './Header'
 import SinSesion from './SinSesion'
 import Ingreso from './Ingreso'
@@ -17,6 +18,7 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
   if (!cliente.datosConfirmados) redirect('/datos')
 
   const catalogo = await catalogoDe(cliente)
+  const recomendaciones = cliente.id ? await recomendacionesDe(cliente.id, catalogo.items) : undefined
   const hoy = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
 
   return (
@@ -30,6 +32,7 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
           actualizado={hoy}
           items={catalogo.items}
           marcas={catalogo.marcas}
+          recomendaciones={recomendaciones}
         />
       </main>
     </div>

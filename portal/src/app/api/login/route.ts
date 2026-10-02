@@ -34,8 +34,8 @@ async function buscarPorCuit(texto: string): Promise<(FilaCliente & { empresa: s
   const { data } = await db.from('clientes')
     .select(`${CAMPOS}, cuit, empresa, created_at, portal_bloqueado, portal_ultimo_acceso`)
     .not('cuit', 'is', null).ilike('cuit', `%${buscado.replace(/^0/, '').slice(-6)}%`)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filas = ((data ?? []) as any[]).filter(c => c.activo !== false && dni8(digitos(c.cuit)) === buscado)
+  type Fila = FilaCliente & { cuit: string | null; empresa: string; created_at: string; portal_bloqueado: boolean; portal_ultimo_acceso: string | null }
+  const filas = ((data ?? []) as unknown as Fila[]).filter(c => c.activo !== false && dni8(digitos(c.cuit)) === buscado)
   const porEmpresa = new Map<string, typeof filas[number]>()
   for (const c of filas.sort((a, b) => Number(!!b.portal_ultimo_acceso) - Number(!!a.portal_ultimo_acceso) || b.created_at.localeCompare(a.created_at))) {
     const e = c.empresa === 'lavid' ? 'lavid' : 'aroma'
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
   const { token, cuit, empresa, pin, recordar } = await req.json().catch(() => ({}))
 
   let elegido: FilaCliente | null = null
+  let verificado = false
 
   if (typeof token === 'string' && token.length >= 20) {
     if (typeof pin !== 'string' || !/^\d{4,8}$/.test(pin)) return NextResponse.json({ error: 'Ingresá tu PIN de 6 números.' }, { status: 400 })
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: b ? `PIN incorrecto. Por seguridad, el acceso queda bloqueado ${BLOQUEO_MIN} minutos.` : 'PIN incorrecto.' }, { status: 401 })
     }
     elegido = c
+    verificado = true
   } else if (typeof cuit === 'string' && cuit.trim()) {
     // Ingreso solo con CUIT/DNI: cualquier cliente cargado en gestión (decisión
     // del negocio: la lista no es secreta). Si se le suspendió el acceso desde
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
     portal_intentos: 0, portal_bloqueado_hasta: null, portal_ultimo_acceso: new Date().toISOString(),
   }).eq('id', elegido.id)
 
-  const s = crearSesion(elegido.id, elegido.portal_token!, recordar !== false)
+  const s = crearSesion(elegido.id, elegido.portal_token!, recordar !== false, verificado)
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE, s.valor, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', ...(s.maxAge ? { maxAge: s.maxAge } : {}) })
   return res

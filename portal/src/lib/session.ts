@@ -25,9 +25,11 @@ function firmar(datos: string) {
   return createHmac('sha256', secreto()).update(datos).digest('base64url')
 }
 
-export function crearSesion(clienteId: string, token: string, recordar = true) {
+// verificado: entró con su link personal + PIN (no solo con el CUIT). Solo
+// así ve "Mi cuenta" (saldo, movimientos, comprobantes).
+export function crearSesion(clienteId: string, token: string, recordar = true, verificado = false) {
   const dur = recordar ? DURACION_MS : DURACION_CORTA_MS
-  const datos = Buffer.from(JSON.stringify({ c: clienteId, t: huellaToken(token), e: Date.now() + dur })).toString('base64url')
+  const datos = Buffer.from(JSON.stringify({ c: clienteId, t: huellaToken(token), e: Date.now() + dur, ...(verificado ? { v: 1 } : {}) })).toString('base64url')
   return { valor: `${datos}.${firmar(datos)}`, maxAge: recordar ? dur / 1000 : undefined }
 }
 
@@ -45,7 +47,7 @@ export function crearSesionAdmin(destino: { cliente_id?: string | null; empresa?
   return { valor: `${datos}.${firmar(datos)}`, maxAge: DURACION_ADMIN_MS / 1000 }
 }
 
-interface Sesion { c?: string; p?: string; t?: string; a?: number }
+interface Sesion { c?: string; p?: string; t?: string; a?: number; v?: number }
 
 function leerSesion(): Sesion | null {
   const v = cookies().get(COOKIE)?.value
@@ -71,6 +73,7 @@ export interface ClientePortal {
   admin: boolean
   preview: boolean
   datosConfirmados: boolean  // ya cargó/confirmó contacto y horarios en el portal
+  verificado: boolean        // entró con link + PIN (o es admin): puede ver su cuenta
 }
 
 // Descuento general del portal (gestión > Portal clientes); 35 si no está cargado.
@@ -90,7 +93,7 @@ export async function clienteActual(): Promise<ClientePortal | null> {
   if (admin && !s.c && s.p) {
     return {
       id: null, empresa: s.p === 'lavid' ? 'lavid' : 'aroma', nombre: 'Vista previa',
-      descuento: await descuentoGeneral(), portal_token: null, admin: true, preview: true, datosConfirmados: true,
+      descuento: await descuentoGeneral(), portal_token: null, admin: true, preview: true, datosConfirmados: true, verificado: false,
     }
   }
 
@@ -112,5 +115,6 @@ export async function clienteActual(): Promise<ClientePortal | null> {
     admin,
     preview: false,
     datosConfirmados: admin || !!data.portal_datos_at,
+    verificado: admin || s.v === 1,
   }
 }
