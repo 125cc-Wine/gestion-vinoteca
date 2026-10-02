@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { esc } from '@/lib/html'
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string }> = {
-  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705' },
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '' },
   lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '+54 9 11 3787-6877' },
 }
 
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       <div class="empresa-nombre">${empresa.nombre}</div>
       <div class="empresa-sub">
         ${empresa.domicilio}<br>
-        Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}
+        ${empresa.telefono ? `Tel: ${empresa.telefono} &nbsp;·&nbsp; ` : ''}CUIT: ${empresa.cuit}
       </div>
     </div>
     <div class="header-doc">
@@ -205,7 +205,7 @@ export async function GET(req: NextRequest) {
 
   <!-- FOOTER -->
   <div class="footer">
-    ${empresa.nombre} &nbsp;·&nbsp; ${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit} &nbsp;·&nbsp; Tel: ${empresa.telefono}
+    ${empresa.nombre} &nbsp;·&nbsp; ${empresa.domicilio} &nbsp;·&nbsp; CUIT: ${empresa.cuit}${empresa.telefono ? ` &nbsp;·&nbsp; Tel: ${empresa.telefono}` : ''}
   </div>
 
 </div>

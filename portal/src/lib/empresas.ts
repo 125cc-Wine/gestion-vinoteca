@@ -1,7 +1,7 @@
 export const EMPRESAS = {
   aroma: {
     nombre: 'Aroma de Vid', logo: '/logos/aroma.jpg',
-    telefono: '(0223) 491-1705', domicilio: 'Roca 2787, Mar del Plata',
+    telefono: '', domicilio: 'Roca 2787, Mar del Plata',
   },
   lavid: {
     nombre: 'La Vid Consultora', logo: '/logos/lavid.png',

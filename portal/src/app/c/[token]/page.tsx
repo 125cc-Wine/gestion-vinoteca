@@ -32,7 +32,7 @@ export default async function Acceso({ params }: { params: { token: string } }) 
         ) : (
           <>
             <h1>Link no disponible</h1>
-            <p>Este link ya no está activo. Pedile uno nuevo a tu vendedor de {emp.nombre} o llamanos al {emp.telefono}.</p>
+            <p>Este link ya no está activo. Pedile uno nuevo a tu vendedor de {emp.nombre}{emp.telefono ? ` o escribinos al ${emp.telefono}` : ''}.</p>
           </>
         )}
         <div className="pie">{emp.nombre} · {emp.domicilio}</div>

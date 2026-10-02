@@ -16,7 +16,7 @@ export default function Ingreso() {
         <h1>Tu lista de precios</h1>
         <p>Entrá con tu CUIT, email o teléfono y el PIN que te mandamos por WhatsApp.</p>
         <LoginForm />
-        <div className="ayuda">¿No tenés PIN o lo perdiste? Pedíselo a tu vendedor o escribinos: Aroma de Vid {EMPRESAS.aroma.telefono} · La Vid {EMPRESAS.lavid.telefono}.</div>
+        <div className="ayuda">¿No tenés PIN o lo perdiste? Pedíselo a tu vendedor.</div>
       </div>
     </main>
   )

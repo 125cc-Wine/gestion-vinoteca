@@ -27,7 +27,7 @@ export interface ListaPrecioOpciones {
 const EMPRESAS = {
   aroma: {
     nombre: 'Aroma de Vid', accent: '#7A1022', accentSoft: '#F6ECEC', logo: '/logos/aroma.jpg',
-    telefono: '(0223) 491-1705', domicilio: 'Roca 2787, Mar del Plata', web: 'aromadevid.com.ar',
+    telefono: '', domicilio: 'Roca 2787, Mar del Plata', web: 'aromadevid.com.ar',
   },
   lavid: {
     nombre: 'La Vid Consultora', accent: '#23508C', accentSoft: '#EAF0F7', logo: '/logos/lavid.png',

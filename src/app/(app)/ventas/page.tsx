@@ -76,7 +76,7 @@ function lookupWooUrl(nombre: string): string {
 }
 
 const EMPRESAS_DATA = {
-  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg', inicioActividades: '23/10/2012' },
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '', logoPath: '/logos/aroma.jpg', inicioActividades: '23/10/2012' },
   lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '+54 9 11 3787-6877', logoPath: '/logos/lavid.png', inicioActividades: '01/07/2022' },
 }
 
@@ -2628,7 +2628,7 @@ function PrintDoc({ venta, empresa, cliente }: {
           <tbody>
             <tr>
               <td style={{ paddingBottom: '2px' }}><strong>C.U.I.T.</strong> {empresa.cuit}&nbsp;&nbsp;&nbsp;<strong>Resp. Inscripto</strong></td>
-              <td style={{ textAlign: 'right' }}><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</td>
+              <td style={{ textAlign: 'right' }}>{empresa.telefono && <><strong>Teléfono</strong>&nbsp;&nbsp;{empresa.telefono}</>}</td>
             </tr>
             <tr>
               <td colSpan={2} style={{ paddingBottom: '2px' }}><strong>Domicilio</strong>&nbsp;&nbsp;{empresa.domicilio}</td>

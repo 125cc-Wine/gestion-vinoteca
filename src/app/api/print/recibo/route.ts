@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { esc } from '@/lib/html'
 
 const EMPRESAS_DATA: Record<string, { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }> = {
-  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '(0223) 491-1705', logoPath: '/logos/aroma.jpg' },
+  aroma: { nombre: 'Aroma de Vid', cuit: '20-26600984-5', domicilio: 'Roca 2787, Mar del Plata', telefono: '', logoPath: '/logos/aroma.jpg' },
   lavid: { nombre: 'MDP La Vid Consultora S.R.L.', cuit: '30-71762144-8', domicilio: 'Roca 2787, Mar del Plata', telefono: '+54 9 11 3787-6877', logoPath: '/logos/lavid.png' },
 }
 
@@ -164,7 +164,7 @@ export async function GET(req: NextRequest) {
     <img class="header-logo" src="${empresa.logoPath}" alt="${esc(empresa.nombre)}">
     <div>
       <div class="empresa-nombre">${esc(empresa.nombre)}</div>
-      <div class="empresa-sub">${empresa.domicilio}<br>Tel: ${empresa.telefono} &nbsp;·&nbsp; CUIT: ${empresa.cuit}</div>
+      <div class="empresa-sub">${empresa.domicilio}<br>${empresa.telefono ? `Tel: ${empresa.telefono} &nbsp;·&nbsp; ` : ''}CUIT: ${empresa.cuit}</div>
     </div>
   </div>
 
