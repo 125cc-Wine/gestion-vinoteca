@@ -1,4 +1,5 @@
 'use client'
+import ProcesarPedido, { type VentaDePedido } from './ProcesarPedido'
 import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
 import { useEffect, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
@@ -82,7 +83,7 @@ const ESTADO_STYLE: Record<string, React.CSSProperties> = {
   preparando: { background: T.blueBg,  color: T.blue,  border: `1px solid ${T.blueBd}` },
   armado:     { background: T.greenBg, color: T.green, border: `1px solid rgba(45,122,79,0.25)` },
 }
-const ESTADO_LABEL: Record<string, string> = { preparando: 'en preparación', armado: 'armado (remito)' }
+const ESTADO_LABEL: Record<string, string> = { preparando: 'en preparación', armado: 'con comprobante' }
 
 interface Producto { id: string; nombre: string; bodega?: string; stock: number; precio_venta: number; sku?: string }
 interface Cliente { id: string; nombre: string; apellido?: string; razon_social?: string }
@@ -93,7 +94,7 @@ interface Pedido {
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
   // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
   origen?: 'local' | 'web' | 'portal' | 'vendedor'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
-  total?: number; venta_id?: string | null; levantado_at?: string | null
+  total?: number; venta_id?: string | null; levantado_at?: string | null; venta?: VentaDePedido | null
 }
 
 const ITEM_EMPTY: PedidoItem = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0 }
@@ -215,7 +216,9 @@ export default function PedidosPage() {
     if (estado === 'entregado') {
       const pedido = pedidos.find(p => p.id === id)
       const nItems = pedido ? (pedido.items as PedidoItem[]).reduce((s, i) => s + i.cantidad, 0) : 0
-      if (!confirm(`¿Marcar como entregado? Se descontarán ${nItems} unidades del stock.`)) return
+      if (!confirm(pedido?.venta_id
+        ? `¿Marcar como entregado? El stock ya se descontó al generar ${pedido.venta?.numero ?? 'el presupuesto'}.`
+        : `¿Marcar como entregado? Se descontarán ${nItems} unidades del stock.`)) return
     }
     await fetch('/api/pedidos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado }) })
     cargar(empresa); showToast(`Pedido ${estado}`)
@@ -377,7 +380,15 @@ export default function PedidosPage() {
                         )}
                       </>) : (<>
                       {p.estado === 'pendiente' && (
-                        <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => cambiarEstado(p.id, 'entregado')}>Entregar</button>
+                        <button className="btn-row" style={{ background: T.wine, border: 'none', borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: '#fff', fontWeight: 600, fontFamily: 'inherit' }} onClick={() => setModalDetalle(p)} title="Generar presupuesto y facturar">Procesar</button>
+                      )}
+                      {p.estado === 'armado' && (
+                        <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => cambiarEstado(p.id, 'entregado')} title="Ya se entregó (el stock se descontó con el presupuesto)">Entregado</button>
+                      )}
+                      {p.venta && (
+                        <span style={{ fontSize: 11, color: p.venta.facturado ? T.green : T.muted, alignSelf: 'center', whiteSpace: 'nowrap' }} title={p.venta.facturado ? 'Facturado' : 'Falta facturar'}>
+                          {p.venta.facturado ? `✓ ${p.venta.nro_cbte_afip}` : `${p.venta.numero} · sin factura`}
+                        </span>
                       )}
                       <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.red, transition: 'all 0.12s', fontFamily: 'inherit' }} onClick={() => eliminar(p.id)}>Cancelar</button>
                       </>)}
@@ -575,6 +586,7 @@ export default function PedidosPage() {
                 <span style={{ ...(ESTADO_STYLE[modalDetalle.estado] || {}), padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>{ESTADO_LABEL[modalDetalle.estado] ?? modalDetalle.estado}</span>
               </div>
             </div>
+            <ProcesarPedido pedido={modalDetalle} onCambio={v => { setModalDetalle(m => m && { ...m, venta: v, venta_id: v.id, estado: 'armado' }); cargar(empresa) }} />
             <div style={{ padding: '0 24px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>

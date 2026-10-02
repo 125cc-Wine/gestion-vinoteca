@@ -22,6 +22,13 @@ export async function GET(req: NextRequest) {
     const porId = new Map((cs || []).map(c => [c.id, c.portal_datos]))
     for (const p of data || []) if (p.origen === 'portal' || p.origen === 'vendedor') p.entrega_portal = porId.get(p.cliente_id) ?? null
   }
+  // Comprobante generado desde el pedido (presupuesto/remito) y si ya se facturó.
+  const vids = Array.from(new Set((data || []).map(p => p.venta_id).filter(Boolean)))
+  if (vids.length) {
+    const { data: vs } = await supabase.from('ventas').select('id, numero, tipo, facturado, nro_cbte_afip, empresa').in('id', vids)
+    const porVenta = new Map((vs || []).map(v => [v.id, v]))
+    for (const p of data || []) if (p.venta_id) p.venta = porVenta.get(p.venta_id) ?? null
+  }
   return NextResponse.json(data)
 }
 
@@ -80,11 +87,13 @@ async function putHandler(req: NextRequest) {
   if (rest.estado === 'entregado') {
     const { data: current } = await supabase
       .from('pedidos')
-      .select('estado, items, empresa')
+      .select('estado, items, empresa, venta_id')
       .eq('id', id)
       .single()
 
-    if (current && current.estado !== 'entregado') {
+    // Si ya se generó el presupuesto/remito desde el pedido, el stock se
+    // descontó ahí: marcarlo entregado no lo vuelve a mover.
+    if (current && current.estado !== 'entregado' && !current.venta_id) {
       const items = current.items as { producto_id: string; nombre: string; cantidad: number }[]
       await Promise.all(
         items.filter(i => i.producto_id).map(async (item) => {

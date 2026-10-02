@@ -860,6 +860,20 @@ export default function VentasPage() {
     }
   }
 
+  // Desde Pedidos ("Facturar en AFIP →") se llega con ?facturar=<id de la
+  // venta>: apenas están cargadas las ventas y los clientes, se abre la
+  // factura de ese comprobante (misma lógica de AFIP que acá).
+  const facturarPendiente = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('facturar') : null)
+  useEffect(() => {
+    const id = facturarPendiente.current
+    if (!id || !ventas.length || !clientes.length) return
+    const v = ventas.find(x => x.id === id)
+    if (!v) return
+    facturarPendiente.current = null
+    window.history.replaceState(null, '', '/ventas')
+    if (!v.facturado) abrirFacturar(v)
+  }, [ventas, clientes]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function abrirFacturar(v: Venta) {
     const c = clientes.find(cl => cl.id === v.cliente_id)
     const esRI = c?.tipo === 'responsable_inscripto'
