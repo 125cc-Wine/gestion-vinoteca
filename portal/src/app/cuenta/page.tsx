@@ -73,6 +73,10 @@ export default async function MiCuenta() {
                 {x.items.map((i, k) => (
                   <div key={k} className="cbte-item"><span>{i.cantidad} × {i.nombre}</span><span>{pesos(i.subtotal || i.cantidad * i.precio)}</span></div>
                 ))}
+                <div className="cbte-acc">
+                  <a className="btn" href={`/cuenta/comprobante/${x.id}`} target="_blank" rel="noopener">Ver {x.factura ? 'factura' : 'comprobante'}</a>
+                  <a className="btn" href={`/cuenta/comprobante/${x.id}?imprimir=1`} target="_blank" rel="noopener">Imprimir / PDF</a>
+                </div>
               </div>
             </details>
           ))}

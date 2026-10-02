@@ -305,3 +305,6 @@ a { color: inherit; }
   .top-nav a, .top-nav button { white-space: nowrap; padding: 7px 8px; }
   .brand span { display: inline; font-size: 18px; }
 }
+.cbte-acc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.cbte-acc .btn { height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13px; text-decoration: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); display: inline-flex; align-items: center; }
+.cbte-acc .btn:hover { border-color: var(--ac); color: var(--ac); }
