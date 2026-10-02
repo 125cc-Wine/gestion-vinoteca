@@ -296,3 +296,12 @@ a { color: inherit; }
 .cuenta-lock h1 { font-family: var(--serif); font-weight: 600; font-size: 28px; margin: 8px 0; }
 .cuenta-lock p { color: var(--mute); font-size: 14px; line-height: 1.55; }
 .lock-ico { font-size: 34px; }
+
+/* Menú en celular: pasa a una segunda fila que se desliza si no entra */
+@media (max-width: 600px) {
+  .top-in { flex-wrap: wrap; row-gap: 4px; }
+  .top-nav { margin-left: 0; width: 100%; overflow-x: auto; scrollbar-width: none; justify-content: space-between; }
+  .top-nav::-webkit-scrollbar { display: none; }
+  .top-nav a, .top-nav button { white-space: nowrap; padding: 7px 8px; }
+  .brand span { display: inline; font-size: 18px; }
+}
