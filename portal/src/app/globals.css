@@ -56,7 +56,7 @@ a { color: inherit; }
 .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
 .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot-Tinto { background: #7A1022; } .dot-Blanco { background: #D9C27A; } .dot-Rosado { background: #E59AA6; }
-.dot-Espumante { background: #C9B98C; box-shadow: inset 0 0 0 2px #EFE6CC; } .dot-Dulce { background: #B8742A; }
+.dot-Espumante { background: #C9B98C; box-shadow: inset 0 0 0 2px #EFE6CC; } .dot-Dulce { background: #B8742A; } .dot-Naranjo { background: #E08A2E; }
 
 /* ── Lista ──────────────────────────────────────────── */
 .grupo { margin-top: 26px; }

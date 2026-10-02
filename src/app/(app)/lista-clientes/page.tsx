@@ -20,7 +20,7 @@ const BTN: React.CSSProperties = { borderRadius: 8, padding: '8px 14px', fontSiz
 const CARD: React.CSSProperties = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20, marginBottom: 16 }
 const TH: React.CSSProperties = { padding: '9px 12px', textAlign: 'left', fontSize: 11, color: T.dim, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }
 const TD: React.CSSProperties = { padding: '8px 12px', borderBottom: `1px solid ${T.border}`, fontSize: 13, verticalAlign: 'middle' }
-const ORDEN_VINO = ['Espumante', 'Blanco', 'Rosado', 'Tinto', 'Dulce']
+const ORDEN_VINO = ['Espumante', 'Blanco', 'Naranjo', 'Rosado', 'Tinto', 'Dulce']
 const pesos = (n: number) => '$' + Math.round(n).toLocaleString('es-AR')
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 

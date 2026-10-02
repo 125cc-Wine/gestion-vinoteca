@@ -683,7 +683,7 @@ function RegistrarAnadaView({ empresa, onGuardado }: { empresa: string; onGuarda
                       <label style={LBL_A}>Categoría</label>
                       <select style={INP_A} value={nuevoVino.categoria}
                         onChange={e => setNuevoVino(v => v && ({ ...v, categoria: e.target.value, varietal: '' }))}>
-                        {['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro'].map(c => <option key={c}>{c}</option>)}
+                        {['Tinto', 'Blanco', 'Naranjo', 'Rosado', 'Espumante', 'Otro'].map(c => <option key={c}>{c}</option>)}
                       </select>
                     </div>
                   </div>

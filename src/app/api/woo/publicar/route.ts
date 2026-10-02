@@ -70,6 +70,7 @@ function elegirCategorias(cats: Cat[], p: { nombre: string; categoria: string | 
     // categoria -> [subcategoría de Vinos, cómo se llama el "blend" ahí]
     Tinto: ['Vinos Tintos', 'Blend de tintas'],
     Blanco: ['Vino Blancos', 'Blend de Blancas'],
+    Naranjo: ['Vino Blancos', 'Blend de Blancas'],   // en la web van dentro de Blancos
     Rosado: ['Rosados', 'Blend'],
     Espumante: ['Espumosos', ''],
   }

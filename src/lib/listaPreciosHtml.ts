@@ -36,9 +36,9 @@ const EMPRESAS = {
 } as const
 
 // Orden de los tipos dentro de cada bodega — el mismo que usa cualquier carta.
-const ORDEN_CATEGORIA = ['Espumante', 'Blanco', 'Rosado', 'Tinto', 'Dulce']
+const ORDEN_CATEGORIA = ['Espumante', 'Blanco', 'Naranjo', 'Rosado', 'Tinto', 'Dulce']
 const PLURAL_CATEGORIA: Record<string, string> = {
-  Espumante: 'Espumantes', Blanco: 'Blancos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces',
+  Espumante: 'Espumantes', Blanco: 'Blancos', Naranjo: 'Naranjos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces',
 }
 // En listas cortas la tapa + índice es más papel que ayuda.
 const MIN_GRUPOS_INDICE = 8
@@ -212,7 +212,7 @@ export function listaPreciosHtml(o: ListaPrecioOpciones): string {
   .final{font-weight:700;font-variant-numeric:tabular-nums}
   tr.cat td{border-bottom:none;padding:3.5mm 2mm 1mm;font-size:7.5pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
   .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#B9A99A;vertical-align:1px}
-  .dot-tinto{background:#7A1022}.dot-blanco{background:#D9C27A}.dot-rosado{background:#E59AA6}.dot-espumante{background:#C9B98C;box-shadow:inset 0 0 0 1.5px #EFE6CC}.dot-dulce{background:#B8742A}
+  .dot-tinto{background:#7A1022}.dot-blanco{background:#D9C27A}.dot-rosado{background:#E59AA6}.dot-espumante{background:#C9B98C;box-shadow:inset 0 0 0 1.5px #EFE6CC}.dot-dulce{background:#B8742A}.dot-naranjo{background:#E08A2E}
   tr.agotado .nom,tr.agotado .final{color:#9A928C}
   .pill{display:inline-block;margin-left:8px;padding:.3mm 2mm;border:1px solid #D8CFC7;border-radius:10px;font-size:6.8pt;font-weight:600;letter-spacing:.04em;color:var(--mute);white-space:nowrap;vertical-align:1px}
   .fin{margin-top:8mm;padding-top:4mm;border-top:1px solid var(--line);font-size:8pt;color:var(--mute);display:flex;justify-content:space-between}

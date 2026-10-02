@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 // bebida (Gin, Aperitivos…), que agrupa y fija descuentos en el portal.
 // Los formularios eligen de acá para que no aparezcan variantes escritas a mano.
 
-const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Dulce', 'Otro']
+const CATEGORIAS = ['Tinto', 'Blanco', 'Naranjo', 'Rosado', 'Espumante', 'Dulce', 'Otro']
 
 export async function GET() {
   const { data, error } = await supabase.from('varietales').select('categoria, nombre').order('nombre')

@@ -96,8 +96,9 @@ export function mapWooToProducto(woo: WooProduct) {
   }
 
   const cats = woo.categories.map(c => c.name.toLowerCase())
-  let categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro' = 'Otro'
-  if (cats.some(c => c.includes('tinto'))) categoria = 'Tinto'
+  let categoria: 'Tinto' | 'Blanco' | 'Naranjo' | 'Rosado' | 'Espumante' | 'Otro' = 'Otro'
+  if (cats.some(c => c.includes('naranjo'))) categoria = 'Naranjo'
+  else if (cats.some(c => c.includes('tinto'))) categoria = 'Tinto'
   else if (cats.some(c => c.includes('blanco'))) categoria = 'Blanco'
   else if (cats.some(c => c.includes('rosado'))) categoria = 'Rosado'
   else if (cats.some(c => c.includes('espumante') || c.includes('espumoso'))) categoria = 'Espumante'

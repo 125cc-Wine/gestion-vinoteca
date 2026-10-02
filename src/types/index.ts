@@ -6,7 +6,7 @@ export interface Producto {
   nombre: string
   bodega: string
   varietal: string
-  categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro'
+  categoria: 'Tinto' | 'Blanco' | 'Naranjo' | 'Rosado' | 'Espumante' | 'Dulce' | 'Otro'
   region?: string
   sku?: string
   codigo_barras?: string

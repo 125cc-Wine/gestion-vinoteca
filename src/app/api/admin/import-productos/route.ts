@@ -16,9 +16,9 @@ interface ProductoJSON {
 const EMPRESAS = ['aroma', 'lavid'] as const
 const BATCH = 50
 
-function categoriaNormalizada(c: string): 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro' {
-  const valid = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Otro']
-  return valid.includes(c) ? c as 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro' : 'Otro'
+function categoriaNormalizada(c: string): 'Tinto' | 'Blanco' | 'Naranjo' | 'Rosado' | 'Espumante' | 'Otro' {
+  const valid = ['Tinto', 'Blanco', 'Naranjo', 'Rosado', 'Espumante', 'Otro']
+  return valid.includes(c) ? c as 'Tinto' | 'Blanco' | 'Naranjo' | 'Rosado' | 'Espumante' | 'Otro' : 'Otro'
 }
 
 export async function GET() {

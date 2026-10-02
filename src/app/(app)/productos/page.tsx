@@ -46,7 +46,7 @@ const T = {
   amberBd: 'rgba(160,112,16,0.22)',
 }
 
-const CATS = ['Tinto','Blanco','Rosado','Espumante','Otro'] as const
+const CATS = ['Tinto','Blanco','Naranjo','Rosado','Espumante','Otro'] as const
 
 const KB = [
   ['E / Enter',  'Editar fila activa'],
@@ -116,6 +116,7 @@ function catBadge(cat: string): React.CSSProperties {
   if (cat === 'Tinto')    return { background: T.wineBg,  color: T.wine,  border: `1px solid ${T.wineBd}` }
   if (cat === 'Blanco')   return { background: T.blueBg,  color: T.blue,  border: `1px solid ${T.blueBd}` }
   if (cat === 'Rosado')   return { background: T.goldBg,  color: T.gold,  border: `1px solid ${T.goldBd}` }
+  if (cat === 'Naranjo')  return { background: 'rgba(214,120,30,0.09)', color: '#B5600F', border: '1px solid rgba(214,120,30,0.28)' }
   if (cat === 'Espumante')return { background: T.greenBg, color: T.green, border: `1px solid ${T.greenBd}` }
   return { background: T.amberBg, color: T.amber, border: `1px solid ${T.amberBd}` }
 }
@@ -2754,7 +2755,7 @@ export default function ProductosPage() {
                 <select value={masivCat} onChange={e => setMasivCat(e.target.value)}
                   style={{ width: '100%', padding: '8px 10px', border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13, color: T.text, background: T.surface }}>
                   <option value="">Todas</option>
-                  {['Tinto','Blanco','Rosado','Espumante','Otro'].map(c => <option key={c} value={c}>{c}</option>)}
+                  {['Tinto','Blanco','Naranjo','Rosado','Espumante','Otro'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>

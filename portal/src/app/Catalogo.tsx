@@ -7,8 +7,8 @@ interface Item {
   precio_lista: number; precio: number; descuento: number; disponible: boolean
 }
 
-const ORDEN_TIPO = ['Espumante', 'Blanco', 'Rosado', 'Tinto', 'Dulce']
-const PLURAL: Record<string, string> = { Espumante: 'Espumantes', Blanco: 'Blancos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces', Otro: 'Aperitivos y destilados' }
+const ORDEN_TIPO = ['Espumante', 'Blanco', 'Naranjo', 'Rosado', 'Tinto', 'Dulce']
+const PLURAL: Record<string, string> = { Espumante: 'Espumantes', Blanco: 'Blancos', Naranjo: 'Naranjos', Rosado: 'Rosados', Tinto: 'Tintos', Dulce: 'Dulces', Otro: 'Aperitivos y destilados' }
 
 // Los vinos se agrupan por bodega; el resto (categoría "Otro": vermouths,
 // whiskies, gin, sodas…) por su rubro, que en gestión vive en "varietal".

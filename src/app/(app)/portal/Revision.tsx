@@ -13,7 +13,7 @@ const T = {
 }
 const INP: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${T.border2}`, fontSize: 13, fontFamily: 'inherit', background: T.surface, color: T.text, outline: 'none', boxSizing: 'border-box' }
 const BTN: React.CSSProperties = { borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${T.border2}`, background: T.surface, color: T.text, whiteSpace: 'nowrap' }
-const CATEGORIAS = ['Tinto', 'Blanco', 'Rosado', 'Espumante', 'Dulce', 'Otro']
+const CATEGORIAS = ['Tinto', 'Blanco', 'Naranjo', 'Rosado', 'Espumante', 'Dulce', 'Otro']
 
 const PROBLEMA: Record<string, string> = {
   VINO_SIN_BODEGA: 'Falta la bodega',

@@ -9,7 +9,7 @@ interface ProductoImport {
   bodega: string
   varietal: string
   region: string
-  categoria: 'Tinto' | 'Blanco' | 'Rosado' | 'Espumante' | 'Otro'
+  categoria: 'Tinto' | 'Blanco' | 'Naranjo' | 'Rosado' | 'Espumante' | 'Otro'
   precio_venta: number
   stock: number
 }
