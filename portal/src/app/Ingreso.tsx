@@ -16,6 +16,7 @@ export default function Ingreso() {
         <h1>Tu lista de precios</h1>
         <p>Entrá con el CUIT con el que te facturamos.</p>
         <LoginForm />
+        <div className="ayuda"><b>Versión de prueba:</b> precios y disponibilidad se confirman al tomar tu pedido.</div>
         <div className="ayuda">¿No te reconoce el CUIT? Escribile a tu vendedor y te damos de alta.</div>
       </div>
     </main>

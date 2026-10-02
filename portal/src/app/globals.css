@@ -308,3 +308,7 @@ a { color: inherit; }
 .cbte-acc { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .cbte-acc .btn { height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13px; text-decoration: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); display: inline-flex; align-items: center; }
 .cbte-acc .btn:hover { border-color: var(--ac); color: var(--ac); }
+
+/* Cartel de versión de prueba */
+.beta-bar { background: #FFF4DC; color: #7A5A12; font-size: 12.5px; text-align: center; padding: 6px 16px; border-bottom: 1px solid #F0DFB4; line-height: 1.4; }
+.beta-bar b { font-weight: 700; }

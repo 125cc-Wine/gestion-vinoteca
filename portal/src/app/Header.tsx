@@ -12,6 +12,11 @@ export default function Header({ empresa, activo, admin, preview, cliente }: { e
             : <>Vista de administración · estás viendo el portal como <b>{cliente}</b>. Lo que pidas acá entra como pedido de este cliente.</>}
         </div>
       )}
+      {!admin && (
+        <div className="beta-bar">
+          <b>Versión de prueba</b> · Precios y disponibilidad se confirman al tomar tu pedido. Si ves algo raro, avisanos.
+        </div>
+      )}
       <div className="top-in">
         <Link href="/" className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
