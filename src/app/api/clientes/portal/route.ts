@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash, randomBytes, randomInt, scryptSync } from 'crypto'
 import { supabase } from '@/lib/supabase'
+import { grupoPrecio } from '@/lib/precioPortal'
 
 // Portal de pedidos de clientes (app aparte, carpeta portal/).
 // - El cliente ve todo el catálogo menos lo marcado productos.portal_oculto,
@@ -37,6 +38,26 @@ async function descuentoGeneral() {
 // GET ?cliente_id=  → estado del acceso de un cliente (sin datos secretos)
 // GET               → pantalla Portal: descuento general + clientes con acceso o descuento propio
 export async function GET(req: NextRequest) {
+  // Opciones para los descuentos especiales de un cliente: bodegas/marcas,
+  // grupos (tipo de vino o rubro) y productos de su empresa.
+  if (req.nextUrl.searchParams.get('opciones')) {
+    const empresa = req.nextUrl.searchParams.get('empresa') === 'lavid' ? 'lavid' : 'aroma'
+    const prods: { id: string; nombre: string; bodega: string | null; categoria: string | null; varietal: string | null }[] = []
+    for (let desde = 0; ; desde += 1000) {
+      const { data, error } = await supabase.from('productos').select('id, nombre, bodega, categoria, varietal')
+        .eq('empresa', empresa).eq('activo', true).gt('precio_venta', 0).order('nombre').range(desde, desde + 999)
+      if (error) return err(error.message)
+      prods.push(...(data || []))
+      if (!data || data.length < 1000) break
+    }
+    const uniq = (xs: (string | null)[]) => Array.from(new Set(xs.filter((x): x is string => !!x))).sort((a, b) => a.localeCompare(b, 'es'))
+    return NextResponse.json({
+      marcas: uniq(prods.map(p => p.bodega)),
+      grupos: uniq(prods.map(p => grupoPrecio(p))),
+      productos: prods.map(p => ({ id: p.id, nombre: p.nombre })),
+    })
+  }
+
   const id = req.nextUrl.searchParams.get('cliente_id')
   if (!id) {
     const [general, { data, error }] = await Promise.all([
@@ -62,11 +83,12 @@ export async function GET(req: NextRequest) {
       })),
     })
   }
-  const [general, { data, error }] = await Promise.all([
+  const [general, { data, error }, { data: reglas }] = await Promise.all([
     descuentoGeneral(),
     supabase.from('clientes')
       .select('portal_descuento, portal_activo, portal_ultimo_acceso, portal_bloqueado_hasta, portal_token, portal_bloqueado, portal_datos, portal_datos_at')
       .eq('id', id).single(),
+    supabase.from('portal_reglas_cliente').select('nivel, clave, descuento').eq('cliente_id', id).order('nivel'),
   ])
   if (error) return err(error.message)
   return NextResponse.json({
@@ -76,6 +98,7 @@ export async function GET(req: NextRequest) {
     suspendido: !!data.portal_bloqueado,
     datos: data.portal_datos ?? null,
     datos_at: data.portal_datos_at,
+    reglas: (reglas || []).map(r => ({ ...r, descuento: Number(r.descuento) })),
     ultimo_acceso: data.portal_ultimo_acceso,
     bloqueado_hasta: data.portal_bloqueado_hasta,
     url: data.portal_activo && data.portal_token ? `${PORTAL_URL}/c/${data.portal_token}` : null,
@@ -136,6 +159,21 @@ export async function POST(req: NextRequest) {
     const d = aDescuento(body.descuento)
     if (d === 'invalido') return err('Descuento inválido', 400)
     const { error } = await supabase.from('clientes').update({ portal_descuento: d }).eq('id', cliente_id)
+    if (error) return err(error.message)
+    return NextResponse.json({ ok: true })
+  }
+
+  // Descuento especial de este cliente para un grupo, bodega/marca o producto.
+  // Sin descuento = se borra (vuelve a lo general).
+  if (accion === 'regla_cliente') {
+    const { nivel, clave } = body
+    if (!['grupo', 'marca', 'producto'].includes(nivel) || typeof clave !== 'string' || !clave.trim()) return err('Regla inválida', 400)
+    const d = aDescuento(body.descuento)
+    if (d === 'invalido') return err('Descuento inválido', 400)
+    const q = d == null
+      ? supabase.from('portal_reglas_cliente').delete().eq('cliente_id', cliente_id).eq('nivel', nivel).eq('clave', clave)
+      : supabase.from('portal_reglas_cliente').upsert({ cliente_id, nivel, clave: clave.trim(), descuento: d, updated_at: new Date().toISOString() }, { onConflict: 'cliente_id,nivel,clave' })
+    const { error } = await q
     if (error) return err(error.message)
     return NextResponse.json({ ok: true })
   }

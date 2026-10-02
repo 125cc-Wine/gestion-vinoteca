@@ -1,7 +1,7 @@
 import 'server-only'
 import { db } from './db'
 import type { ClientePortal } from './session'
-import { indexarReglas, precioPortal, type ReglaPortal } from './precioPortal'
+import { indexarReglas, indexarReglasCliente, precioPortal, type ReglaPortal } from './precioPortal'
 
 // Lo único que ve el cliente de cada producto. Nunca costo ni stock exacto.
 export interface ItemCatalogo {
@@ -42,15 +42,18 @@ export async function catalogoDe(cliente: ClientePortal): Promise<Catalogo> {
     filas.push(...((data ?? []) as FilaProducto[]))
     if (!data || data.length < PAGINA) break
   }
-  const [{ data: reglas }, { data: marcas }] = await Promise.all([
+  const [{ data: reglas }, { data: marcas }, { data: propias }] = await Promise.all([
     db.from('portal_reglas').select('nivel, clave, descuento, oculto'),
     db.from('portal_marcas').select('clave, logo, destacada').or('destacada.eq.true,logo.not.is.null').order('orden'),
+    // Descuentos especiales de este cliente (ficha del cliente en gestión).
+    cliente.id ? db.from('portal_reglas_cliente').select('nivel, clave, descuento').eq('cliente_id', cliente.id) : Promise.resolve({ data: [] }),
   ])
   const idx = indexarReglas((reglas ?? []) as ReglaPortal[])
+  const delCliente = indexarReglasCliente(propias ?? [])
 
   const items: ItemCatalogo[] = []
   for (const p of filas) {
-    const r = precioPortal(p, idx, cliente.descuento)
+    const r = precioPortal(p, idx, cliente.descuento, delCliente)
     if (r.oculto) continue
     items.push({
       id: p.id, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '', categoria: p.categoria || '',

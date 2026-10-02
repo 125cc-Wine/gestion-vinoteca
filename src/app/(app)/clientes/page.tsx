@@ -1,4 +1,5 @@
 'use client'
+import DescuentosCliente, { type ReglaCliente } from './DescuentosCliente'
 import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
 import { textoAcceso } from '@/lib/portalMensaje'
 import { useEffect, useState } from 'react'
@@ -120,7 +121,7 @@ export default function ClientesPage() {
   const [editId, setEditId] = useState<string | null>(null)
 
   // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
-  interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; suspendido?: boolean; datos?: DatosEntregaPortal | null; datos_at?: string | null; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
+  interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; suspendido?: boolean; datos?: DatosEntregaPortal | null; datos_at?: string | null; reglas?: ReglaCliente[]; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
   const [portal, setPortal] = useState<PortalEstado | null>(null)
   const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string; portal?: string; usuario?: string | null } | null>(null)
   const [portalOcupado, setPortalOcupado] = useState(false)
@@ -788,6 +789,10 @@ export default function ClientesPage() {
                           onBlur={e => { if ((e.target.value.trim() === '' ? null : Number(e.target.value)) !== portal.descuento) portalAccion('descuento', e.target.value.trim()) }} />
                         <span style={{ color: T.muted, fontSize: 13 }}>%</span>
                       </div>
+                      {editId && (
+                        <DescuentosCliente clienteId={editId} empresa={form.empresa || 'aroma'} reglas={portal.reglas ?? []} aviso={showToast}
+                          onCambio={r => setPortal(p => p && { ...p, reglas: r })} />
+                      )}
                       <div style={{ marginTop: 12, background: T.bg, borderRadius: 10, padding: '10px 12px' }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Entrega (lo cargó el cliente)</div>
                         <DatosEntrega datos={portal.datos} fecha={portal.datos_at} color={{ muted: T.muted, text: T.text }} />
