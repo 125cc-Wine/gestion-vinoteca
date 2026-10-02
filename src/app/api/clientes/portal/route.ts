@@ -42,9 +42,9 @@ export async function GET(req: NextRequest) {
     const [general, { data, error }] = await Promise.all([
       descuentoGeneral(),
       supabase.from('clientes')
-        .select('id, empresa, nombre, apellido, razon_social, telefono, portal_descuento, portal_activo, portal_token, portal_ultimo_acceso')
+        .select('id, empresa, nombre, apellido, razon_social, telefono, portal_descuento, portal_activo, portal_token, portal_ultimo_acceso, portal_bloqueado, portal_datos')
         .eq('activo', true)
-        .or('portal_descuento.not.is.null,portal_token.not.is.null')
+        .or('portal_descuento.not.is.null,portal_token.not.is.null,portal_bloqueado.eq.true')
         .order('nombre'),
     ])
     if (error) return err(error.message)
@@ -55,7 +55,9 @@ export async function GET(req: NextRequest) {
         id: c.id, empresa: c.empresa, telefono: c.telefono,
         nombre: c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim(),
         descuento: c.portal_descuento == null ? null : Number(c.portal_descuento),
-        activo: !!c.portal_activo && !!c.portal_token,
+        activo: !!c.portal_activo && !!c.portal_token && !c.portal_bloqueado,
+        suspendido: !!c.portal_bloqueado,
+        datos: c.portal_datos ?? null,
         ultimo_acceso: c.portal_ultimo_acceso,
       })),
     })
@@ -63,14 +65,17 @@ export async function GET(req: NextRequest) {
   const [general, { data, error }] = await Promise.all([
     descuentoGeneral(),
     supabase.from('clientes')
-      .select('portal_descuento, portal_activo, portal_ultimo_acceso, portal_bloqueado_hasta, portal_token')
+      .select('portal_descuento, portal_activo, portal_ultimo_acceso, portal_bloqueado_hasta, portal_token, portal_bloqueado, portal_datos, portal_datos_at')
       .eq('id', id).single(),
   ])
   if (error) return err(error.message)
   return NextResponse.json({
     descuento: data.portal_descuento == null ? null : Number(data.portal_descuento),
     descuento_general: general,
-    activo: !!data.portal_activo && !!data.portal_token,
+    activo: !!data.portal_activo && !!data.portal_token && !data.portal_bloqueado,
+    suspendido: !!data.portal_bloqueado,
+    datos: data.portal_datos ?? null,
+    datos_at: data.portal_datos_at,
     ultimo_acceso: data.portal_ultimo_acceso,
     bloqueado_hasta: data.portal_bloqueado_hasta,
     url: data.portal_activo && data.portal_token ? `${PORTAL_URL}/c/${data.portal_token}` : null,
@@ -137,7 +142,7 @@ export async function POST(req: NextRequest) {
 
   if (accion === 'revocar') {
     const { error } = await supabase.from('clientes')
-      .update({ portal_activo: false, portal_token: null, portal_pin_hash: null }).eq('id', cliente_id)
+      .update({ portal_activo: false, portal_token: null, portal_pin_hash: null, portal_bloqueado: true }).eq('id', cliente_id)
     if (error) return err(error.message)
     return NextResponse.json({ ok: true })
   }
@@ -147,7 +152,7 @@ export async function POST(req: NextRequest) {
     const token = accion === 'compartir' && actual?.portal_activo && actual.portal_token ? actual.portal_token : nuevoToken()
     const pin = nuevoPin()
     const cambios: Record<string, unknown> = {
-      portal_token: token, portal_pin_hash: hashPin(pin), portal_activo: true,
+      portal_token: token, portal_pin_hash: hashPin(pin), portal_activo: true, portal_bloqueado: false,
       portal_intentos: 0, portal_bloqueado_hasta: null,
     }
     if ('descuento' in body) {

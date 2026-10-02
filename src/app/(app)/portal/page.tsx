@@ -22,7 +22,7 @@ const CARD: React.CSSProperties = { background: T.surface, border: `1px solid ${
 const LABEL: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }
 const POST = (body: object) => fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
 
-interface ClientePortal { id: string; empresa: string; telefono: string | null; nombre: string; descuento: number | null; activo: boolean; ultimo_acceso: string | null }
+interface ClientePortal { id: string; empresa: string; telefono: string | null; nombre: string; descuento: number | null; activo: boolean; suspendido?: boolean; datos?: unknown; ultimo_acceso: string | null }
 interface ClienteMini { id: string; nombre: string; apellido?: string; razon_social?: string; telefono?: string; empresa: string }
 
 const nombreDe = (c: ClienteMini) => c.razon_social || `${c.nombre} ${c.apellido || ''}`.trim()
@@ -113,7 +113,7 @@ export default function PortalPage() {
   }
 
   async function quitar(c: ClientePortal) {
-    if (!confirm(`¿Quitarle el acceso al portal a ${c.nombre}? Su link deja de funcionar.`)) return
+    if (!confirm(`¿Suspender el acceso al portal de ${c.nombre}? Ya no va a poder entrar, ni con su link ni con su CUIT.`)) return
     const d = await POST({ accion: 'revocar', cliente_id: c.id })
     if (d.error) { aviso('Error: ' + d.error); return }
     aviso('Acceso quitado'); cargar()
@@ -227,7 +227,7 @@ export default function PortalPage() {
                         style={{ ...INP, width: 110, padding: '6px 8px', fontSize: 12.5, textAlign: 'right' }} /> <span style={{ color: T.muted }}>%</span>
                     </td>
                     <td style={{ padding: '10px 16px', fontSize: 12, color: c.activo ? T.green : T.dim, whiteSpace: 'nowrap' }}>
-                      {c.activo ? (c.ultimo_acceso ? `Entró el ${new Date(c.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Con acceso · no entró aún') : 'Sin acceso'}
+                      {c.suspendido ? 'Suspendido' : c.activo ? (c.ultimo_acceso ? `Entró el ${new Date(c.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Con acceso · no entró aún') : 'Puede entrar con su CUIT'}{c.datos ? ' · datos de entrega ✓' : ''}
                     </td>
                     <td style={{ padding: '10px 16px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                       <button title="Ver el portal como este cliente" style={{ ...BTN, padding: '6px 10px', marginRight: 6 }} onClick={() => abrirAdmin({ cliente_id: c.id })}>👁 Ver</button>
@@ -249,7 +249,7 @@ export default function PortalPage() {
       <Revision aviso={aviso} />
 
       <div style={{ fontSize: 12, color: T.dim, marginTop: 14, lineHeight: 1.5 }}>
-        "Compartir" le manda su mismo link con un PIN nuevo (el anterior deja de servir). Si alguien más consiguió el link, usá ✕ y volvé a compartir: se genera un link nuevo.
+        Cualquier cliente cargado puede entrar al portal con su CUIT; la primera vez confirma su contacto y horarios de entrega. "Compartir" le manda además un link directo por WhatsApp. ✕ suspende el acceso (ni con CUIT ni con link); "Compartir" lo reactiva.
       </div>
 
       {toast && <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: T.text, color: '#FFF', padding: '10px 18px', borderRadius: 10, fontSize: 13, zIndex: 300 }}>{toast}</div>}

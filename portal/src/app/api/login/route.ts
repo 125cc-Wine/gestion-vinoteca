@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { verificarPin } from '@/lib/pin'
@@ -11,26 +12,36 @@ const BLOQUEO_MIN = 15
 interface FilaCliente {
   id: string; portal_token: string | null; portal_pin_hash: string | null; portal_activo: boolean
   portal_intentos: number | null; portal_bloqueado_hasta: string | null; activo: boolean | null
-  cuit?: string | null; email?: string | null; telefono?: string | null
+  cuit?: string | null
 }
 const CAMPOS = 'id, portal_token, portal_pin_hash, portal_activo, portal_intentos, portal_bloqueado_hasta, activo'
 
 const digitos = (s: string | null | undefined) => (s || '').replace(/\D/g, '')
 
-// Clientes con portal que coinciden con lo que escribió: CUIT (sin guiones),
-// email, o teléfono (últimos 8 dígitos, así da igual el 0/15/+54).
-async function buscarPorUsuario(usuario: string): Promise<FilaCliente[]> {
-  const u = usuario.trim().toLowerCase()
-  const { data } = await db.from('clientes').select(`${CAMPOS}, cuit, email, telefono`).eq('portal_activo', true)
-  const filas = (data ?? []) as FilaCliente[]
-  if (u.includes('@')) return filas.filter(c => (c.email || '').trim().toLowerCase() === u)
-  const d = digitos(u)
-  if (d.length === 11) {
-    const porCuit = filas.filter(c => digitos(c.cuit) === d)
-    if (porCuit.length) return porCuit
+// DNI de 8 dígitos a partir de un CUIT (11) o de un DNI cargado (7-8).
+function dni8(d: string) {
+  if (d.length === 11) return d.slice(2, 10)
+  if (d.length === 7 || d.length === 8) return d.padStart(8, '0')
+  return null
+}
+
+// Clientes que coinciden con el CUIT o DNI escrito (sea cual sea el formato
+// con que esté cargado en gestión). Los repetidos de una misma empresa se
+// resuelven por el que ya entró al portal o el más nuevo.
+async function buscarPorCuit(texto: string): Promise<(FilaCliente & { empresa: string; created_at: string; portal_bloqueado: boolean; portal_ultimo_acceso: string | null })[]> {
+  const buscado = dni8(digitos(texto))
+  if (!buscado) return []
+  const { data } = await db.from('clientes')
+    .select(`${CAMPOS}, cuit, empresa, created_at, portal_bloqueado, portal_ultimo_acceso`)
+    .not('cuit', 'is', null).ilike('cuit', `%${buscado.replace(/^0/, '').slice(-6)}%`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filas = ((data ?? []) as any[]).filter(c => c.activo !== false && dni8(digitos(c.cuit)) === buscado)
+  const porEmpresa = new Map<string, typeof filas[number]>()
+  for (const c of filas.sort((a, b) => Number(!!b.portal_ultimo_acceso) - Number(!!a.portal_ultimo_acceso) || b.created_at.localeCompare(a.created_at))) {
+    const e = c.empresa === 'lavid' ? 'lavid' : 'aroma'
+    if (!porEmpresa.has(e)) porEmpresa.set(e, c)
   }
-  if (d.length >= 8) return filas.filter(c => digitos(c.telefono).length >= 8 && digitos(c.telefono).slice(-8) === d.slice(-8))
-  return []
+  return Array.from(porEmpresa.values())
 }
 
 async function fallo(c: FilaCliente) {
@@ -49,14 +60,14 @@ function msjBloqueo(c: FilaCliente) {
 }
 
 // POST { token, pin, recordar }   → entrada por el link personal
-// POST { usuario, pin, recordar } → entrada sin link: CUIT, email o teléfono + PIN
+// POST { cuit, empresa?, recordar } → entrada sin link, solo con CUIT o DNI
 export async function POST(req: NextRequest) {
-  const { token, usuario, pin, recordar } = await req.json().catch(() => ({}))
-  if (typeof pin !== 'string' || !/^\d{4,8}$/.test(pin)) return NextResponse.json({ error: 'Ingresá tu PIN de 6 números.' }, { status: 400 })
+  const { token, cuit, empresa, pin, recordar } = await req.json().catch(() => ({}))
 
   let elegido: FilaCliente | null = null
 
   if (typeof token === 'string' && token.length >= 20) {
+    if (typeof pin !== 'string' || !/^\d{4,8}$/.test(pin)) return NextResponse.json({ error: 'Ingresá tu PIN de 6 números.' }, { status: 400 })
     const { data } = await db.from('clientes').select(CAMPOS).eq('portal_token', token).maybeSingle()
     const c = data as FilaCliente | null
     if (!c || !c.portal_activo || c.activo === false) {
@@ -68,19 +79,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: b ? `PIN incorrecto. Por seguridad, el acceso queda bloqueado ${BLOQUEO_MIN} minutos.` : 'PIN incorrecto.' }, { status: 401 })
     }
     elegido = c
-  } else if (typeof usuario === 'string' && usuario.trim()) {
-    // Mismo mensaje exista o no el usuario, para no revelar quién es cliente.
-    const candidatos = (await buscarPorUsuario(usuario)).filter(c => c.activo !== false && c.portal_token)
-    const libres = candidatos.filter(c => !bloqueado(c))
-    if (candidatos.length && !libres.length) return NextResponse.json({ error: msjBloqueo(candidatos[0]) }, { status: 429 })
-    elegido = libres.find(c => verificarPin(pin, c.portal_pin_hash)) ?? null
-    if (!elegido) {
-      let b = false
-      for (const c of libres) b = (await fallo(c)) || b
-      return NextResponse.json({ error: b ? `Datos incorrectos. Por seguridad, el acceso queda bloqueado ${BLOQUEO_MIN} minutos.` : 'El usuario o el PIN no coinciden. Revisá el mensaje de WhatsApp donde te mandamos el PIN.' }, { status: 401 })
+  } else if (typeof cuit === 'string' && cuit.trim()) {
+    // Ingreso solo con CUIT/DNI: cualquier cliente cargado en gestión (decisión
+    // del negocio: la lista no es secreta). Si se le suspendió el acceso desde
+    // gestión, no entra. Si está en las dos empresas, elige con cuál.
+    const candidatos = await buscarPorCuit(cuit)
+    if (!candidatos.length) return NextResponse.json({ error: 'No encontramos ese CUIT entre nuestros clientes. Si sos cliente, escribile a tu vendedor.' }, { status: 404 })
+    const libres = candidatos.filter(c => !c.portal_bloqueado)
+    if (!libres.length) return NextResponse.json({ error: 'Tu acceso al portal está suspendido. Comunicate con tu vendedor.' }, { status: 403 })
+    const pedida = empresa === 'lavid' || empresa === 'aroma' ? libres.find(c => (c.empresa === 'lavid' ? 'lavid' : 'aroma') === empresa) : null
+    if (!pedida && libres.length > 1) return NextResponse.json({ elegir: libres.map(c => c.empresa === 'lavid' ? 'lavid' : 'aroma') })
+    const c = pedida || libres[0]
+    // Primer ingreso: se le habilita el portal (link propio incluido).
+    if (!c.portal_activo || !c.portal_token) {
+      const token = randomBytes(24).toString('base64url')
+      const { error } = await db.from('clientes').update({ portal_activo: true, portal_token: token }).eq('id', c.id)
+      if (error) return NextResponse.json({ error: 'No se pudo entrar. Probá de nuevo.' }, { status: 500 })
+      c.portal_activo = true; c.portal_token = token
     }
+    elegido = c
   } else {
-    return NextResponse.json({ error: 'Ingresá tu CUIT, email o teléfono.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ingresá tu CUIT.' }, { status: 400 })
   }
 
   await db.from('clientes').update({

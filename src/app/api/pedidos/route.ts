@@ -15,6 +15,13 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Pedidos del portal: se suman el contacto y horario de entrega del cliente.
+  const ids = Array.from(new Set((data || []).filter(p => p.origen === 'portal' && p.cliente_id).map(p => p.cliente_id)))
+  if (ids.length) {
+    const { data: cs } = await supabase.from('clientes').select('id, portal_datos').in('id', ids)
+    const porId = new Map((cs || []).map(c => [c.id, c.portal_datos]))
+    for (const p of data || []) if (p.origen === 'portal') p.entrega_portal = porId.get(p.cliente_id) ?? null
+  }
   return NextResponse.json(data)
 }
 

@@ -241,3 +241,27 @@ a { color: inherit; }
 .acceso-logos { display: flex; justify-content: center; align-items: center; gap: 14px; }
 .acceso-logos img { height: 44px !important; }
 .ayuda { margin-top: 16px; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+
+/* Elegir empresa al entrar */
+.elegir-tit { font-weight: 600; font-size: 14px; text-align: center; margin-bottom: 4px; }
+.elegir { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--card); border: 1px solid var(--line); }
+.elegir img { height: 28px; width: auto; border-radius: 6px; }
+
+/* Mis datos / primer ingreso */
+.datos { max-width: 620px; margin: 8px auto 40px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 22px; display: flex; flex-direction: column; gap: 16px; }
+.datos h1 { font-family: var(--serif); font-weight: 600; font-size: 30px; margin: 0; }
+.datos-sub { color: var(--mute); font-size: 14px; line-height: 1.5; margin: -8px 0 0; }
+.datos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.datos label { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--mute); }
+.datos .ancho { grid-column: 1 / -1; }
+.datos .opc { font-weight: 400; color: var(--dim); }
+.datos input, .datos textarea { min-height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 10px 13px; font-size: 16px; color: var(--ink); outline: none; font-family: inherit; resize: vertical; }
+.datos input:focus, .datos textarea:focus { border-color: var(--ac); box-shadow: 0 0 0 3px var(--ac-soft); background: var(--card); }
+.datos-tit { font-size: 12.5px; font-weight: 600; color: var(--mute); margin-bottom: 7px; }
+.dias { display: flex; flex-wrap: wrap; gap: 8px; }
+.dia { min-width: 54px; height: 42px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-weight: 600; font-size: 14px; color: var(--mute); cursor: pointer; font-family: inherit; }
+.dia.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+.horario { display: flex; gap: 12px; }
+.horario label { flex: 1; }
+.ok-msg { padding: 10px 12px; border-radius: 10px; background: #EAF4EC; color: var(--ok); font-size: 13px; }
+@media (max-width: 560px) { .datos-grid { grid-template-columns: 1fr; } .datos { padding: 22px 16px; } }

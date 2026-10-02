@@ -1,4 +1,5 @@
 'use client'
+import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
 import { useEffect, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
@@ -91,7 +92,7 @@ interface Pedido {
   id: string; numero: string; cliente_nombre: string; vendedor_nombre?: string
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
   // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
-  origen?: 'local' | 'web' | 'portal'; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
+  origen?: 'local' | 'web' | 'portal'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
   total?: number; venta_id?: string | null; levantado_at?: string | null
 }
 
@@ -557,6 +558,11 @@ export default function PedidosPage() {
               {modalDetalle.vendedor_nombre && <div><span style={{ color: T.dim }}>Vendedor:</span> <span style={{ color: T.text }}>{modalDetalle.vendedor_nombre}</span></div>}
               {modalDetalle.fecha_entrega && <div><span style={{ color: T.dim }}>Entrega:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
               {modalDetalle.notas && <div><span style={{ color: T.dim }}>Notas:</span> <span style={{ color: T.text, whiteSpace: 'pre-line' }}>{modalDetalle.notas}</span></div>}
+              {modalDetalle.origen === 'portal' && (
+                <div style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', margin: '4px 0' }}>
+                  <DatosEntrega datos={modalDetalle.entrega_portal} color={{ muted: T.dim, text: T.text }} />
+                </div>
+              )}
               {modalDetalle.origen === 'web' && (
                 <div><span style={{ color: T.dim }}>Pago:</span>{' '}
                   <span style={{ color: modalDetalle.pago === 'pagado' ? T.green : T.amber, fontWeight: 600 }}>{modalDetalle.pago === 'pagado' ? '✓ Pagado' : '⏳ Esperando pago (se actualiza solo al confirmarlo en la web)'}</span>

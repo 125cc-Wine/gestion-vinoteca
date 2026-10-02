@@ -1,4 +1,5 @@
 'use client'
+import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
 import { textoAcceso } from '@/lib/portalMensaje'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -119,7 +120,7 @@ export default function ClientesPage() {
   const [editId, setEditId] = useState<string | null>(null)
 
   // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
-  interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
+  interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; suspendido?: boolean; datos?: DatosEntregaPortal | null; datos_at?: string | null; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
   const [portal, setPortal] = useState<PortalEstado | null>(null)
   const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string; portal?: string; usuario?: string | null } | null>(null)
   const [portalOcupado, setPortalOcupado] = useState(false)
@@ -304,7 +305,7 @@ export default function ClientesPage() {
   async function portalAccion(accion: 'generar' | 'revocar' | 'descuento', descuento?: string) {
     if (!editId) return
     if (accion === 'generar' && portal?.activo && !confirm('Se genera un link y PIN nuevos. El link anterior deja de funcionar. ¿Seguir?')) return
-    if (accion === 'revocar' && !confirm('¿Desactivar el acceso de este cliente al portal? Su link deja de funcionar.')) return
+    if (accion === 'revocar' && !confirm('¿Suspender el acceso de este cliente al portal? Ya no va a poder entrar, ni con su link ni con su CUIT.')) return
     setPortalOcupado(true)
     try {
       const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, descuento }) })
@@ -772,7 +773,7 @@ export default function ClientesPage() {
                     <span style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Portal de pedidos</span>
                     {portal && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: portal.activo ? T.green : T.dim }}>
-                        {portal.activo ? (portal.ultimo_acceso ? `Activo · último ingreso ${new Date(portal.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Activo · nunca ingresó') : 'Sin acceso'}
+                        {portal.suspendido ? 'Suspendido (no entra ni con CUIT)' : portal.activo ? (portal.ultimo_acceso ? `Activo · último ingreso ${new Date(portal.ultimo_acceso).toLocaleDateString('es-AR')}` : 'Activo · nunca ingresó') : 'Puede entrar con su CUIT'}
                       </span>
                     )}
                   </div>
@@ -786,6 +787,10 @@ export default function ClientesPage() {
                           defaultValue={portal.descuento ?? ''} placeholder={String(portal.descuento_general)}
                           onBlur={e => { if ((e.target.value.trim() === '' ? null : Number(e.target.value)) !== portal.descuento) portalAccion('descuento', e.target.value.trim()) }} />
                         <span style={{ color: T.muted, fontSize: 13 }}>%</span>
+                      </div>
+                      <div style={{ marginTop: 12, background: T.bg, borderRadius: 10, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Entrega (lo cargó el cliente)</div>
+                        <DatosEntrega datos={portal.datos} fecha={portal.datos_at} color={{ muted: T.muted, text: T.text }} />
                       </div>
                       {portal.bloqueado_hasta && new Date(portal.bloqueado_hasta) > new Date() && (
                         <div style={{ fontSize: 12, color: T.red, marginTop: 8 }}>Bloqueado por PIN incorrecto hasta las {new Date(portal.bloqueado_hasta).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}. Generar un acceso nuevo lo desbloquea.</div>

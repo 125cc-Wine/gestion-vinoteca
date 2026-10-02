@@ -70,6 +70,7 @@ export interface ClientePortal {
   portal_token: string | null
   admin: boolean
   preview: boolean
+  datosConfirmados: boolean  // ya cargó/confirmó contacto y horarios en el portal
 }
 
 // Descuento general del portal (gestión > Portal clientes); 35 si no está cargado.
@@ -89,16 +90,16 @@ export async function clienteActual(): Promise<ClientePortal | null> {
   if (admin && !s.c && s.p) {
     return {
       id: null, empresa: s.p === 'lavid' ? 'lavid' : 'aroma', nombre: 'Vista previa',
-      descuento: await descuentoGeneral(), portal_token: null, admin: true, preview: true,
+      descuento: await descuentoGeneral(), portal_token: null, admin: true, preview: true, datosConfirmados: true,
     }
   }
 
   const { data } = await db.from('clientes')
-    .select('id, empresa, nombre, apellido, razon_social, portal_descuento, portal_token, portal_activo, activo')
+    .select('id, empresa, nombre, apellido, razon_social, portal_descuento, portal_token, portal_activo, portal_bloqueado, portal_datos_at, activo')
     .eq('id', s.c!).maybeSingle()
   if (!data) return null
   if (!admin) {
-    if (!data.portal_activo || data.activo === false || !data.portal_token) return null
+    if (!data.portal_activo || data.portal_bloqueado || data.activo === false || !data.portal_token) return null
     if (huellaToken(data.portal_token) !== s.t) return null
   }
   const propio = data.portal_descuento == null ? null : Number(data.portal_descuento)
@@ -110,5 +111,6 @@ export async function clienteActual(): Promise<ClientePortal | null> {
     portal_token: data.portal_token,
     admin,
     preview: false,
+    datosConfirmados: admin || !!data.portal_datos_at,
   }
 }

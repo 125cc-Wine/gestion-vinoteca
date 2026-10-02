@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { clienteActual } from '@/lib/session'
 import { catalogoDe } from '@/lib/catalogo'
 import Header from './Header'
@@ -11,6 +12,9 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
   const cliente = await clienteActual()
   if (!cliente && searchParams.pase === 'vencido') return <SinSesion titulo="Acceso vencido" texto="Ese acceso de administración ya se usó o venció (duran 5 minutos). Generá otro desde Gestión > Clientes > Ver portal como este cliente." />
   if (!cliente) return <Ingreso />
+
+  // Primer ingreso: confirmar contacto y horarios de entrega antes del catálogo.
+  if (!cliente.datosConfirmados) redirect('/datos')
 
   const catalogo = await catalogoDe(cliente)
   const hoy = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })

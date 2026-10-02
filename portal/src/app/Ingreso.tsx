@@ -14,9 +14,9 @@ export default function Ingreso() {
           <img src={EMPRESAS.lavid.logo} alt={EMPRESAS.lavid.nombre} />
         </div>
         <h1>Tu lista de precios</h1>
-        <p>Entrá con tu CUIT, email o teléfono y el PIN que te mandamos por WhatsApp.</p>
+        <p>Entrá con el CUIT con el que te facturamos.</p>
         <LoginForm />
-        <div className="ayuda">¿No tenés PIN o lo perdiste? Pedíselo a tu vendedor.</div>
+        <div className="ayuda">¿No te reconoce el CUIT? Escribile a tu vendedor y te damos de alta.</div>
       </div>
     </main>
   )
