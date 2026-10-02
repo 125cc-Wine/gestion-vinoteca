@@ -49,7 +49,7 @@ async function postHandler(req: NextRequest) {
   const r = await crearVenta({
     empresa: p.empresa, tipo: 'presupuesto', estado: 'emitido',
     cliente_id: p.cliente_id, cliente_nombre: p.cliente_nombre,
-    vendedor_id, vendedor_nombre: p.vendedor_nombre || null,
+    vendedor_id, vendedor_nombre: p.vendedor_nombre || (p.origen === 'portal' ? 'Portal clientes' : null),
     items, subtotal: total, descuento: 0, total,
     estado_pago, condicion_venta: condicion_venta.trim(),
     monto_pagado: estado_pago === 'pagado' ? total : 0,

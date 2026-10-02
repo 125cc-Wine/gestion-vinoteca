@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
     empresa: cliente.empresa, numero, cliente_id: cliente.id, cliente_nombre: cliente.nombre,
     items, subtotal: total, descuento: 0, total, estado: 'pendiente', origen: cliente.vendedor ? 'vendedor' : 'portal',
     notas, fecha_entrega: fecha,
-    ...(cliente.vendedor ? { vendedor_id: cliente.vendedor.id, vendedor_nombre: cliente.vendedor.nombre } : {}),
+    // Autogestión del cliente: canal 'Portal clientes' (distinto de 'Tienda web', que es WooCommerce). Sin comisión.
+    ...(cliente.vendedor ? { vendedor_id: cliente.vendedor.id, vendedor_nombre: cliente.vendedor.nombre } : { vendedor_nombre: 'Portal clientes' }),
   }]).select('numero, total').single()
   if (error) return NextResponse.json({ error: 'No se pudo enviar el pedido. Probá de nuevo en un momento.' }, { status: 500 })
   return NextResponse.json({ ok: true, numero: data.numero, total: data.total })
