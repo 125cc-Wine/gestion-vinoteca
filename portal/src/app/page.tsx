@@ -17,7 +17,8 @@ export default async function Inicio({ searchParams }: { searchParams: { pase?: 
   // Primer ingreso: confirmar contacto y horarios de entrega antes del catálogo.
   if (!cliente.datosConfirmados) redirect('/datos')
 
-  const catalogo = await catalogoDe(cliente)
+  // Al vendedor se le muestra el stock exacto; al cliente, solo disponible / a confirmar.
+  const catalogo = await catalogoDe(cliente, { conStock: !!cliente.vendedor })
   const recomendaciones = cliente.id ? await recomendacionesDe(cliente.id, catalogo.items) : undefined
   const hoy = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
 

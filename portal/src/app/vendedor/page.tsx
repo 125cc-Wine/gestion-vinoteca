@@ -22,6 +22,7 @@ export default async function Vendedor() {
           <span className="brand"><span>🚶 {vendedor.nombre}</span></span>
           <nav className="top-nav">
             <Link href="/vendedor" aria-current="page">Mis clientes</Link>
+            <Link href="/vendedor/stock">Lista y stock</Link>
             <Link href="/vendedor/nuevo">Nuevo cliente</Link>
             <form action="/api/logout" method="post"><button>Salir</button></form>
           </nav>

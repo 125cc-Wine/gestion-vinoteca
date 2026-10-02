@@ -14,6 +14,7 @@ export interface ItemCatalogo {
   precio: number
   descuento: number
   disponible: boolean
+  stock?: number        // solo para el vendedor (al cliente nunca se le manda)
 }
 
 export interface Catalogo {
@@ -30,7 +31,7 @@ interface FilaProducto {
 // precio y lo oculto según las reglas de gestión > Catálogo > Lista para
 // clientes (ver precioPortal.ts). La base es el descuento propio del
 // cliente o el general.
-export async function catalogoDe(cliente: ClientePortal): Promise<Catalogo> {
+export async function catalogoDe(cliente: ClientePortal, opciones: { conStock?: boolean } = {}): Promise<Catalogo> {
   const filas: FilaProducto[] = []
   const PAGINA = 1000
   for (let desde = 0; ; desde += PAGINA) {
@@ -59,6 +60,7 @@ export async function catalogoDe(cliente: ClientePortal): Promise<Catalogo> {
       id: p.id, nombre: p.nombre, bodega: p.bodega || '', varietal: p.varietal || '', categoria: p.categoria || '',
       precio_lista: r.lista, precio: r.precio, descuento: r.descuento,
       disponible: (p.stock ?? 0) > 0,
+      ...(opciones.conStock ? { stock: Math.max(0, Number(p.stock) || 0) } : {}),
     })
   }
   items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))

@@ -14,7 +14,7 @@ export default function Header({ empresa, activo, admin, preview, cliente, vende
       )}
       {vendedor && (
         <div className="vend-bar">
-          🚶 {vendedor} · atendiendo a <b>{cliente}</b> · <Link href="/vendedor">Cambiar de cliente</Link>
+          🚶 {vendedor} · atendiendo a <b>{cliente}</b> · <Link href="/vendedor">Cambiar de cliente</Link> · <Link href="/vendedor/stock">Lista y stock</Link>
         </div>
       )}
       {!admin && !vendedor && (

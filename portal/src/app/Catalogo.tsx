@@ -5,6 +5,7 @@ import Link from 'next/link'
 interface Item {
   id: string; nombre: string; bodega: string; varietal: string; categoria: string
   precio_lista: number; precio: number; descuento: number; disponible: boolean
+  stock?: number   // solo cuando atiende un vendedor
 }
 
 const ORDEN_TIPO = ['Espumante', 'Blanco', 'Naranjo', 'Rosado', 'Tinto', 'Dulce']
@@ -173,7 +174,7 @@ export default function Catalogo({ clienteId, clienteNombre, actualizado, items,
             {(i.categoria || i.varietal) && (
               <span>{i.categoria && <span className={`dot dot-${i.categoria}`} />}{[i.varietal, i.categoria === 'Otro' ? '' : i.categoria].filter((x, k, a) => x && a.indexOf(x) === k).join(' · ')}</span>
             )}
-            <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.disponible ? 'Disponible' : 'A confirmar'}</span>
+            <span className={`disp ${i.disponible ? 'disp-ok' : 'disp-no'}`}>{i.stock != null ? (i.stock > 0 ? `Stock: ${i.stock}` : 'Sin stock') : i.disponible ? 'Disponible' : 'A confirmar'}</span>
             {nota && <span className="nota-rec">{nota}</span>}
           </div>
         </div>
