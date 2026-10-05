@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
 
-// "Cambiar PIN" en Mi cuenta: el cliente elige uno propio, fácil de recordar.
-export default function CambiarPin() {
+// "Cambiar PIN": el cliente (Mi cuenta) o el vendedor (su pantalla) elige uno
+// propio, fácil de recordar. endpoint: a qué API va.
+export default function CambiarPin({ endpoint = '/api/cuenta/pin' }: { endpoint?: string }) {
   const [abierto, setAbierto] = useState(false)
   const [actual, setActual] = useState('')
   const [nuevo, setNuevo] = useState('')
@@ -17,7 +18,7 @@ export default function CambiarPin() {
     if (nuevo !== repetir) { setError('Los dos PIN nuevos no coinciden'); return }
     setEnviando(true); setError('')
     try {
-      const r = await fetch('/api/cuenta/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ actual, nuevo }) })
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ actual, nuevo }) })
       const d = await r.json().catch(() => ({}))
       if (!r.ok) { setError(d.error || 'No se pudo cambiar'); return }
       setOk(true); setActual(''); setNuevo(''); setRepetir(''); setAbierto(false)

@@ -3,6 +3,7 @@ import { vendedorActual } from '@/lib/session'
 import { resumenVendedor } from '@/lib/vendedor'
 import Ingreso from '../Ingreso'
 import Cartera from './Cartera'
+import CambiarPin from '../cuenta/CambiarPin'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,8 @@ export default async function Vendedor() {
         </div>
 
         <Cartera clientes={r.clientes} />
+
+        <CambiarPin endpoint="/api/vendedor/pin" />
 
         {r.cobros.length > 0 && (
           <section className="grupo">
