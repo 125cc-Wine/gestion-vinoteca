@@ -178,13 +178,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  if (accion === 'generar' || accion === 'compartir') {
-    const { data: actual } = await supabase.from('clientes').select('portal_token, portal_activo, cuit, email, telefono').eq('id', cliente_id).single()
-    const token = accion === 'compartir' && actual?.portal_activo && actual.portal_token ? actual.portal_token : nuevoToken()
-    const pin = nuevoPin()
+  // 'compartir': mismo link y, si ya tenía PIN, lo CONSERVA (el mensaje dice
+  //   "tu PIN de siempre"; el PIN se guarda cifrado y no se puede volver a
+  //   mostrar). Si no tenía PIN (entró solo con CUIT) o estaba suspendido, uno nuevo.
+  // 'nuevo_pin': mismo link, PIN nuevo (si se lo olvidó).
+  // 'generar': link y PIN nuevos (el link anterior deja de andar).
+  if (accion === 'generar' || accion === 'compartir' || accion === 'nuevo_pin') {
+    const { data: actual } = await supabase.from('clientes').select('portal_token, portal_activo, portal_pin_hash, portal_bloqueado, cuit, email, telefono').eq('id', cliente_id).single()
+    const vigente = !!actual?.portal_activo && !!actual.portal_token && !actual.portal_bloqueado
+    const token = accion !== 'generar' && actual?.portal_activo && actual.portal_token ? actual.portal_token : nuevoToken()
+    const conservaPin = accion === 'compartir' && vigente && !!actual?.portal_pin_hash
+    const pin = conservaPin ? null : nuevoPin()
     const cambios: Record<string, unknown> = {
-      portal_token: token, portal_pin_hash: hashPin(pin), portal_activo: true, portal_bloqueado: false,
-      portal_intentos: 0, portal_bloqueado_hasta: null,
+      portal_token: token, portal_activo: true, portal_bloqueado: false,
+      ...(pin ? { portal_pin_hash: hashPin(pin), portal_intentos: 0, portal_bloqueado_hasta: null } : {}),
     }
     if ('descuento' in body) {
       const d = aDescuento(body.descuento)
@@ -197,7 +204,7 @@ export async function POST(req: NextRequest) {
     const cuit = (actual?.cuit || '').replace(/\D/g, '')
     const usuario = cuit.length === 11 ? `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}`
       : actual?.email?.trim() || ((actual?.telefono || '').replace(/\D/g, '').length >= 8 ? actual!.telefono!.trim() : null)
-    return NextResponse.json({ ok: true, url: `${PORTAL_URL}/c/${token}`, pin, portal: PORTAL_URL, usuario })
+    return NextResponse.json({ ok: true, url: `${PORTAL_URL}/c/${token}`, pin, conservaPin, portal: PORTAL_URL, usuario })
   }
 
   return err('accion inválida', 400)

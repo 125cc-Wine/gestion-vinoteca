@@ -47,7 +47,7 @@ export default function PortalPage() {
   const [elegido, setElegido] = useState<ClienteMini | null>(null)
   const [descNuevo, setDescNuevo] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
-  const [ultimo, setUltimo] = useState<{ nombre: string; url: string; pin: string; texto: string } | null>(null)
+  const [ultimo, setUltimo] = useState<{ nombre: string; url: string; pin: string | null; texto: string } | null>(null)
 
   function aviso(m: string) { setToast(m); setTimeout(() => setToast(''), 3500) }
 
@@ -82,11 +82,13 @@ export default function PortalPage() {
     if (w) w.location.href = d.url; else window.location.href = d.url
   }
 
-  async function compartir(c: { id: string; nombre: string; empresa: string; telefono?: string | null }, extra: object = {}) {
+  // accion 'compartir' conserva el PIN si ya tenía; 'nuevo_pin' le genera otro.
+  async function compartir(c: { id: string; nombre: string; empresa: string; telefono?: string | null }, extra: object = {}, accion: 'compartir' | 'nuevo_pin' = 'compartir') {
+    if (accion === 'nuevo_pin' && !confirm(`¿Generar un PIN nuevo para ${c.nombre}? El que tiene deja de funcionar (sus sesiones abiertas siguen).`)) return
     const w = window.open('about:blank', '_blank')
     setOcupado(c.id)
     try {
-      const d = await POST({ accion: 'compartir', cliente_id: c.id, ...extra })
+      const d = await POST({ accion, cliente_id: c.id, ...extra })
       if (d.error) { w?.close(); aviso('Error: ' + d.error); return }
       const texto = textoAcceso(c.nombre, c.empresa, d)
       setUltimo({ nombre: c.nombre, url: d.url, pin: d.pin, texto })
@@ -189,7 +191,9 @@ export default function PortalPage() {
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.green }}>Acceso listo para {ultimo.nombre}</div>
             <div style={{ fontSize: 12, color: T.muted, wordBreak: 'break-all', marginTop: 4 }}>{ultimo.url}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.15em', marginTop: 4 }}>PIN {ultimo.pin}</div>
+            {ultimo.pin
+              ? <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.15em', marginTop: 4 }}>PIN {ultimo.pin}</div>
+              : <div style={{ fontSize: 12.5, color: T.muted, marginTop: 4 }}>Conserva su PIN de siempre (no se cambió).</div>}
           </div>
           <button style={BTN} onClick={() => navigator.clipboard?.writeText(ultimo.texto).then(() => aviso('Mensaje copiado'))}>Copiar mensaje</button>
           <button style={{ ...BTN, border: 'none', background: 'none', color: T.dim }} onClick={() => setUltimo(null)}>Cerrar</button>
@@ -235,6 +239,9 @@ export default function PortalPage() {
                         style={{ ...BTN, padding: '6px 10px', marginRight: 6, background: T.wa, color: '#FFF', border: 'none' }}
                         onClick={() => compartir(c)}>📲 Compartir</button>
                       {c.activo && (
+                        <button title="Generarle un PIN nuevo (si se lo olvidó)" disabled={ocupado === c.id} style={{ ...BTN, padding: '6px 10px' }} onClick={() => compartir(c, {}, 'nuevo_pin')}>🔑 PIN</button>
+                      )}
+                      {c.activo && (
                         <button title="Quitar acceso" style={{ ...BTN, padding: '6px 10px', background: T.redBg, borderColor: T.redBd, color: T.red }} onClick={() => quitar(c)}>✕</button>
                       )}
                     </td>
@@ -249,7 +256,7 @@ export default function PortalPage() {
       <Revision aviso={aviso} />
 
       <div style={{ fontSize: 12, color: T.dim, marginTop: 14, lineHeight: 1.5 }}>
-        Cualquier cliente cargado puede entrar al portal con su CUIT; la primera vez confirma su contacto y horarios de entrega. "Compartir" le manda además un link directo por WhatsApp. ✕ suspende el acceso (ni con CUIT ni con link); "Compartir" lo reactiva.
+        Cualquier cliente cargado puede entrar al portal con su CUIT; la primera vez confirma su contacto y horarios de entrega. "Compartir" le manda además un link directo por WhatsApp y conserva su PIN; 🔑 PIN le genera uno nuevo si se lo olvidó (el cliente también puede cambiarlo en "Mi cuenta"). ✕ suspende el acceso (ni con CUIT ni con link); "Compartir" lo reactiva.
       </div>
 
       {toast && <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: T.text, color: '#FFF', padding: '10px 18px', borderRadius: 10, fontSize: 13, zIndex: 300 }}>{toast}</div>}

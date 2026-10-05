@@ -123,7 +123,7 @@ export default function ClientesPage() {
   // Portal de pedidos del cliente (app aparte, ver portal/ y /api/clientes/portal)
   interface PortalEstado { descuento: number | null; descuento_general: number; activo: boolean; suspendido?: boolean; datos?: DatosEntregaPortal | null; datos_at?: string | null; reglas?: ReglaCliente[]; ultimo_acceso: string | null; bloqueado_hasta: string | null; url: string | null }
   const [portal, setPortal] = useState<PortalEstado | null>(null)
-  const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string; portal?: string; usuario?: string | null } | null>(null)
+  const [portalNuevo, setPortalNuevo] = useState<{ url: string; pin: string | null; portal?: string; usuario?: string | null } | null>(null)
   const [portalOcupado, setPortalOcupado] = useState(false)
 
   // Modal cobro manual
@@ -303,20 +303,23 @@ export default function ClientesPage() {
     if (!r.error) setPortal(r)
   }
 
-  async function portalAccion(accion: 'generar' | 'revocar' | 'descuento', descuento?: string) {
+  // compartir: reenvía el link conservando el PIN (o crea el acceso si no tenía).
+  // nuevo_pin: mismo link, PIN nuevo. generar: link y PIN nuevos.
+  async function portalAccion(accion: 'generar' | 'compartir' | 'nuevo_pin' | 'revocar' | 'descuento', descuento?: string) {
     if (!editId) return
     if (accion === 'generar' && portal?.activo && !confirm('Se genera un link y PIN nuevos. El link anterior deja de funcionar. ¿Seguir?')) return
+    if (accion === 'nuevo_pin' && !confirm('Se genera un PIN nuevo: el que tiene deja de funcionar (el link sigue igual). ¿Seguir?')) return
     if (accion === 'revocar' && !confirm('¿Suspender el acceso de este cliente al portal? Ya no va a poder entrar, ni con su link ni con su CUIT.')) return
     setPortalOcupado(true)
     try {
       const r = await fetch('/api/clientes/portal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente_id: editId, accion, descuento }) })
       const d = await r.json()
       if (d.error) { showToast('Error: ' + d.error); return }
-      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin, portal: d.portal, usuario: d.usuario })
+      const conAcceso = accion === 'generar' || accion === 'compartir' || accion === 'nuevo_pin'
       if (accion === 'revocar') setPortalNuevo(null)
       await cargarPortal(editId)
-      if (accion === 'generar') setPortalNuevo({ url: d.url, pin: d.pin, portal: d.portal, usuario: d.usuario })
-      showToast(accion === 'descuento' ? 'Descuento guardado' : accion === 'generar' ? 'Acceso generado' : 'Acceso desactivado')
+      if (conAcceso) setPortalNuevo({ url: d.url, pin: d.pin, portal: d.portal, usuario: d.usuario })
+      showToast(accion === 'descuento' ? 'Descuento guardado' : accion === 'revocar' ? 'Acceso desactivado' : d.pin ? 'Acceso listo con PIN nuevo' : 'Link listo (conserva su PIN)')
     } finally { setPortalOcupado(false) }
   }
 
@@ -332,7 +335,7 @@ export default function ClientesPage() {
     else window.location.href = d.url
   }
 
-  function mensajePortal(nuevo: { url: string; pin: string; portal?: string; usuario?: string | null }) {
+  function mensajePortal(nuevo: { url: string; pin: string | null; portal?: string; usuario?: string | null }) {
     return textoAcceso(form.razon_social || `${form.nombre} ${form.apellido || ''}`.trim(), form.empresa || 'aroma', nuevo)
   }
 
@@ -802,9 +805,11 @@ export default function ClientesPage() {
                       )}
                       {portalNuevo && (
                         <div style={{ marginTop: 12, background: T.bg, border: `1px solid ${T.border2}`, borderRadius: 10, padding: 12 }}>
-                          <div style={{ fontSize: 12, color: T.muted, marginBottom: 6 }}>Mandale esto al cliente. <b>El PIN se muestra solo esta vez.</b></div>
+                          <div style={{ fontSize: 12, color: T.muted, marginBottom: 6 }}>Mandale esto al cliente.{portalNuevo.pin && <b> El PIN se muestra solo esta vez.</b>}</div>
                           <div style={{ fontSize: 12, wordBreak: 'break-all', color: T.text }}>{portalNuevo.url}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.2em', color: T.text, margin: '6px 0 10px' }}>PIN {portalNuevo.pin}</div>
+                          {portalNuevo.pin
+                            ? <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.2em', color: T.text, margin: '6px 0 10px' }}>PIN {portalNuevo.pin}</div>
+                            : <div style={{ fontSize: 12.5, color: T.muted, margin: '6px 0 10px' }}>Conserva su PIN de siempre (no se cambió).</div>}
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <a className="btn-wine" target="_blank" rel="noreferrer"
                               href={form.telefono ? `https://wa.me/549${form.telefono.replace(/\D/g, '').replace(/^(54)?9?0?/, '')}?text=${encodeURIComponent(mensajePortal(portalNuevo))}` : `https://wa.me/?text=${encodeURIComponent(mensajePortal(portalNuevo))}`}
@@ -819,10 +824,22 @@ export default function ClientesPage() {
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('generar')}
-                          style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }}>
-                          {portal.activo ? 'Generar link y PIN nuevos' : 'Dar acceso al portal'}
+                        <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('compartir')}
+                          style={{ background: T.wine, border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {portal.activo ? '📲 Reenviar link (conserva PIN)' : 'Dar acceso al portal'}
                         </button>
+                        {portal.activo && (
+                          <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('nuevo_pin')} title="Si se olvidó el PIN"
+                            style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            🔑 PIN nuevo
+                          </button>
+                        )}
+                        {portal.activo && (
+                          <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('generar')} title="Si alguien más consiguió su link"
+                            style={{ background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }}>
+                            Link y PIN nuevos
+                          </button>
+                        )}
                         {portal.activo && (
                           <button className="btn-row" disabled={portalOcupado} onClick={() => portalAccion('revocar')}
                             style={{ background: T.redBg, border: `1px solid ${T.redBd}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, color: T.red, cursor: 'pointer', fontFamily: 'inherit' }}>

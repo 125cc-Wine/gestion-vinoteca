@@ -3,6 +3,7 @@ import { cuentaDe } from '@/lib/cuenta'
 import { EMPRESAS } from '@/lib/empresas'
 import Header from '../Header'
 import Ingreso from '../Ingreso'
+import CambiarPin from './CambiarPin'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,8 @@ export default async function MiCuenta() {
             {vencidos.length > 0 && <div className="venc">{vencidos.length} {vencidos.length === 1 ? 'vencido' : 'vencidos'}</div>}
           </div>
         </div>
+
+        {!cliente.vendedor && <CambiarPin />}
 
         <section className="grupo">
           <div className="grupo-h"><h2>Comprobantes</h2><small>tocá uno para ver el detalle</small></div>

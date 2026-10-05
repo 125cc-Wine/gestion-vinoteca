@@ -349,3 +349,7 @@ select.chip { font-family: inherit; }
   .stock-logo { width: 34px; height: 34px; }
   .stock-precio { grid-column: 2 / 4; flex-direction: row; justify-content: flex-start; gap: 8px; align-items: baseline; min-width: 0; }
 }
+
+/* Mi cuenta: cambiar PIN */
+.pin-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; margin: 14px 0; }
+.pin-box .btn { text-decoration: none; color: var(--ink); }
