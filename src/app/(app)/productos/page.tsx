@@ -517,6 +517,8 @@ export default function ProductosPage() {
   const [histVentasData, setHistVentasData]           = useState<VentaHistItem[]>([])
   const [histVentasLoading, setHistVentasLoading]     = useState(false)
   const [histVentasVista, setHistVentasVista]         = useState<'clientes' | 'ventas'>('clientes')
+  // Productos con precio rebajado en la web, por woo_product_id (solo para marcarlos)
+  const [ofertasWeb, setOfertasWeb] = useState<Map<number, { id: number; regular: number; oferta: number }>>(new Map())
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -565,6 +567,10 @@ export default function ProductosPage() {
     setProductos(await pRes.json().catch(() => []))
     setBodegas(await bRes.json().catch(() => []))
     setLoading(false)
+    // Ofertas de la web (rebaja en vinos): solo para marcarlas en la lista.
+    fetch('/api/woo/ofertas').then(r => r.json())
+      .then((d: { id: number; regular: number; oferta: number }[]) => setOfertasWeb(new Map(d.map(o => [o.id, o]))))
+      .catch(() => {})
   }
 
   async function reactivarUno(id: string) {
@@ -1680,7 +1686,20 @@ export default function ProductosPage() {
                     <input type="checkbox" checked={isSel} onChange={() => toggleSel(p.id!)} style={{ accentColor: T.wine, cursor: 'pointer' }} />
                   </td>
                   <td style={{ padding: '9px 10px', maxWidth: 260 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</div>
+                      {(() => {
+                        const o = p.woo_product_id ? ofertasWeb.get(p.woo_product_id) : undefined
+                        if (!o) return null
+                        const pct = o.regular > 0 ? Math.round((1 - o.oferta / o.regular) * 100) : 0
+                        return (
+                          <span title={`En oferta en la web: $${o.oferta.toLocaleString('es-AR')} (lista $${o.regular.toLocaleString('es-AR')}). En el sistema el precio sigue siendo el de lista.`}
+                            style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#fff', background: T.wine, borderRadius: 999, padding: '2px 7px', letterSpacing: '0.02em' }}>
+                            -{pct}% web
+                          </span>
+                        )
+                      })()}
+                    </div>
                     {p.sku && <div style={{ fontSize: 11, color: T.dim, marginTop: 1 }}>{p.sku}</div>}
                   </td>
                   <td style={{ padding: '9px 10px', fontSize: 13, color: T.muted }}>{p.bodega || <span style={{ color: T.dim }}>—</span>}</td>
