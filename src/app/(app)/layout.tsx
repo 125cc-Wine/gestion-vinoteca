@@ -7,7 +7,7 @@ import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import WebSyncAvisos from '@/components/WebSyncAvisos'
 import PedidosWebAviso from '@/components/PedidosWebAviso'
 import CobrosVendedorAviso from '@/components/CobrosVendedorAviso'
-import PedidosPortalAviso from '@/components/PedidosPortalAviso'
+import PedidosPortalAviso, { BadgePedidos, useContadorPedidos } from '@/components/PedidosPortalAviso'
 import CotizadorEnvio from '@/components/CotizadorEnvio'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -212,6 +212,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const TIPO_COLOR: Record<string, string> = { venta: T.wine, cliente: T.brown, producto: T.green }
   const allNav = NAV_GROUPS.flatMap(g => g.items)
   const currentNav = allNav.find(n => pathname.startsWith(n.href))
+  const nPedidos = useContadorPedidos()   // número rojo sobre "Pedidos"
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
@@ -324,6 +325,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     )}
                     <span style={{ display: 'flex', flexShrink: 0 }}><NavIcon d={n.icon} /></span>
                     {n.label}
+                    {n.href === '/pedidos' && <BadgePedidos n={nPedidos} />}
                   </Link>
                 )
               })}
@@ -483,12 +485,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           const active = pathname.startsWith(n.href)
           return (
             <Link key={n.href} href={n.href} style={{
-              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative',
               justifyContent: 'center', padding: '8px 4px 10px',
               color: active ? T.wine : T.dim,
               borderTop: `2px solid ${active ? T.wine : 'transparent'}`,
             }}>
               <NavIcon d={n.icon} size={20} />
+              {n.href === '/pedidos' && <BadgePedidos n={nPedidos} flotante />}
               <span style={{ fontSize: 10, marginTop: 3, fontWeight: active ? 700 : 400 }}>{n.label}</span>
             </Link>
           )
