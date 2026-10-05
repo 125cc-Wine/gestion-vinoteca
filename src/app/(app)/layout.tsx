@@ -144,6 +144,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Antes de cualquier return: los hooks tienen que llamarse siempre en el mismo orden.
+  const nPedidos = useContadorPedidos()   // número rojo sobre "Pedidos"
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -212,7 +214,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const TIPO_COLOR: Record<string, string> = { venta: T.wine, cliente: T.brown, producto: T.green }
   const allNav = NAV_GROUPS.flatMap(g => g.items)
   const currentNav = allNav.find(n => pathname.startsWith(n.href))
-  const nPedidos = useContadorPedidos()   // número rojo sobre "Pedidos"
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" }}>
