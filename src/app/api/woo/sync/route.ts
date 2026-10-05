@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetEstadoPorId, agruparConflictos, type WooBatchItem, type WooEstado } from '@/lib/woocommerce'
+import { wooGetAllProducts, mapWooToProducto, wooUpdateProductsBatch, wooGetEstadoPorId, agruparConflictos, ofertaProporcional, type WooBatchItem, type WooEstado } from '@/lib/woocommerce'
 
 // GET /api/woo/sync — previsualiza productos de WooCommerce vs Supabase
 export async function GET() {
@@ -133,6 +133,9 @@ export async function POST(req: NextRequest) {
         const precioNuevo = prod.precio_venta ?? 0
         if (!web || web.precio !== precioNuevo) {
           item.regular_price = String(precioNuevo)
+          // Si tiene rebaja (ej. 25% vinos web), se mantiene el mismo %.
+          const oferta = web ? ofertaProporcional(precioNuevo, web.precio, web.oferta) : undefined
+          if (oferta) item.sale_price = oferta
           algoParaActualizar = true
         }
       }

@@ -118,7 +118,7 @@ export function mapWooToProducto(woo: WooProduct) {
 
 export async function wooUpdateProduct(
   wooId: number,
-  data: { regular_price?: string; stock_quantity?: number; manage_stock?: boolean }
+  data: { regular_price?: string; sale_price?: string; stock_quantity?: number; manage_stock?: boolean }
 ) {
   const url = wooUrl(`products/${wooId}`)
   const res = await fetch(url, {
@@ -145,7 +145,23 @@ export async function wooUpdateStockAndPrice(
   })
 }
 
-export interface WooEstado { stock: number; precio: number; nombre: string }
+export interface WooEstado { stock: number; precio: number; nombre: string; oferta: number }
+
+// Precio rebajado ("oferta") cuando cambia el precio normal: se mantiene el
+// mismo % de descuento que tenía (ej. la rebaja del 25% de los vinos web) y se
+// redondea a la decena. Sin oferta previa devuelve undefined (no se toca).
+export function ofertaProporcional(regularNuevo: number, regularViejo: number, ofertaVieja: number): string | undefined {
+  if (!(ofertaVieja > 0) || !(regularViejo > 0) || !(regularNuevo > 0)) return undefined
+  return String(Math.round((regularNuevo * ofertaVieja / regularViejo) / 10) * 10)
+}
+
+// Cambia el precio normal en la web conservando la rebaja si el producto la tiene.
+export async function wooActualizarPrecio(wooId: number, precio: number) {
+  const res = await fetch(wooUrl(`products/${wooId}`, { _fields: 'id,regular_price,sale_price' }), { cache: 'no-store' })
+  const actual: { regular_price?: string; sale_price?: string } = res.ok ? await res.json() : {}
+  const oferta = ofertaProporcional(precio, parseFloat(actual.regular_price || '0'), parseFloat(actual.sale_price || '0'))
+  return wooUpdateProduct(wooId, { regular_price: String(precio), ...(oferta ? { sale_price: oferta } : {}) })
+}
 
 // Trae precio y stock ACTUALES en la web de los ids pedidos, en tandas de
 // 100 (filtro "include") en paralelo y pidiendo solo esos campos
@@ -165,16 +181,17 @@ export async function wooGetEstadoPorId(ids: number[]): Promise<Map<number, WooE
         include: tanda.join(','),
         per_page: tanda.length,
         status: 'any',
-        _fields: 'id,name,regular_price,price,stock_quantity',
+        _fields: 'id,name,regular_price,sale_price,price,stock_quantity',
       })
       const res = await fetch(url, { cache: 'no-store' })
       if (!res.ok) throw new Error(`WooCommerce error: ${res.status}`)
-      const data: { id: number; name: string; regular_price: string; price: string; stock_quantity: number | null }[] = await res.json()
+      const data: { id: number; name: string; regular_price: string; sale_price: string; price: string; stock_quantity: number | null }[] = await res.json()
       for (const d of data) {
         mapa.set(d.id, {
           stock: d.stock_quantity ?? 0,
           precio: parseFloat(d.regular_price || d.price || '0') || 0,
           nombre: d.name,
+          oferta: parseFloat(d.sale_price || '0') || 0,
         })
       }
     }))
@@ -185,6 +202,7 @@ export async function wooGetEstadoPorId(ids: number[]): Promise<Map<number, WooE
 export interface WooBatchItem {
   id: number
   regular_price?: string
+  sale_price?: string
   stock_quantity?: number
   manage_stock?: boolean
 }

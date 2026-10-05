@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { wooUpdateProduct } from '@/lib/woocommerce'
+import { wooActualizarPrecio } from '@/lib/woocommerce'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
 
 function otraEmpresa(empresa: string) {
@@ -215,7 +215,8 @@ async function putHandler(req: NextRequest) {
     process.env.WOOCOMMERCE_CONSUMER_KEY !== 'ck_tu_clave_aqui'
   ) {
     try {
-      await wooUpdateProduct(data.woo_product_id, { regular_price: String(data.precio_venta ?? 0) })
+      // Conserva la rebaja (precio de oferta) si el producto la tiene en la web.
+      await wooActualizarPrecio(data.woo_product_id, Number(data.precio_venta ?? 0))
     } catch (wooErr) {
       console.error('WooCommerce sync error:', wooErr)
       return NextResponse.json({ ...data, woo_sync: 'error' })
