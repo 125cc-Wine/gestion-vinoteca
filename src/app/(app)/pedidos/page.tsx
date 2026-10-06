@@ -1,5 +1,5 @@
 'use client'
-import ProcesarPedido, { type VentaDePedido } from './ProcesarPedido'
+import ProcesarPedido, { type VentaDePedido, type ConsignacionDePedido } from './ProcesarPedido'
 import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega'
 import { useEffect, useRef, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
@@ -93,8 +93,10 @@ interface Pedido {
   id: string; numero: string; cliente_nombre: string; vendedor_nombre?: string
   items: PedidoItem[]; estado: string; fecha_entrega?: string; notas?: string; created_at: string
   // Pedidos de la tienda web (ver src/lib/woo-pedidos.ts)
-  origen?: 'local' | 'web' | 'portal' | 'vendedor'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
+  origen?: 'local' | 'web' | 'portal' | 'vendedor' | '125cc'; entrega_portal?: DatosEntregaPortal | null; pago?: 'pagado' | 'pendiente' | null; woo_estado?: string | null
   total?: number; venta_id?: string | null; levantado_at?: string | null; venta?: VentaDePedido | null
+  // Pedidos de la carta de 125cc que salieron como consignación
+  consignacion_id?: string | null; consignacion?: ConsignacionDePedido | null
 }
 
 const ITEM_EMPTY: PedidoItem = { producto_id: '', nombre: '', cantidad: 1, precio_unitario: 0 }
@@ -361,7 +363,10 @@ export default function PedidosPage() {
                     {p.origen === 'portal' && (
                       <span title="Lo cargó el cliente desde el portal de pedidos" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#2B5EA0', background: 'rgba(43,94,160,0.08)', border: '1px solid rgba(43,94,160,0.2)', borderRadius: 5, padding: '1px 5px' }}>👤 CLIENTE</span>
                     )}
-                    {p.origen === 'portal' && p.total ? (
+                    {p.origen === '125cc' && (
+                      <span title="Pedido de la carta de 125cc Wine Bar (Calendario de Carta) — sale como venta o consignación" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#6B2D5C', background: 'rgba(107,45,92,0.08)', border: '1px solid rgba(107,45,92,0.2)', borderRadius: 5, padding: '1px 5px' }}>🍷 125CC</span>
+                    )}
+                    {(p.origen === 'portal' || p.origen === '125cc') && p.total ? (
                       <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: T.muted }}>${Number(p.total).toLocaleString('es-AR')}</div>
                     ) : null}
                     {p.origen === 'web' && p.pago && (
@@ -599,7 +604,9 @@ export default function PedidosPage() {
                 <span style={{ ...(ESTADO_STYLE[modalDetalle.estado] || {}), padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>{ESTADO_LABEL[modalDetalle.estado] ?? modalDetalle.estado}</span>
               </div>
             </div>
-            <ProcesarPedido pedido={modalDetalle} onCambio={v => { setModalDetalle(m => m && { ...m, venta: v, venta_id: v.id, estado: 'armado' }); cargar(empresa) }} />
+            <ProcesarPedido pedido={modalDetalle}
+              onCambio={v => { setModalDetalle(m => m && { ...m, venta: v, venta_id: v.id, estado: 'armado' }); cargar(empresa) }}
+              onConsignacion={c => { setModalDetalle(m => m && { ...m, consignacion: c, consignacion_id: c.id, estado: 'armado' }); cargar(empresa) }} />
             <div style={{ padding: '0 24px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>

@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_SESION, leerSesion } from '@/lib/sesion'
 
 // Todo gestión (pantallas y /api) pide estar logueado. Quedan afuera solo el
-// login, la activación por invitación y los archivos estáticos.
-const PUBLICAS = ['/login', '/acceso/', '/api/sesion']
+// login, la activación por invitación, los archivos estáticos y
+// /api/pedidos/125cc (lo llama el servidor de 125cc, se autoriza con su
+// propio token CARTA_125CC_TOKEN).
+const PUBLICAS = ['/login', '/acceso/', '/api/sesion', '/api/pedidos/125cc']
 
 // Además de la firma de la cookie, se confirma que el usuario siga habilitado
 // (si se lo deshabilita en Usuarios, pierde el acceso en ~1 minuto). Se

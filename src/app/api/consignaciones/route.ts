@@ -2,34 +2,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
+import { ajustarStock, crearConsignacion, type ConsItem } from '@/lib/consignaciones'
 
-interface ConsItem {
-  producto_id: string
-  nombre?: string
-  cantidad: number
-  cantidad_vendida?: number
-  precio_unitario?: number
-}
-
-// Ajusta el stock de un producto (delta positivo o negativo) y sincroniza la
-// contraparte en la otra empresa — mismo patrón que usan ventas y compras
-// para el depósito compartido. Clampeado en 0 para no ir a negativo.
-// `motivo` queda en movimientos_stock (antes esta función no dejaba ningún
-// rastro — la mercadería salía/volvía del depósito por consignación sin
-// aparecer nunca en la pantalla de Movimientos).
-async function ajustarStock(productoId: string, delta: number, motivo: string) {
-  const { data: prod } = await supabase.from('productos').select('id, stock, nombre, empresa').eq('id', productoId).single()
-  if (!prod) return
-  const nuevoStock = Math.max(0, (prod.stock || 0) + delta)
-  await supabase.from('productos').update({ stock: nuevoStock }).eq('id', prod.id)
-  await supabase.from('movimientos_stock').insert([{
-    empresa: prod.empresa, producto_id: prod.id,
-    nombre: `${prod.nombre} — ${motivo}`, delta, nuevo_stock: nuevoStock, modo: 'agregar',
-  }])
-  const otra = prod.empresa === 'aroma' ? 'lavid' : 'aroma'
-  const { data: contra } = await supabase.from('productos').select('id').eq('nombre', prod.nombre).eq('empresa', otra).single()
-  if (contra) await supabase.from('productos').update({ stock: nuevoStock }).eq('id', contra.id)
-}
 
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
@@ -52,52 +26,9 @@ export async function GET(req: NextRequest) {
 
 async function postHandler(req: NextRequest) {
   const body = await req.json()
-
-  // Auto-number CONS-00001
-  const { count } = await supabase
-    .from('consignaciones')
-    .select('*', { count: 'exact', head: true })
-    .eq('empresa', body.empresa)
-
-  const numero = `CONS-${String((count || 0) + 1).padStart(5, '0')}`
-
-  // Total = sum of items (cantidad * precio_unitario)
-  const items: ConsItem[] = body.items || []
-  const total = items.reduce(
-    (acc, item) => acc + (item.cantidad || 0) * (item.precio_unitario || 0),
-    0
-  )
-
-  const payload = { ...body, numero, total }
-
-  const { data, error } = await supabase
-    .from('consignaciones')
-    .insert([payload])
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Si la ficha del cliente tiene cargada otra empresa, corregirla acá —
-  // mismo fix que /api/ventas, para que no quede invisible/sin explicación
-  // en el listado de Clientes de la empresa donde realmente opera.
-  if (body.cliente_id) {
-    const { data: cli } = await supabase.from('clientes').select('empresa').eq('id', body.cliente_id).single()
-    if (cli && cli.empresa !== body.empresa) {
-      await supabase.from('clientes').update({ empresa: body.empresa }).eq('id', body.cliente_id)
-    }
-  }
-
-  // La mercadería consignada sale físicamente del depósito — antes esto
-  // nunca descontaba stock, así que al liquidar/devolver (que sí sumaban de
-  // vuelta lo no vendido) el stock quedaba inflado con unidades que jamás
-  // se habían restado.
-  for (const item of items) {
-    if (!item.producto_id) continue
-    await ajustarStock(item.producto_id, -(item.cantidad || 0), `Consignación ${numero}`)
-  }
-
-  return NextResponse.json(data)
+  const r = await crearConsignacion(body)
+  if (r.error) return NextResponse.json({ error: r.error }, { status: 500 })
+  return NextResponse.json(r.data)
 }
 
 async function putHandler(req: NextRequest) {

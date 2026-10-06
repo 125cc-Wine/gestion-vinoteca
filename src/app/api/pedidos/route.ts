@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
     const porVenta = new Map((vs || []).map(v => [v.id, v]))
     for (const p of data || []) if (p.venta_id) p.venta = porVenta.get(p.venta_id) ?? null
   }
+  // Consignación generada desde el pedido (pedidos de la carta de 125cc).
+  const cids = Array.from(new Set((data || []).map(p => p.consignacion_id).filter(Boolean)))
+  if (cids.length) {
+    const { data: cs } = await supabase.from('consignaciones').select('id, numero, estado, empresa').in('id', cids)
+    const porCons = new Map((cs || []).map(c => [c.id, c]))
+    for (const p of data || []) if (p.consignacion_id) p.consignacion = porCons.get(p.consignacion_id) ?? null
+  }
   return NextResponse.json(data)
 }
 
@@ -87,13 +94,13 @@ async function putHandler(req: NextRequest) {
   if (rest.estado === 'entregado') {
     const { data: current } = await supabase
       .from('pedidos')
-      .select('estado, items, empresa, venta_id')
+      .select('estado, items, empresa, venta_id, consignacion_id')
       .eq('id', id)
       .single()
 
-    // Si ya se generó el presupuesto/remito desde el pedido, el stock se
-    // descontó ahí: marcarlo entregado no lo vuelve a mover.
-    if (current && current.estado !== 'entregado' && !current.venta_id) {
+    // Si ya se generó el presupuesto/remito o la consignación desde el
+    // pedido, el stock se descontó ahí: marcarlo entregado no lo vuelve a mover.
+    if (current && current.estado !== 'entregado' && !current.venta_id && !current.consignacion_id) {
       const items = current.items as { producto_id: string; nombre: string; cantidad: number }[]
       await Promise.all(
         items.filter(i => i.producto_id).map(async (item) => {
