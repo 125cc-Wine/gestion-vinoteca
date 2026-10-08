@@ -55,7 +55,7 @@ export default async function Vendedor() {
                 <div>
                   <div className="fila-nom">{c.cliente}</div>
                   <div className="fila-sub">
-                    <span>{new Date(c.fecha).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })} hs · {c.medio}</span>
+                    <span>{new Date(c.fecha).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' })} hs · {c.medio}</span>
                     <span className={`disp ${c.estado === 'confirmado' ? 'disp-ok' : 'disp-no'}`}>{c.estado === 'pendiente' ? 'Pendiente de confirmar' : c.estado === 'confirmado' ? 'Confirmado' : 'Rechazado'}</span>
                   </div>
                 </div>

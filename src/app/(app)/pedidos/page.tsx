@@ -11,7 +11,7 @@ function fechaPedido(s: string) {
   const hoy = new Date().toLocaleDateString('es-AR', { timeZone: TZ })
   const ayer = new Date(Date.now() - 86400000).toLocaleDateString('es-AR', { timeZone: TZ })
   const dia = d.toLocaleDateString('es-AR', { timeZone: TZ })
-  const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
+  const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ })
   return { dia: dia === hoy ? 'Hoy' : dia === ayer ? 'Ayer' : d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: TZ }), hora }
 }
 
@@ -601,7 +601,7 @@ export default function PedidosPage() {
               <button onClick={() => setModalDetalle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
             <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, borderBottom: `1px solid ${T.border}` }}>
-              <div><span style={{ color: T.dim }}>Hecho:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.created_at).toLocaleString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: TZ })} hs</span></div>
+              <div><span style={{ color: T.dim }}>Hecho:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.created_at).toLocaleString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ })} hs</span></div>
               <div><span style={{ color: T.dim }}>Cliente:</span> <span style={{ color: T.text }}>{modalDetalle.cliente_nombre}</span></div>
               {modalDetalle.vendedor_nombre && <div><span style={{ color: T.dim }}>Vendedor:</span> <span style={{ color: T.text }}>{modalDetalle.vendedor_nombre}</span></div>}
               {modalDetalle.fecha_entrega && <div><span style={{ color: T.dim }}>Entrega:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
