@@ -16,7 +16,7 @@ interface Alta { id: string; empresa: string; nombre: string; razon_social: stri
 const T = { bg: '#F5F1EC', surface: '#FFFFFF', border: '#DDD0C0', border2: '#C8BAA8', text: '#1A1210', muted: '#6B5D55', dim: '#A89888', wine: '#800000', green: '#2D7A4F', red: '#C03030' }
 const BTN: React.CSSProperties = { borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${T.border2}`, background: T.surface, color: T.text, whiteSpace: 'nowrap' }
 const pesos = (n: number) => '$ ' + Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 })
-const fecha = (s: string | null) => s ? new Date(s).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
+const fecha = (s: string | null) => s ? new Date(s).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }) : ''
 const emp = (e: string) => e === 'lavid' ? 'La Vid' : 'Aroma'
 
 export default function CobrosVendedor() {

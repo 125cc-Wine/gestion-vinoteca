@@ -36,8 +36,8 @@ export default async function MisPedidos() {
               <div className="ped-h"><b>{p.numero}</b><strong>{pesos(Number(p.total) || 0)}</strong></div>
               <div className="ped-sub">
                 <span className={`estado estado-${p.estado}`}>{ESTADO[p.estado] ?? p.estado}</span>
-                <span>{new Date(p.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' })}</span>
-                {p.fecha_entrega && <span>Entrega: {new Date(p.fecha_entrega + 'T12:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</span>}
+                <span>{new Date(p.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })} hs</span>
+                {p.fecha_entrega && <span>Entrega: {new Date(p.fecha_entrega + 'T12:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'America/Argentina/Buenos_Aires' })}</span>}
               </div>
               <ul>
                 {items.map((i, k) => <li key={k}><span>{i.cantidad} × {i.nombre}</span><span>{pesos(i.cantidad * i.precio_unitario)}</span></li>)}

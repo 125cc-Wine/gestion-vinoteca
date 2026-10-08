@@ -37,7 +37,7 @@ export default function Cartera({ clientes }: { clientes: ClienteCartera[] }) {
             <div className="fila-sub">
               <span>{c.empresa === 'lavid' ? 'La Vid' : 'Aroma'}</span>
               {c.direccion && <span>{c.direccion}</span>}
-              {c.ultimaCompra && <span>última compra {new Date(c.ultimaCompra).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</span>}
+              {c.ultimaCompra && <span>última compra {new Date(c.ultimaCompra).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'America/Argentina/Buenos_Aires' })}</span>}
             </div>
             <div className="fila-sub">
               {c.saldo > 0.5 ? <span className="disp disp-no">Debe {pesos(c.saldo)}</span> : <span className="disp disp-ok">Al día</span>}

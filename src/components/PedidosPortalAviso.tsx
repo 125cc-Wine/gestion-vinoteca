@@ -144,7 +144,7 @@ export default function PedidosPortalAviso({ color }: { color: string }) {
               <b style={{ fontSize: 16, color: '#1A1210', whiteSpace: 'nowrap' }}>{pesos(ultimo.total)}</b>
             </div>
             <div style={{ fontSize: 12.5, color: '#6B5D55', marginTop: 3 }}>
-              {ultimo.numero} · {emp(ultimo.empresa)} · {ultimo.productos} {ultimo.productos === 1 ? 'producto' : 'productos'} · {ultimo.vendedor ? `🚶 ${ultimo.vendedor}` : '👤 lo hizo el cliente'}
+              {new Date(ultimo.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })} hs · {ultimo.numero} · {emp(ultimo.empresa)} · {ultimo.productos} {ultimo.productos === 1 ? 'producto' : 'productos'} · {ultimo.vendedor ? `🚶 ${ultimo.vendedor}` : '👤 lo hizo el cliente'}
             </div>
             {toast.length > 1 && <div style={{ fontSize: 12, color: '#A89888', marginTop: 4 }}>y {toast.length - 1} más</div>}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

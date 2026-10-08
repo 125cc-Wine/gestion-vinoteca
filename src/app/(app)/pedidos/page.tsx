@@ -4,6 +4,17 @@ import DatosEntrega, { type DatosEntregaPortal } from '@/components/DatosEntrega
 import { useEffect, useRef, useState } from 'react'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 
+// Fecha y hora en que se hizo el pedido, siempre en hora de Argentina.
+const TZ = 'America/Argentina/Buenos_Aires'
+function fechaPedido(s: string) {
+  const d = new Date(s)
+  const hoy = new Date().toLocaleDateString('es-AR', { timeZone: TZ })
+  const ayer = new Date(Date.now() - 86400000).toLocaleDateString('es-AR', { timeZone: TZ })
+  const dia = d.toLocaleDateString('es-AR', { timeZone: TZ })
+  const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
+  return { dia: dia === hoy ? 'Hoy' : dia === ayer ? 'Ayer' : d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: TZ }), hora }
+}
+
 function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
@@ -340,7 +351,7 @@ export default function PedidosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: T.bg }}>
-                {['Número','Cliente','Vendedor','Productos','Fecha entrega','Estado',''].map(h => (
+                {['Número','Pedido','Cliente','Vendedor','Productos','Entrega','Estado',''].map(h => (
                   <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -374,6 +385,10 @@ export default function PedidosPage() {
                         {p.pago === 'pagado' ? '✓ Pagado' : '⏳ Esperando pago'}{p.total ? ` · $${Number(p.total).toLocaleString('es-AR')}` : ''}
                       </div>
                     )}
+                  </td>
+                  <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }} title={new Date(p.created_at).toLocaleString('es-AR', { timeZone: TZ })}>
+                    <div style={{ fontSize: 12.5, color: T.text, fontWeight: 600 }}>{fechaPedido(p.created_at).dia}</div>
+                    <div style={{ fontSize: 11.5, color: T.muted }}>{fechaPedido(p.created_at).hora} hs</div>
                   </td>
                   <td style={{ padding: '11px 16px', fontSize: 13, color: T.text }}>{p.cliente_nombre}</td>
                   <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>{p.vendedor_nombre || '—'}</td>
@@ -586,6 +601,7 @@ export default function PedidosPage() {
               <button onClick={() => setModalDetalle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.dim, fontSize: 20, lineHeight: 1, fontFamily: 'inherit' }}>×</button>
             </div>
             <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, borderBottom: `1px solid ${T.border}` }}>
+              <div><span style={{ color: T.dim }}>Hecho:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.created_at).toLocaleString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: TZ })} hs</span></div>
               <div><span style={{ color: T.dim }}>Cliente:</span> <span style={{ color: T.text }}>{modalDetalle.cliente_nombre}</span></div>
               {modalDetalle.vendedor_nombre && <div><span style={{ color: T.dim }}>Vendedor:</span> <span style={{ color: T.text }}>{modalDetalle.vendedor_nombre}</span></div>}
               {modalDetalle.fecha_entrega && <div><span style={{ color: T.dim }}>Entrega:</span> <span style={{ color: T.text }}>{new Date(modalDetalle.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR')}</span></div>}
