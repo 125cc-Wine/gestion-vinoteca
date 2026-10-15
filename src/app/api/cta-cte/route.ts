@@ -86,12 +86,19 @@ export async function POST(req: NextRequest) {
       .neq('estado_pago', 'pagado')
       .order('created_at', { ascending: true })
 
+    // Solo las deudas cargadas a mano ("Cargar deuda", sin referencia_id). El
+    // cargo que genera cada presupuesto/remito en cta. cte. tiene referencia_id
+    // = la venta y esa deuda ya está arriba en ventasAbiertas: si se contaba
+    // también acá, la misma deuda aparecía dos veces y el cobro se iba al cargo
+    // de una venta YA pagada (el más viejo) en vez de a la que se estaba
+    // cobrando — caso real: Walter Gonzalez, octubre 2026.
     const { data: cargosAbiertos } = await supabase
       .from('movimientos_cta_cte')
       .select('id, concepto, monto, monto_pagado, created_at')
       .eq('cliente_id', cliente_id)
       .eq('empresa', empresa)
       .eq('tipo', 'cargo')
+      .is('referencia_id', null)
       .order('created_at', { ascending: true })
 
     type Pendiente = { kind: 'venta' | 'cargo'; id: string; total: number; monto_pagado: number; created_at: string; label: string }
