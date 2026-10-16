@@ -764,7 +764,9 @@ export default function VentasPage() {
           descuento: i.descuento, subtotal: calcSub({ ...i, cantidad: i.cantidad || 1 }),
         })),
         subtotal, descuento: descuentoGlobal, total: calcTotal(),
-        estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: condVenta,
+        // Cuenta corriente siempre va con condición "Cta. Cte." (así ya lo hace
+        // ProcesarPedido); antes se podía guardar "Contado" + cuenta corriente.
+        estado: 'emitido', estado_pago: estadoPago, notas, condicion_venta: estadoPago === 'cuenta_corriente' ? 'Cta. Cte.' : condVenta,
         // Acá se usa "Presupuesto" como la venta real del día a día (no como
         // cotización que puede no concretarse) — así que también descuenta
         // stock al crearlo, igual que un remito.
@@ -1882,7 +1884,7 @@ export default function VentasPage() {
 
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: C.dim, marginBottom: 4, fontWeight: 500 }}>Estado de pago {!estadoPago && <span style={{ color: C.red }}>*</span>}</div>
-              <select className="vinp" style={{ ...INP, maxWidth: 220, ...(estadoPago ? {} : { borderColor: C.red }) }} value={estadoPago} onChange={e => setEstadoPago(e.target.value)}>
+              <select className="vinp" style={{ ...INP, maxWidth: 220, ...(estadoPago ? {} : { borderColor: C.red }) }} value={estadoPago} onChange={e => { setEstadoPago(e.target.value); if (e.target.value === 'cuenta_corriente') setCondVenta('Cta. Cte.') }}>
                 <option value="" disabled>Elegí el estado...</option>
                 <option value="pagado">Pagado</option>
                 <option value="pendiente">Pendiente</option>
