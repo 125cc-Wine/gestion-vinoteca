@@ -30,8 +30,11 @@ export async function GET(req: NextRequest) {
         .range(from, from + PAGE - 1)
 
       if (!ambas) q = q.eq('empresa', empresa)
-      if (desde) q = q.gte('created_at', desde)
-      if (hasta) q = q.lte('created_at', hasta + 'T23:59:59')
+      // Días en hora de Argentina (UTC-3, sin horario de verano): sin el
+      // offset se cortaba en UTC y las ventas de después de las 21 hs del
+      // último día quedaban afuera (y las del día anterior a "desde", adentro).
+      if (desde) q = q.gte('created_at', desde + 'T00:00:00-03:00')
+      if (hasta) q = q.lte('created_at', hasta + 'T23:59:59.999-03:00')
 
       const { data, error } = await q
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -90,7 +93,8 @@ export async function GET(req: NextRequest) {
   // 1. Ventas por día
   const porDia: Record<string, number> = {}
   for (const v of list) {
-    const dia = v.created_at.split('T')[0]
+    // Día en hora de Argentina (created_at viene en UTC)
+    const dia = new Date(new Date(v.created_at).getTime() - 3 * 3600_000).toISOString().split('T')[0]
     porDia[dia] = (porDia[dia] || 0) + v.total
   }
   const ventasPorDia = Object.entries(porDia).map(([fecha, total]) => ({ fecha, total }))
