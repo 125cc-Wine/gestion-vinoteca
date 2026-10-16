@@ -92,9 +92,10 @@ h2{color:#800000;margin:0 0 12px;}p{color:#6B5D55;font-size:14px;}</style></head
 }
 
 export type VentaCbte = Record<string, any>
+export interface CobroCbte { fecha: string; monto: number; medio: string }
 export interface ClienteCbte { cuit?: string; direccion?: string; telefono?: string; email?: string; saldo?: number }
 
-export async function comprobanteVentaHtml(venta: VentaCbte, cliente: ClienteCbte | null, empresaKey: string, autoprint: boolean): Promise<string> {
+export async function comprobanteVentaHtml(venta: VentaCbte, cliente: ClienteCbte | null, empresaKey: string, autoprint: boolean, cobros: CobroCbte[] = []): Promise<string> {
   const empresa = EMPRESAS_DATA[empresaKey] ?? EMPRESAS_DATA['aroma']
   const tipoLabel = TIPO_LABEL[venta.tipo] ?? venta.tipo ?? 'Comprobante'
 
@@ -339,6 +340,9 @@ export async function comprobanteVentaHtml(venta: VentaCbte, cliente: ClienteCbt
     .saldo-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #A07010; margin-bottom: 4px; }
     .saldo-monto { font-size: 15px; font-weight: 700; color: #A07010; }
     .saldo-nota { font-size: 9.5px; color: #A07010; opacity: 0.8; margin-top: 2px; }
+    .cobros-box { margin-top: 10px; border: 1px solid #E8DFD4; padding: 8px 12px; font-size: 10.5px; }
+    .cobros-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6B5A4E; margin-bottom: 4px; }
+    .cobros-row { display: flex; justify-content: space-between; gap: 16px; padding: 1px 0; }
     .totales-box {
       border: 1px solid #DDD0C0;
       border-radius: 5px;
@@ -486,6 +490,11 @@ export async function comprobanteVentaHtml(venta: VentaCbte, cliente: ClienteCbt
         <div class="saldo-title">Saldo Cuenta Corriente</div>
         <div class="saldo-monto">${moneda(cliente.saldo)}</div>
         <div class="saldo-nota">${venta.estado_pago === 'cuenta_corriente' ? 'Incluye este comprobante' : 'No incluye este comprobante (se abonó aparte)'}</div>
+      </div>` : ''}
+      ${cobros.length > 0 ? `
+      <div class="cobros-box">
+        <div class="cobros-title">Cómo se cobró</div>
+        ${cobros.map(c => `<div class="cobros-row"><span>${esc(new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR'))} · ${esc(c.medio)}</span><span>${moneda(c.monto)}</span></div>`).join('')}
       </div>` : ''}
     </div>
     <div class="totales-box">

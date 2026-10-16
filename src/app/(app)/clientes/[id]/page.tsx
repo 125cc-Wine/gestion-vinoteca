@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseBrowser'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
+import { resumenCobros, type CobroVenta } from '@/lib/cobrosResumen'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
@@ -172,6 +173,16 @@ export default function ClienteFichaPage() {
   // Tab data
   const [ventas, setVentas] = useState<Venta[]>([])
   const [ventasLoading, setVentasLoading] = useState(false)
+  // Cómo se cobró cada venta (medio de pago real, de la caja) — ver /api/ventas/cobros
+  const [cobrosPorVenta, setCobrosPorVenta] = useState<Record<string, CobroVenta[]>>({})
+  useEffect(() => {
+    const ids = ventas.map(v => v.id).filter(Boolean).slice(0, 500)
+    if (ids.length === 0) { setCobrosPorVenta({}); return }
+    let vivo = true
+    fetch(`/api/ventas/cobros?ids=${ids.join(',')}`).then(r => r.json())
+      .then(d => { if (vivo && d && !d.error) setCobrosPorVenta(d) }).catch(() => {})
+    return () => { vivo = false }
+  }, [ventas])
   const [filtroProd, setFiltroProd] = useState('')
   const [movimientos, setMovimientos] = useState<MovCtaCte[]>([])
   const [movsLoading, setMovsLoading] = useState(false)
@@ -689,7 +700,7 @@ export default function ClienteFichaPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: T.bg }}>
-                    {['Número', 'Fecha', 'Tipo', 'Total', 'Estado'].map(h => (
+                    {['Número', 'Fecha', 'Tipo', 'Total', 'Estado', 'Cómo se cobró'].map(h => (
                       <th key={h} style={{ padding: '10px 16px', fontSize: 11, fontWeight: 700, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: h === 'Total' ? 'right' : 'left', borderBottom: `1px solid ${T.border}` }}>{h}</th>
                     ))}
                   </tr>
@@ -725,6 +736,11 @@ export default function ClienteFichaPage() {
                         : v.estado_pago === 'cuenta_corriente' ? <Badge color={T.blue}  bg={T.blueBg}  border={T.blueBd}>Cta. Cte.</Badge>
                         : v.estado ? <Badge color={T.dim} bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">{v.estado}</Badge>
                         : <span style={{ color: T.dim }}>—</span>}
+                      </td>
+                      <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>
+                        {cobrosPorVenta[v.id]?.length
+                          ? <span title={cobrosPorVenta[v.id].map(c => `${new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR')} · ${c.medio} $${c.monto.toLocaleString('es-AR')}`).join('\n')}>{resumenCobros(cobrosPorVenta[v.id])}</span>
+                          : <span style={{ color: T.dim }}>—</span>}
                       </td>
                     </tr>
                   ))}

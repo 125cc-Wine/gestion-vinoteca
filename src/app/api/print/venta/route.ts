@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { esc } from '@/lib/html'
 import { comprobanteVentaHtml, errorHtml } from '@/lib/comprobanteVentaHtml'
+import { cobrosDeVentas } from '@/lib/cobrosVenta'
 
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
@@ -45,7 +46,8 @@ export async function GET(req: NextRequest) {
     if (cl) cliente = cl
   }
 
-  const html = await comprobanteVentaHtml(venta, cliente, empresaKey, autoprint)
+  const cobros = (await cobrosDeVentas([venta.id]))[venta.id] ?? []
+  const html = await comprobanteVentaHtml(venta, cliente, empresaKey, autoprint, cobros)
 
   return new Response(html, {
     status: 200,

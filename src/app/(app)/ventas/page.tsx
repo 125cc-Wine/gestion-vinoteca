@@ -14,6 +14,7 @@ import wooUrls from '@/data/wooUrls.json'
 import QRCode from 'qrcode'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { labelComprobante } from '@/lib/labelComprobante'
+import type { CobroVenta } from '@/lib/cobrosResumen'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 const CBTE_TIPO_POR_LETRA_QR: Record<number, number> = { 1: 1, 6: 6, 11: 11 }
@@ -415,6 +416,16 @@ export default function VentasPage() {
   const [ventaParaImprimir, setVentaParaImprimir] = useState<Venta | null>(null)
   const [facturaParaImprimir, setFacturaParaImprimir] = useState<Venta | null>(null)
   const [previewVenta, setPreviewVenta] = useState<Venta | null>(null)
+  // Cómo se cobró la venta de la vista previa (de la caja, ver /api/ventas/cobros)
+  const [previewCobros, setPreviewCobros] = useState<CobroVenta[]>([])
+  useEffect(() => {
+    setPreviewCobros([])
+    if (!previewVenta?.id) return
+    let vivo = true
+    fetch(`/api/ventas/cobros?ids=${previewVenta.id}`).then(r => r.json())
+      .then(d => { if (vivo) setPreviewCobros(d?.[previewVenta.id!] ?? []) }).catch(() => {})
+    return () => { vivo = false }
+  }, [previewVenta?.id])
   const [previewFactura, setPreviewFactura] = useState<{ venta: Venta; tipo: 1 | 6 } | null>(null)
 
   // ── Facturación AFIP
@@ -2253,7 +2264,7 @@ export default function VentasPage() {
               </div>
             </div>
             <div style={{ background: '#fff', borderRadius: 8, padding: '32px 40px', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
-              <PrintDoc venta={previewVenta} empresa={emp} cliente={clientes.find(c => c.id === previewVenta.cliente_id)} />
+              <PrintDoc venta={previewVenta} empresa={emp} cliente={clientes.find(c => c.id === previewVenta.cliente_id)} cobros={previewCobros} />
             </div>
           </div>
         </div>
@@ -2623,8 +2634,9 @@ function fmtCantBot(qty: number) {
   return <>{qty} bot<br /><span style={{ fontSize: 9, color: '#888' }}>{det}</span></>
 }
 
-function PrintDoc({ venta, empresa, cliente }: {
+function PrintDoc({ venta, empresa, cliente, cobros = [] }: {
   venta: Venta
+  cobros?: CobroVenta[]
   empresa: { nombre: string; cuit: string; domicilio: string; telefono: string; logoPath: string }
   cliente?: { cuit?: string; direccion?: string; telefono?: string; email?: string; saldo?: number } | null
 }) {
@@ -2746,7 +2758,7 @@ function PrintDoc({ venta, empresa, cliente }: {
       })()}
 
       {/* Totales */}
-      <div style={{ display: 'flex', justifyContent: cliente?.saldo && cliente.saldo > 0 ? 'space-between' : 'flex-end', alignItems: 'flex-start', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: 12, justifyContent: (cliente?.saldo && cliente.saldo > 0) || cobros.length > 0 ? 'space-between' : 'flex-end', alignItems: 'flex-start', marginBottom: '16px' }}>
         {!!(cliente?.saldo && cliente.saldo > 0) && (
           <div style={{ border: '1px solid #A07010', borderLeft: '3px solid #A07010', background: '#FBF3E7', padding: '8px 14px', minWidth: 180 }}>
             <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A07010', marginBottom: 4 }}>
@@ -2758,6 +2770,17 @@ function PrintDoc({ venta, empresa, cliente }: {
             <div style={{ fontSize: '9.5px', color: '#A07010', opacity: 0.8, marginTop: 2 }}>
               {esCuentaCorriente ? 'Incluye este comprobante' : 'No incluye este comprobante (se abonó aparte)'}
             </div>
+          </div>
+        )}
+        {cobros.length > 0 && (
+          <div style={{ border: '1px solid #E8DFD4', padding: '8px 12px', minWidth: 200, fontSize: '10.5px' }}>
+            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B5A4E', marginBottom: 4 }}>Cómo se cobró</div>
+            {cobros.map((c, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '1px 0' }}>
+                <span>{new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR')} · {c.medio}</span>
+                <span>${c.monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              </div>
+            ))}
           </div>
         )}
         <table style={{ fontSize: '11px', borderCollapse: 'collapse', minWidth: 240 }}>
