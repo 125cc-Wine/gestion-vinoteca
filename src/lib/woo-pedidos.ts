@@ -250,6 +250,21 @@ export async function armarPedidoWeb(pedidoId: string): Promise<{ venta?: { id: 
   return { venta: { id: r.data.id, numero: r.data.numero } }
 }
 
+// "Entregado": el pedido pasa a Completado en la web (si no, en WooCommerce
+// queda para siempre en espera/procesando). Completado = pagado para Woo.
+export async function completarPedidoWeb(pedidoId: string): Promise<{ error?: string }> {
+  const { data: p } = await supabase.from('pedidos').select('woo_order_id, woo_estado').eq('id', pedidoId).single()
+  if (!p?.woo_order_id) return {}
+  if (p.woo_estado !== 'completed') {
+    const r = await fetch(wooUrl(`orders/${p.woo_order_id}`), {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'completed' }), cache: 'no-store',
+    })
+    if (!r.ok) return { error: `WooCommerce ${r.status}` }
+  }
+  await supabase.from('pedidos').update({ woo_estado: 'completed', pago: 'pagado' }).eq('id', pedidoId)
+  return {}
+}
+
 // Cómo quedaría cargado un pedido de la web, sin escribir nada (para probar
 // el mapeo con pedidos reales). GET /api/woo/pedidos?simular=<id del pedido>.
 export async function simularPedidoWeb(orderId: number) {

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
+import { completarPedidoWeb } from '@/lib/woo-pedidos'
 
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
@@ -137,6 +138,10 @@ async function putHandler(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (rest.estado === 'entregado' && data.origen === 'web') {
+    const w = await completarPedidoWeb(id)
+    if (w.error) return NextResponse.json({ ...data, aviso: `Quedó entregado acá, pero la web no lo pasó a Completado (${w.error}).` })
+  }
   return NextResponse.json(data)
 }
 

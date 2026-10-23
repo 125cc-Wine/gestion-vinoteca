@@ -242,12 +242,17 @@ export default function PedidosPage() {
     if (estado === 'entregado') {
       const pedido = pedidos.find(p => p.id === id)
       const nItems = pedido ? (pedido.items as PedidoItem[]).reduce((s, i) => s + i.cantidad, 0) : 0
-      if (!confirm(pedido?.venta_id
+      if (!confirm(pedido?.origen === 'web'
+        ? `¿Pedido ${pedido.numero} entregado? En la web pasa a Completado${pedido.pago === 'pendiente' ? ' (y figura como pagado: confirmá que ya pagó)' : ''}.`
+        : pedido?.venta_id
         ? `¿Marcar como entregado? El stock ya se descontó al generar ${pedido.venta?.numero ?? 'el presupuesto'}.`
         : `¿Marcar como entregado? Se descontarán ${nItems} unidades del stock.`)) return
     }
-    await fetch('/api/pedidos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado }) })
-    cargar(empresa); showToast(`Pedido ${estado}`)
+    const res = await fetch('/api/pedidos', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado }) })
+    const d = await res.json().catch(() => ({}))
+    cargar(empresa)
+    showToast(!res.ok || d.error ? `Error: ${d.error ?? res.status}` : d.aviso ?? `Pedido ${estado}`)
+    if (res.ok && !d.error) { setModalDetalle(null); window.dispatchEvent(new Event('pedidos-web-cambio')) }
   }
 
   async function eliminar(id: string) {
@@ -410,6 +415,9 @@ export default function PedidosPage() {
                         )}
                         {p.estado === 'preparando' && (
                           <button className="btn-row" disabled={webAccion === p.id} style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, fontWeight: 600, fontFamily: 'inherit' }} onClick={() => accionWeb(p, 'armar')}>Armado → remito</button>
+                        )}
+                        {p.estado === 'armado' && (
+                          <button className="btn-row" style={{ background: 'transparent', border: `1px solid ${T.border}`, borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.green, fontWeight: 600, fontFamily: 'inherit' }} onClick={() => cambiarEstado(p.id, 'entregado')} title="Ya se entregó: en la web pasa a Completado">Entregado</button>
                         )}
                       </>) : (<>
                       {p.estado === 'pendiente' && (
@@ -651,6 +659,9 @@ export default function PedidosPage() {
                 )}
                 {modalDetalle.origen === 'web' && modalDetalle.estado === 'preparando' && (
                   <button className="btn-wine" disabled={webAccion === modalDetalle.id} onClick={() => accionWeb(modalDetalle, 'armar')} style={{ background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Armado → crear remito</button>
+                )}
+                {modalDetalle.estado === 'armado' && (
+                  <button className="btn-wine" onClick={() => cambiarEstado(modalDetalle.id, 'entregado')} style={{ background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Entregado</button>
                 )}
                 <button style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 16px', fontSize: 13, color: T.muted, cursor: 'pointer', fontFamily: 'inherit' }} onClick={() => setModalDetalle(null)}>Cerrar</button>
               </div>
