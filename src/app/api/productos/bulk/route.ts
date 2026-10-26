@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
+import { wooActualizarPrecio } from '@/lib/woocommerce'
 
 const ACCIONES_VALIDAS = ['bodega', 'proveedor', 'varietal', 'precio_fijo', 'aumento_precio', 'costo_fijo', 'costo_pct_venta', 'stock_fijo', 'eliminar']
 
@@ -145,7 +146,37 @@ async function postHandler(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, afectados })
+  // Precio a WooCommerce: antes la edición masiva de precio solo cambiaba el
+  // sistema y la web quedaba con el precio viejo. Los gemelos comparten
+  // woo_product_id, así que se manda una vez por producto web.
+  let woo_errores = 0
+  if (
+    (accion === 'precio_fijo' || accion === 'aumento_precio') &&
+    process.env.WOOCOMMERCE_CONSUMER_KEY &&
+    process.env.WOOCOMMERCE_CONSUMER_KEY !== 'ck_tu_clave_aqui'
+  ) {
+    const { data: actualizados } = await supabase
+      .from('productos')
+      .select('woo_product_id, precio_venta')
+      .in('id', todosIds)
+      .not('woo_product_id', 'is', null)
+    const porWoo = new Map<number, number>()
+    for (const p of actualizados ?? []) porWoo.set(p.woo_product_id, Number(p.precio_venta ?? 0))
+    const pendientes = Array.from(porWoo.entries())
+    const BATCH = 5
+    for (let i = 0; i < pendientes.length; i += BATCH) {
+      await Promise.all(pendientes.slice(i, i + BATCH).map(async ([wooId, precio]) => {
+        try {
+          await wooActualizarPrecio(wooId, precio)
+        } catch (wooErr) {
+          console.error('WooCommerce sync error:', wooId, wooErr)
+          woo_errores++
+        }
+      }))
+    }
+  }
+
+  return NextResponse.json({ ok: true, afectados, ...(woo_errores ? { woo_errores } : {}) })
 }
 
 // Después de responder, manda a la web el stock de los productos que
