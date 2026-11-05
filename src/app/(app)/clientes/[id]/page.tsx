@@ -72,6 +72,7 @@ interface Venta {
   cliente_id?: string
   cliente_nombre?: string
   total: number
+  monto_pagado?: number | null
   created_at: string
   facturado?: boolean
   nro_cbte_afip?: string | null
@@ -743,6 +744,12 @@ export default function ClienteFichaPage() {
                         : v.estado_pago === 'cuenta_corriente' ? <Badge color={T.blue}  bg={T.blueBg}  border={T.blueBd}>Cta. Cte.</Badge>
                         : v.estado ? <Badge color={T.dim} bg="rgba(168,152,136,0.10)" border="rgba(168,152,136,0.28)">{v.estado}</Badge>
                         : <span style={{ color: T.dim }}>—</span>}
+                        {/* Pago parcial: sin esto, la suma de los totales no coincide con el saldo del cliente. */}
+                        {v.estado_pago === 'cuenta_corriente' && Number(v.monto_pagado) > 0.01 && Number(v.monto_pagado) < v.total - 0.01 && (
+                          <div style={{ fontSize: 10, fontWeight: 400, color: T.amber, marginTop: 3, whiteSpace: 'nowrap' }}>
+                            Cobrado {fmtMonto(Number(v.monto_pagado))}, falta {fmtMonto(v.total - Number(v.monto_pagado))}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '11px 16px', fontSize: 12, color: T.muted }}>
                         {cobrosPorVenta[v.id]?.length
