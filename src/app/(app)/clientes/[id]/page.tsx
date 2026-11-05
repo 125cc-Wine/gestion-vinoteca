@@ -491,7 +491,10 @@ export default function ClienteFichaPage() {
   const gruposPorRef = new Map<string, MovCtaCte[]>()
   const movsSueltos: MovCtaCte[] = []
   for (const m of movimientos) {
-    if (m.referencia_id) {
+    // Un movimiento anulado no netea contra nada: va suelto, tachado y con
+    // neto 0. Si entraba al grupo seguía restando (Walter Gonzalez: tres
+    // cobros anulados mostraban -$30.000 con saldo real 0).
+    if (m.referencia_id && !(m.concepto || '').startsWith('[ANULADO] ')) {
       const arr = gruposPorRef.get(m.referencia_id) || []
       arr.push(m)
       gruposPorRef.set(m.referencia_id, arr)
@@ -544,13 +547,17 @@ export default function ClienteFichaPage() {
       mov: m,
     })
   }
-  filas.sort((a, b) => b.fecha.localeCompare(a.fecha))
+  // El saldo se acumula de la fila más vieja a la más nueva, y recién después
+  // se invierte para mostrar lo más nuevo arriba. Acumulado sobre la lista ya
+  // invertida, cada fila mostraba la suma de lo POSTERIOR a ella y el saldo
+  // real recién aparecía en la última fila de abajo.
+  filas.sort((a, b) => a.fecha.localeCompare(b.fecha))
 
   let saldoAcum = 0
   const filasConSaldo = filas.map(f => {
     saldoAcum += f.neto
     return { ...f, saldoAcum }
-  })
+  }).reverse()
 
   const nombreDisplay = cliente
     ? (cliente.razon_social || `${cliente.nombre} ${cliente.apellido || ''}`.trim())
