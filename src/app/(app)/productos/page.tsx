@@ -80,6 +80,7 @@ interface WooPreview {
 
 interface VentaHistItem {
   venta_id: string
+  empresa?: string
   numero?: string
   tipo: string
   created_at: string
@@ -1024,31 +1025,35 @@ export default function ProductosPage() {
     setHistorialLoading(false)
   }
 
-  // Recorre las ventas de la empresa buscando en qué comprobantes apareció
-  // este producto puntual — items se guarda como JSON dentro de cada venta,
-  // no hay una tabla normalizada de renglones, así que se filtra acá.
+  // Recorre las ventas buscando en qué comprobantes apareció este producto
+  // puntual — items se guarda como JSON dentro de cada venta, no hay una
+  // tabla normalizada de renglones, así que se filtra acá. El depósito es
+  // compartido: se buscan las ventas de las DOS empresas (el producto y su
+  // gemelo). Antes solo miraba la empresa activa, y un vino comprado por
+  // Aroma y vendido por La Vid figuraba como "todavía no se vendió".
   async function openHistorialVentas(p: Producto) {
     setHistVentasProducto({ id: p.id!, nombre: p.nombre })
     setHistVentasData([])
     setHistVentasLoading(true)
     setHistVentasModal(true)
+    const { data: prod } = await supabase.from('productos').select('gemelo_id').eq('id', p.id!).maybeSingle()
+    const ids = new Set([p.id, prod?.gemelo_id].filter(Boolean) as string[])
     const { data } = await supabase
       .from('ventas')
-      .select('id, numero, tipo, created_at, cliente_id, cliente_nombre, items, estado')
-      .eq('empresa', p.empresa)
+      .select('id, empresa, numero, tipo, created_at, cliente_id, cliente_nombre, items, estado')
       .neq('estado', 'cancelado')
       .in('tipo', ['remito', 'presupuesto'])
       .order('created_at', { ascending: false })
-      .limit(2000)
+      .limit(5000)
 
     const eventos: VentaHistItem[] = []
     for (const v of (data ?? [])) {
       const items: { producto_id?: string; nombre?: string; cantidad?: number; precio_unitario?: number; subtotal?: number }[] =
         typeof v.items === 'string' ? JSON.parse(v.items) : (v.items ?? [])
       for (const it of items) {
-        if (it.producto_id === p.id) {
+        if (it.producto_id && ids.has(it.producto_id)) {
           eventos.push({
-            venta_id: v.id, numero: v.numero, tipo: v.tipo, created_at: v.created_at,
+            venta_id: v.id, empresa: v.empresa, numero: v.numero, tipo: v.tipo, created_at: v.created_at,
             cliente_id: v.cliente_id, cliente_nombre: v.cliente_nombre,
             cantidad: it.cantidad ?? 0, precio_unitario: it.precio_unitario ?? 0, subtotal: it.subtotal ?? 0,
           })
@@ -3068,6 +3073,7 @@ export default function ProductosPage() {
                               {e.tipo}
                             </span>
                             <span style={{ color: T.dim, fontSize: 11 }}>{e.numero ? `#${e.numero}` : `#${e.venta_id.slice(0, 8).toUpperCase()}`}</span>
+                            {e.empresa && <span style={{ color: T.dim, fontSize: 11, marginLeft: 6 }}>· {e.empresa === 'lavid' ? 'La Vid' : 'Aroma'}</span>}
                           </td>
                           <td style={{ padding: '11px 14px', color: T.text }}>{e.cliente_nombre || 'Consumidor Final'}</td>
                           <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>{e.cantidad}</td>
