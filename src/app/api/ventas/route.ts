@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { conSyncStockWeb } from '@/lib/woo-stock-cola'
-import { medioPagoDesdeCondicion, descontarStockItems, devolverStockItems, crearVenta } from '@/lib/ventas'
+import { medioPagoDesdeCondicion, descontarStockItems, devolverStockItems, crearVenta, efectoStockVenta, ajustarStockPorEdicion } from '@/lib/ventas'
 
 export async function GET(req: NextRequest) {
   const empresa = req.nextUrl.searchParams.get('empresa')
@@ -43,10 +43,11 @@ async function putHandler(req: NextRequest) {
 
   const { data: anterior, error: errAnterior } = await supabase
     .from('ventas')
-    .select('estado_pago, total, cliente_id, empresa, numero, tipo')
+    .select('estado_pago, total, cliente_id, empresa, numero, tipo, estado, created_at, items')
     .eq('id', id)
     .single()
   if (errAnterior || !anterior) return NextResponse.json({ error: errAnterior?.message || 'Venta no encontrada' }, { status: 404 })
+  const efectoStock = efectoStockVenta(anterior)
 
   const { data, error } = await supabase
     .from('ventas')
@@ -57,12 +58,16 @@ async function putHandler(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // "Convertir a remito": un presupuesto que en verdad ya se entregó. Recién
-  // acá se descuenta el stock (los presupuestos nunca lo tocan) — se guarda
+  // "Convertir a remito": un presupuesto viejo (anterior al 8/8, que no tocó
+  // el stock) que en verdad ya se entregó. Recién acá se descuenta — se guarda
   // contra anterior.tipo, no contra rest.tipo, para no volver a descontar si
-  // por lo que sea se llama de nuevo sobre una venta que ya es remito.
-  if (convertirARemito && anterior.tipo === 'presupuesto' && Array.isArray(data?.items)) {
+  // por lo que sea se llama de nuevo sobre una venta que ya es remito, y solo
+  // si no descontó al crearse (si no, se descontaría dos veces).
+  if (convertirARemito && anterior.tipo === 'presupuesto' && efectoStock === 0 && Array.isArray(data?.items)) {
     await descontarStockItems(data.items)
+  } else if (efectoStock !== 0 && Array.isArray(rest.items) && Array.isArray(anterior.items)) {
+    // Se editaron los renglones de una venta que ya movió stock: aplicar la diferencia.
+    await ajustarStockPorEdicion(anterior.items, data.items, efectoStock)
   }
 
   // Reconciliar cuenta corriente: si el estado de pago o el total cambiaron
@@ -120,7 +125,7 @@ async function deleteHandler(req: NextRequest) {
 
   const { data: venta, error: errVenta } = await supabase
     .from('ventas')
-    .select('estado, estado_pago, total, cliente_id, empresa, numero, tipo, items')
+    .select('estado, estado_pago, total, cliente_id, empresa, numero, tipo, items, created_at')
     .eq('id', id)
     .single()
   if (errVenta || !venta) return NextResponse.json({ error: errVenta?.message || 'Venta no encontrada' }, { status: 404 })
@@ -132,11 +137,14 @@ async function deleteHandler(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Si es un remito, descontó stock al crearse (o al convertirse desde
-  // presupuesto) — devolverlo al cancelar, si no ya no quedaba stock era
-  // real; guardado como "cancelado" pero fantasma para siempre.
-  if (venta.estado !== 'cancelado' && venta.tipo === 'remito' && Array.isArray(venta.items) && venta.items.length > 0) {
-    await devolverStockItems(venta.items)
+  // Si la venta movió stock al crearse (remito, o presupuesto desde el 8/8),
+  // devolverlo al cancelar; si no, la mercadería queda descontada para
+  // siempre aunque nunca haya salido. Antes solo se hacía con remitos, y los
+  // presupuestos anulados se quedaban con su stock.
+  const efectoStock = efectoStockVenta(venta)
+  if (efectoStock !== 0 && Array.isArray(venta.items) && venta.items.length > 0) {
+    if (efectoStock === 1) await devolverStockItems(venta.items)
+    else await descontarStockItems(venta.items)
   }
 
   // Si estaba cargada en cuenta corriente, revertir el cargo — si no, el

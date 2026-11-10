@@ -81,6 +81,42 @@ export async function devolverStockItems(items: { producto_id?: string; cantidad
   }
 }
 
+// Desde a890da2 (8/8/2026 18:21) los presupuestos también descuentan stock al
+// crearse; los anteriores nunca lo tocaron.
+const PRESUPUESTO_DESCUENTA_DESDE = new Date('2026-08-08T21:21:12Z')
+
+// Qué le hizo al stock la venta al crearse: 1 lo descontó (remito, presupuesto
+// desde el 8/8), -1 lo devolvió (devolución), 0 no lo movió. Los remitos de la
+// web cuentan como 1: su stock se reservó al importar el pedido.
+export function efectoStockVenta(v: { tipo?: string | null; estado?: string | null; created_at?: string | null }): 1 | -1 | 0 {
+  if (v.estado === 'cancelado') return 0
+  if (v.tipo === 'remito') return 1
+  if (v.tipo === 'devolucion') return -1
+  if (v.tipo === 'presupuesto' && v.created_at && new Date(v.created_at) >= PRESUPUESTO_DESCUENTA_DESDE) return 1
+  return 0
+}
+
+type ItemStock = { producto_id?: string | null; cantidad: number }
+
+// Al editar los renglones de una venta que ya movió stock, aplica solo la
+// diferencia por producto: lo agregado sale, lo sacado vuelve. Antes la
+// edición no tocaba el stock (ej. PRES-000154: 6 Rosé sin cargo agregados al
+// editar quedaron sin descontar).
+export async function ajustarStockPorEdicion(antes: ItemStock[], despues: ItemStock[], efecto: 1 | -1) {
+  const neto = new Map<string, number>()
+  for (const i of despues) if (i.producto_id) neto.set(i.producto_id, (neto.get(i.producto_id) ?? 0) + (Number(i.cantidad) || 0))
+  for (const i of antes) if (i.producto_id) neto.set(i.producto_id, (neto.get(i.producto_id) ?? 0) - (Number(i.cantidad) || 0))
+  const sale: { producto_id: string; cantidad: number }[] = []
+  const vuelve: { producto_id: string; cantidad: number }[] = []
+  for (const [producto_id, d] of Array.from(neto)) {
+    const salida = d * efecto
+    if (salida > 0) sale.push({ producto_id, cantidad: salida })
+    else if (salida < 0) vuelve.push({ producto_id, cantidad: -salida })
+  }
+  if (sale.length) await descontarStockItems(sale)
+  if (vuelve.length) await devolverStockItems(vuelve)
+}
+
 
 // Crea una venta (presupuesto, remito o devolución) con todos sus efectos.
 // body: la fila de ventas + descontarStock / devolverStock.
