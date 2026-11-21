@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseBrowser'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
-import { resumenCobros, type CobroVenta } from '@/lib/cobrosResumen'
+import { resumenCobros, esAjusteEdicion, type CobroVenta } from '@/lib/cobrosResumen'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
@@ -507,8 +507,15 @@ export default function ClienteFichaPage() {
   const filas: FilaCtaCte[] = []
   for (const [refId, movs] of Array.from(gruposPorRef.entries())) {
     const cargos = movs.filter(m => m.tipo === 'cargo')
-    const cobros = movs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito')
-    const cargoTotal = cargos.reduce((a, m) => a + m.monto, 0)
+    // Un "(ajuste al editar)" que baja el total no es un cobro: resta del
+    // cargo. Si se lleva el cargo entero (la venta se pasó a pagada al
+    // editarla), se sigue mostrando como cobro, como antes.
+    const ajustes = movs.filter(esAjusteEdicion)
+    const cargoBruto = cargos.reduce((a, m) => a + m.monto, 0)
+    const ajusteTotal = ajustes.reduce((a, m) => a + m.monto, 0)
+    const ajusteRebaja = cargoBruto - ajusteTotal > 0.01
+    const cobros = movs.filter(m => (m.tipo === 'cobro' || m.tipo === 'pago' || m.tipo === 'nota_credito') && !(ajusteRebaja && esAjusteEdicion(m)))
+    const cargoTotal = ajusteRebaja ? cargoBruto - ajusteTotal : cargoBruto
     const cobroTotal = cobros.reduce((a, m) => a + m.monto, 0)
     const fechaBase = cargos.length > 0
       ? cargos.reduce((min, m) => (m.created_at < min ? m.created_at : min), cargos[0].created_at)

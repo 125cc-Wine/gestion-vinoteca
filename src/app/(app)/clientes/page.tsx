@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import type { Cliente, Venta } from '@/types'
 import { onOverlayMouseDown, onOverlayClick } from '@/lib/overlayClose'
 import { labelComprobante } from '@/lib/labelComprobante'
+import { esAjusteEdicion } from '@/lib/cobrosResumen'
 import { ChequesRecibidosFieldset, nuevoChequeRecibido, sumaCheques, chequesCompletos, type ChequeRecibido } from '@/components/ChequesRecibidosFieldset'
 
 const MEDIOS_PAGO_COBRO = ['Efectivo', 'Transferencia', 'Tarjeta Débito', 'Tarjeta Crédito', 'QR', 'MercadoPago', 'Cheque']
@@ -549,8 +550,10 @@ export default function ClientesPage() {
 
   const conSaldo = clientes.filter(c => c.saldo > 0).length
   const saldoTotal = clientes.reduce((a, c) => a + c.saldo, 0)
-  const totalCobradoHist = histMovs.filter(m => m.tipo === 'cobro' || m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
-  const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0)
+  // Los "(ajuste al editar)" son rebajas de un cargo, no plata cobrada.
+  const totalAjustesHist = histMovs.filter(esAjusteEdicion).reduce((a, m) => a + m.monto, 0)
+  const totalCobradoHist = histMovs.filter(m => (m.tipo === 'cobro' || m.tipo === 'pago') && !esAjusteEdicion(m)).reduce((a, m) => a + m.monto, 0)
+  const totalCargadoHist = histMovs.filter(m => m.tipo === 'cargo').reduce((a, m) => a + m.monto, 0) - totalAjustesHist
 
   const OVERLAY: React.CSSProperties = {
     position: 'fixed', inset: 0, background: 'rgba(26,18,16,0.45)', backdropFilter: 'blur(4px)',
